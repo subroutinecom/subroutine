@@ -7,7 +7,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 
 RUN npm install -g yarn pm2
 
-RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -y v2.5.6
+RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -y v2.5.6
 
 WORKDIR /app
 
