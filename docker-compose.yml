@@ -1,0 +1,9 @@
+services:
+  sandbox:
+    build:
+      context: .
+      dockerfile: ./sandbox/Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./sandbox:/app
