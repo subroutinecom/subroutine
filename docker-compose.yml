@@ -10,6 +10,11 @@ services:
     volumes:
       - ./sandbox:/app/sandbox
       - ./eslint:/app/eslint
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+      - seccomp:unconfined
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/_status"]
       interval: 3s
