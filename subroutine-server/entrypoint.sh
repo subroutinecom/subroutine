@@ -6,7 +6,7 @@ do_run() {
   deno install
 
   echo "Starting PM2 processes..."
-  pm2 start ecosystem.config.cjs
+  pm2 start --interpreter="deno" --interpreter-args="run --allow-net --allow-read" ecosystem.config.cjs
 
   echo "Tailing PM2 logs..."
   pm2 logs
