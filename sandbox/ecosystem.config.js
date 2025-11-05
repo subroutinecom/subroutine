@@ -6,7 +6,7 @@ module.exports = {
       interpreter: "deno",
       script: "main.ts",
       interpreter_args:
-        "run --check=all --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write",
+        "run --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write",
       autorestart: true,
 
       watch: ["*.ts", "*.js", "*.json"],
