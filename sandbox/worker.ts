@@ -9,7 +9,7 @@ self.onmessage = async (event: MessageEvent<ExecuteMessage>) => {
     try {
       const AsyncFunction = Object.getPrototypeOf(
         async function () {},
-      ).constructor;
+      ).constructor as new (code: string) => () => Promise<unknown>;
       const fn = new AsyncFunction(code);
       const result = await fn();
 

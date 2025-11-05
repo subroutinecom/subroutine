@@ -10,3 +10,17 @@ services:
     volumes:
       - ./sandbox:/app/sandbox
       - ./eslint:/app/eslint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/_status"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  tests:
+    build:
+      context: .
+      dockerfile: ./tests/Dockerfile
+    depends_on:
+      sandbox:
+        condition: service_healthy
