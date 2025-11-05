@@ -25,10 +25,10 @@ jobs:
         with:
           deno-version: v1.x
 
-      - name: Run Deno type checking
+      - name: Typecheck sandbox
         run: deno check
-        working-directory: ./
+        working-directory: ./sandbox
 
-      - name: Run Deno linting
+      - name: Lint sandbox
         run: deno lint
-        working-directory: ./
+        working-directory: ./sandbox
