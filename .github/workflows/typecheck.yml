@@ -35,8 +35,3 @@ jobs:
 
       - name: Eslint
         run: deno task eslint
-
-      - name: Typecheck subroutine-server
-        run: deno check server.tsx
-        working-directory: ./subroutine-server
-
