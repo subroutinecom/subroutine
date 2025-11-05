@@ -32,3 +32,11 @@ jobs:
       - name: Lint sandbox
         run: deno lint
         working-directory: ./sandbox
+
+      - name: Typecheck subroutine-server
+        run: deno check server.tsx
+        working-directory: ./subroutine-server
+
+      - name: Lint subroutine-server
+        run: deno lint
+        working-directory: ./subroutine-server
