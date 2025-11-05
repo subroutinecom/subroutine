@@ -7,7 +7,7 @@ import { localRulesPlugin } from "./eslint/index.ts";
 
 export default defineConfig([
   {
-    ignores: ["public/**", ".react-router/**"],
+    ignores: ["**/public/**", "**/.react-router/**"],
   },
 
   {

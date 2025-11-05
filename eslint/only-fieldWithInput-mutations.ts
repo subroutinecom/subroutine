@@ -1,4 +1,4 @@
-import { ESLintUtils } from "@typescript-eslint/utils";
+import { ESLintUtils, TSESTree } from "@typescript-eslint/utils";
 
 const createRule = ESLintUtils.RuleCreator((name) => `http://docs.subroutine.com/rule/${name}`);
 
@@ -33,7 +33,7 @@ const rule = createRule({
         }
 
         // traverse parents until we find a CallExpression that is memoizeMutationField
-        let current: any = node.parent;
+        let current: TSESTree.Node | undefined = node.parent;
         let foundMemoize = false;
         let foundTFieldWithInput = false;
         while (current) {
@@ -56,7 +56,7 @@ const rule = createRule({
             // make sure the child is an object and has an input property and no args property
             if (current.arguments.length > 0 && current.arguments[0].type === "ObjectExpression") {
               const hasArgs = current.arguments[0].properties.some(
-                (prop: any) => prop.type === "Property" && prop.key.type === "Identifier" && prop.key.name === "args",
+                (prop: TSESTree.Node) => prop.type === "Property" && prop.key.type === "Identifier" && prop.key.name === "args",
               );
               if (hasArgs) {
                 context.report({

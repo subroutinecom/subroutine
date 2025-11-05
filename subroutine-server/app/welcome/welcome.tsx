@@ -1,3 +1,4 @@
+import { Link } from "react-router/internal/react-server-client";
 import logoDark from "./logo-dark.svg";
 import logoLight from "./logo-light.svg";
 
@@ -27,15 +28,15 @@ export function Welcome() {
             <ul>
               {resources.map(({ href, text, icon }) => (
                 <li key={href}>
-                  <a
+                  <Link
                     className="group flex items-center gap-3 self-stretch p-3 leading-normal text-blue-700 hover:underline dark:text-blue-500"
-                    href={href}
+                    to={href}
                     target="_blank"
                     rel="noreferrer"
                   >
                     {icon}
                     {text}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
