@@ -1,10 +1,10 @@
-name: CI
+name: Typecheck & Lint
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,9 +26,9 @@ jobs:
           deno-version: v1.x
 
       - name: Run Deno type checking
-        run: deno task check
-        working-directory: ./sandbox
+        run: deno check
+        working-directory: ./
 
       - name: Run Deno linting
-        run: deno task lint
-        working-directory: ./sandbox
+        run: deno lint
+        working-directory: ./
