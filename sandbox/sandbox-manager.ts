@@ -24,7 +24,7 @@ export class SandboxManager {
     this.timeout = timeout;
   }
 
-  async executeCode(code: string): Promise<ExecutionResult> {
+  executeCode(code: string): Promise<ExecutionResult> {
     const executionId = crypto.randomUUID();
 
     const worker = new Worker(new URL(`./worker.ts`, import.meta.url).href, {
