@@ -1,4 +1,4 @@
-name: Typecheck & Lint
+name: Typecheck
 
 on:
   push:
@@ -24,6 +24,10 @@ jobs:
         uses: denoland/setup-deno@v1
         with:
           deno-version: v2.x
+
+      - name: Install dependencies
+        run: deno install
+        working-directory: ./
 
       - name: Typecheck sandbox
         run: deno check
