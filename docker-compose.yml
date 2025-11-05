@@ -22,10 +22,30 @@ services:
       retries: 20
       start_period: 10s
 
+  subroutine-server:
+    build:
+      context: .
+      dockerfile: ./subroutine-server/Dockerfile
+    ports:
+      - "3001:3001"
+    expose:
+      - 3001
+    volumes:
+      - ./subroutine-server:/app/subroutine-server
+      - ./eslint:/app/eslint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
   tests:
     build:
       context: .
       dockerfile: ./tests/Dockerfile
     depends_on:
       sandbox:
+        condition: service_healthy
+      subroutine-server:
         condition: service_healthy
