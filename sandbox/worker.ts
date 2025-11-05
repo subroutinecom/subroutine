@@ -1,6 +1,6 @@
 /// <reference lib="deno.worker" />
 
-import { ExecuteMessage, ResultMessage } from "./sandbox-manager.ts";
+import { ExecuteMessage } from "./sandbox-manager.ts";
 
 self.onmessage = async (event: MessageEvent<ExecuteMessage>) => {
   const { type, code, id } = event.data;
@@ -17,13 +17,13 @@ self.onmessage = async (event: MessageEvent<ExecuteMessage>) => {
         type: "result",
         id,
         data: result,
-      } as ResultMessage);
+      });
     } catch (error) {
       self.postMessage({
         type: "error",
         id,
         error: error instanceof Error ? error.message : String(error),
-      } as ResultMessage);
+      });
     }
   }
 };

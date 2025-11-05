@@ -14,7 +14,6 @@ export default defineConfig([
     files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     plugins: {
       js,
-      /* @ts-expect-error weird type mismatch */
       local: localRulesPlugin,
     },
     extends: ["js/recommended"],

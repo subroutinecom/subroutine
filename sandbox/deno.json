@@ -1,5 +1,8 @@
 {
   "imports": {
     "express": "npm:express@^5.1.0"
+  },
+  "tasks": {
+    "lint": "npx eslint"
   }
 }

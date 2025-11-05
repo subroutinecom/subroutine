@@ -11,8 +11,9 @@ RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -
 
 WORKDIR /app
 
-COPY ./sandbox .
+COPY ./sandbox ./sandbox
+COPY ./eslint  ./eslint
+COPY ./eslint.config.ts ./eslint.config.ts
 
-EXPOSE 3000
-
-CMD ["pm2-runtime", "start", "ecosystem.config.js"]
+WORKDIR /app/sandbox
+CMD ["./entrypoint.sh", "--run"]
