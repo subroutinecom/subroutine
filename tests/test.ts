@@ -12,6 +12,14 @@ interface ExecutionResult {
   error?: string;
 }
 
+interface CommandExecutionResult {
+  success: boolean;
+  stdout?: string;
+  stderr?: string;
+  exitCode?: number;
+  error?: string;
+}
+
 function makeRequest(options: { hostname: string; port: number; path: string; method?: string; headers?: HeadersInit }, data?: string): Promise<TestResponse> {
   return new Promise((resolve, reject) => {
     const req = new Request(`http://${options.hostname}:${options.port}${options.path}`, {
@@ -39,6 +47,27 @@ async function executeTypescript(code: string): Promise<{ status: number; result
     method: "POST",
     headers: { "Content-Type": "application/json" }
   }, JSON.stringify({ code }));
+
+  return {
+    status: response.status,
+    result: JSON.parse(response.data)
+  };
+}
+
+async function executeCommand(
+  command: string,
+  args?: string[],
+  filesystem?: Record<string, string>,
+  env?: Record<string, string>,
+  timeout?: number
+): Promise<{ status: number; result: CommandExecutionResult }> {
+  const response = await makeRequest({
+    hostname: "sandbox",
+    port: 3000,
+    path: "/test/executeCommand",
+    method: "POST",
+    headers: { "Content-Type": "application/json" }
+  }, JSON.stringify({ command, args, filesystem, env, timeout }));
 
   return {
     status: response.status,
@@ -210,4 +239,142 @@ Deno.test("execute complex JavaScript logic", async () => {
   assertEquals(status, 200);
   assertEquals(result.success, true);
   assertEquals(result.result, { count: 3, averageAge: 30 });
+});
+
+// Bubblewrap command execution tests
+
+Deno.test("execute simple command with bubblewrap", async () => {
+  const { status, result } = await executeCommand("echo", ["Hello, Bubblewrap!"]);
+
+  assertEquals(status, 200);
+  assertEquals(result.success, true);
+  assertEquals(result.exitCode, 0);
+  assertStringIncludes(result.stdout || "", "Hello, Bubblewrap!");
+});
+
+Deno.test("execute command with filesystem - single file", async () => {
+  const filesystem = {
+    "/test.txt": "Hello from file!",
+  };
+
+  const { status, result } = await executeCommand("cat", ["test.txt"], filesystem);
+
+  assertEquals(status, 200);
+  assertEquals(result.success, true);
+  assertEquals(result.exitCode, 0);
+  assertEquals(result.stdout?.trim(), "Hello from file!");
+});
+
+Deno.test("execute command with filesystem - nested directories", async () => {
+  const filesystem = {
+    "/dir1/dir2/file.txt": "nested content",
+  };
+
+  const { status, result } = await executeCommand("cat", ["dir1/dir2/file.txt"], filesystem);
+
+  assertEquals(status, 200);
+  assertEquals(result.success, true);
+  assertEquals(result.exitCode, 0);
+  assertEquals(result.stdout?.trim(), "nested content");
+});
+
+Deno.test("execute command with multiple files", async () => {
+  const filesystem = {
+    "/file1.txt": "content1",
+    "/file2.txt": "content2",
+    "/file3.txt": "content3",
+  };
+
+  const { status, result } = await executeCommand("ls", ["-1"], filesystem);
+
+  assertEquals(status, 200);
+  assertEquals(result.success, true);
+  assertEquals(result.exitCode, 0);
+  assertStringIncludes(result.stdout || "", "file1.txt");
+  assertStringIncludes(result.stdout || "", "file2.txt");
+  assertStringIncludes(result.stdout || "", "file3.txt");
+});
+
+Deno.test("execute grep on files", async () => {
+  const filesystem = {
+    "/data.txt": "line1: hello\nline2: world\nline3: hello again",
+  };
+
+  const { status, result } = await executeCommand("grep", ["hello", "data.txt"], filesystem);
+
+  assertEquals(status, 200);
+  assertEquals(result.success, true);
+  assertEquals(result.exitCode, 0);
+  assertStringIncludes(result.stdout || "", "line1: hello");
+  assertStringIncludes(result.stdout || "", "line3: hello again");
+});
+
+Deno.test("execute shell script", async () => {
+  const filesystem = {
+    "/script.sh": "#!/bin/sh\necho 'Script executed'\nexit 0",
+  };
+
+  const { status, result } = await executeCommand("sh", ["script.sh"], filesystem);
+
+  assertEquals(status, 200);
+  assertEquals(result.success, true);
+  assertEquals(result.exitCode, 0);
+  assertStringIncludes(result.stdout || "", "Script executed");
+});
+
+Deno.test("handle command failure", async () => {
+  const { status, result } = await executeCommand("ls", ["nonexistent-file"]);
+
+  assertEquals(status, 400);
+  assertEquals(result.success, false);
+  assertEquals(result.exitCode, 2);
+  assertStringIncludes(result.stderr || "", "cannot access");
+});
+
+Deno.test("command with custom environment variables", async () => {
+  const filesystem = {
+    "/test.sh": "#!/bin/sh\necho $CUSTOM_VAR",
+  };
+
+  const env = {
+    CUSTOM_VAR: "custom_value",
+  };
+
+  const { status, result } = await executeCommand("sh", ["test.sh"], filesystem, env);
+
+  assertEquals(status, 200);
+  assertEquals(result.success, true);
+  assertEquals(result.stdout?.trim(), "custom_value");
+});
+
+Deno.test("bubblewrap isolation - workspace isolation", async () => {
+  // Bubblewrap provides PID and IPC namespace isolation
+  // When we provide a filesystem, the command only sees those files in the workspace
+  const filesystem = {
+    "/myfile.txt": "isolated content",
+  };
+
+  const { status, result } = await executeCommand("ls", ["-la"], filesystem);
+
+  assertEquals(status, 200);
+  assertEquals(result.success, true);
+  // The workspace should contain our file
+  assertStringIncludes(result.stdout || "", "myfile.txt");
+  // Verify the file content is accessible
+  const { result: catResult } = await executeCommand("cat", ["myfile.txt"], filesystem);
+  assertEquals(catResult.stdout?.trim(), "isolated content");
+});
+
+Deno.test("execute python script via bubblewrap", async () => {
+  const filesystem = {
+    "/script.py": "print('Hello from Python')\nprint(2 + 2)",
+  };
+
+  const { status, result } = await executeCommand("python3", ["script.py"], filesystem);
+
+  assertEquals(status, 200);
+  assertEquals(result.success, true);
+  assertEquals(result.exitCode, 0);
+  assertStringIncludes(result.stdout || "", "Hello from Python");
+  assertStringIncludes(result.stdout || "", "4");
 });

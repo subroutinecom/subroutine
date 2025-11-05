@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import { SandboxManager } from "./sandbox-manager.ts";
+import { BubblewrapManager } from "./bubblewrap-manager.ts";
 
 const app = express();
 const port = 3000;
@@ -7,6 +8,7 @@ const port = 3000;
 app.use(express.json());
 
 const sandboxManager = new SandboxManager();
+const bubblewrapManager = new BubblewrapManager();
 
 app.get("/_status", (_req: Request, res: Response) => {
   res.json({ status: "live" });
@@ -25,6 +27,41 @@ app.post("/test/executeTypescript", async (req: Request, res: Response) => {
     }
 
     const result = await sandboxManager.executeCode(code);
+
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+app.post("/test/executeCommand", async (req: Request, res: Response) => {
+  try {
+    const { command, args, filesystem, env, timeout } = req.body;
+
+    if (!command || typeof command !== "string") {
+      res.status(400).json({
+        success: false,
+        error: "Missing or invalid 'command' field in request body",
+      });
+      return;
+    }
+
+    const result = await bubblewrapManager.executeCommand(
+      command,
+      args || [],
+      {
+        filesystem,
+        env,
+        timeout,
+      },
+    );
 
     if (result.success) {
       res.json(result);
