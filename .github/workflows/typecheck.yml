@@ -29,14 +29,14 @@ jobs:
         run: deno check
         working-directory: ./sandbox
 
-      - name: Lint sandbox
+      - name: Lint
         run: deno lint
-        working-directory: ./sandbox
+        working-directory: ./
+
+      - name: Eslint
+        run: deno task eslint
 
       - name: Typecheck subroutine-server
         run: deno check server.tsx
         working-directory: ./subroutine-server
 
-      - name: Lint subroutine-server
-        run: deno lint
-        working-directory: ./subroutine-server
