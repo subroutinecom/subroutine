@@ -31,6 +31,9 @@ services:
     expose:
       - 3001
     volumes:
+      - subroutine-server-node-modules:/app/subroutine-server/node_modules
+      - subroutine-server-react-router:/app/subroutine-server/.react-router
+
       - ./subroutine-server:/app/subroutine-server
       - ./eslint:/app/eslint
     healthcheck:
@@ -49,3 +52,9 @@ services:
         condition: service_healthy
       subroutine-server:
         condition: service_healthy
+
+volumes:
+  subroutine-server-node-modules:
+    driver: local
+  subroutine-server-react-router:
+    driver: local
