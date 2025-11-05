@@ -5,6 +5,7 @@
     "npm:@react-router/node@^7.9.2": "7.9.5_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:@react-router/serve@^7.9.2": "7.9.5_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_express@4.21.2_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:@tailwindcss/vite@^4.1.13": "4.1.16_vite@7.2.0__@types+node@22.19.0__picomatch@4.0.3_@types+node@22.19.0",
+    "npm:@types/node@*": "24.2.0",
     "npm:@types/node@22": "22.19.0",
     "npm:@types/react-dom@*": "19.2.2_@types+react@18.3.26",
     "npm:@types/react-dom@^18.3.5": "18.3.7_@types+react@18.3.26",
@@ -23,6 +24,7 @@
     "npm:tailwindcss@^4.1.13": "4.1.16",
     "npm:typescript@^5.9.2": "5.9.3",
     "npm:vite-tsconfig-paths@^5.1.4": "5.1.4_vite@7.2.0__@types+node@22.19.0__picomatch@4.0.3_typescript@5.9.3_@types+node@22.19.0",
+    "npm:vite@*": "7.2.0_@types+node@22.19.0_picomatch@4.0.3",
     "npm:vite@^7.1.7": "7.2.0_@types+node@22.19.0_picomatch@4.0.3"
   },
   "npm": {
@@ -742,7 +744,13 @@
     "@types/node@22.19.0": {
       "integrity": "sha512-xpr/lmLPQEj+TUnHmR+Ab91/glhJvsqcjB+yY0Ix9GO70H6Lb4FHH5GeqdOE5btAx7eIMwuHkp4H2MSkLcqWbA==",
       "dependencies": [
-        "undici-types"
+        "undici-types@6.21.0"
+      ]
+    },
+    "@types/node@24.2.0": {
+      "integrity": "sha512-3xyG3pMCq3oYCNg7/ZP+E1ooTaGB4cG8JWRsqqOYQdbWNY4zbaV0Ennrd7stjiJEFZCaybcIgpTjJWHRfBSIDw==",
+      "dependencies": [
+        "undici-types@7.10.0"
       ]
     },
     "@types/prop-types@15.7.15": {
@@ -1876,6 +1884,9 @@
     "undici-types@6.21.0": {
       "integrity": "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="
     },
+    "undici-types@7.10.0": {
+      "integrity": "sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag=="
+    },
     "unpipe@1.0.0": {
       "integrity": "sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ=="
     },
@@ -1939,7 +1950,7 @@
     "vite@7.2.0_@types+node@22.19.0_picomatch@4.0.3": {
       "integrity": "sha512-C/Naxf8H0pBx1PA4BdpT+c/5wdqI9ILMdwjSMILw7tVIh3JsxzZqdeTLmmdaoh5MYUEOyBnM9K3o0DzoZ/fe+w==",
       "dependencies": [
-        "@types/node",
+        "@types/node@22.19.0",
         "esbuild",
         "fdir",
         "picomatch",
@@ -1951,7 +1962,7 @@
         "fsevents"
       ],
       "optionalPeers": [
-        "@types/node"
+        "@types/node@22.19.0"
       ],
       "bin": true
     },
@@ -1991,12 +2002,14 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:@types/node@*",
       "npm:@types/react-dom@^18.3.5",
       "npm:@types/react@^18.3.18",
       "npm:react-dom@^18.3.1",
       "npm:react-router-dom@^7.1.1",
       "npm:react-router@^7.1.1",
-      "npm:react@^18.3.1"
+      "npm:react@^18.3.1",
+      "npm:vite@*"
     ],
     "packageJson": {
       "dependencies": [

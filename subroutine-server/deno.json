@@ -14,12 +14,13 @@
     "jsx": "react-jsx",
     "jsxImportSource": "react",
     "strict": true,
-    "lib": ["dom", "dom.iterable", "esnext"]
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "types": ["npm:@types/node", "npm:vite/client"]
   },
   "tasks": {
     "lint": "npx eslint",
-    "check": "deno check server.tsx",
-    "dev": "deno run -A npm:@react-router/dev dev",
+    "check": "npm run typecheck",
+    "dev": "deno run --sloppy-imports -A npm:@react-router/dev dev",
     "build": "deno run -A npm:@react-router/dev build",
     "start": "deno run -A npm:@react-router/serve ./build/server/index.js"
   }
