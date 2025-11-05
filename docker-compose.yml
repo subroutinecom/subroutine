@@ -10,3 +10,10 @@ services:
     volumes:
       - ./sandbox:/app/sandbox
       - ./eslint:/app/eslint
+  
+  tests:
+    build:
+      context: .
+      dockerfile: ./tests/Dockerfile
+    depends_on:
+      - sandbox
