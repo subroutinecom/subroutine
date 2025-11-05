@@ -1,5 +1,5 @@
 {
-  "workspace": ["./sandbox", "./tests"],
+  "workspace": ["./sandbox", "./tests", "subroutine-server"],
   "tasks": {
     "check": "deno check --all",
     "lint": "npx eslint"
