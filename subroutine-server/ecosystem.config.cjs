@@ -3,10 +3,8 @@ module.exports = {
   apps: [
     {
       name: "subroutine-server",
-      interpreter: "deno",
-      script: "server.tsx",
-      interpreter_args:
-        "run --allow-net --allow-read --allow-env --allow-write",
+      script: "deno",
+      args: "task dev",
       autorestart: true,
 
       watch: ["*.tsx", "*.ts", "*.js", "*.json", "app/**/*.tsx", "app/**/*.ts"],
@@ -15,6 +13,8 @@ module.exports = {
 
       env: {
         NODE_ENV: "development",
+        PORT: "3001",
+        HOST: "::",
       },
     },
     {
