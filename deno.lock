@@ -2,29 +2,12 @@
   "version": "5",
   "specifiers": {
     "npm:@eslint/js@^9.5.0": "9.39.1",
-    "npm:@react-router/dev@^7.9.2": "7.9.5_@react-router+serve@7.9.5__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__express@4.21.2__typescript@5.9.3__react@19.2.0__react-dom@19.2.0___react@19.2.0_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_typescript@5.9.3_vite@7.2.0__@types+node@22.19.0__jiti@2.6.1__picomatch@4.0.3_@babel+core@7.28.5_react@19.2.0_react-dom@19.2.0__react@19.2.0_@types+node@22.19.0_jiti@2.6.1",
-    "npm:@react-router/node@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
-    "npm:@react-router/serve@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_express@4.21.2_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
-    "npm:@tailwindcss/vite@^4.1.13": "4.1.16_vite@7.2.0__@types+node@22.19.0__jiti@2.6.1__picomatch@4.0.3_@types+node@22.19.0_jiti@2.6.1",
-    "npm:@types/express@5": "5.0.5",
-    "npm:@types/node@22": "22.19.0",
-    "npm:@types/react-dom@^19.1.9": "19.2.2_@types+react@19.2.2",
-    "npm:@types/react@^19.1.13": "19.2.2",
     "npm:@typescript-eslint/parser@8": "8.46.3_eslint@9.39.1__jiti@2.6.1_typescript@5.9.3_jiti@2.6.1",
     "npm:eslint@^9.5.0": "9.39.1_jiti@2.6.1",
     "npm:express@^5.1.0": "5.1.0",
     "npm:globals@^16.5.0": "16.5.0",
-    "npm:isbot@^5.1.31": "5.1.32",
     "npm:jiti@^2.6.1": "2.6.1",
-    "npm:react-dom@^19.1.1": "19.2.0_react@19.2.0",
-    "npm:react-router@^7.9.2": "7.9.5_react@19.2.0_react-dom@19.2.0__react@19.2.0",
-    "npm:react@^19.1.1": "19.2.0",
-    "npm:tailwindcss@^4.1.13": "4.1.16",
-    "npm:typescript-eslint@^8.46.3": "8.46.3_eslint@9.39.1__jiti@2.6.1_typescript@5.9.3_@typescript-eslint+parser@8.46.3__eslint@9.39.1___jiti@2.6.1__typescript@5.9.3__jiti@2.6.1_jiti@2.6.1",
-    "npm:typescript@^5.9.2": "5.9.3",
-    "npm:typescript@^5.9.3": "5.9.3",
-    "npm:vite-tsconfig-paths@^5.1.4": "5.1.4_vite@7.2.0__@types+node@22.19.0__jiti@2.6.1__picomatch@4.0.3_typescript@5.9.3_@types+node@22.19.0_jiti@2.6.1",
-    "npm:vite@^7.1.7": "7.2.0_@types+node@22.19.0_jiti@2.6.1_picomatch@4.0.3"
+    "npm:typescript-eslint@^8.46.3": "8.46.3_eslint@9.39.1__jiti@2.6.1_typescript@5.9.3_@typescript-eslint+parser@8.46.3__eslint@9.39.1___jiti@2.6.1__typescript@5.9.3__jiti@2.6.1_jiti@2.6.1"
   },
   "npm": {
     "@babel/code-frame@7.27.1": {
@@ -2803,43 +2786,13 @@
     "members": {
       "sandbox": {
         "dependencies": [
-          "npm:@types/express@5",
           "npm:express@^5.1.0"
         ]
       },
-      "subroutine-server": {
+      "tests": {
         "dependencies": [
-          "npm:@react-router/dev@^7.9.2",
-          "npm:@react-router/node@^7.9.2",
-          "npm:@react-router/serve@^7.9.2",
-          "npm:@tailwindcss/vite@^4.1.13",
-          "npm:isbot@^5.1.31",
-          "npm:react-dom@^19.1.1",
-          "npm:react-router@^7.9.2",
-          "npm:react@^19.1.1",
-          "npm:tailwindcss@^4.1.13",
-          "npm:vite-tsconfig-paths@^5.1.4",
-          "npm:vite@^7.1.7"
-        ],
-        "packageJson": {
-          "dependencies": [
-            "npm:@react-router/dev@^7.9.2",
-            "npm:@react-router/node@^7.9.2",
-            "npm:@react-router/serve@^7.9.2",
-            "npm:@tailwindcss/vite@^4.1.13",
-            "npm:@types/node@22",
-            "npm:@types/react-dom@^19.1.9",
-            "npm:@types/react@^19.1.13",
-            "npm:isbot@^5.1.31",
-            "npm:react-dom@^19.1.1",
-            "npm:react-router@^7.9.2",
-            "npm:react@^19.1.1",
-            "npm:tailwindcss@^4.1.13",
-            "npm:typescript@^5.9.2",
-            "npm:vite-tsconfig-paths@^5.1.4",
-            "npm:vite@^7.1.7"
-          ]
-        }
+          "jsr:@std/assert@1"
+        ]
       }
     }
   }

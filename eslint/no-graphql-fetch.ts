@@ -1,4 +1,4 @@
-import { ESLintUtils } from "@typescript-eslint/utils";
+import { ESLintUtils, TSESTree } from "@typescript-eslint/utils";
 
 const createRule = ESLintUtils.RuleCreator((name) => `http://docs.subroutine.com/rule/${name}`);
 
@@ -22,7 +22,7 @@ const rule = createRule({
         if (typeof node.value === "string" && node.value.endsWith("/graphql")) {
           // if this is an import, it's fine
           let hasImportParent = false;
-          let current: any = node.parent;
+          let current: TSESTree.Node | undefined = node.parent;
           while (current) {
             if (current.type === "ImportDeclaration") {
               hasImportParent = true;

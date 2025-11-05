@@ -1,5 +1,5 @@
 // Deno lints: strict
-import { assertEquals, assertStringIncludes } from "jsr:@std/assert";
+import { assertEquals, assertStringIncludes } from "@std/assert";
 
 interface TestResponse {
   status: number;
