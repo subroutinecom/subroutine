@@ -25,13 +25,13 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Cache dependencies
-        run: deno cache --workspace
-        working-directory: ./
-      
       - name: Deno install
         run: deno install
         working-directory: ./
+
+      - name: Deno install (sandbox)
+        run: deno install
+        working-directory: ./sandbox
 
       - name: Typecheck sandbox
         run: deno check
