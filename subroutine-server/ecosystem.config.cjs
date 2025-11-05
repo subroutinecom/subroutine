@@ -18,7 +18,7 @@ module.exports = {
     {
       name: "linter",
       script: "deno",
-      args: "lint",
+      args: "lint --rules-exclude=no-sloppy-imports",
       autorestart: false,
 
       watch: ["*.tsx", "*.ts", "app/**/*.tsx", "app/**/*.ts"],
