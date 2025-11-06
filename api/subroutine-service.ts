@@ -181,7 +181,11 @@ async function executeInSandbox(
       body: JSON.stringify({ code: codeToExecute }),
     });
 
-    const sandboxResult = await response.json();
+    const sandboxResult = (await response.json()) as {
+      success?: boolean;
+      result?: Record<string, any>;
+      error?: string;
+    };
 
     if (!response.ok) {
       throw new Error(

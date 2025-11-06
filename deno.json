@@ -1,5 +1,5 @@
 {
-  "workspace": ["./sandbox", "./tests", "./subroutine-server"],
+  "workspace": ["./api", "./sandbox", "./tests", "./subroutine-server"],
   "unstable": ["sloppy-imports"],
   "tasks": {
     "check": "deno check --sloppy-imports",
