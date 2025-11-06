@@ -1,7 +1,7 @@
 {
   "workspace": ["./sandbox", "./tests", "subroutine-server"],
   "tasks": {
-    "check": "deno check --all",
+    "check": "deno check --sloppy-imports --all",
     "eslint": "npx eslint"
   },
   "fmt": {
@@ -11,5 +11,8 @@
     "semiColons": true,
     "singleQuote": false,
     "proseWrap": "preserve"
+  },
+  "imports": {
+    "vite": "npm:vite@^7.2.0"
   }
 }
