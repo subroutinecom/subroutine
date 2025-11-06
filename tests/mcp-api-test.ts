@@ -58,9 +58,9 @@ function makeRequest(
 // Wait for services to be fully ready
 await new Promise((resolve) => setTimeout(resolve, 5000));
 
-Deno.test("subroutine-server health check", async () => {
+Deno.test("admin-panel health check", async () => {
   const response = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: "/status",
     method: "GET",
@@ -74,7 +74,7 @@ Deno.test("subroutine-server health check", async () => {
 Deno.test("create subroutine via REST API", async () => {
   const response = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -111,7 +111,7 @@ Deno.test("get specific subroutine by ID", async () => {
   // First create a subroutine
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -125,7 +125,7 @@ Deno.test("get specific subroutine by ID", async () => {
 
   // Then retrieve it
   const getResponse = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: `/api/subroutines/${created.id}`,
     method: "GET",
@@ -143,7 +143,7 @@ Deno.test("list all subroutines", async () => {
   // Create at least one subroutine
   await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -154,7 +154,7 @@ Deno.test("list all subroutines", async () => {
 
   // List all subroutines
   const response = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: "/api/subroutines",
     method: "GET",
@@ -176,7 +176,7 @@ Deno.test("run a subroutine", async () => {
   // First create a subroutine
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -191,7 +191,7 @@ Deno.test("run a subroutine", async () => {
   // Then run it
   const runResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -222,7 +222,7 @@ Deno.test("get run status and wait for completion", async () => {
   // Create and run a subroutine
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -236,7 +236,7 @@ Deno.test("get run status and wait for completion", async () => {
 
   const runResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -253,7 +253,7 @@ Deno.test("get run status and wait for completion", async () => {
 
   // Check run status
   const statusResponse = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: `/api/runs/${run.id}`,
     method: "GET",
@@ -281,7 +281,7 @@ Deno.test("list all runs", async () => {
   // Create and run a subroutine to ensure there's at least one run
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -295,7 +295,7 @@ Deno.test("list all runs", async () => {
 
   await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -306,7 +306,7 @@ Deno.test("list all runs", async () => {
 
   // List all runs
   const response = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: "/api/runs",
     method: "GET",
@@ -322,7 +322,7 @@ Deno.test("list all runs", async () => {
 
 Deno.test("get non-existent subroutine returns 404", async () => {
   const response = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: "/api/subroutines/non-existent-id",
     method: "GET",
@@ -341,7 +341,7 @@ Deno.test("get non-existent subroutine returns 404", async () => {
 Deno.test("run non-existent subroutine returns 404", async () => {
   const response = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines/non-existent-id/run",
       method: "POST",
@@ -362,7 +362,7 @@ Deno.test("run non-existent subroutine returns 404", async () => {
 
 Deno.test("get non-existent run returns 404", async () => {
   const response = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: "/api/runs/non-existent-id",
     method: "GET",
@@ -381,7 +381,7 @@ Deno.test("get non-existent run returns 404", async () => {
 Deno.test("create subroutine without request field returns 400", async () => {
   const response = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -408,7 +408,7 @@ Deno.test("create subroutine without request field returns 400", async () => {
 Deno.test("create multiple subroutines have unique IDs", async () => {
   const response1 = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -419,7 +419,7 @@ Deno.test("create multiple subroutines have unique IDs", async () => {
 
   const response2 = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -440,7 +440,7 @@ Deno.test("multiple runs of same subroutine have unique IDs", async () => {
   // Create a subroutine
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -455,7 +455,7 @@ Deno.test("multiple runs of same subroutine have unique IDs", async () => {
   // Run it twice
   const run1Response = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -466,7 +466,7 @@ Deno.test("multiple runs of same subroutine have unique IDs", async () => {
 
   const run2Response = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -501,7 +501,7 @@ Deno.test("subroutine actually executes addition in sandbox", async () => {
   // Create a subroutine that adds numbers
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -523,7 +523,7 @@ Deno.test("subroutine actually executes addition in sandbox", async () => {
   // Run it with custom inputs
   const runResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -540,7 +540,7 @@ Deno.test("subroutine actually executes addition in sandbox", async () => {
 
   // Check that it actually computed the sum
   const statusResponse = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: `/api/runs/${run.id}`,
     method: "GET",
@@ -566,7 +566,7 @@ Deno.test("subroutine executes fibonacci in sandbox", async () => {
   // Create a subroutine that generates fibonacci sequence
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -581,7 +581,7 @@ Deno.test("subroutine executes fibonacci in sandbox", async () => {
   // Run it
   const runResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -597,7 +597,7 @@ Deno.test("subroutine executes fibonacci in sandbox", async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   const statusResponse = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: `/api/runs/${run.id}`,
     method: "GET",
@@ -619,7 +619,7 @@ Deno.test("subroutine with string reversal executes correctly", async () => {
   // Create a subroutine that reverses strings
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -634,7 +634,7 @@ Deno.test("subroutine with string reversal executes correctly", async () => {
   // Run it with custom text
   const runResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -650,7 +650,7 @@ Deno.test("subroutine with string reversal executes correctly", async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   const statusResponse = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: `/api/runs/${run.id}`,
     method: "GET",
@@ -672,7 +672,7 @@ Deno.test("default hello world with custom name input", async () => {
   // Create a generic subroutine (should use default hello world)
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -687,7 +687,7 @@ Deno.test("default hello world with custom name input", async () => {
   // Run with custom name
   const runResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -703,7 +703,7 @@ Deno.test("default hello world with custom name input", async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   const statusResponse = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: `/api/runs/${run.id}`,
     method: "GET",
@@ -730,7 +730,7 @@ Deno.test("multiplication subroutine executes correctly", async () => {
   // Create a subroutine that multiplies numbers
   const createResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: "/api/subroutines",
       method: "POST",
@@ -745,7 +745,7 @@ Deno.test("multiplication subroutine executes correctly", async () => {
   // Run with custom inputs
   const runResponse = await makeRequest(
     {
-      hostname: "subroutine-server",
+      hostname: "admin-panel",
       port: 3003,
       path: `/api/subroutines/${subroutine.id}/run`,
       method: "POST",
@@ -761,7 +761,7 @@ Deno.test("multiplication subroutine executes correctly", async () => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   const statusResponse = await makeRequest({
-    hostname: "subroutine-server",
+    hostname: "admin-panel",
     port: 3003,
     path: `/api/runs/${run.id}`,
     method: "GET",

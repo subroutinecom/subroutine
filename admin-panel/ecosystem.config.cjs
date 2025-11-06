@@ -2,7 +2,7 @@ module.exports = {
   exp_backoff_restart_delay: 100,
   apps: [
     {
-      name: "subroutine-server",
+      name: "admin-panel",
       script: "deno",
       args: "task dev",
       autorestart: true,

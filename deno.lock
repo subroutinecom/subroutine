@@ -2890,21 +2890,7 @@
       "npm:vite@^7.2.0"
     ],
     "members": {
-      "api": {
-        "dependencies": [
-          "npm:@modelcontextprotocol/sdk@^1.21.0",
-          "npm:express@^5.1.0",
-          "npm:nanoid@^5.1.6",
-          "npm:zod@^3.24.1"
-        ]
-      },
-      "sandbox": {
-        "dependencies": [
-          "npm:@types/express@*",
-          "npm:express@^5.1.0"
-        ]
-      },
-      "subroutine-server": {
+      "admin-panel": {
         "dependencies": [
           "npm:@react-router/dev@^7.9.2",
           "npm:@react-router/node@^7.9.2",
@@ -2922,6 +2908,20 @@
           "npm:vite-tsconfig-paths@^5.1.4",
           "npm:vite@*",
           "npm:vite@^7.1.7"
+        ]
+      },
+      "api": {
+        "dependencies": [
+          "npm:@modelcontextprotocol/sdk@^1.21.0",
+          "npm:express@^5.1.0",
+          "npm:nanoid@^5.1.6",
+          "npm:zod@^3.24.1"
+        ]
+      },
+      "sandbox": {
+        "dependencies": [
+          "npm:@types/express@*",
+          "npm:express@^5.1.0"
         ]
       },
       "tests": {

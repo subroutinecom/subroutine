@@ -8,10 +8,10 @@ RUN npm install -g pm2
 
 WORKDIR /app
 
-COPY ./subroutine-server ./subroutine-server
+COPY ./admin-panel ./admin-panel
 COPY ./eslint ./eslint
 COPY ./eslint.config.ts ./eslint.config.ts
 
-WORKDIR /app/subroutine-server
+WORKDIR /app/admin-panel
 
 CMD ["./entrypoint.sh", "--run"]
