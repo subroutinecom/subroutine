@@ -1,5 +1,5 @@
 {
-  "exclude": [".react-router/"],
+  "exclude": [".react-router/", ".vite/"],
   "imports": {
     "@react-router/node": "npm:@react-router/node@^7.9.2",
     "@react-router/serve": "npm:@react-router/serve@^7.9.2",

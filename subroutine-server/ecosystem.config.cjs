@@ -23,7 +23,7 @@ module.exports = {
 
       watch: ["*.tsx", "*.ts", "app/**/*.tsx", "app/**/*.ts"],
 
-      ignore_watch: ["node_modules", ".git"],
+      ignore_watch: ["node_modules", ".git", ".vite"],
     },
   ],
 };

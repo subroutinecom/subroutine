@@ -3,7 +3,7 @@
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
     "express": "npm:express@^5.1.0",
     "nanoid": "npm:nanoid@^5.1.6",
-    "zod": "npm:zod@^4"
+    "zod": "npm:zod@^3.24.1"
   },
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],

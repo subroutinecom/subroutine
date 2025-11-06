@@ -16,6 +16,7 @@
     "npm:tailwindcss@^4.1.13": "4.1.16",
     "npm:typescript@^5.9.2": "5.9.3",
     "npm:vite-tsconfig-paths@^5.1.4": "5.1.4_vite@7.2.0__picomatch@4.0.3_typescript@5.9.3",
+    "npm:vite@*": "7.2.0_picomatch@4.0.3",
     "npm:vite@^7.1.7": "7.2.0_picomatch@4.0.3"
   },
   "npm": {
