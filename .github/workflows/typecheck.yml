@@ -29,13 +29,9 @@ jobs:
         run: deno install
         working-directory: ./
 
-      - name: Deno install (sandbox)
-        run: deno install
-        working-directory: ./sandbox
-
       - name: Typecheck sandbox
-        run: deno check
-        working-directory: ./sandbox
+        run: deno check --sloppy-imports
+        working-directory: ./
 
       - name: Lint
         run: deno lint
