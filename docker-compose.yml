@@ -44,19 +44,19 @@ services:
       sandbox:
         condition: service_healthy
 
-  subroutine-server:
+  admin-panel:
     build:
       context: .
-      dockerfile: ./subroutine-server/Dockerfile
+      dockerfile: ./admin-panel/Dockerfile
     ports:
       - "3002:3002"
     expose:
       - 3002
     volumes:
-      - subroutine-server-node-modules:/app/subroutine-server/node_modules
-      - subroutine-server-react-router:/app/subroutine-server/.react-router
+      - admin-panel-node-modules:/app/admin-panel/node_modules
+      - admin-panel-react-router:/app/admin-panel/.react-router
 
-      - ./subroutine-server:/app/subroutine-server
+      - ./admin-panel:/app/admin-panel
       - ./eslint:/app/eslint
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3002/"]
@@ -76,13 +76,13 @@ services:
         condition: service_healthy
       api:
         condition: service_healthy
-      subroutine-server:
+      admin-panel:
         condition: service_healthy
 
 volumes:
   api-node-modules:
     driver: local
-  subroutine-server-node-modules:
+  admin-panel-node-modules:
     driver: local
-  subroutine-server-react-router:
+  admin-panel-react-router:
     driver: local
