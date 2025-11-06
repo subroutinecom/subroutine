@@ -2,11 +2,9 @@ FROM ubuntu:noble
 
 RUN apt-get update && apt-get install -y curl unzip ca-certificates nginx
 
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-  apt-get install -y nodejs
-RUN npm install -g yarn pm2
-
 RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -y v2.5.6
+RUN apt-get install -y npm
+RUN npm install -g pm2
 
 WORKDIR /app
 

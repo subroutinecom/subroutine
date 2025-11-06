@@ -10,17 +10,19 @@
     "npm:@react-router/serve@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_express@4.21.2_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
     "npm:@tailwindcss/vite@^4.1.13": "4.1.16_vite@7.2.0__@types+node@22.19.0__picomatch@4.0.3_@types+node@22.19.0",
     "npm:@types/express@*": "5.0.5",
-    "npm:@types/node@22": "22.19.0",
+    "npm:@types/express@5": "5.0.5",
     "npm:@types/node@^24.2.0": "24.2.0",
     "npm:@types/react-dom@^19.1.9": "19.2.2_@types+react@19.2.2",
     "npm:@types/react@^19.1.13": "19.2.2",
     "npm:@typescript-eslint/utils@^8.46.3": "8.46.3_eslint@9.39.1_typescript@5.9.3",
+    "npm:arg@5": "5.0.2",
     "npm:debug@^4.4.3": "4.4.3",
     "npm:eslint@9": "9.39.1",
     "npm:eslint@^9.39.1": "9.39.1",
     "npm:express@^5.1.0": "5.1.0",
     "npm:globals@^16.5.0": "16.5.0",
     "npm:isbot@^5.1.31": "5.1.32",
+    "npm:nanoid@^5.1.6": "5.1.6",
     "npm:react-dom@^19.1.1": "19.2.0_react@19.2.0",
     "npm:react-router@^7.9.2": "7.9.5_react@19.2.0_react-dom@19.2.0__react@19.2.0",
     "npm:react@^19.1.1": "19.2.0",
@@ -28,8 +30,10 @@
     "npm:typescript-eslint@^8.46.3": "8.46.3_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.46.3__eslint@9.39.1__typescript@5.9.3",
     "npm:typescript@^5.9.2": "5.9.3",
     "npm:vite-tsconfig-paths@^5.1.4": "5.1.4_vite@7.2.0__@types+node@22.19.0__picomatch@4.0.3_typescript@5.9.3_@types+node@22.19.0",
+    "npm:vite@7": "7.2.0_@types+node@22.19.0_picomatch@4.0.3",
     "npm:vite@^7.1.7": "7.2.0_@types+node@22.19.0_picomatch@4.0.3",
-    "npm:vite@^7.2.0": "7.2.0_@types+node@22.19.0_picomatch@4.0.3"
+    "npm:vite@^7.2.0": "7.2.0_@types+node@22.19.0_picomatch@4.0.3",
+    "npm:zod@3": "3.25.76"
   },
   "jsr": {
     "@std/assert@1.0.15": {
@@ -2149,6 +2153,10 @@
       "integrity": "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==",
       "bin": true
     },
+    "nanoid@5.1.6": {
+      "integrity": "sha512-c7+7RQ+dMB5dPwwCp4ee1/iV/q2P6aK1mTZcfr1BTuVlyW9hJYiMPybJCcnBlQtuSmTIWNeazm/zqNoZSSElBg==",
+      "bin": true
+    },
     "natural-compare@1.4.0": {
       "integrity": "sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw=="
     },
@@ -2305,7 +2313,7 @@
     "postcss@8.5.6": {
       "integrity": "sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==",
       "dependencies": [
-        "nanoid",
+        "nanoid@3.3.11",
         "picocolors",
         "source-map-js"
       ]
@@ -2899,6 +2907,29 @@
         ]
       },
       "subroutine-server": {
+        "dependencies": [
+          "npm:@modelcontextprotocol/sdk@^1.21.0",
+          "npm:@react-router/dev@^7.9.2",
+          "npm:@react-router/node@^7.9.2",
+          "npm:@react-router/serve@^7.9.2",
+          "npm:@tailwindcss/vite@^4.1.13",
+          "npm:@types/express@5",
+          "npm:@types/react-dom@^19.1.9",
+          "npm:@types/react@^19.1.13",
+          "npm:arg@5",
+          "npm:express@^5.1.0",
+          "npm:isbot@^5.1.31",
+          "npm:nanoid@^5.1.6",
+          "npm:react-dom@^19.1.1",
+          "npm:react-router@^7.9.2",
+          "npm:react@^19.1.1",
+          "npm:tailwindcss@^4.1.13",
+          "npm:typescript@^5.9.2",
+          "npm:vite-tsconfig-paths@^5.1.4",
+          "npm:vite@7",
+          "npm:vite@^7.1.7",
+          "npm:zod@3"
+        ],
         "packageJson": {
           "dependencies": [
             "npm:@modelcontextprotocol/sdk@^1.21.0",
@@ -2906,7 +2937,6 @@
             "npm:@react-router/node@^7.9.2",
             "npm:@react-router/serve@^7.9.2",
             "npm:@tailwindcss/vite@^4.1.13",
-            "npm:@types/node@22",
             "npm:@types/react-dom@^19.1.9",
             "npm:@types/react@^19.1.13",
             "npm:express@^5.1.0",

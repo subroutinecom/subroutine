@@ -21,6 +21,7 @@ module.exports = {
         "--allow-read",
         "--allow-env",
         "--sloppy-imports",
+        "--node-modules-dir",
       ],
       autorestart: true,
 

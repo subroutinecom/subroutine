@@ -30,9 +30,8 @@ jobs:
         working-directory: ./
 
       - name: Typecheck
-        run: deno check --sloppy-imports
-        # Must be scoped to sandbox for now, subroutine-server must be fixed to run check
-        working-directory: ./sandbox
+        run: deno check
+        working-directory: ./
 
       - name: Lint
         run: deno lint
