@@ -36,9 +36,58 @@ const subroutines: Map<string, Subroutine> = new Map();
 const runs: Map<string, Run> = new Map();
 
 function generateMockCode(request: string): string {
+  // Generate different examples based on the request
+  const lowerRequest = request.toLowerCase();
+
+  if (lowerRequest.includes("add") || lowerRequest.includes("sum")) {
+    return `// Generated from: ${request}
+export async function main(ctx: any, inputs: any) {
+  const a = inputs?.a ?? 5;
+  const b = inputs?.b ?? 10;
+  return { result: a + b, message: \`Added \${a} + \${b} = \${a + b}\` };
+}`;
+  }
+
+  if (lowerRequest.includes("multiply") || lowerRequest.includes("product")) {
+    return `// Generated from: ${request}
+export async function main(ctx: any, inputs: any) {
+  const a = inputs?.a ?? 6;
+  const b = inputs?.b ?? 7;
+  return { result: a * b, message: \`Multiplied \${a} * \${b} = \${a * b}\` };
+}`;
+  }
+
+  if (lowerRequest.includes("fibonacci")) {
+    return `// Generated from: ${request}
+export async function main(ctx: any, inputs: any) {
+  const n = inputs?.n ?? 10;
+  const fib = [0, 1];
+  for (let i = 2; i < n; i++) {
+    fib[i] = fib[i - 1] + fib[i - 2];
+  }
+  return { sequence: fib, message: \`First \${n} Fibonacci numbers\` };
+}`;
+  }
+
+  if (lowerRequest.includes("reverse") || lowerRequest.includes("string")) {
+    return `// Generated from: ${request}
+export async function main(ctx: any, inputs: any) {
+  const text = inputs?.text ?? "Hello World";
+  const reversed = text.split('').reverse().join('');
+  return { original: text, reversed, message: \`Reversed: \${reversed}\` };
+}`;
+  }
+
+  // Default hello world example with timestamp
   return `// Generated from: ${request}
 export async function main(ctx: any, inputs: any) {
-  return { message: "Hello World!" };
+  const name = inputs?.name ?? "World";
+  const timestamp = new Date().toISOString();
+  return {
+    message: \`Hello, \${name}!\`,
+    timestamp,
+    input: inputs
+  };
 }`;
 }
 
@@ -88,23 +137,86 @@ export const runSubroutine = (params: RunSubroutineRequest): Run => {
 
   runs.set(runId, run);
 
-  // Simulate async execution - mock always succeeds with hello world
-  setTimeout(() => {
-    const currentRun = runs.get(runId);
-    if (currentRun) {
-      currentRun.status = "running";
-      currentRun.startedAt = new Date().toISOString();
-
-      setTimeout(() => {
-        currentRun.status = "succeeded";
-        currentRun.endedAt = new Date().toISOString();
-        currentRun.outputs = { message: "Hello World!" };
-      }, 100);
-    }
-  }, 10);
+  // Execute in sandbox asynchronously
+  executeInSandbox(runId, subroutine.source, params.inputs);
 
   return run;
 };
+
+async function executeInSandbox(
+  runId: string,
+  sourceCode: string,
+  inputs?: Record<string, any>,
+): Promise<void> {
+  const run = runs.get(runId);
+  if (!run) {
+    return;
+  }
+
+  try {
+    // Update status to running
+    run.status = "running";
+    run.startedAt = new Date().toISOString();
+
+    // Remove export keyword(s) and type annotations since sandbox doesn't support them
+    // Only remove type annotations in function parameters (after parameter name before comma or closing paren)
+    const executableCode = sourceCode
+      .replace(/export\s+/g, "")
+      .replace(/\(([^)]*)\)/g, (_match, params) => {
+        // Remove type annotations from function parameters
+        const cleanParams = params.replace(/:\s*[^,)]+/g, "");
+        return `(${cleanParams})`;
+      });
+
+    // Prepare the code to execute with inputs
+    const codeToExecute = `
+${executableCode}
+
+// Execute the main function with inputs
+const ctx = {};
+const inputs = ${JSON.stringify(inputs ?? {})};
+const result = await main(ctx, inputs);
+return result;
+`;
+
+    // Call the sandbox API
+    const sandboxUrl = "http://sandbox:3000/test/executeTypescript";
+    const response = await fetch(sandboxUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ code: codeToExecute }),
+    });
+
+    const sandboxResult = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        `Sandbox returned ${response.status}: ${sandboxResult.error || response.statusText}`,
+      );
+    }
+
+    if (sandboxResult.success) {
+      run.status = "succeeded";
+      run.outputs = sandboxResult.result;
+    } else {
+      run.status = "failed";
+      run.error = {
+        message: sandboxResult.error || "Unknown error",
+        details: sandboxResult,
+      };
+    }
+  } catch (error) {
+    run.status = "failed";
+    run.error = {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+    };
+  } finally {
+    run.endedAt = new Date().toISOString();
+  }
+}
 
 export const getRun = (id: string): Run | undefined => {
   return runs.get(id);
