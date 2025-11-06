@@ -47,6 +47,8 @@ services:
     build:
       context: .
       dockerfile: ./tests/Dockerfile
+    volumes:
+      - ./tests:/app/tests
     depends_on:
       sandbox:
         condition: service_healthy

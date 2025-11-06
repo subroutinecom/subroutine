@@ -158,26 +158,18 @@ async function executeInSandbox(
     run.status = "running";
     run.startedAt = new Date().toISOString();
 
-    // Remove export keyword(s) and type annotations since sandbox doesn't support them
-    // Only remove type annotations in function parameters (after parameter name before comma or closing paren)
-    const executableCode = sourceCode
-      .replace(/export\s+/g, "")
-      .replace(/\(([^)]*)\)/g, (_match, params) => {
-        // Remove type annotations from function parameters
-        const cleanParams = params.replace(/:\s*[^,)]+/g, "");
-        return `(${cleanParams})`;
-      });
-
-    // Prepare the code to execute with inputs
-    const codeToExecute = `
-${executableCode}
-
-// Execute the main function with inputs
-const ctx = {};
-const inputs = ${JSON.stringify(inputs ?? {})};
-const result = await main(ctx, inputs);
-return result;
-`;
+    // Wrap the user's code in a module that exports a default function
+    // The dynamic import will handle TypeScript transpilation automatically
+    // Use string concatenation to avoid template literal conflicts with user code
+    const codeToExecute =
+      sourceCode +
+      "\n\n// Export a default function that executes main with the provided inputs\n" +
+      "export default async function() {\n" +
+      "  const ctx = {};\n" +
+      "  const inputs = " + JSON.stringify(inputs ?? {}) + ";\n" +
+      "  const result = await main(ctx, inputs);\n" +
+      "  return result;\n" +
+      "}\n";
 
     // Call the sandbox API
     const sandboxUrl = "http://sandbox:3000/test/executeTypescript";
