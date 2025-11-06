@@ -1,5 +1,5 @@
 {
-  "workspace": ["./sandbox", "./tests"],
+  "workspace": ["./sandbox", "./tests", "./subroutine-server"],
   "tasks": {
     "check": "deno check --sloppy-imports",
     "eslint": "deno run -A --sloppy-imports npm:eslint@9"
@@ -22,5 +22,10 @@
     "globals": "npm:globals@^16.5.0",
     "typescript-eslint": "npm:typescript-eslint@^8.46.3",
     "vite": "npm:vite@^7.2.0"
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-sloppy-imports", "no-explicit-any"]
+    }
   }
 }

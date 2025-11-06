@@ -2,6 +2,7 @@
 
 - All TypeScript projects must be written in type-safe TS, and in strict mode. Don't add any usage of `any` or cast types over.
 - The runtime of choice for all projects using Typescript is Deno. Never use NodeJS directly.
+- When using Deno, we use --sloppy-imports. You Must Not add extensions (.ts) to file imports.
 
 Interactions:
 
