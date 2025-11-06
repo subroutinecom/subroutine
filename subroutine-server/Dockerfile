@@ -1,6 +1,6 @@
 FROM ubuntu:noble
 
-RUN apt-get update && apt-get install -y curl unzip ca-certificates
+RUN apt-get update && apt-get install -y curl unzip ca-certificates nginx
 
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
   apt-get install -y nodejs
