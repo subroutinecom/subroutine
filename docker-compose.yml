@@ -55,6 +55,7 @@ services:
     volumes:
       - admin-panel-node-modules:/app/admin-panel/node_modules
       - admin-panel-react-router:/app/admin-panel/.react-router
+      - admin-panel-vite:/app/admin-panel/.vite
 
       - ./admin-panel:/app/admin-panel
       - ./eslint:/app/eslint
@@ -85,4 +86,6 @@ volumes:
   admin-panel-node-modules:
     driver: local
   admin-panel-react-router:
+    driver: local
+  admin-panel-vite:
     driver: local
