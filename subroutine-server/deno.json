@@ -1,12 +1,9 @@
 {
-  "exclude": [".react-router/"],
+  "exclude": [".react-router/", ".vite/"],
   "imports": {
-    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
     "@react-router/node": "npm:@react-router/node@^7.9.2",
     "@react-router/serve": "npm:@react-router/serve@^7.9.2",
-    "express": "npm:express@^5.1.0",
     "isbot": "npm:isbot@^5.1.31",
-    "nanoid": "npm:nanoid@^5.1.6",
     "react": "npm:react@^19.1.1",
     "react-dom": "npm:react-dom@^19.1.1",
     "react-router": "npm:react-router@^7.9.2",
@@ -18,14 +15,12 @@
     "typescript": "npm:typescript@^5.9.2",
     "vite": "npm:vite@^7.1.7",
     "vite-tsconfig-paths": "npm:vite-tsconfig-paths@^5.1.4",
-    "zod": "npm:zod@^3",
     "arg": "npm:arg@^5",
-    "@types/express": "npm:@types/express@^5",
     "~/": "./app/"
   },
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
-    "types": ["npm:vite@^7/client"],
+    "types": ["npm:vite/client"],
     "jsx": "react-jsx",
     "strict": true,
     "skipLibCheck": true,

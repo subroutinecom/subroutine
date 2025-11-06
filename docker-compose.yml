@@ -22,14 +22,36 @@ services:
       retries: 20
       start_period: 10s
 
+  api:
+    build:
+      context: .
+      dockerfile: ./api/Dockerfile
+    ports:
+      - "3003:3003"
+    expose:
+      - 3003
+    volumes:
+      - api-node-modules:/app/api/node_modules
+      - ./api:/app/api
+      - ./eslint:/app/eslint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/status"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    depends_on:
+      sandbox:
+        condition: service_healthy
+
   subroutine-server:
     build:
       context: .
       dockerfile: ./subroutine-server/Dockerfile
     ports:
-      - "3001:3001"
+      - "3002:3002"
     expose:
-      - 3001
+      - 3002
     volumes:
       - subroutine-server-node-modules:/app/subroutine-server/node_modules
       - subroutine-server-react-router:/app/subroutine-server/.react-router
@@ -37,7 +59,7 @@ services:
       - ./subroutine-server:/app/subroutine-server
       - ./eslint:/app/eslint
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/"]
+      test: ["CMD", "curl", "-f", "http://localhost:3002/"]
       interval: 3s
       timeout: 5s
       retries: 20
@@ -52,10 +74,14 @@ services:
     depends_on:
       sandbox:
         condition: service_healthy
+      api:
+        condition: service_healthy
       subroutine-server:
         condition: service_healthy
 
 volumes:
+  api-node-modules:
+    driver: local
   subroutine-server-node-modules:
     driver: local
   subroutine-server-react-router:
