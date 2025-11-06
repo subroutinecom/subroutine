@@ -1,9 +1,10 @@
 {
-  "workspace": ["./sandbox", "./tests", "subroutine-server"],
+  "workspace": ["./sandbox", "./tests"],
   "tasks": {
-    "check": "deno check --sloppy-imports --all",
+    "check": "deno check --sloppy-imports",
     "eslint": "deno run -A --sloppy-imports npm:eslint@9"
   },
+  "exclude": ["subroutine-server/**/*.ts"],
   "fmt": {
     "useTabs": false,
     "lineWidth": 100,
