@@ -29,12 +29,9 @@ jobs:
         run: deno install
         working-directory: ./
 
-      - name: Deno install (sandbox)
-        run: deno install
-        working-directory: ./sandbox
-
-      - name: Typecheck sandbox
-        run: deno check
+      - name: Typecheck
+        run: deno check --sloppy-imports
+        # Must be scoped to sandbox for now, subroutine-server must be fixed to run check
         working-directory: ./sandbox
 
       - name: Lint

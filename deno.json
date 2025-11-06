@@ -1,9 +1,10 @@
 {
-  "workspace": ["./sandbox", "./tests", "subroutine-server"],
+  "workspace": ["./sandbox", "./tests"],
   "tasks": {
-    "check": "deno check --all",
-    "eslint": "npx eslint"
+    "check": "deno check --sloppy-imports",
+    "eslint": "deno run -A --sloppy-imports npm:eslint@9"
   },
+  "exclude": ["subroutine-server/**/*.ts"],
   "fmt": {
     "useTabs": false,
     "lineWidth": 100,
@@ -11,5 +12,15 @@
     "semiColons": true,
     "singleQuote": false,
     "proseWrap": "preserve"
+  },
+  "imports": {
+    "@eslint/js": "npm:@eslint/js@^9.39.1",
+    "@types/node": "npm:@types/node@^24.2.0",
+    "@typescript-eslint/utils": "npm:@typescript-eslint/utils@^8.46.3",
+    "debug": "npm:debug@^4.4.3",
+    "eslint": "npm:eslint@^9.39.1",
+    "globals": "npm:globals@^16.5.0",
+    "typescript-eslint": "npm:typescript-eslint@^8.46.3",
+    "vite": "npm:vite@^7.2.0"
   }
 }

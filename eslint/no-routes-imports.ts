@@ -1,5 +1,5 @@
 import { ESLintUtils } from "@typescript-eslint/utils";
-import path from "path";
+import path from "node:path";
 
 const createRule = ESLintUtils.RuleCreator((name) => `http://docs.subroutine.com/rule/${name}`);
 

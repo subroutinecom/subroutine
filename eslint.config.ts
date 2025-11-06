@@ -1,22 +1,22 @@
 import js from "@eslint/js";
-import { defineConfig } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
 import { localRulesPlugin } from "./eslint/index.ts";
 
-export default defineConfig([
+export default tseslint.config([
   {
     ignores: ["**/public/**", "**/.react-router/**"],
   },
 
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     plugins: {
-      js,
       local: localRulesPlugin,
     },
-    extends: ["js/recommended"],
     languageOptions: {
       parserOptions: {
         ecmaFeatures: {
@@ -26,7 +26,6 @@ export default defineConfig([
       globals: { ...globals.browser, ...globals.node },
     },
   },
-  tseslint.configs.recommended,
 
   {
     rules: {

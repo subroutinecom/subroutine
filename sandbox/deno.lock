@@ -580,6 +580,7 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:@types/express@*",
       "npm:express@^5.1.0"
     ]
   }
