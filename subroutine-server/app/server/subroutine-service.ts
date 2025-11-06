@@ -7,7 +7,6 @@ export type Subroutine = {
   outputsSchema?: Record<string, any>;
   createdFrom: {
     request: string;
-    hints?: Record<string, any>;
   };
   createdAt: string;
 };
@@ -47,17 +46,15 @@ export const generateSubroutine = (
   params: GenerateSubroutineRequest,
 ): Subroutine => {
   const subroutineId = nanoid();
-  const source = generateMockCode(language, params.request);
+  const source = generateMockCode(params.request);
 
   const subroutine: Subroutine = {
     id: subroutineId,
-    language,
     source,
     inputsSchema: {},
     outputsSchema: {},
     createdFrom: {
       request: params.request,
-      hints: params.hints || {},
     },
     createdAt: new Date().toISOString(),
   };
