@@ -492,3 +492,289 @@ Deno.test("multiple runs of same subroutine have unique IDs", async () => {
     "Both runs should reference same subroutine",
   );
 });
+
+// ========================================
+// SANDBOX EXECUTION TESTS
+// ========================================
+
+Deno.test("subroutine actually executes addition in sandbox", async () => {
+  // Create a subroutine that adds numbers
+  const createResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: "/api/subroutines",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ request: "Create a function that adds two numbers" }),
+  );
+
+  const createData = JSON.parse(createResponse.data);
+  const subroutine: Subroutine = createData.subroutine;
+
+  // Verify the generated code includes addition logic
+  assertStringIncludes(
+    subroutine.source,
+    "add",
+    "Generated code should mention addition",
+  );
+
+  // Run it with custom inputs
+  const runResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: `/api/subroutines/${subroutine.id}/run`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ inputs: { a: 15, b: 27 } }),
+  );
+
+  const runData = JSON.parse(runResponse.data);
+  const run: Run = runData.run;
+
+  // Wait for execution to complete
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  // Check that it actually computed the sum
+  const statusResponse = await makeRequest({
+    hostname: "subroutine-server",
+    port: 3003,
+    path: `/api/runs/${run.id}`,
+    method: "GET",
+  });
+
+  const statusData = JSON.parse(statusResponse.data);
+  const completedRun: Run = statusData.run;
+
+  assertEquals(completedRun.status, "succeeded", "Run should succeed");
+  assertEquals(
+    completedRun.outputs !== null,
+    true,
+    "Should have outputs",
+  );
+  assertEquals(
+    (completedRun.outputs as Record<string, unknown>)?.result,
+    42,
+    "Should compute 15 + 27 = 42",
+  );
+});
+
+Deno.test("subroutine executes fibonacci in sandbox", async () => {
+  // Create a subroutine that generates fibonacci sequence
+  const createResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: "/api/subroutines",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ request: "Generate fibonacci sequence" }),
+  );
+
+  const createData = JSON.parse(createResponse.data);
+  const subroutine: Subroutine = createData.subroutine;
+
+  // Run it
+  const runResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: `/api/subroutines/${subroutine.id}/run`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ inputs: { n: 8 } }),
+  );
+
+  const runData = JSON.parse(runResponse.data);
+  const run: Run = runData.run;
+
+  // Wait for execution
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  const statusResponse = await makeRequest({
+    hostname: "subroutine-server",
+    port: 3003,
+    path: `/api/runs/${run.id}`,
+    method: "GET",
+  });
+
+  const statusData = JSON.parse(statusResponse.data);
+  const completedRun: Run = statusData.run;
+
+  assertEquals(completedRun.status, "succeeded", "Run should succeed");
+  const outputs = completedRun.outputs as Record<string, unknown>;
+  const sequence = outputs?.sequence as number[];
+  assertEquals(Array.isArray(sequence), true, "Should return an array");
+  assertEquals(sequence[0], 0, "First fibonacci number should be 0");
+  assertEquals(sequence[1], 1, "Second fibonacci number should be 1");
+  assertEquals(sequence[7], 13, "8th fibonacci number should be 13");
+});
+
+Deno.test("subroutine with string reversal executes correctly", async () => {
+  // Create a subroutine that reverses strings
+  const createResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: "/api/subroutines",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ request: "Reverse a string" }),
+  );
+
+  const createData = JSON.parse(createResponse.data);
+  const subroutine: Subroutine = createData.subroutine;
+
+  // Run it with custom text
+  const runResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: `/api/subroutines/${subroutine.id}/run`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ inputs: { text: "TypeScript" } }),
+  );
+
+  const runData = JSON.parse(runResponse.data);
+  const run: Run = runData.run;
+
+  // Wait for execution
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  const statusResponse = await makeRequest({
+    hostname: "subroutine-server",
+    port: 3003,
+    path: `/api/runs/${run.id}`,
+    method: "GET",
+  });
+
+  const statusData = JSON.parse(statusResponse.data);
+  const completedRun: Run = statusData.run;
+
+  assertEquals(completedRun.status, "succeeded", "Run should succeed");
+  const outputs = completedRun.outputs as Record<string, unknown>;
+  assertEquals(
+    outputs?.reversed,
+    "tpircSepyT",
+    "Should reverse 'TypeScript' to 'tpircSepyT'",
+  );
+});
+
+Deno.test("default hello world with custom name input", async () => {
+  // Create a generic subroutine (should use default hello world)
+  const createResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: "/api/subroutines",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ request: "Say hello" }),
+  );
+
+  const createData = JSON.parse(createResponse.data);
+  const subroutine: Subroutine = createData.subroutine;
+
+  // Run with custom name
+  const runResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: `/api/subroutines/${subroutine.id}/run`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ inputs: { name: "Sandbox" } }),
+  );
+
+  const runData = JSON.parse(runResponse.data);
+  const run: Run = runData.run;
+
+  // Wait for execution
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  const statusResponse = await makeRequest({
+    hostname: "subroutine-server",
+    port: 3003,
+    path: `/api/runs/${run.id}`,
+    method: "GET",
+  });
+
+  const statusData = JSON.parse(statusResponse.data);
+  const completedRun: Run = statusData.run;
+
+  assertEquals(completedRun.status, "succeeded", "Run should succeed");
+  const outputs = completedRun.outputs as Record<string, unknown>;
+  assertEquals(
+    outputs?.message,
+    "Hello, Sandbox!",
+    "Should greet with custom name",
+  );
+  assertEquals(
+    typeof outputs?.timestamp,
+    "string",
+    "Should have timestamp",
+  );
+});
+
+Deno.test("multiplication subroutine executes correctly", async () => {
+  // Create a subroutine that multiplies numbers
+  const createResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: "/api/subroutines",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ request: "Multiply two numbers" }),
+  );
+
+  const createData = JSON.parse(createResponse.data);
+  const subroutine: Subroutine = createData.subroutine;
+
+  // Run with custom inputs
+  const runResponse = await makeRequest(
+    {
+      hostname: "subroutine-server",
+      port: 3003,
+      path: `/api/subroutines/${subroutine.id}/run`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    },
+    JSON.stringify({ inputs: { a: 8, b: 9 } }),
+  );
+
+  const runData = JSON.parse(runResponse.data);
+  const run: Run = runData.run;
+
+  // Wait for execution
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  const statusResponse = await makeRequest({
+    hostname: "subroutine-server",
+    port: 3003,
+    path: `/api/runs/${run.id}`,
+    method: "GET",
+  });
+
+  const statusData = JSON.parse(statusResponse.data);
+  const completedRun: Run = statusData.run;
+
+  assertEquals(completedRun.status, "succeeded", "Run should succeed");
+  const outputs = completedRun.outputs as Record<string, unknown>;
+  assertEquals(
+    outputs?.result,
+    72,
+    "Should compute 8 * 9 = 72",
+  );
+});

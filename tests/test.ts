@@ -40,13 +40,17 @@ function makeRequest(options: { hostname: string; port: number; path: string; me
 }
 
 async function executeTypescript(code: string): Promise<{ status: number; result: ExecutionResult }> {
+  // Wrap code in module format with default export
+  // Use string concatenation to avoid template literal conflicts
+  const wrappedCode = "\nexport default async function() {\n  " + code + "\n}\n";
+
   const response = await makeRequest({
     hostname: "sandbox",
     port: 3000,
     path: "/test/executeTypescript",
     method: "POST",
     headers: { "Content-Type": "application/json" }
-  }, JSON.stringify({ code }));
+  }, JSON.stringify({ code: wrappedCode }));
 
   return {
     status: response.status,
@@ -148,7 +152,8 @@ Deno.test("handle TypeScript syntax errors", async () => {
 
   assertEquals(status, 400);
   assertEquals(result.success, false);
-  assertStringIncludes(result.error || "", "Unexpected identifier");
+  // Deno's TS compiler gives different error messages like "Expected ';', got 'is'"
+  assertStringIncludes(result.error || "", "could not be parsed");
 });
 
 Deno.test("handle runtime errors", async () => {

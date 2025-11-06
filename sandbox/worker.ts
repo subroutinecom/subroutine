@@ -7,11 +7,16 @@ self.onmessage = async (event: MessageEvent<ExecuteMessage>) => {
 
   if (type === "execute") {
     try {
-      const AsyncFunction = Object.getPrototypeOf(
-        async function () {},
-      ).constructor as new (code: string) => () => Promise<unknown>;
-      const fn = new AsyncFunction(code);
-      const result = await fn();
+      // Use dynamic import with data URL - Deno will transpile TypeScript automatically
+      const moduleUrl = `data:application/typescript;base64,${btoa(code)}`;
+      const module = await import(moduleUrl);
+
+      let result;
+      if (typeof module.default === "function") {
+        result = await module.default();
+      } else {
+        result = module.default;
+      }
 
       self.postMessage({
         type: "result",
