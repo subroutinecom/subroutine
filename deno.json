@@ -1,10 +1,10 @@
 {
   "workspace": ["./sandbox", "./tests", "./subroutine-server"],
+  "unstable": ["sloppy-imports"],
   "tasks": {
     "check": "deno check --sloppy-imports",
     "eslint": "deno run -A --sloppy-imports npm:eslint@9"
   },
-  "exclude": ["subroutine-server/**/*.ts"],
   "fmt": {
     "useTabs": false,
     "lineWidth": 100,

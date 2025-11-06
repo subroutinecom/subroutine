@@ -161,18 +161,11 @@ export function createMcpServer(): McpServer {
       description: "Create and persist a subroutine from a natural request",
       inputSchema: {
         request: z.string().describe("Natural language request"),
-        hints: z
-          .object({
-            language: z.enum(["ts", "py"]).optional(),
-            framework: z.string().optional(),
-          })
-          .optional(),
       },
     },
-    ({ request, hints }) => {
+    ({ request }) => {
       const subroutine = generateSubroutine({
         request,
-        hints,
       });
 
       return {

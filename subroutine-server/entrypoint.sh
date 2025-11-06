@@ -3,10 +3,10 @@
 set -e
 
 do_run() {
-  deno install
+  deno install --node-modules-dir
 
   echo "Starting PM2 processes..."
-  pm2 start --interpreter="deno" --interpreter-args="run --allow-net --allow-read" ecosystem.config.cjs
+  pm2 start --interpreter="deno" --interpreter-args="run --allow-net --allow-read --allow-env --node-modules-dir" ecosystem.config.cjs
 
   echo "Tailing PM2 logs..."
   pm2 logs
