@@ -23,7 +23,7 @@ app.get("/status", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.post("/api/subroutines", (req, res) => {
+app.post("/api/subroutines", async (req, res) => {
   try {
     const { request } = req.body;
 
@@ -37,7 +37,7 @@ app.post("/api/subroutines", (req, res) => {
       return;
     }
 
-    const subroutine = generateSubroutine({
+    const subroutine = await generateSubroutine({
       request,
     });
 

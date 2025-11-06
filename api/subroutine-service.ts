@@ -1,4 +1,7 @@
+/// <reference lib="deno.ns" />
 import { nanoid } from "nanoid";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { generateCode } from "./agent/index";
 
 export type Subroutine = {
   id: string;
@@ -91,17 +94,43 @@ export async function main(ctx: any, inputs: any) {
 }`;
 }
 
-export const generateSubroutine = (
+export const generateSubroutine = async (
   params: GenerateSubroutineRequest,
-): Subroutine => {
+): Promise<Subroutine> => {
   const subroutineId = nanoid();
-  const source = generateMockCode(params.request);
+
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+
+  let source: string;
+  let inputsSchema: Record<string, unknown> = { type: "object", properties: {} };
+  let outputsSchema: Record<string, unknown> = { type: "object", properties: {} };
+
+  if (apiKey) {
+    const anthropic = createAnthropic({ apiKey });
+    const modelName = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-3-7-sonnet-20250219";
+    const model = anthropic(modelName);
+
+    const result = await generateCode(model, params.request);
+
+    if (result.success) {
+      source = result.source;
+      inputsSchema = result.inputsSchema;
+      outputsSchema = result.outputsSchema;
+    } else {
+      console.error("Agent code generation failed:", result.error);
+      console.log("Falling back to mock code generation");
+      source = generateMockCode(params.request);
+    }
+  } else {
+    console.log("ANTHROPIC_API_KEY not set, using mock code generation");
+    source = generateMockCode(params.request);
+  }
 
   const subroutine: Subroutine = {
     id: subroutineId,
     source,
-    inputsSchema: {},
-    outputsSchema: {},
+    inputsSchema,
+    outputsSchema,
     createdFrom: {
       request: params.request,
     },

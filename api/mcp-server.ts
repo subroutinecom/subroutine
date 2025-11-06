@@ -163,8 +163,8 @@ export function createMcpServer(): McpServer {
         request: z.string().describe("Natural language request"),
       },
     },
-    ({ request }) => {
-      const subroutine = generateSubroutine({
+    async ({ request }) => {
+      const subroutine = await generateSubroutine({
         request,
       });
 

@@ -1,6 +1,8 @@
 {
   "imports": {
+    "@ai-sdk/anthropic": "npm:@ai-sdk/anthropic@^2.0.41",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
+    "ai": "npm:ai@^5.0.89",
     "express": "npm:express@^5.1.0",
     "nanoid": "npm:nanoid@^5.1.6",
     "zod": "npm:zod@^3.24.1"
