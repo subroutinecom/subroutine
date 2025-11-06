@@ -8,7 +8,6 @@
     "npm:@react-router/serve@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_express@4.21.2_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
     "npm:@tailwindcss/vite@^4.1.13": "4.1.16_vite@7.2.0__@types+node@22.19.0__picomatch@4.0.3_@types+node@22.19.0",
     "npm:@types/express@5": "5.0.5",
-    "npm:@types/node@22": "22.19.0",
     "npm:@types/react-dom@^19.1.9": "19.2.2_@types+react@19.2.2",
     "npm:@types/react@^19.1.13": "19.2.2",
     "npm:arg@5": "5.0.2",
@@ -2279,7 +2278,6 @@
       "npm:@react-router/serve@^7.9.2",
       "npm:@tailwindcss/vite@^4.1.13",
       "npm:@types/express@5",
-      "npm:@types/node@22",
       "npm:@types/react-dom@^19.1.9",
       "npm:@types/react@^19.1.13",
       "npm:arg@5",
@@ -2292,6 +2290,7 @@
       "npm:tailwindcss@^4.1.13",
       "npm:typescript@^5.9.2",
       "npm:vite-tsconfig-paths@^5.1.4",
+      "npm:vite@7",
       "npm:vite@^7.1.7",
       "npm:zod@3"
     ],

@@ -11,7 +11,6 @@
     "npm:@tailwindcss/vite@^4.1.13": "4.1.16_vite@7.2.0__@types+node@22.19.0__picomatch@4.0.3_@types+node@22.19.0",
     "npm:@types/express@*": "5.0.5",
     "npm:@types/express@5": "5.0.5",
-    "npm:@types/node@22": "22.19.0",
     "npm:@types/node@^24.2.0": "24.2.0",
     "npm:@types/react-dom@^19.1.9": "19.2.2_@types+react@19.2.2",
     "npm:@types/react@^19.1.13": "19.2.2",
@@ -31,6 +30,7 @@
     "npm:typescript-eslint@^8.46.3": "8.46.3_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.46.3__eslint@9.39.1__typescript@5.9.3",
     "npm:typescript@^5.9.2": "5.9.3",
     "npm:vite-tsconfig-paths@^5.1.4": "5.1.4_vite@7.2.0__@types+node@22.19.0__picomatch@4.0.3_typescript@5.9.3_@types+node@22.19.0",
+    "npm:vite@7": "7.2.0_@types+node@22.19.0_picomatch@4.0.3",
     "npm:vite@^7.1.7": "7.2.0_@types+node@22.19.0_picomatch@4.0.3",
     "npm:vite@^7.2.0": "7.2.0_@types+node@22.19.0_picomatch@4.0.3",
     "npm:zod@3": "3.25.76"
@@ -2914,7 +2914,6 @@
           "npm:@react-router/serve@^7.9.2",
           "npm:@tailwindcss/vite@^4.1.13",
           "npm:@types/express@5",
-          "npm:@types/node@22",
           "npm:@types/react-dom@^19.1.9",
           "npm:@types/react@^19.1.13",
           "npm:arg@5",
@@ -2927,6 +2926,7 @@
           "npm:tailwindcss@^4.1.13",
           "npm:typescript@^5.9.2",
           "npm:vite-tsconfig-paths@^5.1.4",
+          "npm:vite@7",
           "npm:vite@^7.1.7",
           "npm:zod@3"
         ],
