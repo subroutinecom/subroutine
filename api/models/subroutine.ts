@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
-import { generateCode, createModel } from "../agent/index";
-import { db } from "../db/index";
-import { generateMockCode } from "../mocks";
+import { createModel, generateCode } from "../agent/index.ts";
+import { db } from "../db/index.ts";
+import { generateMockCode } from "../mocks.ts";
 
 export type Subroutine = {
   id: string;
@@ -20,9 +20,7 @@ export type GenerateSubroutineRequest = {
   useMock?: boolean;
 };
 
-export const generateSubroutine = async (
-  params: GenerateSubroutineRequest,
-): Promise<Subroutine> => {
+export const generateSubroutine = async (params: GenerateSubroutineRequest): Promise<Subroutine> => {
   const subroutineId = nanoid();
 
   let source: string;
@@ -39,12 +37,11 @@ export const generateSubroutine = async (
     console.log("Using mock code generation (requested via useMock flag)");
     source = generateMockCode(params.request);
   } else {
+    console.log("Using model for code generation");
     const model = createModel();
 
     if (!model) {
-      throw new Error(
-        "No model provider configured. Set MODEL_PROVIDER and MODEL_NAME environment variables.",
-      );
+      throw new Error("No model provider configured. Set MODEL_PROVIDER and MODEL_NAME environment variables.");
     }
 
     const result = await generateCode(model, params.request);
@@ -86,14 +83,8 @@ export const generateSubroutine = async (
   return subroutine;
 };
 
-export const getSubroutine = async (
-  id: string,
-): Promise<Subroutine | undefined> => {
-  const row = await db
-    .selectFrom("subroutine")
-    .selectAll()
-    .where("id", "=", id)
-    .executeTakeFirst();
+export const getSubroutine = async (id: string): Promise<Subroutine | undefined> => {
+  const row = await db.selectFrom("subroutine").selectAll().where("id", "=", id).executeTakeFirst();
 
   if (!row) {
     return undefined;
@@ -103,9 +94,7 @@ export const getSubroutine = async (
     id: row.id,
     source: row.source,
     inputsSchema: row.inputs_schema ? JSON.parse(row.inputs_schema) : undefined,
-    outputsSchema: row.outputs_schema
-      ? JSON.parse(row.outputs_schema)
-      : undefined,
+    outputsSchema: row.outputs_schema ? JSON.parse(row.outputs_schema) : undefined,
     createdFrom: {
       request: row.created_from_request,
     },
@@ -120,9 +109,7 @@ export const listSubroutines = async (): Promise<Subroutine[]> => {
     id: row.id,
     source: row.source,
     inputsSchema: row.inputs_schema ? JSON.parse(row.inputs_schema) : undefined,
-    outputsSchema: row.outputs_schema
-      ? JSON.parse(row.outputs_schema)
-      : undefined,
+    outputsSchema: row.outputs_schema ? JSON.parse(row.outputs_schema) : undefined,
     createdFrom: {
       request: row.created_from_request,
     },

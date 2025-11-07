@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
-import { db } from "../db/index";
-import { getSubroutine } from "./subroutine";
+import { db } from "../db/index.ts";
+import { getSubroutine } from "./subroutine.ts";
 
 export type Run = {
   id: string;
@@ -18,9 +18,7 @@ export type RunSubroutineRequest = {
   timeoutMs?: number;
 };
 
-export const runSubroutine = async (
-  params: RunSubroutineRequest,
-): Promise<Run> => {
+export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> => {
   const subroutine = await getSubroutine(params.subroutineId);
   if (!subroutine) {
     throw new Error("Subroutine not found");
@@ -54,19 +52,11 @@ export const runSubroutine = async (
   return run;
 };
 
-const executeInSandbox = async (
-  runId: string,
-  sourceCode: string,
-  inputs?: Record<string, any>,
-): Promise<void> => {
+const executeInSandbox = async (runId: string, sourceCode: string, inputs?: Record<string, any>): Promise<void> => {
   try {
     const startedAt = new Date().toISOString();
 
-    await db
-      .updateTable("run")
-      .set({ status: "running", started_at: startedAt })
-      .where("id", "=", runId)
-      .execute();
+    await db.updateTable("run").set({ status: "running", started_at: startedAt }).where("id", "=", runId).execute();
 
     const codeToExecute =
       sourceCode +
@@ -80,7 +70,7 @@ const executeInSandbox = async (
       "  return result;\n" +
       "}\n";
 
-    const sandboxUrl = "http://sandbox:3000/test/executeTypescript";
+    const sandboxUrl = "http://sandbox/test/executeTypescript";
     const response = await fetch(sandboxUrl, {
       method: "POST",
       headers: {
@@ -98,9 +88,7 @@ const executeInSandbox = async (
     const endedAt = new Date().toISOString();
 
     if (!response.ok) {
-      throw new Error(
-        `Sandbox returned ${response.status}: ${sandboxResult.error || response.statusText}`,
-      );
+      throw new Error(`Sandbox returned ${response.status}: ${sandboxResult.error || response.statusText}`);
     }
 
     if (sandboxResult.success) {
@@ -145,11 +133,7 @@ const executeInSandbox = async (
 };
 
 export const getRun = async (id: string): Promise<Run | undefined> => {
-  const row = await db
-    .selectFrom("run")
-    .selectAll()
-    .where("id", "=", id)
-    .executeTakeFirst();
+  const row = await db.selectFrom("run").selectAll().where("id", "=", id).executeTakeFirst();
 
   if (!row) {
     return undefined;

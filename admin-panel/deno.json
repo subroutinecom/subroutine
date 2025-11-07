@@ -1,9 +1,15 @@
 {
   "exclude": [".react-router/", ".vite/"],
   "imports": {
+    "@cap.js/server": "npm:@cap.js/server@^4.0.3",
+    "@cap.js/widget": "npm:@cap.js/widget@^0.1.31",
     "@react-router/node": "npm:@react-router/node@^7.9.2",
     "@react-router/serve": "npm:@react-router/serve@^7.9.2",
+    "@uidotdev/usehooks": "npm:@uidotdev/usehooks@^2.4.1",
+    "daisyui": "npm:daisyui@^5.4.7",
+    "date-fns": "npm:date-fns@^4.1.0",
     "isbot": "npm:isbot@^5.1.31",
+    "lucide-react": "npm:lucide-react@^0.553.0",
     "react": "npm:react@^19.1.1",
     "react-dom": "npm:react-dom@^19.1.1",
     "react-router": "npm:react-router@^7.9.2",
@@ -13,6 +19,7 @@
     "@types/react-dom": "npm:@types/react-dom@^19.1.9",
     "tailwindcss": "npm:tailwindcss@^4.1.13",
     "typescript": "npm:typescript@^5.9.2",
+    "use-stick-to-bottom": "npm:use-stick-to-bottom@^1.1.1",
     "vite": "npm:vite@^7.1.7",
     "vite-tsconfig-paths": "npm:vite-tsconfig-paths@^5.1.4",
     "arg": "npm:arg@^5",

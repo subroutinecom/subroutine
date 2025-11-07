@@ -7,8 +7,7 @@ module.exports = {
       args: "task dev",
       autorestart: true,
 
-      watch: ["*.tsx", "*.ts", "*.js", "*.json", "app/**/*.tsx", "app/**/*.ts"],
-
+      watch: ["vite.config.ts", "deno.json", "react-router.config.ts"],
       ignore_watch: ["node_modules", ".git"],
 
       env: {
