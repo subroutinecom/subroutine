@@ -25,6 +25,7 @@ export type Run = {
 
 export type GenerateSubroutineRequest = {
   request: string;
+  useMock?: boolean;
 };
 
 export type RunSubroutineRequest = {
@@ -102,23 +103,25 @@ export const generateSubroutine = async (
   let inputsSchema: Record<string, unknown> = { type: "object", properties: {} };
   let outputsSchema: Record<string, unknown> = { type: "object", properties: {} };
 
-  const model = createModel();
+  if (params.useMock) {
+    console.log("Using mock code generation (requested via useMock flag)");
+    source = generateMockCode(params.request);
+  } else {
+    const model = createModel();
 
-  if (model) {
+    if (!model) {
+      throw new Error("No model provider configured. Set MODEL_PROVIDER and MODEL_NAME environment variables.");
+    }
+
     const result = await generateCode(model, params.request);
 
-    if (result.success) {
-      source = result.source;
-      inputsSchema = result.inputsSchema;
-      outputsSchema = result.outputsSchema;
-    } else {
-      console.error("Agent code generation failed:", result.error);
-      console.log("Falling back to mock code generation");
-      source = generateMockCode(params.request);
+    if (!result.success) {
+      throw new Error(`Code generation failed: ${result.error}`);
     }
-  } else {
-    console.log("No model provider configured, using mock code generation");
-    source = generateMockCode(params.request);
+
+    source = result.source;
+    inputsSchema = result.inputsSchema;
+    outputsSchema = result.outputsSchema;
   }
 
   const subroutine: Subroutine = {
