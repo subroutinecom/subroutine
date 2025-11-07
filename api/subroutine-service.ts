@@ -1,7 +1,6 @@
 /// <reference lib="deno.ns" />
 import { nanoid } from "nanoid";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { generateCode } from "./agent/index";
+import { generateCode, createModel } from "./agent/index";
 
 export type Subroutine = {
   id: string;
@@ -99,17 +98,13 @@ export const generateSubroutine = async (
 ): Promise<Subroutine> => {
   const subroutineId = nanoid();
 
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-
   let source: string;
   let inputsSchema: Record<string, unknown> = { type: "object", properties: {} };
   let outputsSchema: Record<string, unknown> = { type: "object", properties: {} };
 
-  if (apiKey) {
-    const anthropic = createAnthropic({ apiKey });
-    const modelName = Deno.env.get("ANTHROPIC_MODEL") ?? "claude-3-7-sonnet-20250219";
-    const model = anthropic(modelName);
+  const model = createModel();
 
+  if (model) {
     const result = await generateCode(model, params.request);
 
     if (result.success) {
@@ -122,7 +117,7 @@ export const generateSubroutine = async (
       source = generateMockCode(params.request);
     }
   } else {
-    console.log("ANTHROPIC_API_KEY not set, using mock code generation");
+    console.log("No model provider configured, using mock code generation");
     source = generateMockCode(params.request);
   }
 

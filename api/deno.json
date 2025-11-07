@@ -1,6 +1,8 @@
 {
   "imports": {
     "@ai-sdk/anthropic": "npm:@ai-sdk/anthropic@^2.0.41",
+    "@ai-sdk/google-vertex": "npm:@ai-sdk/google-vertex@^3.0.58",
+    "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.64",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
     "ai": "npm:ai@^5.0.89",
     "express": "npm:express@^5.1.0",
