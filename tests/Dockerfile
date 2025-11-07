@@ -1,4 +1,4 @@
-FROM ubuntu:noble
+FROM ubuntu:noble AS base
 
 RUN apt-get update && apt-get install -y curl unzip ca-certificates
 
@@ -10,3 +10,6 @@ COPY ./tests ./tests
 
 WORKDIR /app/tests
 CMD ["deno", "test", "tests", "--allow-net", "--fail-fast", "--watch", "tests"]
+
+FROM base AS ci
+CMD ["deno", "test", "tests", "--allow-net"]

@@ -1,0 +1,4 @@
+services:
+  tests:
+    build:
+      target: ci
