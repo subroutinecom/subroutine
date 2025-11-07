@@ -1,5 +1,5 @@
 import { expect } from "@std/expect";
-import { beforeAll, it } from "@std/testing/bdd";
+import { it } from "@std/testing/bdd";
 
 interface TestResponse {
   status: number;
@@ -60,11 +60,6 @@ function makeRequest(
       });
   });
 }
-
-// Wait for services to be fully ready
-beforeAll(async () => {
-  await new Promise((resolve) => setTimeout(resolve, 5000));
-});
 
 it("admin-panel health check", async () => {
   const response = await makeRequest({
