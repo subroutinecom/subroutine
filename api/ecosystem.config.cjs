@@ -3,16 +3,9 @@ module.exports = {
   apps: [
     {
       name: "api-server",
-      interpreter: "deno",
-      script: "./server.ts",
-      interpreter_args: [
-        "run",
-        "--allow-net",
-        "--allow-read",
-        "--allow-env",
-        "--sloppy-imports",
-        "--node-modules-dir",
-      ],
+      interpreter: "none",
+      script: "deno",
+      args: ["task", "start"],
       autorestart: true,
 
       watch: ["*.tsx", "*.ts", "*.js", "*.json"],

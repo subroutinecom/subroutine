@@ -17,7 +17,7 @@
     "verbatimModuleSyntax": true
   },
   "tasks": {
-    "start": "deno run --allow-net --allow-read --allow-env --sloppy-imports --node-modules-dir server.ts",
+    "start": "deno run --env-file=.env --allow-net --allow-read --allow-env --sloppy-imports --node-modules-dir server.ts",
     "typecheck": "deno check --sloppy-imports"
   }
 }
