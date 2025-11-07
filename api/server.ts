@@ -7,13 +7,15 @@ import {
   generateSubroutine,
   getSubroutine,
   listSubroutines,
-  runSubroutine,
-  getRun,
-  listRuns,
-} from "./subroutine-service";
+} from "./models/subroutine";
+import { runSubroutine, getRun, listRuns } from "./models/run";
+import { initializeDatabase } from "./db/index";
 
 const app = express();
 const PORT = 3003;
+
+// TODO gricha - don't run migrations on startup
+await initializeDatabase();
 
 app.use(express.json());
 
@@ -45,11 +47,12 @@ app.post("/api/subroutines", async (req, res) => {
     });
 
     res.status(201).json({
-      subroutineUri: `resource://subroutines/${subroutine.id}`,
+      subroutineUri: `resource://subroutine/${subroutine.id}`,
       subroutine,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to generate subroutine";
+    const message =
+      error instanceof Error ? error.message : "Failed to generate subroutine";
     res.status(500).json({
       error: {
         code: "INTERNAL_ERROR",
@@ -59,14 +62,14 @@ app.post("/api/subroutines", async (req, res) => {
   }
 });
 
-app.get("/api/subroutines", (_req, res) => {
-  const subroutines = listSubroutines();
+app.get("/api/subroutines", async (_req, res) => {
+  const subroutines = await listSubroutines();
   res.json({ subroutines });
 });
 
 // Get a specific subroutine
-app.get("/api/subroutines/:id", (req, res) => {
-  const subroutine = getSubroutine(req.params.id);
+app.get("/api/subroutines/:id", async (req, res) => {
+  const subroutine = await getSubroutine(req.params.id);
 
   if (!subroutine) {
     res.status(404).json({
@@ -81,18 +84,18 @@ app.get("/api/subroutines/:id", (req, res) => {
   res.json({ subroutine });
 });
 
-app.post("/api/subroutines/:id/run", (req, res) => {
+app.post("/api/subroutines/:id/run", async (req, res) => {
   try {
     const { inputs, timeoutMs } = req.body;
 
-    const run = runSubroutine({
+    const run = await runSubroutine({
       subroutineId: req.params.id,
       inputs,
       timeoutMs,
     });
 
     res.status(201).json({
-      runUri: `resource://runs/${run.id}`,
+      runUri: `resource://run/${run.id}`,
       run,
     });
   } catch (error) {
@@ -115,13 +118,13 @@ app.post("/api/subroutines/:id/run", (req, res) => {
   }
 });
 
-app.get("/api/runs", (_req, res) => {
-  const runs = listRuns();
+app.get("/api/runs", async (_req, res) => {
+  const runs = await listRuns();
   res.json({ runs });
 });
 
-app.get("/api/runs/:id", (req, res) => {
-  const run = getRun(req.params.id);
+app.get("/api/runs/:id", async (req, res) => {
+  const run = await getRun(req.params.id);
 
   if (!run) {
     res.status(404).json({
