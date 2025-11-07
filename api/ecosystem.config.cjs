@@ -8,7 +8,7 @@ module.exports = {
       args: ["task", "start"],
       autorestart: true,
 
-      watch: ["*.tsx", "*.ts", "*.js", "*.json"],
+      watch: ["**/*.tsx", "**/*.ts", "**/*.js", "**/*.json"],
 
       ignore_watch: ["node_modules", ".git"],
 
