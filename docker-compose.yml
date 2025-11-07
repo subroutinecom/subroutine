@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: subroutine
+      POSTGRES_PASSWORD: subroutine
+      POSTGRES_DB: subroutine
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U subroutine"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
   sandbox:
     build:
       context: .
@@ -30,6 +47,8 @@ services:
       - "3003:3003"
     expose:
       - 3003
+    environment:
+      DATABASE_URL: postgresql://subroutine:subroutine@postgres:5432/subroutine
     volumes:
       - api-node-modules:/app/api/node_modules
       - ./api:/app/api
@@ -41,6 +60,8 @@ services:
       retries: 20
       start_period: 10s
     depends_on:
+      postgres:
+        condition: service_healthy
       sandbox:
         condition: service_healthy
 
@@ -81,6 +102,8 @@ services:
         condition: service_healthy
 
 volumes:
+  postgres-data:
+    driver: local
   api-node-modules:
     driver: local
   admin-panel-node-modules:

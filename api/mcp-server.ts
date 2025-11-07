@@ -7,10 +7,12 @@ import {
   generateSubroutine,
   getSubroutine,
   listSubroutines,
+} from "./models/subroutine";
+import {
   runSubroutine,
   getRun,
   listRuns,
-} from "./subroutine-service";
+} from "./models/run";
 
 export function createMcpServer(): McpServer {
   const server = new McpServer(
@@ -27,19 +29,19 @@ export function createMcpServer(): McpServer {
   );
 
   server.registerResource(
-    "subroutines-list",
-    "resource://subroutines",
+    "subroutine-list",
+    "resource://subroutine",
     {
-      title: "Subroutines",
+      title: "Subroutine",
       description: "List of all generated subroutines",
       mimeType: "application/json",
     },
-    () => {
-      const allSubroutines = listSubroutines();
+    async () => {
+      const allSubroutines = await listSubroutines();
       return {
         contents: [
           {
-            uri: "resource://subroutines",
+            uri: "resource://subroutine",
             mimeType: "application/json",
             text: JSON.stringify(allSubroutines, null, 2),
           },
@@ -50,11 +52,12 @@ export function createMcpServer(): McpServer {
 
   server.registerResource(
     "subroutine-item",
-    new ResourceTemplate("resource://subroutines/{id}", {
-      list: () => {
+    new ResourceTemplate("resource://subroutine/{id}", {
+      list: async () => {
+        const subroutines = await listSubroutines();
         return {
-          resources: listSubroutines().map((sub) => ({
-            uri: `resource://subroutines/${sub.id}`,
+          resources: subroutines.map((sub) => ({
+            uri: `resource://subroutine/${sub.id}`,
             name: `Subroutine ${sub.id}`,
             description: sub.createdFrom.request,
             mimeType: "application/json",
@@ -67,9 +70,9 @@ export function createMcpServer(): McpServer {
       description: "Individual subroutine resource",
       mimeType: "application/json",
     },
-    (uri, variables) => {
+    async (uri, variables) => {
       const subroutineId = variables.id as string;
-      const subroutine = getSubroutine(subroutineId);
+      const subroutine = await getSubroutine(subroutineId);
 
       if (!subroutine) {
         return {
@@ -103,11 +106,12 @@ export function createMcpServer(): McpServer {
   // Resource: run results
   server.registerResource(
     "run-item",
-    new ResourceTemplate("resource://runs/{id}", {
-      list: () => {
+    new ResourceTemplate("resource://run/{id}", {
+      list: async () => {
+        const runs = await listRuns();
         return {
-          resources: listRuns().map((run) => ({
-            uri: `resource://runs/${run.id}`,
+          resources: runs.map((run) => ({
+            uri: `resource://run/${run.id}`,
             name: `Run ${run.id}`,
             description: `Status: ${run.status}`,
             mimeType: "application/json",
@@ -120,9 +124,9 @@ export function createMcpServer(): McpServer {
       description: "Subroutine execution run",
       mimeType: "application/json",
     },
-    (uri, variables) => {
+    async (uri, variables) => {
       const runId = variables.id as string;
-      const run = getRun(runId);
+      const run = await getRun(runId);
 
       if (!run) {
         return {
@@ -176,7 +180,7 @@ export function createMcpServer(): McpServer {
             type: "text",
             text: JSON.stringify(
               {
-                subroutineUri: `resource://subroutines/${subroutine.id}`,
+                subroutineUri: `resource://subroutine/${subroutine.id}`,
               },
               null,
               2,
@@ -199,8 +203,8 @@ export function createMcpServer(): McpServer {
         timeoutMs: z.number().optional(),
       },
     },
-    ({ subroutineUri, inputs, timeoutMs }) => {
-      const match = subroutineUri.match(/^resource:\/\/subroutines\/(.+)$/);
+    async ({ subroutineUri, inputs, timeoutMs }) => {
+      const match = subroutineUri.match(/^resource:\/\/subroutine\/(.+)$/);
       if (!match) {
         return {
           content: [
@@ -220,7 +224,7 @@ export function createMcpServer(): McpServer {
       const subroutineId = match[1];
 
       try {
-        const run = runSubroutine({
+        const run = await runSubroutine({
           subroutineId,
           inputs,
           timeoutMs,
@@ -232,7 +236,7 @@ export function createMcpServer(): McpServer {
               type: "text",
               text: JSON.stringify(
                 {
-                  runUri: `resource://runs/${run.id}`,
+                  runUri: `resource://run/${run.id}`,
                   status: run.status,
                 },
                 null,
