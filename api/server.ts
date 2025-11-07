@@ -23,7 +23,7 @@ app.get("/status", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.post("/api/subroutines", (req, res) => {
+app.post("/api/subroutines", async (req, res) => {
   try {
     const { request } = req.body;
 
@@ -37,19 +37,23 @@ app.post("/api/subroutines", (req, res) => {
       return;
     }
 
-    const subroutine = generateSubroutine({
+    const useMock = req.headers["x-use-mock"] === "true";
+
+    const subroutine = await generateSubroutine({
       request,
+      useMock,
     });
 
     res.status(201).json({
       subroutineUri: `resource://subroutines/${subroutine.id}`,
       subroutine,
     });
-  } catch (_error) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to generate subroutine";
     res.status(500).json({
       error: {
         code: "INTERNAL_ERROR",
-        message: "Failed to generate subroutine",
+        message,
       },
     });
   }

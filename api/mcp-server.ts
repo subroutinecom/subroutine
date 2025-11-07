@@ -161,11 +161,13 @@ export function createMcpServer(): McpServer {
       description: "Create and persist a subroutine from a natural request",
       inputSchema: {
         request: z.string().describe("Natural language request"),
+        useMock: z.boolean().optional().describe("Use mock code generation instead of AI (for testing)"),
       },
     },
-    ({ request }) => {
-      const subroutine = generateSubroutine({
+    async ({ request, useMock }) => {
+      const subroutine = await generateSubroutine({
         request,
+        useMock,
       });
 
       return {

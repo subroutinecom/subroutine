@@ -1,4 +1,6 @@
+/// <reference lib="deno.ns" />
 import { nanoid } from "nanoid";
+import { generateCode, createModel } from "./agent/index";
 
 export type Subroutine = {
   id: string;
@@ -23,6 +25,7 @@ export type Run = {
 
 export type GenerateSubroutineRequest = {
   request: string;
+  useMock?: boolean;
 };
 
 export type RunSubroutineRequest = {
@@ -91,17 +94,41 @@ export async function main(ctx: any, inputs: any) {
 }`;
 }
 
-export const generateSubroutine = (
+export const generateSubroutine = async (
   params: GenerateSubroutineRequest,
-): Subroutine => {
+): Promise<Subroutine> => {
   const subroutineId = nanoid();
-  const source = generateMockCode(params.request);
+
+  let source: string;
+  let inputsSchema: Record<string, unknown> = { type: "object", properties: {} };
+  let outputsSchema: Record<string, unknown> = { type: "object", properties: {} };
+
+  if (params.useMock) {
+    console.log("Using mock code generation (requested via useMock flag)");
+    source = generateMockCode(params.request);
+  } else {
+    const model = createModel();
+
+    if (!model) {
+      throw new Error("No model provider configured. Set MODEL_PROVIDER and MODEL_NAME environment variables.");
+    }
+
+    const result = await generateCode(model, params.request);
+
+    if (!result.success) {
+      throw new Error(`Code generation failed: ${result.error}`);
+    }
+
+    source = result.source;
+    inputsSchema = result.inputsSchema;
+    outputsSchema = result.outputsSchema;
+  }
 
   const subroutine: Subroutine = {
     id: subroutineId,
     source,
-    inputsSchema: {},
-    outputsSchema: {},
+    inputsSchema,
+    outputsSchema,
     createdFrom: {
       request: params.request,
     },
