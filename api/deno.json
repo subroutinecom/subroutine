@@ -6,6 +6,7 @@
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
     "ai": "npm:ai@^5.0.89",
     "express": "npm:express@^5.1.0",
+    "google-auth-library": "npm:google-auth-library@^10.5.0",
     "kysely": "npm:kysely@^0.28.8",
     "nanoid": "npm:nanoid@^5.1.6",
     "pg": "npm:pg@^8.16.3",

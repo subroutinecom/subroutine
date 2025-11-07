@@ -61,38 +61,50 @@ export const createModel = (): LanguageModel | null => {
       return openai(config.model);
     }
 
-    case "vertex-anthropic": {
-      const project = Deno.env.get("VERTEX_PROJECT");
-      const location = Deno.env.get("VERTEX_LOCATION") ?? "us-east5";
+    case "vertex-anthropic":
+    case "vertex-gemini": {
+      const project = Deno.env.get("GOOGLE_VERTEX_PROJECT");
+      const defaultLocation =
+        config.provider === "vertex-anthropic" ? "us-east5" : "us-central1";
+      const location =
+        Deno.env.get("GOOGLE_VERTEX_LOCATION") ?? defaultLocation;
+      const googleServiceAccountEmial = Deno.env.get(
+        "GOOGLE_SERVICE_ACCOUNT_EMAIL",
+      );
+      const googleServiceAccountPrivateKey = Deno.env.get(
+        "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
+      );
 
       if (!project) {
-        console.error("VERTEX_PROJECT not set");
+        console.error("GOOGLE_VERTEX_PROJECT not set");
         return null;
       }
 
-      const vertexAnthropic = createVertexAnthropic({
+      let googleAuthOptions:
+        | NonNullable<Parameters<typeof createVertex>[0]>["googleAuthOptions"]
+        | undefined = undefined;
+
+      if (googleServiceAccountEmial && googleServiceAccountPrivateKey) {
+        googleAuthOptions = {
+          credentials: {
+            client_email: googleServiceAccountEmial,
+            private_key: googleServiceAccountPrivateKey,
+          },
+        };
+      }
+
+      const providerFactory =
+        config.provider === "vertex-anthropic"
+          ? createVertexAnthropic
+          : createVertex;
+
+      const vertexAnthropic = providerFactory({
         project,
         location,
+        googleAuthOptions,
       });
 
       return vertexAnthropic(config.model);
-    }
-
-    case "vertex-gemini": {
-      const project = Deno.env.get("VERTEX_PROJECT");
-      const location = Deno.env.get("VERTEX_LOCATION") ?? "us-central1";
-
-      if (!project) {
-        console.error("VERTEX_PROJECT not set");
-        return null;
-      }
-
-      const vertex = createVertex({
-        project,
-        location,
-      });
-
-      return vertex(config.model);
     }
 
     default: {

@@ -15,10 +15,7 @@ const validateCode = (code: string): { valid: boolean; errors: string[] } => {
     errors.push("Code must define an async function named 'main'");
   }
 
-  if (
-    !code.includes("type Context") &&
-    !code.includes("interface Context")
-  ) {
+  if (!code.includes("type Context") && !code.includes("interface Context")) {
     errors.push("Code must define a Context type");
   }
 
@@ -61,15 +58,17 @@ export const generateCode = async (
         generateSubroutine: {
           description: "Submit a generated TypeScript subroutine with schemas",
           inputSchema: z.object({
-            inputsSchema: z.record(z.unknown()).describe(
-              "JSON Schema for the input parameters",
-            ),
-            outputsSchema: z.record(z.unknown()).describe(
-              "JSON Schema for the output",
-            ),
-            code: z.string().describe(
-              "The TypeScript code that exports an async main function with proper types",
-            ),
+            inputsSchema: z
+              .record(z.unknown())
+              .describe("JSON Schema for the input parameters"),
+            outputsSchema: z
+              .record(z.unknown())
+              .describe("JSON Schema for the output"),
+            code: z
+              .string()
+              .describe(
+                "The TypeScript code that exports an async main function with proper types",
+              ),
           }),
           execute: (params: {
             inputsSchema: Record<string, unknown>;
@@ -86,7 +85,11 @@ export const generateCode = async (
               };
             }
 
-            const result: CapturedResult = { inputsSchema, outputsSchema, code };
+            const result: CapturedResult = {
+              inputsSchema,
+              outputsSchema,
+              code,
+            };
             capturedResult = result;
             return {
               success: true,
@@ -114,7 +117,8 @@ export const generateCode = async (
       };
     }
 
-    const { code, inputsSchema, outputsSchema } = capturedResult as CapturedResult;
+    const { code, inputsSchema, outputsSchema } =
+      capturedResult as CapturedResult;
 
     return {
       success: true,
