@@ -9,4 +9,4 @@ WORKDIR /app
 COPY ./tests ./tests
 
 WORKDIR /app/tests
-CMD ["deno", "test", "tests", "--allow-net", "--watch", "tests"]
+CMD ["deno", "test", "tests", "--allow-net", "--fail-fast", "--watch", "tests"]
