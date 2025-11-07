@@ -1,18 +1,15 @@
-import express from "express";
-import { randomUUID } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
-import { createMcpServer } from "./mcp-server";
-import {
-  generateSubroutine,
-  getSubroutine,
-  listSubroutines,
-} from "./models/subroutine";
-import { runSubroutine, getRun, listRuns } from "./models/run";
-import { initializeDatabase } from "./db/index";
+import express from "express";
+import { randomUUID } from "node:crypto";
+import process from "node:process";
+import { initializeDatabase } from "./db/index.ts";
+import { createMcpServer } from "./mcp-server.ts";
+import { getRun, listRuns, runSubroutine } from "./models/run.ts";
+import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 
 const app = express();
-const PORT = 3003;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 80;
 
 // TODO gricha - don't run migrations on startup
 await initializeDatabase();
@@ -51,8 +48,7 @@ app.post("/api/subroutines", async (req, res) => {
       subroutine,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to generate subroutine";
+    const message = error instanceof Error ? error.message : "Failed to generate subroutine";
     res.status(500).json({
       error: {
         code: "INTERNAL_ERROR",
@@ -165,9 +161,7 @@ app.post("/mcp", async (req, res) => {
       transport.onclose = () => {
         const sid = transport.sessionId;
         if (sid && transports[sid]) {
-          console.log(
-            `Transport closed for session ${sid}, removing from transports map`,
-          );
+          console.log(`Transport closed for session ${sid}, removing from transports map`);
           delete transports[sid];
         }
       };

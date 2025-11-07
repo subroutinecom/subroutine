@@ -1,9 +1,10 @@
 import express, { Request, Response } from "express";
-import { SandboxManager } from "./sandbox-manager.ts";
+import process from "node:process";
 import { BubblewrapManager } from "./bubblewrap-manager.ts";
+import { SandboxManager } from "./sandbox-manager.ts";
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 80;
 
 app.use(express.json());
 
@@ -53,15 +54,11 @@ app.post("/test/executeCommand", async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await bubblewrapManager.executeCommand(
-      command,
-      args || [],
-      {
-        filesystem,
-        env,
-        timeout,
-      },
-    );
+    const result = await bubblewrapManager.executeCommand(command, args || [], {
+      filesystem,
+      env,
+      timeout,
+    });
 
     if (result.success) {
       res.json(result);
@@ -76,6 +73,6 @@ app.post("/test/executeCommand", async (req: Request, res: Response) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

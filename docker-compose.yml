@@ -21,9 +21,7 @@ services:
       context: .
       dockerfile: ./sandbox/Dockerfile
     ports:
-      - "3000:3000"
-    expose:
-      - 3000
+      - "3000:80"
     volumes:
       - ./sandbox:/app/sandbox
       - ./eslint:/app/eslint
@@ -33,7 +31,7 @@ services:
       - apparmor:unconfined
       - seccomp:unconfined
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/_status"]
+      test: ["CMD", "curl", "-f", "http://localhost/_status"]
       interval: 3s
       timeout: 5s
       retries: 20
@@ -44,9 +42,7 @@ services:
       context: .
       dockerfile: ./api/Dockerfile
     ports:
-      - "3003:3003"
-    expose:
-      - 3003
+      - "3002:80"
     environment:
       DATABASE_URL: postgresql://subroutine:subroutine@postgres:5432/subroutine
     volumes:
@@ -54,7 +50,7 @@ services:
       - ./api:/app/api
       - ./eslint:/app/eslint
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3003/status"]
+      test: ["CMD", "curl", "-f", "http://localhost/status"]
       interval: 3s
       timeout: 5s
       retries: 20
@@ -70,9 +66,7 @@ services:
       context: .
       dockerfile: ./admin-panel/Dockerfile
     ports:
-      - "3002:3002"
-    expose:
-      - 3002
+      - "3001:80"
     volumes:
       - admin-panel-node-modules:/app/admin-panel/node_modules
       - admin-panel-react-router:/app/admin-panel/.react-router
@@ -81,7 +75,7 @@ services:
       - ./admin-panel:/app/admin-panel
       - ./eslint:/app/eslint
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/"]
+      test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 3s
       timeout: 5s
       retries: 20
