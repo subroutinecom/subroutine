@@ -1,18 +1,7 @@
-import {
-  McpServer,
-  ResourceTemplate,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import {
-  generateSubroutine,
-  getSubroutine,
-  listSubroutines,
-} from "./models/subroutine";
-import {
-  runSubroutine,
-  getRun,
-  listRuns,
-} from "./models/run";
+import { getRun, listRuns, runSubroutine } from "./models/run.ts";
+import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 
 export function createMcpServer(): McpServer {
   const server = new McpServer(
@@ -25,7 +14,7 @@ export function createMcpServer(): McpServer {
         resources: {},
         tools: {},
       },
-    },
+    }
   );
 
   server.registerResource(
@@ -47,7 +36,7 @@ export function createMcpServer(): McpServer {
           },
         ],
       };
-    },
+    }
   );
 
   server.registerResource(
@@ -100,7 +89,7 @@ export function createMcpServer(): McpServer {
           },
         ],
       };
-    },
+    }
   );
 
   // Resource: run results
@@ -154,7 +143,7 @@ export function createMcpServer(): McpServer {
           },
         ],
       };
-    },
+    }
   );
 
   // Tool: subroutine.generate
@@ -169,6 +158,8 @@ export function createMcpServer(): McpServer {
       },
     },
     async ({ request, useMock }) => {
+      console.log(`Generating subroutine for request: ${request}, useMock: ${useMock}`);
+
       const subroutine = await generateSubroutine({
         request,
         useMock,
@@ -183,12 +174,12 @@ export function createMcpServer(): McpServer {
                 subroutineUri: `resource://subroutine/${subroutine.id}`,
               },
               null,
-              2,
+              2
             ),
           },
         ],
       };
-    },
+    }
   );
 
   // Tool: subroutine.run
@@ -240,7 +231,7 @@ export function createMcpServer(): McpServer {
                   status: run.status,
                 },
                 null,
-                2,
+                2
               ),
             },
           ],
@@ -260,7 +251,7 @@ export function createMcpServer(): McpServer {
           ],
         };
       }
-    },
+    }
   );
 
   return server;

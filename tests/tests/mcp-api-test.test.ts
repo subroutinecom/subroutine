@@ -25,7 +25,7 @@ interface Run {
   error?: Record<string, unknown> | null;
 }
 
-const MOCK_HEADERS: HeadersInit = { "X-Mock": "true" };
+const MOCK_HEADERS: HeadersInit = { "x-use-mock": "true" };
 
 function makeRequest(
   options: {
