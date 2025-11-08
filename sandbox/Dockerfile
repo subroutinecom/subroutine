@@ -9,11 +9,6 @@ RUN npm install -g yarn pm2
 
 RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -y v2.5.6
 
-ARG CI
-ENV CI=${CI:-}
-ARG BUILD_SHA
-ENV BUILD_SHA=${BUILD_SHA:-}
-
 WORKDIR /app
 
 FROM base AS build
@@ -24,6 +19,10 @@ COPY ./eslint.config.ts ./eslint.config.ts
 
 WORKDIR /app/sandbox
 
+ARG CI
+ENV CI=${CI:-}
+ARG BUILD_SHA
+ENV BUILD_SHA=${BUILD_SHA:-}
 RUN  ["./manage.sh", "--build"]
 
 FROM build AS dev
@@ -40,4 +39,9 @@ COPY --from=build /app/sandbox/sandbox /release/build
 COPY ./sandbox/manage.sh /app/sandbox/manage.sh
 
 ENV NODE_ENV=production
+
+ARG CI
+ENV CI=${CI:-}
+ARG BUILD_SHA
+ENV BUILD_SHA=${BUILD_SHA:-}
 CMD ["./manage.sh", "--run"]

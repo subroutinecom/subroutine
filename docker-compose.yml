@@ -42,6 +42,7 @@ services:
     build:
       context: .
       dockerfile: ./api/Dockerfile
+      target: dev
     ports:
       - "3002:80"
     environment:
@@ -66,6 +67,7 @@ services:
     build:
       context: .
       dockerfile: ./admin-panel/Dockerfile
+      target: dev
     ports:
       - "3001:80"
     volumes:
