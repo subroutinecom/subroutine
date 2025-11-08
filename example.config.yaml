@@ -1,0 +1,14 @@
+# Subroutine Configuration
+# Copy this file to config.yaml and customize for your environment
+# Secrets (API keys, credentials) remain in .env files
+
+# AI Model Configuration
+ai:
+  # Provider: anthropic | openai | vertex-anthropic | vertex-gemini
+  provider: anthropic
+  # Model name to use
+  # Examples:
+  #   - claude-sonnet-4-5-20250929 (for Anthropic)
+  #   - gpt-4 (for OpenAI)
+  #   - gemini-2.5-pro (for Vertex AI Gemini)
+  model: claude-sonnet-4-5-20250929

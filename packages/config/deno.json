@@ -1,0 +1,10 @@
+{
+  "imports": {
+    "@std/yaml": "jsr:@std/yaml@^1.0.10",
+    "zod": "npm:zod@^4.1.12"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "verbatimModuleSyntax": true
+  }
+}
