@@ -3,6 +3,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createVertex } from "@ai-sdk/google-vertex";
 import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic";
+import { getConfig } from "@subroutine/config";
 
 type ModelProvider =
   | "anthropic"
@@ -15,30 +16,17 @@ type ProviderConfig = {
   model: string;
 };
 
-const getProviderFromEnv = (): ProviderConfig | null => {
-  const provider = Deno.env.get("MODEL_PROVIDER") as ModelProvider | undefined;
-
-  const model = Deno.env.get("MODEL_NAME");
-
-  if (!provider || !model) {
-    throw new Error("Both MODEL_PROVIDER and MODEL_NAME must be set");
-  }
+const getProviderFromConfig = async (): Promise<ProviderConfig> => {
+  const config = await getConfig();
 
   return {
-    provider,
-    model,
+    provider: config.ai.provider,
+    model: config.ai.model,
   };
 };
 
-export const createModel = (): LanguageModel | null => {
-  const config = getProviderFromEnv();
-
-  if (!config) {
-    console.log(
-      "No model provider configured. Please set appropriate environment variables.",
-    );
-    return null;
-  }
+export const createModel = async (): Promise<LanguageModel | null> => {
+  const config = await getProviderFromConfig();
 
   switch (config.provider) {
     case "anthropic": {

@@ -1,5 +1,7 @@
 {
   "imports": {
+    "@subroutine/config": "../packages/config/mod.ts",
+    "@std/yaml": "jsr:@std/yaml@^1.0.10",
     "@ai-sdk/anthropic": "npm:@ai-sdk/anthropic@^2.0.41",
     "@ai-sdk/google-vertex": "npm:@ai-sdk/google-vertex@^3.0.58",
     "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.64",

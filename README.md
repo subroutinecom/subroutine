@@ -2,8 +2,6 @@
 
 ## Setup
 
-Copy `api/.env.example` to `api/.env` and configure your model provider:
+1. **Configuration**: Copy `example.config.yaml` to `config.yaml` and configure.
 
-- Set `MODEL_PROVIDER` (anthropic, openai, vertex-anthropic, or vertex-gemini)
-- Add the corresponding API key/credentials
-- Set `MODEL_NAME`
+2. **Secrets**: Copy `api/.env.example` to `api/.env` and add API keys/credentials for your chosen provider

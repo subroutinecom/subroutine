@@ -38,10 +38,10 @@ export const generateSubroutine = async (params: GenerateSubroutineRequest): Pro
     source = generateMockCode(params.request);
   } else {
     console.log("Using model for code generation");
-    const model = createModel();
+    const model = await createModel();
 
     if (!model) {
-      throw new Error("No model provider configured. Set MODEL_PROVIDER and MODEL_NAME environment variables.");
+      throw new Error("No model provider configured. Check config.yaml for AI model settings.");
     }
 
     const result = await generateCode(model, params.request);
