@@ -1,6 +1,7 @@
 {
   "imports": {
-    "express": "npm:express@^5.1.0"
+    "express": "npm:express@^5.1.0",
+    "typescript": "npm:typescript"
   },
   "compilerOptions": {
     "types": ["npm:@types/express", "npm:@types/node"]

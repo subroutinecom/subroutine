@@ -25,6 +25,7 @@
     "npm:@react-router/serve@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_express@4.21.2_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
     "npm:@tailwindcss/vite@^4.1.13": "4.1.17_vite@7.2.0__@types+node@24.2.0__picomatch@4.0.3_@types+node@24.2.0",
     "npm:@types/express@*": "5.0.5",
+    "npm:@types/node@*": "24.2.0",
     "npm:@types/node@^24.2.0": "24.2.0",
     "npm:@types/react-dom@^19.1.9": "19.2.2_@types+react@19.2.2",
     "npm:@types/react@^19.1.13": "19.2.2",
@@ -51,6 +52,7 @@
     "npm:shadcn@latest": "3.5.0_@babel+core@7.28.5_typescript@5.9.3_zod@3.25.76_@types+node@24.2.0",
     "npm:tailwindcss@^4.1.13": "4.1.17",
     "npm:typescript-eslint@^8.46.3": "8.46.3_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.46.3__eslint@9.39.1__typescript@5.9.3",
+    "npm:typescript@*": "5.9.3",
     "npm:typescript@^5.9.2": "5.9.3",
     "npm:use-stick-to-bottom@^1.1.1": "1.1.1_react@19.2.0",
     "npm:vite-tsconfig-paths@^5.1.4": "5.1.4_vite@7.2.0__@types+node@24.2.0__picomatch@4.0.3_typescript@5.9.3_@types+node@24.2.0",
@@ -4070,7 +4072,8 @@
         "dependencies": [
           "npm:@types/express@*",
           "npm:@types/node@*",
-          "npm:express@^5.1.0"
+          "npm:express@^5.1.0",
+          "npm:typescript@*"
         ]
       },
       "tests": {
