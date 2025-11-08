@@ -17,14 +17,9 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_TAG: ${{ github.event.inputs.tag != '' && github.event.inputs.tag || github.sha }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - service: admin-panel
-            dockerfile: ./admin-panel/Dockerfile
-          - service: api
-            dockerfile: ./api/Dockerfile
+      GHCR_IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+      BUILD_SHA: ${{ github.sha }}
+      CI: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,14 +34,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push ${{ matrix.service }} image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          target: prod
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.service }}:${{ env.IMAGE_TAG }}
-          build-args: |
-            CI=true
-            BUILD_SHA=${{ github.sha }}
+      - name: Build release images via docker compose
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml build admin-panel api sandbox
+
+      - name: Push release images via docker compose
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml push admin-panel api sandbox

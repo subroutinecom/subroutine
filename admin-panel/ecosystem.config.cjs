@@ -1,3 +1,4 @@
+const process = require("node:process");
 const IS_BUILD = Boolean(process.env.IS_BUILD);
 
 const adminPanelApp = IS_BUILD
