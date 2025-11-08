@@ -1,10 +1,11 @@
+const process = require("node:process");
 const IS_BUILD = Boolean(process.env.IS_BUILD);
 
 const adminPanelApp = IS_BUILD
   ? {
       name: "admin-panel",
       script: "deno",
-      args: "task start",
+      args: "run --allow-all --node-modules-dir npm:@react-router/serve /release/build/server/index.js",
       autorestart: true,
       env: {
         NODE_ENV: "production",
