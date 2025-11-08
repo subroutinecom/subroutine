@@ -4060,6 +4060,8 @@
           "npm:@ai-sdk/google-vertex@^3.0.58",
           "npm:@ai-sdk/openai@^2.0.64",
           "npm:@modelcontextprotocol/sdk@^1.21.0",
+          "npm:@types/express@*",
+          "npm:@types/node@*",
           "npm:ai@^5.0.89",
           "npm:express@^5.1.0",
           "npm:google-auth-library@^10.5.0",
