@@ -14,7 +14,7 @@
   },
   "compilerOptions": {
     "lib": ["deno.ns", "DOM", "DOM.Iterable", "ES2022"],
-    "types": ["@types/node", "@types/express"],
+    "types": ["npm:@types/node", "npm:@types/express"],
     "strict": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true

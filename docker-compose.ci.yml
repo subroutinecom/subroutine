@@ -8,6 +8,16 @@ services:
       target: prod
       args:
         <<: *common-args
+  api:
+    build:
+      target: prod
+      args:
+        <<: *common-args
+  admin-panel:
+    build:
+      target: prod
+      args:
+        <<: *common-args
   tests:
     build:
       target: ci
