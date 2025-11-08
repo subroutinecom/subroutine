@@ -4,10 +4,11 @@ const adminPanelApp = IS_BUILD
   ? {
       name: "admin-panel",
       script: "deno",
-      args: "run --allow-all --node-modules-dir npm:@react-router/serve /release/build/server/index.js",
+      args: "run --allow-all --node-modules-dir npm:@react-router/serve /release/build/server/index.js --port 80",
       autorestart: true,
       env: {
         NODE_ENV: "production",
+        PORT: "80",
       },
     }
   : {
