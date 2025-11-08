@@ -4,7 +4,7 @@ const adminPanelApp = IS_BUILD
   ? {
       name: "admin-panel",
       script: "deno",
-      args: "run --allow-all --node-modules-dir npm:@react-router/serve ./release/build/server/index.js",
+      args: "task start",
       autorestart: true,
       env: {
         NODE_ENV: "production",
