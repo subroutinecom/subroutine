@@ -3,12 +3,12 @@
 import { ExecuteMessage } from "./sandbox-manager.ts";
 
 self.onmessage = async (event: MessageEvent<ExecuteMessage>) => {
-  const { type, code, id } = event.data;
+  const { type, code, id, contentType = "application/typescript" } = event.data;
 
   if (type === "execute") {
     try {
       // Use dynamic import with data URL - Deno will transpile TypeScript automatically
-      const moduleUrl = `data:application/typescript;base64,${btoa(code)}`;
+      const moduleUrl = `data:${contentType};base64,${btoa(code)}`;
       const module = await import(moduleUrl);
 
       let result;

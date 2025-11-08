@@ -6,7 +6,12 @@ import { localRulesPlugin } from "./eslint/index.ts";
 
 export default tseslint.config([
   {
-    ignores: ["**/public/**", "**/.react-router/**", "**/.vite/**"],
+    ignores: [
+      "**/public/**",
+      "**/.react-router/**",
+      "**/.vite/**",
+      "**/ecosystem.config.js",
+    ],
   },
 
   js.configs.recommended,

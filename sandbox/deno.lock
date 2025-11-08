@@ -2,8 +2,10 @@
   "version": "5",
   "specifiers": {
     "npm:@types/express@*": "5.0.5",
+    "npm:@types/node@*": "24.2.0",
     "npm:express@4": "4.21.2",
-    "npm:express@^5.1.0": "5.1.0"
+    "npm:express@^5.1.0": "5.1.0",
+    "npm:typescript@*": "5.9.3"
   },
   "npm": {
     "@types/body-parser@1.19.6": {
@@ -638,6 +640,10 @@
     "utils-merge@1.0.1": {
       "integrity": "sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA=="
     },
+    "typescript@5.9.3": {
+      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+      "bin": true
+    },
     "vary@1.1.2": {
       "integrity": "sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg=="
     },
@@ -648,7 +654,9 @@
   "workspace": {
     "dependencies": [
       "npm:@types/express@*",
-      "npm:express@^5.1.0"
+      "npm:@types/node@*",
+      "npm:express@^5.1.0",
+      "npm:typescript@*"
     ]
   }
 }

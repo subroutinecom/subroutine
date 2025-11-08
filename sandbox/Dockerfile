@@ -1,4 +1,4 @@
-FROM ubuntu:noble
+FROM ubuntu:noble AS base
 
 RUN apt-get update && apt-get install -y curl unzip ca-certificates bubblewrap ripgrep python3
 
@@ -9,11 +9,35 @@ RUN npm install -g yarn pm2
 
 RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -y v2.5.6
 
+ARG CI
+ENV CI=${CI:-}
+ARG BUILD_SHA
+ENV BUILD_SHA=${BUILD_SHA:-}
+
 WORKDIR /app
+
+FROM base AS build
 
 COPY ./sandbox ./sandbox
 COPY ./eslint  ./eslint
 COPY ./eslint.config.ts ./eslint.config.ts
 
 WORKDIR /app/sandbox
-CMD ["./entrypoint.sh", "--run"]
+
+RUN  ["./manage.sh", "--build"]
+
+FROM build AS dev
+
+ENV NODE_ENV=development
+WORKDIR /app/sandbox
+CMD ["./manage.sh", "--run"]
+
+FROM base AS prod
+
+WORKDIR /app/sandbox
+
+COPY --from=build /app/sandbox/sandbox /release/build
+COPY ./sandbox/manage.sh /app/sandbox/manage.sh
+
+ENV NODE_ENV=production
+CMD ["./manage.sh", "--run"]

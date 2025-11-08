@@ -20,6 +20,7 @@ services:
     build:
       context: .
       dockerfile: ./sandbox/Dockerfile
+      target: dev
     ports:
       - "3000:80"
     volumes:
