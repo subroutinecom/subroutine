@@ -1,4 +1,12 @@
+x-common-args: &common-args
+  CI: true
+  BUILD_SHA: ${BUILD_SHA:-}
+
 services:
+  sandbox:
+    build:
+      args:
+        <<: *common-args
   tests:
     build:
       target: ci
