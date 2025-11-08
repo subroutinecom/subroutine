@@ -20,7 +20,11 @@
     "verbatimModuleSyntax": true
   },
   "tasks": {
+    "build": "deno compile --allow-net --allow-read --allow-env --sloppy-imports --output api-server server.ts",
     "start": "deno run --env-file=.env --allow-net --allow-read --allow-env --sloppy-imports --node-modules-dir server.ts",
     "typecheck": "deno check --sloppy-imports"
+  },
+  "lint": {
+    "exclude": ["ecosystem.config.cjs"]
   }
 }

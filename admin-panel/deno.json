@@ -38,5 +38,8 @@
     "dev": "deno run --allow-all --node-modules-dir npm:@react-router/dev/react-router dev",
     "start": "deno run --allow-all --node-modules-dir npm:@react-router/serve ./build/server/index.js",
     "typecheck": "deno check --sloppy-imports"
+  },
+  "lint": {
+    "exclude": ["ecosystem.config.js"]
   }
 }
