@@ -40,6 +40,6 @@
     "typecheck": "deno check --sloppy-imports"
   },
   "lint": {
-    "exclude": ["ecosystem.config.js"]
+    "exclude": ["ecosystem.config.cjs"]
   }
 }
