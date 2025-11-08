@@ -34,7 +34,7 @@ FROM base AS prod
 WORKDIR /app/api
 
 COPY --from=build /app/api/api-server /release/build
-COPY ./api/ecosystem.config.cjs /app/api/ecosystem.config.js
+COPY ./api/ecosystem.config.js /app/api/ecosystem.config.js
 COPY ./api/manage.sh /app/api/manage.sh
 
 ENV NODE_ENV=production

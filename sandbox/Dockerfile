@@ -36,6 +36,7 @@ FROM base AS prod
 WORKDIR /app/sandbox
 
 COPY --from=build /app/sandbox/sandbox /release/build
+COPY ./sandbox/ecosystem.config.js /app/sandbox/ecosystem.config.js
 COPY ./sandbox/manage.sh /app/sandbox/manage.sh
 
 ENV NODE_ENV=production
