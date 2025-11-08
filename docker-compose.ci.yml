@@ -5,6 +5,7 @@ x-common-args: &common-args
 services:
   sandbox:
     build:
+      target: prod
       args:
         <<: *common-args
   tests:

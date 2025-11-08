@@ -16,14 +16,17 @@ ENV BUILD_SHA=${BUILD_SHA:-}
 
 WORKDIR /app
 
+FROM base AS build
+
 COPY ./sandbox ./sandbox
 COPY ./eslint  ./eslint
 COPY ./eslint.config.ts ./eslint.config.ts
 
 WORKDIR /app/sandbox
-CMD ["./manage.sh", "--build"]
 
-FROM base AS dev
+RUN  ["./manage.sh", "--build"]
+
+FROM build AS dev
 
 ENV NODE_ENV=development
 WORKDIR /app/sandbox
@@ -31,7 +34,10 @@ CMD ["./manage.sh", "--run"]
 
 FROM base AS prod
 
-WORKDIR /app
+WORKDIR /app/sandbox
+
+COPY --from=build /app/sandbox/sandbox /release/build
+COPY ./sandbox/manage.sh /app/sandbox/manage.sh
 
 ENV NODE_ENV=production
 CMD ["./manage.sh", "--run"]

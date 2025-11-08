@@ -2179,12 +2179,6 @@
         "fetch-blob"
       ]
     },
-    "formdata-polyfill@4.0.10": {
-      "integrity": "sha512-buewHzMvYL29jdeQTVILecSaZKnt/RJWjoZCF5OW60Z67/GmSLBkOFM7qh1PI3zFNtJbaZL5eQu1vLfazOwj4g==",
-      "dependencies": [
-        "fetch-blob"
-      ]
-    },
     "forwarded@0.2.0": {
       "integrity": "sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow=="
     },
@@ -4075,6 +4069,7 @@
       "sandbox": {
         "dependencies": [
           "npm:@types/express@*",
+          "npm:@types/node@*",
           "npm:express@^5.1.0"
         ]
       },

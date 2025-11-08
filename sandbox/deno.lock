@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "npm:@types/express@*": "5.0.5",
+    "npm:@types/node@*": "24.2.0",
     "npm:express@4": "4.21.2",
     "npm:express@^5.1.0": "5.1.0"
   },
@@ -648,6 +649,7 @@
   "workspace": {
     "dependencies": [
       "npm:@types/express@*",
+      "npm:@types/node@*",
       "npm:express@^5.1.0"
     ]
   }

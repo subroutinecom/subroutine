@@ -3,9 +3,14 @@
     "express": "npm:express@^5.1.0"
   },
   "compilerOptions": {
-    "types": ["npm:@types/express"]
+    "types": ["npm:@types/express", "npm:@types/node"]
   },
   "tasks": {
-    "lint": "npx eslint"
+    "lint": "npx eslint",
+    "dev": "deno run --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write main.ts",
+    "build": "deno compile --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write --include worker.ts main.ts"
+  },
+  "lint": {
+    "exclude": ["ecosystem.config.js"]
   }
 }
