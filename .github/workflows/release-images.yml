@@ -1,4 +1,4 @@
-name: release-images
+name: Build release images
 
 on:
   workflow_dispatch:
@@ -39,3 +39,15 @@ jobs:
 
       - name: Push release images via docker compose
         run: docker compose -f docker-compose.yml -f docker-compose.prod.yml push admin-panel api sandbox
+
+      - name: Tag images as latest
+        run: |
+          for image in admin-panel api sandbox; do
+            docker tag "${GHCR_IMAGE_PREFIX}-${image}:${IMAGE_TAG}" "${GHCR_IMAGE_PREFIX}-${image}:latest"
+          done
+
+      - name: Push latest tags
+        run: |
+          for image in admin-panel api sandbox; do
+            docker push "${GHCR_IMAGE_PREFIX}-${image}:latest"
+          done
