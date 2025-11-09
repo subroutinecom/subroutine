@@ -32,8 +32,10 @@ FROM base AS prod
 
 WORKDIR /app/admin-panel
 
-COPY --from=build /app/admin-panel/build /release/build
+COPY --from=build /app/admin-panel/build /app/admin-panel/build
 COPY --from=build /app/admin-panel/node_modules /app/admin-panel/node_modules
+
+COPY ./admin-panel/deno.json /app/admin-panel/deno.json
 COPY ./admin-panel/ecosystem.config.cjs /app/admin-panel/ecosystem.config.cjs
 COPY ./admin-panel/manage.sh /app/admin-panel/manage.sh
 
