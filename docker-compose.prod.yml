@@ -8,12 +8,15 @@ x-release-build: &release-build
 services:
   admin-panel:
     <<: *release-build
+    volumes: !reset []
     image: ${GHCR_IMAGE_PREFIX:-ghcr.io/local/subroutine}-admin-panel:${IMAGE_TAG:-dev}
 
   api:
+    volumes: !reset []
     <<: *release-build
     image: ${GHCR_IMAGE_PREFIX:-ghcr.io/local/subroutine}-api:${IMAGE_TAG:-dev}
 
   sandbox:
+    volumes: !reset []
     <<: *release-build
     image: ${GHCR_IMAGE_PREFIX:-ghcr.io/local/subroutine}-sandbox:${IMAGE_TAG:-dev}
