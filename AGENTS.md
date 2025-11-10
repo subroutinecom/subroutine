@@ -13,6 +13,7 @@ Typescript Conventions:
 Interactions:
 
 - Use docker-compose to interact with services - start, stop, build and test them through docker-compose.
+- All integration tests run inside the docker-compose stack (tests service depends on the others), so bring the test container up via docker-compose whenever you need to validate changes.
 - Services can be started once and do not need to be restarted. They are set up to watch the source code and internally restart when the code changes.
 
 Feedback Loop:

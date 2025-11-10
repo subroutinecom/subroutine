@@ -78,7 +78,7 @@ it("create subroutine via REST API", async () => {
   const response = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -104,7 +104,7 @@ it("get specific subroutine by ID", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -117,7 +117,7 @@ it("get specific subroutine by ID", async () => {
   // Then retrieve it
   const getResponse = await makeRequest({
     hostname: "api",
-    path: `/api/subroutines/${created.id}`,
+    path: `/api/subroutine/${created.id}`,
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -135,7 +135,7 @@ it("list all subroutines", async () => {
   await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -145,7 +145,7 @@ it("list all subroutines", async () => {
   // List all subroutines
   const response = await makeRequest({
     hostname: "api",
-    path: "/api/subroutines",
+    path: "/api/subroutine",
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -163,7 +163,7 @@ it("run a subroutine", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -178,7 +178,7 @@ it("run a subroutine", async () => {
   const runResponse = await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -200,7 +200,7 @@ it("get run status and wait for completion", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -214,7 +214,7 @@ it("get run status and wait for completion", async () => {
   const runResponse = await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -230,7 +230,7 @@ it("get run status and wait for completion", async () => {
   // Check run status
   const statusResponse = await makeRequest({
     hostname: "api",
-    path: `/api/runs/${run.id}`,
+    path: `/api/run/${run.id}`,
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -250,7 +250,7 @@ it("list all runs", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -264,7 +264,7 @@ it("list all runs", async () => {
   await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -274,7 +274,7 @@ it("list all runs", async () => {
   // List all runs
   const response = await makeRequest({
     hostname: "api",
-    path: "/api/runs",
+    path: "/api/run",
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -290,7 +290,7 @@ it("list all runs", async () => {
 it("get non-existent subroutine returns 404", async () => {
   const response = await makeRequest({
     hostname: "api",
-    path: "/api/subroutines/non-existent-id",
+    path: "/api/subroutine/non-existent-id",
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -305,7 +305,7 @@ it("run non-existent subroutine returns 404", async () => {
   const response = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines/non-existent-id/run",
+      path: "/api/subroutine/non-existent-id/run",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -321,7 +321,7 @@ it("run non-existent subroutine returns 404", async () => {
 it("get non-existent run returns 404", async () => {
   const response = await makeRequest({
     hostname: "api",
-    path: "/api/runs/non-existent-id",
+    path: "/api/run/non-existent-id",
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -336,7 +336,7 @@ it("create subroutine without request field returns 400", async () => {
   const response = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -354,7 +354,7 @@ it("create multiple subroutines have unique IDs", async () => {
   const response1 = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -364,7 +364,7 @@ it("create multiple subroutines have unique IDs", async () => {
   const response2 = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -384,7 +384,7 @@ it("multiple runs of same subroutine have unique IDs", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -399,7 +399,7 @@ it("multiple runs of same subroutine have unique IDs", async () => {
   const run1Response = await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -409,7 +409,7 @@ it("multiple runs of same subroutine have unique IDs", async () => {
   const run2Response = await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -435,7 +435,7 @@ it("subroutine actually executes addition in sandbox", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -453,7 +453,7 @@ it("subroutine actually executes addition in sandbox", async () => {
   const runResponse = await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -469,7 +469,7 @@ it("subroutine actually executes addition in sandbox", async () => {
   // Check that it actually computed the sum
   const statusResponse = await makeRequest({
     hostname: "api",
-    path: `/api/runs/${run.id}`,
+    path: `/api/run/${run.id}`,
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -487,7 +487,7 @@ it("subroutine executes fibonacci in sandbox", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -502,7 +502,7 @@ it("subroutine executes fibonacci in sandbox", async () => {
   const runResponse = await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -517,7 +517,7 @@ it("subroutine executes fibonacci in sandbox", async () => {
 
   const statusResponse = await makeRequest({
     hostname: "api",
-    path: `/api/runs/${run.id}`,
+    path: `/api/run/${run.id}`,
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -539,7 +539,7 @@ it("subroutine with string reversal executes correctly", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -554,7 +554,7 @@ it("subroutine with string reversal executes correctly", async () => {
   const runResponse = await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -569,7 +569,7 @@ it("subroutine with string reversal executes correctly", async () => {
 
   const statusResponse = await makeRequest({
     hostname: "api",
-    path: `/api/runs/${run.id}`,
+    path: `/api/run/${run.id}`,
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -587,7 +587,7 @@ it("default hello world with custom name input", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -602,7 +602,7 @@ it("default hello world with custom name input", async () => {
   const runResponse = await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -617,7 +617,7 @@ it("default hello world with custom name input", async () => {
 
   const statusResponse = await makeRequest({
     hostname: "api",
-    path: `/api/runs/${run.id}`,
+    path: `/api/run/${run.id}`,
     method: "GET",
     headers: MOCK_HEADERS,
   });
@@ -636,7 +636,7 @@ it("multiplication subroutine executes correctly", async () => {
   const createResponse = await makeRequest(
     {
       hostname: "api",
-      path: "/api/subroutines",
+      path: "/api/subroutine",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -651,7 +651,7 @@ it("multiplication subroutine executes correctly", async () => {
   const runResponse = await makeRequest(
     {
       hostname: "api",
-      path: `/api/subroutines/${subroutine.id}/run`,
+      path: `/api/subroutine/${subroutine.id}/run`,
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
@@ -666,7 +666,7 @@ it("multiplication subroutine executes correctly", async () => {
 
   const statusResponse = await makeRequest({
     hostname: "api",
-    path: `/api/runs/${run.id}`,
+    path: `/api/run/${run.id}`,
     method: "GET",
     headers: MOCK_HEADERS,
   });

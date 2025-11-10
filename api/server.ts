@@ -22,7 +22,7 @@ app.get("/status", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.post("/api/subroutines", async (req, res) => {
+app.post("/api/subroutine", async (req, res) => {
   try {
     const { request } = req.body;
 
@@ -58,13 +58,13 @@ app.post("/api/subroutines", async (req, res) => {
   }
 });
 
-app.get("/api/subroutines", async (_req, res) => {
+app.get("/api/subroutine", async (_req, res) => {
   const subroutines = await listSubroutines();
   res.json({ subroutines });
 });
 
 // Get a specific subroutine
-app.get("/api/subroutines/:id", async (req, res) => {
+app.get("/api/subroutine/:id", async (req, res) => {
   const subroutine = await getSubroutine(req.params.id);
 
   if (!subroutine) {
@@ -80,7 +80,7 @@ app.get("/api/subroutines/:id", async (req, res) => {
   res.json({ subroutine });
 });
 
-app.post("/api/subroutines/:id/run", async (req, res) => {
+app.post("/api/subroutine/:id/run", async (req, res) => {
   try {
     const { inputs, timeoutMs } = req.body;
 
@@ -114,12 +114,12 @@ app.post("/api/subroutines/:id/run", async (req, res) => {
   }
 });
 
-app.get("/api/runs", async (_req, res) => {
+app.get("/api/run", async (_req, res) => {
   const runs = await listRuns();
   res.json({ runs });
 });
 
-app.get("/api/runs/:id", async (req, res) => {
+app.get("/api/run/:id", async (req, res) => {
   const run = await getRun(req.params.id);
 
   if (!run) {
