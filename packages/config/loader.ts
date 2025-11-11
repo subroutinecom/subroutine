@@ -16,7 +16,13 @@ export const loadConfig = async (path: string): Promise<Config> => {
     throw new Error(`Config validation failed:\n${errors}`);
   }
 
-  return result.data;
+  const config = result.data;
+
+  if (!config.baseUrl) {
+    config.baseUrl = "http://localhost:3002";
+  }
+
+  return config;
 };
 
 const findConfigPath = (): string => {

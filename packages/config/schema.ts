@@ -11,7 +11,7 @@ export const aiConfigSchema = z.object({
 });
 
 export const authConfigSchema = z.object({
-  baseUrl: z.string().url("Base URL must be a valid URL"),
+  baseUrl: z.string().url("Base URL must be a valid URL").optional(),
   providers: z.object({
     github: z.object({
       enabled: z.boolean(),
@@ -28,6 +28,7 @@ export const authConfigSchema = z.object({
 });
 
 export const configSchema = z.object({
+  baseUrl: z.string().url("Base URL must be a valid URL").optional(),
   ai: aiConfigSchema,
   auth: authConfigSchema,
 });
