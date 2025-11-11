@@ -1,10 +1,10 @@
 {
   "imports": {
-    "express": "npm:express@^5.1.0",
+    "hono": "npm:hono@^4.10.4",
     "typescript": "npm:typescript"
   },
   "compilerOptions": {
-    "types": ["npm:@types/express", "npm:@types/node"]
+    "types": ["npm:@types/node"]
   },
   "tasks": {
     "lint": "npx eslint",
