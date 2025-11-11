@@ -1,5 +1,6 @@
 {
   "imports": {
+    "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.18.4",
     "@pothos/core": "npm:@pothos/core@^4.10.0",
     "@subroutine/config": "../packages/config/mod.ts",
     "@std/yaml": "jsr:@std/yaml@^1.0.10",
@@ -8,18 +9,18 @@
     "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.64",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
     "ai": "npm:ai@^5.0.89",
-    "express": "npm:express@^5.1.0",
     "google-auth-library": "npm:google-auth-library@^10.5.0",
     "graphql": "npm:graphql@^16.12.0",
     "graphql-yoga": "npm:graphql-yoga@^5.16.2",
+    "hono": "npm:hono@^4.10.4",
     "kysely": "npm:kysely@^0.28.8",
     "nanoid": "npm:nanoid@^5.1.6",
     "pg": "npm:pg@^8.16.3",
-    "zod": "npm:zod@^3.24.1"
+    "zod": "npm:zod@^3.25.76"
   },
   "compilerOptions": {
     "lib": ["deno.ns", "DOM", "DOM.Iterable", "ES2022"],
-    "types": ["npm:@types/node", "npm:@types/express"],
+    "types": ["npm:@types/node"],
     "strict": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true

@@ -1,6 +1,6 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
-import express from "express";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { initializeDatabase } from "./db/index.ts";
@@ -9,184 +9,535 @@ import { createMcpServer } from "./mcp-server.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 
-const app = express();
+const app = new OpenAPIHono({
+  defaultHook: (result, c) => {
+    if (!result.success) {
+      const message = result.error.issues
+        .map((i) => `${i.path.join(".")} ${i.message.toLowerCase()}`)
+        .join(", ");
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message,
+          },
+        },
+        400
+      );
+    }
+  },
+});
 const PORT = process.env.PORT ? Number(process.env.PORT) : 80;
 
-// TODO gricha - don't run migrations on startup
 await initializeDatabase();
-
-app.use(express.json());
 
 const transports: Record<string, StreamableHTTPServerTransport> = {};
 
-app.get("/status", (_req, res) => {
-  res.json({ status: "ok" });
+const ErrorSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+  }),
 });
 
-app.post("/api/subroutine", async (req, res) => {
-  try {
-    const { request } = req.body;
+const SubroutineSchema = z.object({
+  id: z.string(),
+  source: z.string(),
+  inputsSchema: z.record(z.unknown()).optional(),
+  outputsSchema: z.record(z.unknown()).optional(),
+  initialInputs: z.record(z.unknown()).optional(),
+  createdFrom: z.object({
+    request: z.string(),
+  }),
+  createdAt: z.string(),
+});
 
-    if (!request || typeof request !== "string") {
-      res.status(400).json({
-        error: {
-          code: "VALIDATION",
-          message: "request field is required and must be a string",
+const RunSchema = z.object({
+  id: z.string(),
+  subroutineId: z.string(),
+  status: z.enum(["queued", "running", "succeeded", "failed"]),
+  startedAt: z.string().nullable().optional(),
+  endedAt: z.string().nullable().optional(),
+  outputs: z.record(z.unknown()).nullable().optional(),
+  error: z.record(z.unknown()).nullable().optional(),
+});
+
+app.openapi(
+  createRoute({
+    method: "get",
+    path: "/status",
+    responses: {
+      200: {
+        description: "Service status",
+        content: {
+          "application/json": {
+            schema: z.object({
+              status: z.string(),
+            }),
+          },
         },
-      });
-      return;
-    }
-
-    const useMock = req.headers["x-use-mock"] === "true";
-
-    const subroutine = await generateSubroutine({
-      request,
-      useMock,
-    });
-
-    res.status(201).json({
-      subroutineUri: `resource://subroutine/${subroutine.id}`,
-      subroutine,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to generate subroutine";
-    res.status(500).json({
-      error: {
-        code: "INTERNAL_ERROR",
-        message,
       },
-    });
+    },
+  }),
+  (c) => {
+    return c.json({ status: "ok" });
   }
-});
+);
 
-app.post("/api/subroutine/execute_request", async (req, res) => {
-  try {
-    const { request, timeoutMs } = req.body ?? {};
-
-    if (!request || typeof request !== "string") {
-      res.status(400).json({
-        error: {
-          code: "VALIDATION",
-          message: "request field is required and must be a string",
+app.openapi(
+  createRoute({
+    method: "post",
+    path: "/api/subroutine",
+    description: "Create a new subroutine from a natural language description",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              request: z.string().describe("Natural language description of the desired subroutine"),
+            }),
+          },
         },
-      });
-      return;
-    }
-
-    const useMock = req.headers["x-use-mock"] === "true";
-    const subroutine = await generateSubroutine({
-      request,
-      useMock,
-      needsImmediateInputs: true,
-    });
-
-    if (!subroutine.initialInputs) {
-      throw new Error("Generated subroutine did not include immediate inputs");
-    }
-
-    const run = await runSubroutine({
-      subroutineId: subroutine.id,
-      inputs: subroutine.initialInputs,
-      timeoutMs,
-    });
-
-    res.status(201).json({
-      subroutineUri: `resource://subroutine/${subroutine.id}`,
-      subroutine,
-      runUri: `resource://run/${run.id}`,
-      run,
-      initialInputs: subroutine.initialInputs,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create and run subroutine";
-    res.status(500).json({
-      error: {
-        code: "INTERNAL_ERROR",
-        message,
       },
-    });
-  }
-});
-
-app.get("/api/subroutine", async (_req, res) => {
-  const subroutines = await listSubroutines();
-  res.json({ subroutines });
-});
-
-// Get a specific subroutine
-app.get("/api/subroutine/:id", async (req, res) => {
-  const subroutine = await getSubroutine(req.params.id);
-
-  if (!subroutine) {
-    res.status(404).json({
-      error: {
-        code: "NOT_FOUND",
-        message: "subroutine not found",
-      },
-    });
-    return;
-  }
-
-  res.json({ subroutine });
-});
-
-app.post("/api/subroutine/:id/run", async (req, res) => {
-  try {
-    const { inputs, timeoutMs } = req.body;
-
-    const run = await runSubroutine({
-      subroutineId: req.params.id,
-      inputs,
-      timeoutMs,
-    });
-
-    res.status(201).json({
-      runUri: `resource://run/${run.id}`,
-      run,
-    });
-  } catch (error) {
-    if (error instanceof Error && error.message === "Subroutine not found") {
-      res.status(404).json({
-        error: {
-          code: "NOT_FOUND",
-          message: "subroutine not found",
+      headers: z.object({
+        "x-use-mock": z.string().optional(),
+      }),
+    },
+    responses: {
+      201: {
+        description: "Subroutine created successfully",
+        content: {
+          "application/json": {
+            schema: z.object({
+              subroutineUri: z.string(),
+              subroutine: SubroutineSchema,
+            }),
+          },
         },
+      },
+      400: {
+        description: "Validation error",
+        content: {
+          "application/json": {
+            schema: ErrorSchema,
+          },
+        },
+      },
+      500: {
+        description: "Internal server error",
+        content: {
+          "application/json": {
+            schema: ErrorSchema,
+          },
+        },
+      },
+    },
+  }),
+  async (c) => {
+    try {
+      const { request } = c.req.valid("json");
+
+      if (!request || typeof request !== "string") {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION",
+              message: "request field is required and must be a string",
+            },
+          },
+          400
+        );
+      }
+
+      const useMock = c.req.header("x-use-mock") === "true";
+
+      const subroutine = await generateSubroutine({
+        request,
+        useMock,
       });
-      return;
+
+      return c.json(
+        {
+          subroutineUri: `resource://subroutine/${subroutine.id}`,
+          subroutine,
+        },
+        201
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to generate subroutine";
+      return c.json(
+        {
+          error: {
+            code: "INTERNAL_ERROR",
+            message,
+          },
+        },
+        500
+      );
+    }
+  }
+);
+
+app.openapi(
+  createRoute({
+    method: "post",
+    path: "/api/subroutine/execute_request",
+    description: "Create and immediately execute a subroutine",
+    request: {
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              request: z.string().describe("Natural language description of the desired subroutine"),
+              timeoutMs: z.number().optional(),
+            }),
+          },
+        },
+      },
+      headers: z.object({
+        "x-use-mock": z.string().optional(),
+      }),
+    },
+    responses: {
+      201: {
+        description: "Subroutine created and executed successfully",
+        content: {
+          "application/json": {
+            schema: z.object({
+              subroutineUri: z.string(),
+              subroutine: SubroutineSchema,
+              runUri: z.string(),
+              run: RunSchema,
+              initialInputs: z.record(z.unknown()),
+            }),
+          },
+        },
+      },
+      400: {
+        description: "Validation error",
+        content: {
+          "application/json": {
+            schema: ErrorSchema,
+          },
+        },
+      },
+      500: {
+        description: "Internal server error",
+        content: {
+          "application/json": {
+            schema: ErrorSchema,
+          },
+        },
+      },
+    },
+  }),
+  async (c) => {
+    try {
+      const { request, timeoutMs } = c.req.valid("json");
+
+      if (!request || typeof request !== "string") {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION",
+              message: "request field is required and must be a string",
+            },
+          },
+          400
+        );
+      }
+
+      const useMock = c.req.header("x-use-mock") === "true";
+      const subroutine = await generateSubroutine({
+        request,
+        useMock,
+        needsImmediateInputs: true,
+      });
+
+      if (!subroutine.initialInputs) {
+        throw new Error("Generated subroutine did not include immediate inputs");
+      }
+
+      const run = await runSubroutine({
+        subroutineId: subroutine.id,
+        inputs: subroutine.initialInputs,
+        timeoutMs,
+      });
+
+      return c.json(
+        {
+          subroutineUri: `resource://subroutine/${subroutine.id}`,
+          subroutine,
+          runUri: `resource://run/${run.id}`,
+          run,
+          initialInputs: subroutine.initialInputs,
+        },
+        201
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create and run subroutine";
+      return c.json(
+        {
+          error: {
+            code: "INTERNAL_ERROR",
+            message,
+          },
+        },
+        500
+      );
+    }
+  }
+);
+
+app.openapi(
+  createRoute({
+    method: "get",
+    path: "/api/subroutine",
+    description: "List all subroutines",
+    responses: {
+      200: {
+        description: "List of all subroutines",
+        content: {
+          "application/json": {
+            schema: z.object({
+              subroutines: z.array(SubroutineSchema),
+            }),
+          },
+        },
+      },
+    },
+  }),
+  async (c) => {
+    const subroutines = await listSubroutines();
+    return c.json({ subroutines });
+  }
+);
+
+app.openapi(
+  createRoute({
+    method: "get",
+    path: "/api/subroutine/{id}",
+    description: "Get a specific subroutine by ID",
+    request: {
+      params: z.object({
+        id: z.string().describe("Subroutine ID"),
+      }),
+    },
+    responses: {
+      200: {
+        description: "Subroutine details",
+        content: {
+          "application/json": {
+            schema: z.object({
+              subroutine: SubroutineSchema,
+            }),
+          },
+        },
+      },
+      404: {
+        description: "Subroutine not found",
+        content: {
+          "application/json": {
+            schema: ErrorSchema,
+          },
+        },
+      },
+    },
+  }),
+  // @ts-ignore - Hono OpenAPI types are overly strict about response unions
+  async (c) => {
+    const { id } = c.req.valid("param");
+    const subroutine = await getSubroutine(id);
+
+    if (!subroutine) {
+      return c.json(
+        {
+          error: {
+            code: "NOT_FOUND",
+            message: "subroutine not found",
+          },
+        },
+        404
+      );
     }
 
-    res.status(500).json({
-      error: {
-        code: "INTERNAL_ERROR",
-        message: "Failed to run subroutine",
-      },
-    });
+    return c.json({ subroutine });
   }
-});
+);
 
-app.get("/api/run", async (_req, res) => {
-  const runs = await listRuns();
-  res.json({ runs });
-});
-
-app.get("/api/run/:id", async (req, res) => {
-  const run = await getRun(req.params.id);
-
-  if (!run) {
-    res.status(404).json({
-      error: {
-        code: "NOT_FOUND",
-        message: "run not found",
+app.openapi(
+  createRoute({
+    method: "post",
+    path: "/api/subroutine/{id}/run",
+    description: "Execute a subroutine with given inputs",
+    request: {
+      params: z.object({
+        id: z.string().describe("Subroutine ID"),
+      }),
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              inputs: z.record(z.unknown()).optional(),
+              timeoutMs: z.number().optional(),
+            }),
+          },
+        },
       },
-    });
-    return;
+    },
+    responses: {
+      201: {
+        description: "Run created successfully",
+        content: {
+          "application/json": {
+            schema: z.object({
+              runUri: z.string(),
+              run: RunSchema,
+            }),
+          },
+        },
+      },
+      404: {
+        description: "Subroutine not found",
+        content: {
+          "application/json": {
+            schema: ErrorSchema,
+          },
+        },
+      },
+      500: {
+        description: "Internal server error",
+        content: {
+          "application/json": {
+            schema: ErrorSchema,
+          },
+        },
+      },
+    },
+  }),
+  // @ts-ignore - Hono OpenAPI types are overly strict about response unions
+  async (c) => {
+    try {
+      const { id } = c.req.valid("param");
+      const { inputs, timeoutMs } = c.req.valid("json");
+
+      const run = await runSubroutine({
+        subroutineId: id,
+        inputs,
+        timeoutMs,
+      });
+
+      return c.json(
+        {
+          runUri: `resource://run/${run.id}`,
+          run,
+        },
+        201
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message === "Subroutine not found") {
+        return c.json(
+          {
+            error: {
+              code: "NOT_FOUND",
+              message: "subroutine not found",
+            },
+          },
+          404
+        );
+      }
+
+      return c.json(
+        {
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "Failed to run subroutine",
+          },
+        },
+        500
+      );
+    }
   }
+);
 
-  res.json({ run });
-});
+app.openapi(
+  createRoute({
+    method: "get",
+    path: "/api/run",
+    description: "List all subroutine runs",
+    responses: {
+      200: {
+        description: "List of all runs",
+        content: {
+          "application/json": {
+            schema: z.object({
+              runs: z.array(RunSchema),
+            }),
+          },
+        },
+      },
+    },
+  }),
+  async (c) => {
+    const runs = await listRuns();
+    return c.json({ runs });
+  }
+);
 
-app.post("/mcp", async (req, res) => {
-  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+app.openapi(
+  createRoute({
+    method: "get",
+    path: "/api/run/{id}",
+    description: "Get a specific run by ID",
+    request: {
+      params: z.object({
+        id: z.string().describe("Run ID"),
+      }),
+    },
+    responses: {
+      200: {
+        description: "Run details",
+        content: {
+          "application/json": {
+            schema: z.object({
+              run: RunSchema,
+            }),
+          },
+        },
+      },
+      404: {
+        description: "Run not found",
+        content: {
+          "application/json": {
+            schema: ErrorSchema,
+          },
+        },
+      },
+    },
+  }),
+  // @ts-ignore - Hono OpenAPI types are overly strict about response unions
+  async (c) => {
+    const { id } = c.req.valid("param");
+    const run = await getRun(id);
+
+    if (!run) {
+      return c.json(
+        {
+          error: {
+            code: "NOT_FOUND",
+            message: "run not found",
+          },
+        },
+        404
+      );
+    }
+
+    return c.json({ run });
+  }
+);
+
+app.post("/mcp", async (c) => {
+  const sessionId = c.req.header("mcp-session-id");
 
   if (sessionId) {
     console.log(`Received MCP request for session: ${sessionId}`);
@@ -196,10 +547,11 @@ app.post("/mcp", async (req, res) => {
 
   try {
     let transport: StreamableHTTPServerTransport;
+    const body = await c.req.json();
 
     if (sessionId && transports[sessionId]) {
       transport = transports[sessionId];
-    } else if (!sessionId && isInitializeRequest(req.body)) {
+    } else if (!sessionId && isInitializeRequest(body)) {
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (newSessionId) => {
@@ -218,73 +570,99 @@ app.post("/mcp", async (req, res) => {
 
       const server = createMcpServer();
       await server.connect(transport);
-      await transport.handleRequest(req, res, req.body);
-      return;
+      const req = c.req.raw;
+      const res = new Response();
+      // @ts-ignore - MCP SDK expects Express types but works with Web standard Request/Response
+      await transport.handleRequest(req, res, body);
+      return res;
     } else {
-      res.status(400).json({
-        jsonrpc: "2.0",
-        error: {
-          code: -32000,
-          message: "Bad Request: No valid session ID provided",
+      return c.json(
+        {
+          jsonrpc: "2.0",
+          error: {
+            code: -32000,
+            message: "Bad Request: No valid session ID provided",
+          },
+          id: null,
         },
-        id: null,
-      });
-      return;
+        400
+      );
     }
 
-    await transport.handleRequest(req, res, req.body);
+    const req = c.req.raw;
+    const res = new Response();
+    // @ts-ignore - MCP SDK expects Express types but works with Web standard Request/Response
+    await transport.handleRequest(req, res, body);
+    return res;
   } catch (error) {
     console.error("Error handling MCP request:", error);
-    if (!res.headersSent) {
-      res.status(500).json({
+    return c.json(
+      {
         jsonrpc: "2.0",
         error: {
           code: -32603,
           message: "Internal server error",
         },
         id: null,
-      });
-    }
+      },
+      500
+    );
   }
 });
 
-app.get("/mcp", async (req, res) => {
-  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+app.get("/mcp", async (c) => {
+  const sessionId = c.req.header("mcp-session-id");
 
   if (!sessionId || !transports[sessionId]) {
-    res.status(400).send("Invalid or missing session ID");
-    return;
+    return c.text("Invalid or missing session ID", 400);
   }
 
   console.log(`Establishing SSE stream for session ${sessionId}`);
   const transport = transports[sessionId];
+  const req = c.req.raw;
+  const res = new Response();
+  // @ts-ignore - MCP SDK expects Express types but works with Web standard Request/Response
   await transport.handleRequest(req, res);
+  return res;
 });
 
-app.delete("/mcp", async (req, res) => {
-  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+app.delete("/mcp", async (c) => {
+  const sessionId = c.req.header("mcp-session-id");
 
   if (!sessionId || !transports[sessionId]) {
-    res.status(400).send("Invalid or missing session ID");
-    return;
+    return c.text("Invalid or missing session ID", 400);
   }
 
   console.log(`Received session termination request for session ${sessionId}`);
 
   try {
     const transport = transports[sessionId];
+    const req = c.req.raw;
+    const res = new Response();
+    // @ts-ignore - MCP SDK expects Express types but works with Web standard Request/Response
     await transport.handleRequest(req, res);
+    return res;
   } catch (error) {
     console.error("Error handling session termination:", error);
-    if (!res.headersSent) {
-      res.status(500).send("Error processing session termination");
-    }
+    return c.text("Error processing session termination", 500);
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
+app.doc("/openapi.json", {
+  openapi: "3.1.0",
+  info: {
+    version: "1.0.0",
+    title: "Subroutine API",
+    description: "API for creating and running subroutines",
+  },
 });
 
+const server = Deno.serve({ port: PORT }, app.fetch);
+
+console.log(`Server running on port ${PORT}`);
+console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
+console.log(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
+
 startInternalServer();
+
+export default server;
