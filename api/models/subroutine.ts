@@ -9,6 +9,7 @@ export type Subroutine = {
   source: string;
   inputsSchema?: Record<string, any>;
   outputsSchema?: Record<string, any>;
+  initialInputs?: Record<string, any>;
   createdFrom: {
     request: string;
   };
@@ -18,6 +19,7 @@ export type Subroutine = {
 export type GenerateSubroutineRequest = {
   request: string;
   useMock?: boolean;
+  needsImmediateInputs?: boolean;
 };
 
 export const generateSubroutine = async (params: GenerateSubroutineRequest): Promise<Subroutine> => {
@@ -32,10 +34,14 @@ export const generateSubroutine = async (params: GenerateSubroutineRequest): Pro
     type: "object",
     properties: {},
   };
+  let initialInputs: Record<string, unknown> | undefined;
 
   if (params.useMock) {
     console.log("Using mock code generation (requested via useMock flag)");
     source = generateMockCode(params.request);
+    if (params.needsImmediateInputs) {
+      initialInputs = {};
+    }
   } else {
     console.log("Using model for code generation");
     const model = await createModel();
@@ -44,7 +50,9 @@ export const generateSubroutine = async (params: GenerateSubroutineRequest): Pro
       throw new Error("No model provider configured. Check config.yaml for AI model settings.");
     }
 
-    const result = await generateCode(model, params.request);
+    const result = await generateCode(model, params.request, {
+      needsImmediateInputs: params.needsImmediateInputs ?? false,
+    });
 
     if (!result.success) {
       throw new Error(`Code generation failed: ${result.error}`);
@@ -53,6 +61,10 @@ export const generateSubroutine = async (params: GenerateSubroutineRequest): Pro
     source = result.source;
     inputsSchema = result.inputsSchema;
     outputsSchema = result.outputsSchema;
+    initialInputs = result.immediateInputs;
+    if (params.needsImmediateInputs && !initialInputs) {
+      throw new Error("Generator did not provide immediate inputs for execution");
+    }
   }
 
   const createdAt = new Date().toISOString();
@@ -74,6 +86,7 @@ export const generateSubroutine = async (params: GenerateSubroutineRequest): Pro
     source,
     inputsSchema,
     outputsSchema,
+    initialInputs,
     createdFrom: {
       request: params.request,
     },

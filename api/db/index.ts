@@ -41,7 +41,9 @@ export const initializeDatabase = async () => {
 
     results?.forEach((result) => {
       if (result.status === "Success") {
-        console.log(`Migration "${result.migrationName}" executed successfully`);
+        console.log(
+          `Migration "${result.migrationName}" executed successfully`,
+        );
       } else if (result.status === "Error") {
         console.error(`Migration "${result.migrationName}" failed`);
       }

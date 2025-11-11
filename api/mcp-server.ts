@@ -182,6 +182,66 @@ export function createMcpServer(): McpServer {
     }
   );
 
+  // Tool: subroutine.executeRequest
+  server.registerTool(
+    "subroutine.executeRequest",
+    {
+      title: "Execute Request",
+      description:
+        "Generate a brand-new subroutine for the provided request, immediately queue it for execution, and return references to track its progress.",
+      inputSchema: {
+        request: z.string().describe("Natural language description of the desired workflow"),
+        timeoutMs: z.number().optional(),
+        useMock: z.boolean().optional().describe("Use mock code generation instead of AI (for testing)"),
+      },
+    },
+    async ({ request, timeoutMs, useMock }) => {
+      console.log(`Executing request via generated subroutine: ${request}`, {
+        useMock,
+        timeoutMs,
+      });
+
+      const subroutine = await generateSubroutine({
+        request,
+        useMock,
+        needsImmediateInputs: true,
+      });
+
+      if (!subroutine.initialInputs) {
+        throw new Error("Generated subroutine is missing initial inputs");
+      }
+
+      const run = await runSubroutine({
+        subroutineId: subroutine.id,
+        inputs: subroutine.initialInputs,
+        timeoutMs,
+      });
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              [
+                {
+                  subroutineUri: `resource://subroutine/${subroutine.id}`,
+                  request,
+                  initialInputs: subroutine.initialInputs,
+                },
+                {
+                  runUri: `resource://run/${run.id}`,
+                  status: run.status,
+                },
+              ],
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+  );
+
   // Tool: subroutine.run
   server.registerTool(
     "subroutine.run",

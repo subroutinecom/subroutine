@@ -4,6 +4,10 @@ import { z } from "zod";
 import type { CodeGenerationResult } from "./types";
 import { CODE_GENERATION_USER_PROMPT, SYSTEM_PROMPT } from "./prompts";
 
+type GenerateCodeOptions = {
+  needsImmediateInputs?: boolean;
+};
+
 const validateCode = (code: string): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
@@ -40,42 +44,48 @@ const validateCode = (code: string): { valid: boolean; errors: string[] } => {
 export const generateCode = async (
   model: LanguageModel,
   request: string,
+  options?: GenerateCodeOptions,
 ): Promise<CodeGenerationResult> => {
   try {
     type CapturedResult = {
       inputsSchema: Record<string, unknown>;
       outputsSchema: Record<string, unknown>;
       code: string;
+      immediateInputs?: Record<string, unknown>;
     };
 
     let capturedResult: CapturedResult | null = null;
 
+    const baseToolSchema = z.object({
+      inputsSchema: z.record(z.unknown()).describe("JSON Schema for the input parameters"),
+      outputsSchema: z.record(z.unknown()).describe("JSON Schema for the output"),
+      code: z
+        .string()
+        .describe("The TypeScript code that exports an async main function with proper types"),
+    });
+
+    const toolSchema = options?.needsImmediateInputs
+      ? baseToolSchema.extend({
+          immediateInputs: z
+            .record(z.unknown())
+            .describe("Concrete values conforming to inputsSchema for immediate execution"),
+        })
+      : baseToolSchema;
+
     const result = await streamText({
       model,
       system: SYSTEM_PROMPT,
-      prompt: CODE_GENERATION_USER_PROMPT(request),
+      prompt: CODE_GENERATION_USER_PROMPT(request, {
+        needsImmediateInputs: options?.needsImmediateInputs ?? false,
+      }),
       tools: {
         generateSubroutine: {
           description: "Submit a generated TypeScript subroutine with schemas",
-          inputSchema: z.object({
-            inputsSchema: z
-              .record(z.unknown())
-              .describe("JSON Schema for the input parameters"),
-            outputsSchema: z
-              .record(z.unknown())
-              .describe("JSON Schema for the output"),
-            code: z
-              .string()
-              .describe(
-                "The TypeScript code that exports an async main function with proper types",
-              ),
-          }),
-          execute: (params: {
-            inputsSchema: Record<string, unknown>;
-            outputsSchema: Record<string, unknown>;
-            code: string;
-          }) => {
+          inputSchema: toolSchema,
+          execute: (params: z.infer<typeof toolSchema>) => {
             const { inputsSchema, outputsSchema, code } = params;
+            const immediateInputs =
+              "immediateInputs" in params ? (params.immediateInputs as Record<string, unknown>) : undefined;
             const validation = validateCode(code);
 
             if (!validation.valid) {
@@ -89,6 +99,7 @@ export const generateCode = async (
               inputsSchema,
               outputsSchema,
               code,
+              immediateInputs,
             };
             capturedResult = result;
             return {
@@ -117,14 +128,14 @@ export const generateCode = async (
       };
     }
 
-    const { code, inputsSchema, outputsSchema } =
-      capturedResult as CapturedResult;
+    const { code, inputsSchema, outputsSchema, immediateInputs } = capturedResult as CapturedResult;
 
     return {
       success: true,
       source: code,
       inputsSchema,
       outputsSchema,
+      immediateInputs,
       iterations: steps.length,
     };
   } catch (error) {
