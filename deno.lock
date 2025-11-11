@@ -4203,6 +4203,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@std/assert@^1.0.15",
       "npm:@eslint/js@^9.39.1",
       "npm:@types/node@^24.2.0",
       "npm:@typescript-eslint/utils@^8.46.3",
