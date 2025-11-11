@@ -2,6 +2,9 @@
 # Copy this file to config.yaml and customize for your environment
 # Secrets (API keys, credentials) remain in .env files
 
+# Base URL (defaults to http://localhost:3002)
+# baseUrl: "https://your-production-domain.com"
+
 # AI Model Configuration
 ai:
   # Provider: anthropic | openai | vertex-anthropic | vertex-gemini
@@ -12,3 +15,25 @@ ai:
   #   - gpt-4 (for OpenAI)
   #   - gemini-2.5-pro (for Vertex AI Gemini)
   model: claude-sonnet-4-5-20250929
+
+auth:
+  # Base URL override (optional - inherits from top-level baseUrl if not set)
+  # Only needed for separate auth domain (e.g., auth.yourdomain.com)
+  # baseUrl: "https://auth.your-domain.com"
+
+  providers:
+    github:
+      enabled: false
+      # Get your OAuth App credentials from: https://github.com/settings/developers
+      # Add Client ID here, Client Secret goes in .env as GITHUB_CLIENT_SECRET
+      # clientId: "Ov23lixxxxxxxxxx"
+
+    google:
+      enabled: false
+      # Get your OAuth credentials from: https://console.cloud.google.com/apis/credentials
+      # Add Client ID here, Client Secret goes in .env as GOOGLE_CLIENT_SECRET
+      # clientId: "123456789-xxxxxxxx.apps.googleusercontent.com"
+
+    # Email/Password authentication
+    emailPassword:
+      enabled: true
