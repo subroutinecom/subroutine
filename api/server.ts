@@ -58,6 +58,55 @@ app.post("/api/subroutine", async (req, res) => {
   }
 });
 
+app.post("/api/subroutine/execute_request", async (req, res) => {
+  try {
+    const { request, timeoutMs } = req.body ?? {};
+
+    if (!request || typeof request !== "string") {
+      res.status(400).json({
+        error: {
+          code: "VALIDATION",
+          message: "request field is required and must be a string",
+        },
+      });
+      return;
+    }
+
+    const useMock = req.headers["x-use-mock"] === "true";
+    const subroutine = await generateSubroutine({
+      request,
+      useMock,
+      needsImmediateInputs: true,
+    });
+
+    if (!subroutine.initialInputs) {
+      throw new Error("Generated subroutine did not include immediate inputs");
+    }
+
+    const run = await runSubroutine({
+      subroutineId: subroutine.id,
+      inputs: subroutine.initialInputs,
+      timeoutMs,
+    });
+
+    res.status(201).json({
+      subroutineUri: `resource://subroutine/${subroutine.id}`,
+      subroutine,
+      runUri: `resource://run/${run.id}`,
+      run,
+      initialInputs: subroutine.initialInputs,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create and run subroutine";
+    res.status(500).json({
+      error: {
+        code: "INTERNAL_ERROR",
+        message,
+      },
+    });
+  }
+});
+
 app.get("/api/subroutine", async (_req, res) => {
   const subroutines = await listSubroutines();
   res.json({ subroutines });

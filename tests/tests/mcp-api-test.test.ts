@@ -11,6 +11,7 @@ interface Subroutine {
   source: string;
   inputsSchema?: Record<string, unknown>;
   outputsSchema?: Record<string, unknown>;
+  initialInputs?: Record<string, unknown>;
   createdFrom: { request: string };
   createdAt: string;
 }
@@ -193,6 +194,34 @@ it("run a subroutine", async () => {
   expect(run.subroutineId, "Run should reference the subroutine").toBe(subroutine.id);
   expect(["queued", "running", "succeeded"].includes(run.status), "Run should have valid status").toBe(true);
   expect(typeof runData.runUri, "Should have runUri").toBe("string");
+});
+
+it("execute request to create and run a subroutine", async () => {
+  const response = await makeRequest(
+    {
+      hostname: "api",
+      path: "/api/subroutine/execute_request",
+      method: "POST",
+      headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
+    },
+    JSON.stringify({
+      request: "Create a function that multiplies two numbers",
+    })
+  );
+
+  expect(response.status, "Should return 201 Created").toBe(201);
+
+  const data = JSON.parse(response.data);
+  const subroutine: Subroutine = data.subroutine;
+  const run: Run = data.run;
+
+  expect(typeof subroutine?.id, "Should create a subroutine").toBe("string");
+  expect(typeof data.subroutineUri, "Response should include subroutineUri").toBe("string");
+  expect(typeof run?.id, "Should create a run").toBe("string");
+  expect(run.subroutineId, "Run should reference the created subroutine").toBe(subroutine.id);
+  expect(typeof data.runUri, "Response should include runUri").toBe("string");
+  expect(subroutine.initialInputs, "Subroutine should include initial inputs").toBeDefined();
+  expect(typeof data.initialInputs, "Response should include initial inputs").toBe("object");
 });
 
 it("get run status and wait for completion", async () => {

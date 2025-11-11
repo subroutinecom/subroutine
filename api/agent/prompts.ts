@@ -17,5 +17,16 @@ For "add two numbers", call generateSubroutine with:
 - outputsSchema: { "type": "object", "properties": { "result": { "type": "number", "description": "Sum" }, "calculation": { "type": "string", "description": "Calculation string" } }, "required": ["result", "calculation"] }
 - code: "type Context = Record<string, unknown>;\n\ntype Inputs = {\n  x?: number;\n  y?: number;\n};\n\ntype Outputs = {\n  result: number;\n  calculation: string;\n};\n\nexport async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {\n  const x = inputs.x ?? 0;\n  const y = inputs.y ?? 0;\n  const sum = x + y;\n  return { result: sum, calculation: \`\${x} + \${y} = \${sum}\` };\n}"`;
 
-export const CODE_GENERATION_USER_PROMPT = (request: string): string =>
-  `Generate a TypeScript subroutine for: ${request}`;
+type PromptOptions = {
+  needsImmediateInputs?: boolean;
+};
+
+export const CODE_GENERATION_USER_PROMPT = (request: string, options?: PromptOptions): string => {
+  let prompt = `Generate a TypeScript subroutine for: ${request}`;
+
+  if (options?.needsImmediateInputs) {
+    prompt += `\n\nAdditionally, produce an "immediateInputs" JSON object that satisfies your Inputs schema and can be used to execute main right away without further clarification. Populate every required field with sensible defaults inferred from the request.`;
+  }
+
+  return prompt;
+};

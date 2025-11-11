@@ -3,6 +3,7 @@ export type CodeGenerationResult = {
   source: string;
   inputsSchema: Record<string, unknown>;
   outputsSchema: Record<string, unknown>;
+  immediateInputs?: Record<string, unknown>;
   iterations: number;
   error?: string;
 };
