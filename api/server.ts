@@ -4,6 +4,7 @@ import express from "express";
 import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { initializeDatabase } from "./db/index.ts";
+import { startInternalServer } from "./internal/server.ts";
 import { createMcpServer } from "./mcp-server.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
@@ -285,3 +286,5 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
 });
+
+startInternalServer();
