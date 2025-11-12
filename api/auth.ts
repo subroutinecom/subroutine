@@ -12,35 +12,29 @@ export const getAuth = async () => {
     Deno.env.get("DATABASE_URL") ||
     "postgresql://subroutine:subroutine@localhost:5432/subroutine";
 
-  console.log(config.auth.baseUrl);
-  console.log(config);
-
   const auth = betterAuth({
     database: new Pool({
       connectionString: DATABASE_URL,
     }),
-    //baseURL: config.auth.baseUrl ?? config.baseUrl,
+    baseUrl: Deno.env.get("BASE_URL") || "http://localhost:3002",
     secret: Deno.env.get("BETTER_AUTH_SECRET")!,
-
     emailAndPassword: {
-      enabled: true, //config.auth.providers.emailPassword.enabled,
+      enabled: config.auth.providers.emailPassword.enabled,
     },
-
-    //socialProviders: {
-    //  ...(config.auth.providers.github.enabled && {
-    //    github: {
-    //      clientId: config.auth.providers.github.clientId!,
-    //      clientSecret: Deno.env.get("GITHUB_CLIENT_SECRET")!,
-    //    },
-    //  }),
-    //  ...(config.auth.providers.google.enabled && {
-    //    google: {
-    //      clientId: config.auth.providers.google.clientId!,
-    //      clientSecret: Deno.env.get("GOOGLE_CLIENT_SECRET")!,
-    //    },
-    //  }),
-    //},
-
+    socialProviders: {
+      ...(config.auth.providers.github.enabled && {
+        github: {
+          clientId: config.auth.providers.github.clientId!,
+          clientSecret: Deno.env.get("GITHUB_CLIENT_SECRET")!,
+        },
+      }),
+      ...(config.auth.providers.google.enabled && {
+        google: {
+          clientId: config.auth.providers.google.clientId!,
+          clientSecret: Deno.env.get("GOOGLE_CLIENT_SECRET")!,
+        },
+      }),
+    },
     plugins: [organization()],
   });
 

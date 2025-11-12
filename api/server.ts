@@ -40,10 +40,15 @@ const initialize = async () => {
 
   const auth = await getAuth();
 
+  app.get("/api/auth/test-route", (c) => {
+    return c.json({ message: "Hono routing works!" });
+  });
+
   app.on(["POST", "GET"], "/api/auth/*", async (c) => {
-    console.log("auth handler");
+    const url = new URL(c.req.url);
+    url.pathname = url.pathname.replace("/api/auth", "");
     const response = await auth.handler(c.req.raw);
-    console.log("response", response);
+    console.log("Better Auth response status:", response.status);
     return response;
   });
 
