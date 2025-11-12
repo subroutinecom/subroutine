@@ -1,7 +1,20 @@
-// TODO: we need to eventually just generate this from the database schema
+import type { Account, Session, User, Verification } from "better-auth/db";
+import type {
+  Invitation,
+  Member,
+  Organization,
+} from "better-auth/plugins/organization";
+
 export interface Database {
   subroutine: SubroutineTable;
   run: RunTable;
+  user: User;
+  session: Session;
+  account: Account;
+  verification: Verification;
+  organization: Organization;
+  member: Member;
+  invitation: Invitation;
 }
 
 export interface SubroutineTable {
