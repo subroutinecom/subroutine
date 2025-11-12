@@ -16,22 +16,22 @@ import { getAuth } from "./auth.ts";
 
 const initialize = async () => {
   const app = new OpenAPIHono({
-    defaultHook: (result, c) => {
-      if (!result.success) {
-        const message = result.error.issues
-          .map((i) => `${i.path.join(".")} ${i.message.toLowerCase()}`)
-          .join(", ");
-        return c.json(
-          {
-            error: {
-              code: "VALIDATION",
-              message,
-            },
-          },
-          400,
-        );
-      }
-    },
+    //  defaultHook: (result, c) => {
+    //    if (!result.success) {
+    //      const message = result.error.issues
+    //        .map((i) => `${i.path.join(".")} ${i.message.toLowerCase()}`)
+    //        .join(", ");
+    //      return c.json(
+    //        {
+    //          error: {
+    //            code: "VALIDATION",
+    //            message,
+    //          },
+    //        },
+    //        400,
+    //      );
+    //    }
+    //  },
   });
 
   const PORT = process.env.PORT ? Number(process.env.PORT) : 80;
@@ -40,11 +40,11 @@ const initialize = async () => {
 
   const auth = await getAuth();
 
-  app.on(["POST", "GET"], "/api/auth/*", (c) => {
+  app.on(["POST", "GET"], "/api/auth/*", async (c) => {
     console.log("auth handler");
-    // trim /api/auth from path
-    console.log("path", c.req.url, c.req.path);
-    return auth.handler(c.req.raw);
+    const response = await auth.handler(c.req.raw);
+    console.log("response", response);
+    return response;
   });
 
   const transports: Record<string, StreamableHTTPServerTransport> = {};

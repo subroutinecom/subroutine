@@ -20,11 +20,10 @@ export const getAuth = async () => {
       connectionString: DATABASE_URL,
     }),
     //baseURL: config.auth.baseUrl ?? config.baseUrl,
-    //basePath: "/",
     secret: Deno.env.get("BETTER_AUTH_SECRET")!,
 
     emailAndPassword: {
-      enabled: config.auth.providers.emailPassword.enabled,
+      enabled: true, //config.auth.providers.emailPassword.enabled,
     },
 
     //socialProviders: {
@@ -44,8 +43,6 @@ export const getAuth = async () => {
 
     plugins: [organization()],
   });
-
-  console.log(auth.options);
 
   return auth;
 };
