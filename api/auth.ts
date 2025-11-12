@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { organization } from "better-auth/plugins";
-import { getConfig } from "@subroutine/config";
+import { getConfig } from "@subroutinecom/config";
 import pg from "pg";
 
 const { Pool } = pg;

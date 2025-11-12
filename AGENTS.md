@@ -27,3 +27,9 @@ Feedback Loop:
 Dont's
 
 - Deno workers run with specific, stripped down set of permissions. You may not change that yourself. If the change to permission of sandbox is required. Ask the user and explain the reasoning.
+
+Admin Panel Routing:
+
+- Use directory-based route structure with remix-flat-routes, not dot notation.
+- Layout files are `layout.tsx`, index files are `_index.tsx`.
+- Example: `routes/+_authRequired/layout.tsx` instead of `routes/+_authRequired.layout.tsx`.

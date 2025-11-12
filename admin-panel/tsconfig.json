@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["vite/client"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "paths": {
+      "~/*": ["./app/*"]
+    }
+  },
+  "include": ["app/**/*"],
+  "exclude": [".react-router", ".vite", "node_modules"]
+}

@@ -1,5 +1,11 @@
 {
-  "workspace": ["./api", "./sandbox", "./tests", "./admin-panel", "./packages/config"],
+  "workspace": [
+    "./api",
+    "./sandbox",
+    "./tests",
+    "./admin-panel",
+    "./packages/config"
+  ],
   "unstable": ["sloppy-imports"],
   "tasks": {
     "check": "deno check --sloppy-imports",
@@ -15,7 +21,6 @@
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.15",
-    "@subroutine/config": "./packages/config/mod.ts",
     "@eslint/js": "npm:@eslint/js@^9.39.1",
     "@types/node": "npm:@types/node@^24.2.0",
     "@typescript-eslint/utils": "npm:@typescript-eslint/utils@^8.46.3",
