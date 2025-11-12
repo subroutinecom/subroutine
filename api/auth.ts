@@ -1,33 +1,51 @@
 import { betterAuth } from "better-auth";
 import { organization } from "better-auth/plugins";
-import { db } from "./db/index.ts";
 import { getConfig } from "@subroutine/config";
+import pg from "pg";
 
-const config = await getConfig();
+const { Pool } = pg;
 
-export const auth = betterAuth({
-  database: db,
-  baseURL: config.auth.baseUrl ?? config.baseUrl,
-  secret: Deno.env.get("BETTER_AUTH_SECRET")!,
+export const getAuth = async () => {
+  const config = await getConfig();
 
-  emailAndPassword: {
-    enabled: config.auth.providers.emailPassword.enabled,
-  },
+  const DATABASE_URL =
+    Deno.env.get("DATABASE_URL") ||
+    "postgresql://subroutine:subroutine@localhost:5432/subroutine";
 
-  socialProviders: {
-    ...(config.auth.providers.github.enabled && {
-      github: {
-        clientId: config.auth.providers.github.clientId!,
-        clientSecret: Deno.env.get("GITHUB_CLIENT_SECRET")!,
-      },
+  console.log(config.auth.baseUrl);
+  console.log(config);
+
+  const auth = betterAuth({
+    database: new Pool({
+      connectionString: DATABASE_URL,
     }),
-    ...(config.auth.providers.google.enabled && {
-      google: {
-        clientId: config.auth.providers.google.clientId!,
-        clientSecret: Deno.env.get("GOOGLE_CLIENT_SECRET")!,
-      },
-    }),
-  },
+    //baseURL: config.auth.baseUrl ?? config.baseUrl,
+    //basePath: "/",
+    secret: Deno.env.get("BETTER_AUTH_SECRET")!,
 
-  plugins: [organization()],
-});
+    emailAndPassword: {
+      enabled: config.auth.providers.emailPassword.enabled,
+    },
+
+    //socialProviders: {
+    //  ...(config.auth.providers.github.enabled && {
+    //    github: {
+    //      clientId: config.auth.providers.github.clientId!,
+    //      clientSecret: Deno.env.get("GITHUB_CLIENT_SECRET")!,
+    //    },
+    //  }),
+    //  ...(config.auth.providers.google.enabled && {
+    //    google: {
+    //      clientId: config.auth.providers.google.clientId!,
+    //      clientSecret: Deno.env.get("GOOGLE_CLIENT_SECRET")!,
+    //    },
+    //  }),
+    //},
+
+    plugins: [organization()],
+  });
+
+  console.log(auth.options);
+
+  return auth;
+};

@@ -10,7 +10,7 @@
     "npm:@pothos/core@^4.10.0": "4.10.0_graphql@16.12.0",
     "npm:@types/node@*": "24.2.0",
     "npm:ai@^5.0.89": "5.0.89_zod@3.25.76",
-    "npm:better-auth@^1.3.34": "1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1",
+    "npm:better-auth@1.3.31": "1.3.31_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1",
     "npm:google-auth-library@^10.5.0": "10.5.0",
     "npm:graphql-yoga@^5.16.2": "5.16.2_graphql@16.12.0",
     "npm:graphql@^16.12.0": "16.12.0",
@@ -92,8 +92,8 @@
         "zod@3.25.76"
       ]
     },
-    "@better-auth/core@1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1": {
-      "integrity": "sha512-rt/Bgl0Xa8OQ2DUMKCZEJ8vL9kUw4NCJsBP9Sj9uRhbsK8NEMPiznUOFMkUY2FvrslvfKN7H/fivwyHz9c7HzQ==",
+    "@better-auth/core@1.3.31_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1": {
+      "integrity": "sha512-6G/zRTQ0RA3coUtjQztlWjOl021LjXEZVNxT9S5w60Uqc5n38atFCURiuebJwgGVuzUuWA6kRKRzW6LJNO8MLA==",
       "dependencies": [
         "@better-auth/utils",
         "@better-fetch/fetch",
@@ -104,8 +104,8 @@
         "zod@4.1.12"
       ]
     },
-    "@better-auth/telemetry@1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1": {
-      "integrity": "sha512-aQZ3wN90YMqV49diWxAMe1k7s2qb55KCsedCZne5PlgCjU4s3YtnqyjC5FEpzw2KY8l8rvR7DMAsDl13NjObKA==",
+    "@better-auth/telemetry@1.3.31_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1": {
+      "integrity": "sha512-dhvL7FuyfPlYV/gFhuzW0wkvV98VLapwgM5TEGS0T7EBC70mAqD9OpcwUDL6karcVIuEf6i+6K0Gw1TJguhoEw==",
       "dependencies": [
         "@better-auth/core",
         "@better-auth/utils",
@@ -543,8 +543,8 @@
     "base64-js@1.5.1": {
       "integrity": "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA=="
     },
-    "better-auth@1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1": {
-      "integrity": "sha512-LWA52SlvnUBJRbN8VLSTLILPomZY3zZAiLxVJCeSQ5uVmaIKkMBhERitkfJcXB9RJcfl4uP+3EqKkb6hX1/uiw==",
+    "better-auth@1.3.31_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1": {
+      "integrity": "sha512-wq/RRl2aapbHlzvfmWGMkt+Qeav80dATbEU9hAPalLoZqbR3L7ABb/RvtFD8NshWRcXzwLkwAUoVmT3851+wKA==",
       "dependencies": [
         "@better-auth/core",
         "@better-auth/telemetry",
@@ -1518,7 +1518,7 @@
       "npm:@pothos/core@^4.10.0",
       "npm:@types/node@*",
       "npm:ai@^5.0.89",
-      "npm:better-auth@^1.3.34",
+      "npm:better-auth@1.3.31",
       "npm:google-auth-library@^10.5.0",
       "npm:graphql-yoga@^5.16.2",
       "npm:graphql@^16.12.0",
