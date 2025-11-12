@@ -4503,6 +4503,7 @@
     "members": {
       "admin-panel": {
         "dependencies": [
+          "jsr:@std/yaml@^1.0.10",
           "npm:@cap.js/server@^4.0.3",
           "npm:@cap.js/widget@~0.1.31",
           "npm:@react-router/dev@^7.9.2",
@@ -4528,7 +4529,8 @@
           "npm:use-stick-to-bottom@^1.1.1",
           "npm:vite-tsconfig-paths@^5.1.4",
           "npm:vite@*",
-          "npm:vite@^7.1.7"
+          "npm:vite@^7.1.7",
+          "npm:zod@^3.25.76"
         ]
       },
       "api": {

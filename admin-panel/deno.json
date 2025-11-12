@@ -27,7 +27,9 @@
     "vite-tsconfig-paths": "npm:vite-tsconfig-paths@^5.1.4",
     "arg": "npm:arg@^5",
     "~/": "./app/",
-    "@subroutinecom/config": "../packages/config/mod.ts"
+    "@subroutinecom/config": "workspace:*",
+    "zod": "npm:zod@^3.25.76",
+    "@std/yaml": "jsr:@std/yaml@^1.0.10"
   },
   "compilerOptions": {
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
