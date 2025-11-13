@@ -1,14 +1,15 @@
 {
   "imports": {
+    "@hono/hono": "jsr:@hono/hono@^4.10.5",
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.18.4",
     "@pothos/core": "npm:@pothos/core@^4.10.0",
-    "@subroutine/config": "../packages/config/mod.ts",
-    "@std/yaml": "jsr:@std/yaml@^1.0.10",
+    "@subroutinecom/config": "../packages/config/mod.ts",
     "@ai-sdk/anthropic": "npm:@ai-sdk/anthropic@^2.0.41",
     "@ai-sdk/google-vertex": "npm:@ai-sdk/google-vertex@^3.0.58",
     "@ai-sdk/openai": "npm:@ai-sdk/openai@^2.0.64",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
     "ai": "npm:ai@^5.0.89",
+    "better-auth": "npm:better-auth@1.3.31",
     "google-auth-library": "npm:google-auth-library@^10.5.0",
     "graphql": "npm:graphql@^16.12.0",
     "graphql-yoga": "npm:graphql-yoga@^5.16.2",
@@ -16,6 +17,7 @@
     "kysely": "npm:kysely@^0.28.8",
     "nanoid": "npm:nanoid@^5.1.6",
     "pg": "npm:pg@^8.16.3",
+    "yaml": "npm:yaml@^2.8.1",
     "zod": "npm:zod@^3.25.76"
   },
   "compilerOptions": {

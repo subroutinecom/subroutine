@@ -1,4 +1,4 @@
-import { parse } from "@std/yaml";
+import { parse } from "yaml";
 import { configSchema, type Config } from "./schema.ts";
 
 let cachedConfig: Config | null = null;
@@ -16,7 +16,13 @@ export const loadConfig = async (path: string): Promise<Config> => {
     throw new Error(`Config validation failed:\n${errors}`);
   }
 
-  return result.data;
+  const config = result.data;
+
+  if (!config.baseUrl) {
+    config.baseUrl = "http://localhost";
+  }
+
+  return config;
 };
 
 const findConfigPath = (): string => {
@@ -24,7 +30,13 @@ const findConfigPath = (): string => {
   const envPath = Deno.env.get("CONFIG_PATH");
   if (envPath) return envPath;
 
-  const candidates = ["/app/config.yaml", "./config.yaml", "../config.yaml"];
+  const candidates = [
+    "/app/config.yaml",
+    "./config.yaml",
+    "../config.yaml",
+    "/config.yaml",
+    "/app/config.yaml",
+  ];
 
   for (const path of candidates) {
     try {

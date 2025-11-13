@@ -1,4 +1,4 @@
-import { Welcome } from "../welcome/welcome.tsx";
+import { Welcome } from "../../welcome/welcome.tsx";
 
 export function meta() {
   return [

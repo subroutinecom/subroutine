@@ -5,6 +5,12 @@
 - When using Deno, we use --sloppy-imports. You Must Not add extensions (.ts) to file imports.
 - When adding new dependencies, only do so by calling `deno install <dep>` without specifying a version.
 
+Configuration:
+
+- **Environment variables (.env)** must ONLY be used for secrets (API keys, client secrets, database passwords, etc.)
+- **Standard configuration values** (URLs, feature flags, CORS origins, etc.) must be driven via `config.yaml`
+- Never add configuration to environment variables if it can go in config.yaml
+
 Typescript Conventions:
 
 - Prefer `const fun = async () => {}` over `async fun() {}`
@@ -27,3 +33,9 @@ Feedback Loop:
 Dont's
 
 - Deno workers run with specific, stripped down set of permissions. You may not change that yourself. If the change to permission of sandbox is required. Ask the user and explain the reasoning.
+
+Admin Panel Routing:
+
+- Use directory-based route structure with remix-flat-routes, not dot notation.
+- Layout files are `layout.tsx`, index files are `_index.tsx`.
+- Example: `routes/+_authRequired/layout.tsx` instead of `routes/+_authRequired.layout.tsx`.

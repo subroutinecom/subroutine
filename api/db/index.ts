@@ -3,6 +3,7 @@ import type { MigrationProvider } from "kysely";
 import type { Database as DB } from "./schema";
 import pg from "pg";
 import * as migration001 from "../migrations/001_initial_schema";
+import * as migration002 from "../migrations/002_auth_schema";
 
 const { Pool } = pg;
 
@@ -25,6 +26,7 @@ const migrationProvider: MigrationProvider = {
   getMigrations: () =>
     Promise.resolve({
       "001_initial_schema": migration001,
+      "002_auth_schema": migration002,
     }),
 };
 
