@@ -5,6 +5,12 @@
 - When using Deno, we use --sloppy-imports. You Must Not add extensions (.ts) to file imports.
 - When adding new dependencies, only do so by calling `deno install <dep>` without specifying a version.
 
+Configuration:
+
+- **Environment variables (.env)** must ONLY be used for secrets (API keys, client secrets, database passwords, etc.)
+- **Standard configuration values** (URLs, feature flags, CORS origins, etc.) must be driven via `config.yaml`
+- Never add configuration to environment variables if it can go in config.yaml
+
 Typescript Conventions:
 
 - Prefer `const fun = async () => {}` over `async fun() {}`

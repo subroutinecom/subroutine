@@ -18,6 +18,7 @@ export const getAuth = async () => {
     }),
     baseUrl: Deno.env.get("BASE_URL") || "http://localhost:3002",
     secret: Deno.env.get("BETTER_AUTH_SECRET")!,
+    trustedOrigins: config.auth.allowedOrigins,
     emailAndPassword: {
       enabled: config.auth.providers.emailPassword.enabled,
     },

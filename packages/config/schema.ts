@@ -12,6 +12,7 @@ export const aiConfigSchema = z.object({
 
 export const authConfigSchema = z.object({
   baseUrl: z.string().url("Base URL must be a valid URL").optional(),
+  allowedOrigins: z.array(z.string().url()).default(["http://localhost:3001"]),
   providers: z.object({
     github: z.object({
       enabled: z.boolean(),

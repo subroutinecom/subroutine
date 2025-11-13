@@ -1,6 +1,7 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import { cors } from "@hono/hono/cors";
 import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { initializeDatabase } from "./db/index.ts";
@@ -13,6 +14,7 @@ import {
   listSubroutines,
 } from "./models/subroutine.ts";
 import { getAuth } from "./auth.ts";
+import { getConfig } from "@subroutinecom/config";
 
 const initialize = async () => {
   const app = new OpenAPIHono({
@@ -39,6 +41,19 @@ const initialize = async () => {
   await initializeDatabase();
 
   const auth = await getAuth();
+  const config = await getConfig();
+
+  // Configure CORS for auth routes - must be before the route handler
+  app.use(
+    "/api/auth/*",
+    // @ts-ignore - OpenAPIHono and Hono CORS middleware type mismatch
+    cors({
+      origin: config.auth.allowedOrigins,
+      credentials: true,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization"],
+    }),
+  );
 
   app.get("/api/auth/test-route", (c) => {
     return c.json({ message: "Hono routing works!" });

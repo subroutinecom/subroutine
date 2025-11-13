@@ -1,6 +1,7 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@hono/hono@^4.10.5": "4.10.5",
     "jsr:@std/assert@*": "1.0.15",
     "jsr:@std/assert@1": "1.0.15",
     "jsr:@std/assert@^1.0.14": "1.0.15",
@@ -73,6 +74,9 @@
     "npm:zod@^3.25.76": "3.25.76"
   },
   "jsr": {
+    "@hono/hono@4.10.5": {
+      "integrity": "13dbf2a528feb8189ad13394b213f0cf5f83b0ba4b2fadd0549993426db9ad2d"
+    },
     "@std/assert@1.0.15": {
       "integrity": "d64018e951dbdfab9777335ecdb000c0b4e3df036984083be219ce5941e4703b",
       "dependencies": [
@@ -4534,6 +4538,7 @@
       },
       "api": {
         "dependencies": [
+          "jsr:@hono/hono@^4.10.5",
           "npm:@ai-sdk/anthropic@^2.0.41",
           "npm:@ai-sdk/google-vertex@^3.0.58",
           "npm:@ai-sdk/openai@^2.0.64",

@@ -21,26 +21,45 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    await authClient.signIn.email(
-      { email, password },
-      {
-        onRequest: () => {
-          setLoading(true);
+    if (isSignUp) {
+      await authClient.signUp.email(
+        { email, password, name: email },
+        {
+          onRequest: () => {
+            setLoading(true);
+          },
+          onSuccess: () => {
+            navigate("/");
+          },
+          onError: (ctx) => {
+            setLoading(false);
+            setError(ctx.error.message || "Sign up failed");
+          },
         },
-        onSuccess: () => {
-          navigate("/");
+      );
+    } else {
+      await authClient.signIn.email(
+        { email, password },
+        {
+          onRequest: () => {
+            setLoading(true);
+          },
+          onSuccess: () => {
+            navigate("/");
+          },
+          onError: (ctx) => {
+            setLoading(false);
+            setError(ctx.error.message || "Invalid credentials");
+          },
         },
-        onError: (ctx) => {
-          setLoading(false);
-          setError(ctx.error.message || "Invalid credentials");
-        },
-      },
-    );
+      );
+    }
   };
 
   const handleSocialSignIn = async (provider: "github" | "google") => {
@@ -57,107 +76,120 @@ export default function Login() {
   const hasSocialProviders =
     authProviders.github.enabled || authProviders.google.enabled;
   const hasEmailPassword = authProviders.emailPassword.enabled;
+  const showSocialLogins = !isSignUp && hasSocialProviders;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-base-200">
       <div className="card w-96 bg-base-100 shadow-xl">
         <div className="card-body">
-          <h2 className="card-title text-2xl font-bold text-center">Sign In</h2>
+          <h2 className="card-title text-2xl mb-4">
+            {isSignUp ? "Sign Up" : "Sign In"}
+          </h2>
 
-          <div className="space-y-4">
-            {hasSocialProviders && (
-              <div className="space-y-2">
-                {authProviders.github.enabled && (
-                  <button
-                    type="button"
-                    onClick={() => handleSocialSignIn("github")}
-                    className="btn btn-outline w-full gap-2"
-                    disabled={loading}
-                  >
-                    <img
-                      src="https://cdn.simpleicons.org/github"
-                      alt="GitHub"
-                      className="w-5 h-5"
-                    />
-                    Continue with GitHub
-                  </button>
-                )}
-                {authProviders.google.enabled && (
-                  <button
-                    type="button"
-                    onClick={() => handleSocialSignIn("google")}
-                    className="btn btn-outline w-full gap-2"
-                    disabled={loading}
-                  >
-                    <img
-                      src="https://cdn.simpleicons.org/google"
-                      alt="Google"
-                      className="w-5 h-5"
-                    />
-                    Continue with Google
-                  </button>
-                )}
+          {showSocialLogins && (
+            <div className="space-y-2 mb-4">
+              {authProviders.github.enabled && (
+                <button
+                  type="button"
+                  onClick={() => handleSocialSignIn("github")}
+                  className="btn btn-outline w-full gap-2"
+                  disabled={loading}
+                >
+                  <img
+                    src="https://cdn.simpleicons.org/github"
+                    alt="GitHub"
+                    className="w-5 h-5"
+                  />
+                  Continue with GitHub
+                </button>
+              )}
+              {authProviders.google.enabled && (
+                <button
+                  type="button"
+                  onClick={() => handleSocialSignIn("google")}
+                  className="btn btn-outline w-full gap-2"
+                  disabled={loading}
+                >
+                  <img
+                    src="https://cdn.simpleicons.org/google"
+                    alt="Google"
+                    className="w-5 h-5"
+                  />
+                  Continue with Google
+                </button>
+              )}
+            </div>
+          )}
+
+          {showSocialLogins && hasEmailPassword && (
+            <div className="divider">OR</div>
+          )}
+
+          {hasEmailPassword && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm mb-2">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="input input-bordered w-full"
+                required
+                disabled={loading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm mb-2">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="input input-bordered w-full"
+                required
+                disabled={loading}
+              />
+            </div>
+
+            {error && (
+              <div className="alert alert-error">
+                <span>{error}</span>
               </div>
             )}
 
-            {hasSocialProviders && hasEmailPassword && (
-              <div className="divider">OR</div>
-            )}
+            <button
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="loading loading-spinner"></span>
+              ) : isSignUp ? (
+                "Sign Up"
+              ) : (
+                "Sign In"
+              )}
+            </button>
 
-            {hasEmailPassword && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Email</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    className="input input-bordered"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Password</span>
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="input input-bordered"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                {error && (
-                  <div className="alert alert-error">
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                <div className="form-control mt-6">
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <span className="loading loading-spinner"></span>
-                    ) : (
-                      "Sign In"
-                    )}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
+            <div className="text-center text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError("");
+                }}
+                className="link link-primary"
+                disabled={loading}
+              >
+                {isSignUp
+                  ? "Already have an account? Sign in"
+                  : "Don't have an account? Sign up"}
+              </button>
+            </div>
+            </form>
+          )}
         </div>
       </div>
     </div>
