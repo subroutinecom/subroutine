@@ -1,4 +1,4 @@
-import { parse } from "@std/yaml";
+import { parse } from "yaml";
 import { configSchema, type Config } from "./schema.ts";
 
 let cachedConfig: Config | null = null;

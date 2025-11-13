@@ -11,6 +11,7 @@ export default tseslint.config([
       "**/.react-router/**",
       "**/.vite/**",
       "**/ecosystem.config.js",
+      "**/build/**",
     ],
   },
 

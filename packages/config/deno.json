@@ -1,7 +1,7 @@
 {
   "name": "@subroutinecom/config",
   "imports": {
-    "@std/yaml": "jsr:@std/yaml@^1.0.10",
+    "yaml": "npm:yaml@^2.8.1",
     "zod": "npm:zod@^3.25.76"
   },
   "exports": {

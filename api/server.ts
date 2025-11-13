@@ -16,22 +16,22 @@ import { getAuth } from "./auth.ts";
 
 const initialize = async () => {
   const app = new OpenAPIHono({
-    //  defaultHook: (result, c) => {
-    //    if (!result.success) {
-    //      const message = result.error.issues
-    //        .map((i) => `${i.path.join(".")} ${i.message.toLowerCase()}`)
-    //        .join(", ");
-    //      return c.json(
-    //        {
-    //          error: {
-    //            code: "VALIDATION",
-    //            message,
-    //          },
-    //        },
-    //        400,
-    //      );
-    //    }
-    //  },
+    defaultHook: (result, c) => {
+      if (!result.success) {
+        const message = result.error.issues
+          .map((i) => `${i.path.join(".")} ${i.message.toLowerCase()}`)
+          .join(", ");
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION",
+              message,
+            },
+          },
+          400,
+        );
+      }
+    },
   });
 
   const PORT = process.env.PORT ? Number(process.env.PORT) : 80;

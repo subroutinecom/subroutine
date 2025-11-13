@@ -11,6 +11,7 @@
     "daisyui": "npm:daisyui@^5.4.7",
     "date-fns": "npm:date-fns@^4.1.0",
     "isbot": "npm:isbot@^5.1.31",
+    "js-yaml": "npm:js-yaml@^4.1.1",
     "lucide-react": "npm:lucide-react@^0.553.0",
     "react": "npm:react@^19.1.1",
     "react-dom": "npm:react-dom@^19.1.1",
@@ -26,13 +27,11 @@
     "vite": "npm:vite@^7.1.7",
     "vite-tsconfig-paths": "npm:vite-tsconfig-paths@^5.1.4",
     "arg": "npm:arg@^5",
-    "~/": "./app/",
-    "@subroutinecom/config": "workspace:*",
-    "zod": "npm:zod@^3.25.76",
-    "@std/yaml": "jsr:@std/yaml@^1.0.10"
+    "yaml": "npm:yaml@^2.8.1",
+    "~/": "./app/"
   },
   "compilerOptions": {
-    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "lib": ["deno.ns", "DOM", "DOM.Iterable", "ES2022"],
     "types": ["npm:vite/client"],
     "jsx": "react-jsx",
     "strict": true,

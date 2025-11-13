@@ -1,7 +1,6 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@std/yaml@^1.0.10": "1.0.10",
     "npm:@ai-sdk/anthropic@^2.0.41": "2.0.41_zod@3.25.76",
     "npm:@ai-sdk/google-vertex@^3.0.58": "3.0.58_zod@3.25.76",
     "npm:@ai-sdk/openai@^2.0.64": "2.0.64_zod@3.25.76",
@@ -18,12 +17,8 @@
     "npm:kysely@~0.28.8": "0.28.8",
     "npm:nanoid@^5.1.6": "5.1.6",
     "npm:pg@^8.16.3": "8.16.3",
+    "npm:yaml@^2.8.1": "2.8.1",
     "npm:zod@^3.25.76": "3.25.76"
-  },
-  "jsr": {
-    "@std/yaml@1.0.10": {
-      "integrity": "245706ea3511cc50c8c6d00339c23ea2ffa27bd2c7ea5445338f8feff31fa58e"
-    }
   },
   "npm": {
     "@ai-sdk/anthropic@2.0.41_zod@3.25.76": {
@@ -1509,7 +1504,6 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@std/yaml@^1.0.10",
       "npm:@ai-sdk/anthropic@^2.0.41",
       "npm:@ai-sdk/google-vertex@^3.0.58",
       "npm:@ai-sdk/openai@^2.0.64",
@@ -1526,6 +1520,7 @@
       "npm:kysely@~0.28.8",
       "npm:nanoid@^5.1.6",
       "npm:pg@^8.16.3",
+      "npm:yaml@^2.8.1",
       "npm:zod@^3.25.76"
     ]
   }

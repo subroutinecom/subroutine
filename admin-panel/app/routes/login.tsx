@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useLoaderData } from "react-router";
 import { authClient } from "~/lib/auth-client";
+import { getConfig } from "~/lib/config";
 
 export const loader = async () => {
-  const { getConfig } = await import("@subroutinecom/config");
   const config = await getConfig();
   return {
     authProviders: {

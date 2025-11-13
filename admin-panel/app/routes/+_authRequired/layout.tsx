@@ -1,8 +1,14 @@
-import { Outlet, redirect, useLoaderData, useNavigate } from "react-router";
-import type { Route } from "./+types/layout";
+import {
+  Link,
+  Outlet,
+  redirect,
+  useLoaderData,
+  useNavigate,
+  type LoaderFunctionArgs,
+} from "react-router";
 import { authClient } from "~/lib/auth-client";
 
-export const loader = async ({ request }: Route.LoaderArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { data: session, error } = await authClient.getSession({
     fetchOptions: {
       headers: request.headers,
@@ -34,7 +40,7 @@ export default function AuthRequired() {
     <div className="min-h-screen bg-base-200">
       <div className="navbar bg-base-100 shadow-lg">
         <div className="flex-1">
-          <a className="btn btn-ghost text-xl">Subroutine Admin</a>
+          <Link to="/" className="btn btn-ghost text-xl">Subroutine Admin</Link>
         </div>
         <div className="flex-none gap-2">
           <div className="dropdown dropdown-end">

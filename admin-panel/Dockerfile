@@ -38,6 +38,7 @@ COPY --from=build /app/admin-panel/node_modules /app/admin-panel/node_modules
 COPY ./admin-panel/deno.json /app/admin-panel/deno.json
 COPY ./admin-panel/ecosystem.config.cjs /app/admin-panel/ecosystem.config.cjs
 COPY ./admin-panel/manage.sh /app/admin-panel/manage.sh
+COPY ./config.yaml /app/admin-panel/config.yaml
 
 ENV NODE_ENV=production
 ARG CI

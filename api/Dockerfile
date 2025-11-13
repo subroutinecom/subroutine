@@ -37,6 +37,7 @@ WORKDIR /app/api
 COPY --from=build /app/api/api-server /release/build
 COPY ./api/ecosystem.config.js /app/api/ecosystem.config.js
 COPY ./api/manage.sh /app/api/manage.sh
+COPY ./config.yaml /app/config.yaml
 
 ENV NODE_ENV=production
 ARG CI
