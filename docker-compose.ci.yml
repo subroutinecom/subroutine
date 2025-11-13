@@ -10,7 +10,7 @@ services:
       args:
         <<: *common-args
   api:
-    volumes: !reset
+    volumes: !override
       - ./example.config.yaml:/app/config.yaml:ro
     build:
       target: prod
@@ -18,7 +18,7 @@ services:
         <<: *common-args
 
   admin-panel:
-    volumes: !reset
+    volumes: !override
       - ./example.config.yaml:/app/config.yaml:ro
     build:
       target: prod
