@@ -19,7 +19,7 @@ services:
 
   admin-panel:
     volumes: !reset
-      - ./example.config.yaml:/app/admin-panel/config.yaml:ro
+      - ./example.config.yaml:/app/config.yaml:ro
     build:
       target: prod
       args:

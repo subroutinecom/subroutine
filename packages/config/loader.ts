@@ -30,7 +30,13 @@ const findConfigPath = (): string => {
   const envPath = Deno.env.get("CONFIG_PATH");
   if (envPath) return envPath;
 
-  const candidates = ["/app/config.yaml", "./config.yaml", "../config.yaml"];
+  const candidates = [
+    "/app/config.yaml",
+    "./config.yaml",
+    "../config.yaml",
+    "/config.yaml",
+    "/app/config.yaml",
+  ];
 
   for (const path of candidates) {
     try {

@@ -22,7 +22,7 @@ let cachedConfig: Config | null = null;
 export const getConfig = async (): Promise<Config> => {
   if (cachedConfig) return cachedConfig;
 
-  const configPath = "/app/admin-panel/config.yaml";
+  const configPath = "/app/config.yaml";
   const yamlContent = await Deno.readTextFile(configPath);
   cachedConfig = parse(yamlContent) as Config;
 
