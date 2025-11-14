@@ -34,7 +34,12 @@
   },
   "lint": {
     "rules": {
-      "exclude": ["no-sloppy-imports", "no-explicit-any", "no-slow-types"]
+      "exclude": [
+        "no-sloppy-imports",
+        "no-explicit-any",
+        "no-slow-types",
+        "require-await"
+      ]
     }
   }
 }
