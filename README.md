@@ -1,4 +1,8 @@
-# subroutine
+[![Typecheck](https://github.com/subroutinecom/subroutine/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/subroutinecom/subroutine/actions/workflows/typecheck.yml)
+[![Tests](https://github.com/subroutinecom/subroutine/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/subroutinecom/subroutine/actions/workflows/test.yml)
+[![License: FSL-1.1-MIT](https://img.shields.io/badge/License-FSL--1.1--MIT-blue.svg)](LICENSE)
+
+# Subroutine
 
 ## Setup
 
