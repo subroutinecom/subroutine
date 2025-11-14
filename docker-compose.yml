@@ -79,7 +79,7 @@ services:
 
       - ./admin-panel:/app/admin-panel
       - ./eslint:/app/eslint
-      - ./config.yaml:/app/admin-panel/config.yaml:ro
+      - ./config.yaml:/app/config.yaml:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 3s

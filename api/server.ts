@@ -717,7 +717,7 @@ const initialize = async () => {
     },
   });
 
-  Deno.serve({ port: PORT }, app.fetch);
+  Deno.serve({ port: PORT, hostname: "::" }, app.fetch);
 
   console.log(`Server running on port ${PORT}`);
   console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);

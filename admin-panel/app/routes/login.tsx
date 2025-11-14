@@ -1,27 +1,29 @@
-import { useState } from "react";
-import { useNavigate, useLoaderData } from "react-router";
-import { authClient } from "~/lib/auth-client";
-import { getConfig } from "~/lib/config";
-
-export const loader = async () => {
-  const config = await getConfig();
-  return {
-    authProviders: {
-      github: { enabled: config.auth.providers.github.enabled },
-      google: { enabled: config.auth.providers.google.enabled },
-      emailPassword: { enabled: config.auth.providers.emailPassword.enabled },
-    },
-  };
-};
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { authClient } from "../lib/auth-client";
+import { useAuth } from "~/components/providers/AuthProvider";
 
 export default function Login() {
-  const { authProviders } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading: authLoading, refetch } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+
+  // TODO: use config file for this.
+  const authProviders = {
+    github: { enabled: true },
+    google: { enabled: true },
+    emailPassword: { enabled: true },
+  };
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/");
+    }
+  }, [authLoading, isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,8 @@ export default function Login() {
           onRequest: () => {
             setLoading(true);
           },
-          onSuccess: () => {
+          onSuccess: async () => {
+            await refetch();
             navigate("/");
           },
           onError: (ctx) => {
@@ -50,7 +53,8 @@ export default function Login() {
           onRequest: () => {
             setLoading(true);
           },
-          onSuccess: () => {
+          onSuccess: async () => {
+            await refetch();
             navigate("/");
           },
           onError: (ctx) => {
@@ -96,7 +100,7 @@ export default function Login() {
                   disabled={loading}
                 >
                   <img
-                    src="https://cdn.simpleicons.org/github"
+                    src="/icons/github.svg"
                     alt="GitHub"
                     className="w-5 h-5"
                   />
@@ -111,7 +115,7 @@ export default function Login() {
                   disabled={loading}
                 >
                   <img
-                    src="https://cdn.simpleicons.org/google"
+                    src="/icons/google.svg"
                     alt="Google"
                     className="w-5 h-5"
                   />
@@ -127,67 +131,67 @@ export default function Login() {
 
           {hasEmailPassword && (
             <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm mb-2">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="input input-bordered w-full"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm mb-2">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input input-bordered w-full"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            {error && (
-              <div className="alert alert-error">
-                <span>{error}</span>
+              <div>
+                <label className="block text-sm mb-2">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="input input-bordered w-full"
+                  required
+                  disabled={loading}
+                />
               </div>
-            )}
 
-            <button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="loading loading-spinner"></span>
-              ) : isSignUp ? (
-                "Sign Up"
-              ) : (
-                "Sign In"
+              <div>
+                <label className="block text-sm mb-2">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input input-bordered w-full"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              {error && (
+                <div className="alert alert-error">
+                  <span>{error}</span>
+                </div>
               )}
-            </button>
 
-            <div className="text-center text-sm">
               <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setError("");
-                }}
-                className="link link-primary"
+                type="submit"
+                className="btn btn-primary w-full"
                 disabled={loading}
               >
-                {isSignUp
-                  ? "Already have an account? Sign in"
-                  : "Don't have an account? Sign up"}
+                {loading ? (
+                  <span className="loading loading-spinner"></span>
+                ) : isSignUp ? (
+                  "Sign Up"
+                ) : (
+                  "Sign In"
+                )}
               </button>
-            </div>
+
+              <div className="text-center text-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(!isSignUp);
+                    setError("");
+                  }}
+                  className="link link-primary"
+                  disabled={loading}
+                >
+                  {isSignUp
+                    ? "Already have an account? Sign in"
+                    : "Don't have an account? Sign up"}
+                </button>
+              </div>
             </form>
           )}
         </div>
