@@ -28,6 +28,29 @@ interface Run {
 
 const MOCK_HEADERS: HeadersInit = { "x-use-mock": "true" };
 
+async function pollRunCompletion(
+  runId: string,
+  maxAttempts = 40,
+  intervalMs = 50,
+): Promise<Run> {
+  for (let i = 0; i < maxAttempts; i++) {
+    const statusResponse = await makeRequest({
+      hostname: "api",
+      path: `/api/run/${runId}`,
+      method: "GET",
+      headers: MOCK_HEADERS,
+    });
+    const status: { run: Run } = JSON.parse(statusResponse.data);
+    if (status.run.status !== "queued" && status.run.status !== "running") {
+      return status.run;
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  throw new Error(
+    `Run ${runId} did not complete after ${maxAttempts * intervalMs}ms`,
+  );
+}
+
 function makeRequest(
   options: {
     hostname: string;
@@ -36,7 +59,7 @@ function makeRequest(
     method?: string;
     headers?: HeadersInit;
   },
-  data?: string
+  data?: string,
 ): Promise<TestResponse> {
   return new Promise((resolve, reject) => {
     const url = new URL(`http://${options.hostname}`);
@@ -86,7 +109,7 @@ it("create subroutine via REST API", async () => {
     JSON.stringify({
       useMock: true,
       request: "Create a function that adds two numbers",
-    })
+    }),
   );
 
   expect(response.status, "Should return 201 Created").toBe(201);
@@ -95,13 +118,16 @@ it("create subroutine via REST API", async () => {
   const subroutine: Subroutine = data.subroutine;
   expect(typeof subroutine.id, "Should have an ID").toBe("string");
   expect(typeof subroutine.source, "Should have source code").toBe("string");
-  expect(subroutine.createdFrom.request, "Should retain original request").toBe("Create a function that adds two numbers");
-  expect(typeof subroutine.createdAt, "Should have createdAt timestamp").toBe("string");
+  expect(subroutine.createdFrom.request, "Should retain original request").toBe(
+    "Create a function that adds two numbers",
+  );
+  expect(typeof subroutine.createdAt, "Should have createdAt timestamp").toBe(
+    "string",
+  );
   expect(typeof data.subroutineUri, "Should have subroutineUri").toBe("string");
 });
 
 it("get specific subroutine by ID", async () => {
-  // First create a subroutine
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -109,13 +135,12 @@ it("get specific subroutine by ID", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Test subroutine for retrieval" })
+    JSON.stringify({ useMock: true, request: "Test subroutine for retrieval" }),
   );
 
   const createData = JSON.parse(createResponse.data);
   const created: Subroutine = createData.subroutine;
 
-  // Then retrieve it
   const getResponse = await makeRequest({
     hostname: "api",
     path: `/api/subroutine/${created.id}`,
@@ -128,11 +153,13 @@ it("get specific subroutine by ID", async () => {
   const getData = JSON.parse(getResponse.data);
   const retrieved: Subroutine = getData.subroutine;
   expect(retrieved.id, "Should return same subroutine").toBe(created.id);
-  expect(retrieved.createdFrom.request, "Should preserve createdFrom.request").toBe("Test subroutine for retrieval");
+  expect(
+    retrieved.createdFrom.request,
+    "Should preserve createdFrom.request",
+  ).toBe("Test subroutine for retrieval");
 });
 
 it("list all subroutines", async () => {
-  // Create at least one subroutine
   await makeRequest(
     {
       hostname: "api",
@@ -140,10 +167,9 @@ it("list all subroutines", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Test subroutine for listing" })
+    JSON.stringify({ useMock: true, request: "Test subroutine for listing" }),
   );
 
-  // List all subroutines
   const response = await makeRequest({
     hostname: "api",
     path: "/api/subroutine",
@@ -156,11 +182,12 @@ it("list all subroutines", async () => {
   const data = JSON.parse(response.data);
   const subroutines: Subroutine[] = data.subroutines;
   expect(Array.isArray(subroutines), "Should return an array").toBe(true);
-  expect(subroutines.length > 0, "Should have at least one subroutine").toBe(true);
+  expect(subroutines.length > 0, "Should have at least one subroutine").toBe(
+    true,
+  );
 });
 
 it("run a subroutine", async () => {
-  // First create a subroutine
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -168,14 +195,13 @@ it("run a subroutine", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Test subroutine for execution" })
+    JSON.stringify({ useMock: true, request: "Test subroutine for execution" }),
   );
 
   const createData = JSON.parse(createResponse.data);
   const subroutine: Subroutine = createData.subroutine;
   expect(subroutine?.id, "Subroutine should have been created").toBeDefined();
 
-  // Then run it
   const runResponse = await makeRequest(
     {
       hostname: "api",
@@ -183,7 +209,7 @@ it("run a subroutine", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: {} })
+    JSON.stringify({ inputs: {} }),
   );
 
   expect(runResponse.status, "Should return 201 Created").toBe(201);
@@ -191,8 +217,13 @@ it("run a subroutine", async () => {
   const runData = JSON.parse(runResponse.data);
   const run: Run = runData.run;
   expect(typeof run.id, "Run should have an ID").toBe("string");
-  expect(run.subroutineId, "Run should reference the subroutine").toBe(subroutine.id);
-  expect(["queued", "running", "succeeded"].includes(run.status), "Run should have valid status").toBe(true);
+  expect(run.subroutineId, "Run should reference the subroutine").toBe(
+    subroutine.id,
+  );
+  expect(
+    ["queued", "running", "succeeded"].includes(run.status),
+    "Run should have valid status",
+  ).toBe(true);
   expect(typeof runData.runUri, "Should have runUri").toBe("string");
 });
 
@@ -206,7 +237,7 @@ it("execute request to create and run a subroutine", async () => {
     },
     JSON.stringify({
       request: "Create a function that multiplies two numbers",
-    })
+    }),
   );
 
   expect(response.status, "Should return 201 Created").toBe(201);
@@ -216,16 +247,26 @@ it("execute request to create and run a subroutine", async () => {
   const run: Run = data.run;
 
   expect(typeof subroutine?.id, "Should create a subroutine").toBe("string");
-  expect(typeof data.subroutineUri, "Response should include subroutineUri").toBe("string");
+  expect(
+    typeof data.subroutineUri,
+    "Response should include subroutineUri",
+  ).toBe("string");
   expect(typeof run?.id, "Should create a run").toBe("string");
-  expect(run.subroutineId, "Run should reference the created subroutine").toBe(subroutine.id);
+  expect(run.subroutineId, "Run should reference the created subroutine").toBe(
+    subroutine.id,
+  );
   expect(typeof data.runUri, "Response should include runUri").toBe("string");
-  expect(subroutine.initialInputs, "Subroutine should include initial inputs").toBeDefined();
-  expect(typeof data.initialInputs, "Response should include initial inputs").toBe("object");
+  expect(
+    subroutine.initialInputs,
+    "Subroutine should include initial inputs",
+  ).toBeDefined();
+  expect(
+    typeof data.initialInputs,
+    "Response should include initial inputs",
+  ).toBe("object");
 });
 
 it("get run status and wait for completion", async () => {
-  // Create and run a subroutine
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -233,7 +274,10 @@ it("get run status and wait for completion", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Test subroutine for run status" })
+    JSON.stringify({
+      useMock: true,
+      request: "Test subroutine for run status",
+    }),
   );
 
   const createData = JSON.parse(createResponse.data);
@@ -247,35 +291,25 @@ it("get run status and wait for completion", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: {} })
+    JSON.stringify({ inputs: {} }),
   );
 
   const runData = JSON.parse(runResponse.data);
   const run: Run = runData.run;
 
-  // Wait for completion (mock execution takes ~110ms)
-  await new Promise((resolve) => setTimeout(resolve, 200));
+  const completedRun = await pollRunCompletion(run.id);
 
-  // Check run status
-  const statusResponse = await makeRequest({
-    hostname: "api",
-    path: `/api/run/${run.id}`,
-    method: "GET",
-    headers: MOCK_HEADERS,
-  });
-
-  expect(statusResponse.status, "Should return 200 OK").toBe(200);
-
-  const statusData = JSON.parse(statusResponse.data);
-  const completedRun: Run = statusData.run;
   expect(completedRun.status, "Run should be completed").toBe("succeeded");
-  expect(typeof completedRun.startedAt, "Should have startedAt timestamp").toBe("string");
-  expect(typeof completedRun.endedAt, "Should have endedAt timestamp").toBe("string");
+  expect(typeof completedRun.startedAt, "Should have startedAt timestamp").toBe(
+    "string",
+  );
+  expect(typeof completedRun.endedAt, "Should have endedAt timestamp").toBe(
+    "string",
+  );
   expect(completedRun.outputs !== null, "Should have outputs").toBe(true);
 });
 
 it("list all runs", async () => {
-  // Create and run a subroutine to ensure there's at least one run
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -283,7 +317,10 @@ it("list all runs", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Test subroutine for run listing" })
+    JSON.stringify({
+      useMock: true,
+      request: "Test subroutine for run listing",
+    }),
   );
 
   const createData = JSON.parse(createResponse.data);
@@ -297,10 +334,9 @@ it("list all runs", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: {} })
+    JSON.stringify({ inputs: {} }),
   );
 
-  // List all runs
   const response = await makeRequest({
     hostname: "api",
     path: "/api/run",
@@ -327,7 +363,9 @@ it("get non-existent subroutine returns 404", async () => {
   expect(response.status, "Should return 404 Not Found").toBe(404);
   const errorData = JSON.parse(response.data);
   expect(typeof errorData.error, "Should have error object").toBe("object");
-  expect(typeof errorData.error.message, "Should have error message").toBe("string");
+  expect(typeof errorData.error.message, "Should have error message").toBe(
+    "string",
+  );
 });
 
 it("run non-existent subroutine returns 404", async () => {
@@ -338,13 +376,15 @@ it("run non-existent subroutine returns 404", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: {} })
+    JSON.stringify({ inputs: {} }),
   );
 
   expect(response.status, "Should return 404 Not Found").toBe(404);
   const errorData = JSON.parse(response.data);
   expect(typeof errorData.error, "Should have error object").toBe("object");
-  expect(typeof errorData.error.message, "Should have error message").toBe("string");
+  expect(typeof errorData.error.message, "Should have error message").toBe(
+    "string",
+  );
 });
 
 it("get non-existent run returns 404", async () => {
@@ -358,7 +398,9 @@ it("get non-existent run returns 404", async () => {
   expect(response.status, "Should return 404 Not Found").toBe(404);
   const errorData = JSON.parse(response.data);
   expect(typeof errorData.error, "Should have error object").toBe("object");
-  expect(typeof errorData.error.message, "Should have error message").toBe("string");
+  expect(typeof errorData.error.message, "Should have error message").toBe(
+    "string",
+  );
 });
 
 it("create subroutine without request field returns 400", async () => {
@@ -369,14 +411,19 @@ it("create subroutine without request field returns 400", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true })
-  ); // Missing 'request' field
+    JSON.stringify({ useMock: true }),
+  );
 
   expect(response.status, "Should return 400 Bad Request").toBe(400);
   const errorData = JSON.parse(response.data);
   expect(typeof errorData.error, "Should have error object").toBe("object");
-  expect(typeof errorData.error.message, "Should have error message").toBe("string");
-  expect(errorData.error.message, "Error should mention missing request field").toContain("request");
+  expect(typeof errorData.error.message, "Should have error message").toBe(
+    "string",
+  );
+  expect(
+    errorData.error.message,
+    "Error should mention missing request field",
+  ).toContain("request");
 });
 
 it("create multiple subroutines have unique IDs", async () => {
@@ -387,7 +434,7 @@ it("create multiple subroutines have unique IDs", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "First subroutine" })
+    JSON.stringify({ useMock: true, request: "First subroutine" }),
   );
 
   const response2 = await makeRequest(
@@ -397,7 +444,7 @@ it("create multiple subroutines have unique IDs", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Second subroutine" })
+    JSON.stringify({ useMock: true, request: "Second subroutine" }),
   );
 
   const data1 = JSON.parse(response1.data);
@@ -409,7 +456,6 @@ it("create multiple subroutines have unique IDs", async () => {
 });
 
 it("multiple runs of same subroutine have unique IDs", async () => {
-  // Create a subroutine
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -417,14 +463,16 @@ it("multiple runs of same subroutine have unique IDs", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Test subroutine for multiple runs" })
+    JSON.stringify({
+      useMock: true,
+      request: "Test subroutine for multiple runs",
+    }),
   );
 
   const createData = JSON.parse(createResponse.data);
   const subroutine: Subroutine = createData.subroutine;
   expect(subroutine?.id, "Subroutine should have been created").toBeDefined();
 
-  // Run it twice
   const run1Response = await makeRequest(
     {
       hostname: "api",
@@ -432,7 +480,7 @@ it("multiple runs of same subroutine have unique IDs", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: {} })
+    JSON.stringify({ inputs: {} }),
   );
 
   const run2Response = await makeRequest(
@@ -442,7 +490,7 @@ it("multiple runs of same subroutine have unique IDs", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: {} })
+    JSON.stringify({ inputs: {} }),
   );
 
   const run1Data = JSON.parse(run1Response.data);
@@ -451,8 +499,12 @@ it("multiple runs of same subroutine have unique IDs", async () => {
   const run2: Run = run2Data.run;
 
   expect(run1.id !== run2.id, "Runs should have unique IDs").toBe(true);
-  expect(run1.subroutineId, "Both runs should reference same subroutine").toBe(subroutine.id);
-  expect(run2.subroutineId, "Both runs should reference same subroutine").toBe(subroutine.id);
+  expect(run1.subroutineId, "Both runs should reference same subroutine").toBe(
+    subroutine.id,
+  );
+  expect(run2.subroutineId, "Both runs should reference same subroutine").toBe(
+    subroutine.id,
+  );
 });
 
 // ========================================
@@ -460,7 +512,6 @@ it("multiple runs of same subroutine have unique IDs", async () => {
 // ========================================
 
 it("subroutine actually executes addition in sandbox", async () => {
-  // Create a subroutine that adds numbers
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -468,17 +519,20 @@ it("subroutine actually executes addition in sandbox", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Create a function that adds two numbers" })
+    JSON.stringify({
+      useMock: true,
+      request: "Create a function that adds two numbers",
+    }),
   );
 
   const createData = JSON.parse(createResponse.data);
   const subroutine: Subroutine = createData.subroutine;
   expect(subroutine?.id, "Subroutine should have been created").toBeDefined();
 
-  // Verify the generated code includes addition logic
-  expect(subroutine.source, "Generated code should mention addition").toContain("add");
+  expect(subroutine.source, "Generated code should mention addition").toContain(
+    "add",
+  );
 
-  // Run it with custom inputs
   const runResponse = await makeRequest(
     {
       hostname: "api",
@@ -486,33 +540,23 @@ it("subroutine actually executes addition in sandbox", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: { a: 15, b: 27 } })
+    JSON.stringify({ inputs: { a: 15, b: 27 } }),
   );
 
   const runData = JSON.parse(runResponse.data);
   const run: Run = runData.run;
 
-  // Wait for execution to complete
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  // Check that it actually computed the sum
-  const statusResponse = await makeRequest({
-    hostname: "api",
-    path: `/api/run/${run.id}`,
-    method: "GET",
-    headers: MOCK_HEADERS,
-  });
-
-  const statusData = JSON.parse(statusResponse.data);
-  const completedRun: Run = statusData.run;
+  const completedRun = await pollRunCompletion(run.id);
 
   expect(completedRun.status, "Run should succeed").toBe("succeeded");
   expect(completedRun.outputs !== null, "Should have outputs").toBe(true);
-  expect((completedRun.outputs as Record<string, unknown>)?.result, "Should compute 15 + 27 = 42").toBe(42);
+  expect(
+    (completedRun.outputs as Record<string, unknown>)?.result,
+    "Should compute 15 + 27 = 42",
+  ).toBe(42);
 });
 
 it("subroutine executes fibonacci in sandbox", async () => {
-  // Create a subroutine that generates fibonacci sequence
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -520,14 +564,13 @@ it("subroutine executes fibonacci in sandbox", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Generate fibonacci sequence" })
+    JSON.stringify({ useMock: true, request: "Generate fibonacci sequence" }),
   );
 
   const createData = JSON.parse(createResponse.data);
   const subroutine: Subroutine = createData.subroutine;
   expect(subroutine?.id, "Subroutine should have been created").toBeDefined();
 
-  // Run it
   const runResponse = await makeRequest(
     {
       hostname: "api",
@@ -535,24 +578,13 @@ it("subroutine executes fibonacci in sandbox", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: { n: 8 } })
+    JSON.stringify({ inputs: { n: 8 } }),
   );
 
   const runData = JSON.parse(runResponse.data);
   const run: Run = runData.run;
 
-  // Wait for execution
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  const statusResponse = await makeRequest({
-    hostname: "api",
-    path: `/api/run/${run.id}`,
-    method: "GET",
-    headers: MOCK_HEADERS,
-  });
-
-  const statusData = JSON.parse(statusResponse.data);
-  const completedRun: Run = statusData.run;
+  const completedRun = await pollRunCompletion(run.id);
 
   expect(completedRun.status, "Run should succeed").toBe("succeeded");
   const outputs = completedRun.outputs as Record<string, unknown>;
@@ -564,7 +596,6 @@ it("subroutine executes fibonacci in sandbox", async () => {
 });
 
 it("subroutine with string reversal executes correctly", async () => {
-  // Create a subroutine that reverses strings
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -572,14 +603,13 @@ it("subroutine with string reversal executes correctly", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Reverse a string" })
+    JSON.stringify({ useMock: true, request: "Reverse a string" }),
   );
 
   const createData = JSON.parse(createResponse.data);
   const subroutine: Subroutine = createData.subroutine;
   expect(subroutine?.id, "Subroutine should have been created").toBeDefined();
 
-  // Run it with custom text
   const runResponse = await makeRequest(
     {
       hostname: "api",
@@ -587,32 +617,22 @@ it("subroutine with string reversal executes correctly", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: { text: "TypeScript" } })
+    JSON.stringify({ inputs: { text: "TypeScript" } }),
   );
 
   const runData = JSON.parse(runResponse.data);
   const run: Run = runData.run;
 
-  // Wait for execution
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  const statusResponse = await makeRequest({
-    hostname: "api",
-    path: `/api/run/${run.id}`,
-    method: "GET",
-    headers: MOCK_HEADERS,
-  });
-
-  const statusData = JSON.parse(statusResponse.data);
-  const completedRun: Run = statusData.run;
+  const completedRun = await pollRunCompletion(run.id);
 
   expect(completedRun.status, "Run should succeed").toBe("succeeded");
   const outputs = completedRun.outputs as Record<string, unknown>;
-  expect(outputs?.reversed, "Should reverse 'TypeScript' to 'tpircSepyT'").toBe("tpircSepyT");
+  expect(outputs?.reversed, "Should reverse 'TypeScript' to 'tpircSepyT'").toBe(
+    "tpircSepyT",
+  );
 });
 
 it("default hello world with custom name input", async () => {
-  // Create a generic subroutine (should use default hello world)
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -620,14 +640,13 @@ it("default hello world with custom name input", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Say hello" })
+    JSON.stringify({ useMock: true, request: "Say hello" }),
   );
 
   const createData = JSON.parse(createResponse.data);
   const subroutine: Subroutine = createData.subroutine;
   expect(subroutine?.id, "Subroutine should have been created").toBeDefined();
 
-  // Run with custom name
   const runResponse = await makeRequest(
     {
       hostname: "api",
@@ -635,33 +654,23 @@ it("default hello world with custom name input", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: { name: "Sandbox" } })
+    JSON.stringify({ inputs: { name: "Sandbox" } }),
   );
 
   const runData = JSON.parse(runResponse.data);
   const run: Run = runData.run;
 
-  // Wait for execution
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  const statusResponse = await makeRequest({
-    hostname: "api",
-    path: `/api/run/${run.id}`,
-    method: "GET",
-    headers: MOCK_HEADERS,
-  });
-
-  const statusData = JSON.parse(statusResponse.data);
-  const completedRun: Run = statusData.run;
+  const completedRun = await pollRunCompletion(run.id);
 
   expect(completedRun.status, "Run should succeed").toBe("succeeded");
   const outputs = completedRun.outputs as Record<string, unknown>;
-  expect(outputs?.message, "Should greet with custom name").toBe("Hello, Sandbox!");
+  expect(outputs?.message, "Should greet with custom name").toBe(
+    "Hello, Sandbox!",
+  );
   expect(typeof outputs?.timestamp, "Should have timestamp").toBe("string");
 });
 
 it("multiplication subroutine executes correctly", async () => {
-  // Create a subroutine that multiplies numbers
   const createResponse = await makeRequest(
     {
       hostname: "api",
@@ -669,14 +678,13 @@ it("multiplication subroutine executes correctly", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Multiply two numbers" })
+    JSON.stringify({ useMock: true, request: "Multiply two numbers" }),
   );
 
   const createData = JSON.parse(createResponse.data);
   const subroutine: Subroutine = createData.subroutine;
   expect(subroutine?.id, "Subroutine should have been created").toBeDefined();
 
-  // Run with custom inputs
   const runResponse = await makeRequest(
     {
       hostname: "api",
@@ -684,24 +692,13 @@ it("multiplication subroutine executes correctly", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ inputs: { a: 8, b: 9 } })
+    JSON.stringify({ inputs: { a: 8, b: 9 } }),
   );
 
   const runData = JSON.parse(runResponse.data);
   const run: Run = runData.run;
 
-  // Wait for execution
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  const statusResponse = await makeRequest({
-    hostname: "api",
-    path: `/api/run/${run.id}`,
-    method: "GET",
-    headers: MOCK_HEADERS,
-  });
-
-  const statusData = JSON.parse(statusResponse.data);
-  const completedRun: Run = statusData.run;
+  const completedRun = await pollRunCompletion(run.id);
 
   expect(completedRun.status, "Run should succeed").toBe("succeeded");
   const outputs = completedRun.outputs as Record<string, unknown>;
