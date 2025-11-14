@@ -3,12 +3,16 @@ import { organizationClient } from "better-auth/client/plugins";
 import fetchCookie from "fetch-cookie";
 import { CookieJar } from "tough-cookie";
 
-export const createTestAuthClient = () => {
-  // Create a cookie jar for this client instance
-  const cookieJar = new CookieJar();
+// dummy client but helps for typing. typing of these things is dynamic and infered
+// and in case of factory, it cannot infer it upfront
+const _dummyClient = createAuthClient({
+  baseURL: "http://api:80",
+  plugins: [organizationClient()],
+});
 
-  // Wrap fetch with cookie support and add Origin header
-  const cookieAwareFetch = async (
+export const createTestAuthClient = (): typeof _dummyClient => {
+  const cookieJar = new CookieJar();
+  const cookieAwareFetch = (
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> => {
@@ -23,10 +27,10 @@ export const createTestAuthClient = () => {
     baseURL: "http://api:80",
     plugins: [organizationClient()],
     fetchOptions: {
-      // @ts-expect-error - fetch-cookie types don't perfectly match Deno's fetch types, but runtime behavior is correct
-      customFetchImpl: cookieAwareFetch,
+      // deno-lint-ignore no-explicit-any
+      customFetchImpl: cookieAwareFetch as any,
     },
-  });
+  }) as typeof _dummyClient;
 };
 
 export const generateTestEmail = (prefix = "test") => {
