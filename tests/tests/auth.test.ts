@@ -1,15 +1,15 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
-import { createTestAuthClient, generateTestEmail } from "../utils/auth-client";
+import { generateTestEmail } from "../utils/auth-client";
+import { createAuthClient } from "better-auth/client";
 
 describe("Authentication", () => {
   const testEmail = generateTestEmail();
   const testPassword = "TestPassword123!";
 
   it("should sign up with email/password", async () => {
-    const client = createTestAuthClient();
-
-    const result = await client.signUp.email({
+    const authClient = createAuthClient();
+    const result = await authClient.signUp.email({
       email: testEmail,
       password: testPassword,
       name: testEmail,
@@ -23,9 +23,8 @@ describe("Authentication", () => {
   });
 
   it("should sign in with valid credentials", async () => {
-    const client = createTestAuthClient();
-
-    const result = await client.signIn.email({
+    const authClient = createAuthClient();
+    const result = await authClient.signIn.email({
       email: testEmail,
       password: testPassword,
     });
@@ -37,9 +36,8 @@ describe("Authentication", () => {
   });
 
   it("should fail to sign in with invalid password", async () => {
-    const client = createTestAuthClient();
-
-    const result = await client.signIn.email({
+    const authClient = createAuthClient();
+    const result = await authClient.signIn.email({
       email: testEmail,
       password: "WrongPassword123!",
     });
@@ -49,10 +47,10 @@ describe("Authentication", () => {
   });
 
   it("should fail to sign in with non-existent email", async () => {
-    const client = createTestAuthClient();
+    const authClient = createAuthClient();
     const nonExistentEmail = generateTestEmail("nonexistent");
 
-    const result = await client.signIn.email({
+    const result = await authClient.signIn.email({
       email: nonExistentEmail,
       password: testPassword,
     });
@@ -62,14 +60,13 @@ describe("Authentication", () => {
   });
 
   it("should get session with valid authentication", async () => {
-    const client = createTestAuthClient();
-
-    await client.signIn.email({
+    const authClient = createAuthClient();
+    await authClient.signIn.email({
       email: testEmail,
       password: testPassword,
     });
 
-    const session = await client.getSession();
+    const session = await authClient.getSession();
 
     expect(session.data, "Session data should be returned").not.toBeNull();
     expect(session.data?.user, "User should be in session").toBeDefined();
@@ -77,25 +74,23 @@ describe("Authentication", () => {
   });
 
   it("should sign out successfully", async () => {
-    const client = createTestAuthClient();
-
-    await client.signIn.email({
+    const authClient = createAuthClient();
+    await authClient.signIn.email({
       email: testEmail,
       password: testPassword,
     });
 
-    const result = await client.signOut();
+    const result = await authClient.signOut();
 
     expect(result.error, "Sign out should not have error").toBeNull();
 
-    const session = await client.getSession();
+    const session = await authClient.getSession();
     expect(session.data, "Session should be null after sign out").toBeNull();
   });
 
   it("should not get session without authentication", async () => {
-    const client = createTestAuthClient();
-
-    const session = await client.getSession();
+    const authClient = createAuthClient();
+    const session = await authClient.getSession();
 
     expect(session.data, "Session should be null").toBeNull();
   });

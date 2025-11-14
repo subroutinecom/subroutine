@@ -14,10 +14,12 @@ describe("Organizations", () => {
       const password = "TestPassword123!";
       const orgName = generateOrgName();
 
-      // Sign up and authenticate
-      await client.signUp.email({ email, password, name: email });
+      await client.signUp.email({
+        email: email,
+        password: password,
+        name: email,
+      });
 
-      // Create organization
       const result = await client.organization.create({
         name: orgName,
         slug: orgName.toLowerCase().replace(/\s+/g, "-"),
@@ -26,7 +28,10 @@ describe("Organizations", () => {
       expect(result.data, "Result should have data").not.toBeNull();
       expect(result.data?.id, "Organization should have an ID").toBeDefined();
       expect(result.data?.name, "Organization name should match").toBe(orgName);
-      expect(result.data?.slug, "Organization should have a slug").toBeDefined();
+      expect(
+        result.data?.slug,
+        "Organization should have a slug",
+      ).toBeDefined();
       expect(result.error, "Should not have error").toBeNull();
     });
 
@@ -37,7 +42,11 @@ describe("Organizations", () => {
       const orgName = generateOrgName("Custom Org");
       const customSlug = `custom-slug-${Date.now()}`;
 
-      await client.signUp.email({ email, password, name: email });
+      await client.signUp.email({
+        email: email,
+        password: password,
+        name: email,
+      });
 
       const result = await client.organization.create({
         name: orgName,
@@ -46,7 +55,7 @@ describe("Organizations", () => {
 
       expect(result.data?.name, "Organization name should match").toBe(orgName);
       expect(result.data?.slug, "Organization slug should match").toBe(
-        customSlug
+        customSlug,
       );
     });
 
@@ -57,9 +66,12 @@ describe("Organizations", () => {
       const org1Name = generateOrgName("Org1");
       const org2Name = generateOrgName("Org2");
 
-      await client.signUp.email({ email, password, name: email });
+      await client.signUp.email({
+        email: email,
+        password: password,
+        name: email,
+      });
 
-      // Create two organizations
       const org1 = await client.organization.create({
         name: org1Name,
         slug: org1Name.toLowerCase(),
@@ -69,16 +81,15 @@ describe("Organizations", () => {
         slug: org2Name.toLowerCase(),
       });
 
-      // List organizations
       const result = await client.organization.list();
 
       expect(result.data, "Result should have data").not.toBeNull();
       expect(Array.isArray(result.data), "Result should be an array").toBe(
-        true
+        true,
       );
       expect(
         result.data!.length,
-        "Should have at least 2 organizations"
+        "Should have at least 2 organizations",
       ).toBeGreaterThanOrEqual(2);
 
       const orgNames = result.data!.map((org) => org.name);
@@ -93,9 +104,12 @@ describe("Organizations", () => {
       const org1Name = generateOrgName("Org1");
       const org2Name = generateOrgName("Org2");
 
-      await client.signUp.email({ email, password, name: email });
+      await client.signUp.email({
+        email: email,
+        password: password,
+        name: email,
+      });
 
-      // Create two organizations
       const org1 = await client.organization.create({
         name: org1Name,
         slug: org1Name.toLowerCase(),
@@ -105,23 +119,20 @@ describe("Organizations", () => {
         slug: org2Name.toLowerCase(),
       });
 
-      // Set org1 as active
       await client.organization.setActive({ organizationId: org1.data!.id });
 
-      // Verify in session
       const session = await client.getSession();
       expect(
         session.data?.session.activeOrganizationId,
-        "Active organization should be org1"
+        "Active organization should be org1",
       ).toBe(org1.data?.id);
 
-      // Switch to org2
       await client.organization.setActive({ organizationId: org2.data!.id });
 
       const session2 = await client.getSession();
       expect(
         session2.data?.session.activeOrganizationId,
-        "Active organization should be org2"
+        "Active organization should be org2",
       ).toBe(org2.data?.id);
     });
 
@@ -141,44 +152,39 @@ describe("Organizations", () => {
 
   describe("Organization Members & Invitations", () => {
     it("should invite a member to organization", async () => {
-      const ownerClient = createTestAuthClient();
+      const client = createTestAuthClient();
       const ownerEmail = generateTestEmail("owner");
       const memberEmail = generateTestEmail("member");
       const password = "TestPassword123!";
       const orgName = generateOrgName();
 
-      // Owner creates account and organization
-      await ownerClient.signUp.email({
+      await client.signUp.email({
         email: ownerEmail,
-        password,
+        password: password,
         name: ownerEmail,
       });
-      const org = await ownerClient.organization.create({
+      const org = await client.organization.create({
         name: orgName,
         slug: orgName.toLowerCase(),
       });
 
-      // Invite member
-      const invitation = await ownerClient.organization.inviteMember({
+      const invitation = await client.organization.inviteMember({
         email: memberEmail,
         organizationId: org.data!.id,
         role: "member",
       });
 
       expect(invitation.data, "Invitation should be created").not.toBeNull();
-      expect(
-        invitation.data?.id,
-        "Invitation should have an ID"
-      ).toBeDefined();
+      expect(invitation.data?.id, "Invitation should have an ID").toBeDefined();
       expect(invitation.data?.email, "Invitation email should match").toBe(
-        memberEmail
+        memberEmail,
       );
       expect(
         invitation.data?.organizationId,
-        "Organization ID should match"
+        "Organization ID should match",
       ).toBe(org.data!.id);
       expect(invitation.data?.status, "Invitation should be pending").toBe(
-        "pending"
+        "pending",
       );
     });
 
@@ -190,10 +196,9 @@ describe("Organizations", () => {
       const password = "TestPassword123!";
       const orgName = generateOrgName();
 
-      // Owner creates account and organization
       await ownerClient.signUp.email({
         email: ownerEmail,
-        password,
+        password: password,
         name: ownerEmail,
       });
       const org = await ownerClient.organization.create({
@@ -201,43 +206,41 @@ describe("Organizations", () => {
         slug: orgName.toLowerCase(),
       });
 
-      // Member creates account
-      await memberClient.signUp.email({
+      await ownerClient.signUp.email({
         email: memberEmail,
-        password,
+        password: password,
         name: memberEmail,
       });
 
-      // Invite member
       await ownerClient.organization.inviteMember({
         email: memberEmail,
         organizationId: org.data!.id,
         role: "member",
       });
 
-      // Member lists invitations
       const invitations = await memberClient.organization.listUserInvitations();
 
       expect(invitations.data, "Should have data").not.toBeNull();
       expect(
         Array.isArray(invitations.data),
-        "Invitations should be an array"
+        "Invitations should be an array",
       ).toBe(true);
       expect(
         invitations.data!.length,
-        "Should have at least 1 invitation"
+        "Should have at least 1 invitation",
       ).toBeGreaterThanOrEqual(1);
 
       const invitation = invitations.data!.find(
-        (inv) => inv.organizationId === org.data!.id
+        (inv) => inv.organizationId === org.data!.id,
       );
       expect(invitation, "Should find invitation for org").toBeDefined();
       expect(invitation?.status, "Invitation should be pending").toBe(
-        "pending"
+        "pending",
       );
     });
 
     it("should accept invitation", async () => {
+      const client = createTestAuthClient();
       const ownerClient = createTestAuthClient();
       const memberClient = createTestAuthClient();
       const ownerEmail = generateTestEmail("owner");
@@ -245,47 +248,44 @@ describe("Organizations", () => {
       const password = "TestPassword123!";
       const orgName = generateOrgName();
 
-      // Setup: owner creates org, member creates account
       await ownerClient.signUp.email({
         email: ownerEmail,
-        password,
+        password: password,
         name: ownerEmail,
       });
-      const org = await ownerClient.organization.create({
+      const org = await client.organization.create({
         name: orgName,
         slug: orgName.toLowerCase(),
       });
       await memberClient.signUp.email({
         email: memberEmail,
-        password,
+        password: password,
         name: memberEmail,
       });
 
-      // Invite and get invitation
-      await ownerClient.organization.inviteMember({
+      await memberClient.organization.inviteMember({
         email: memberEmail,
         organizationId: org.data!.id,
         role: "member",
       });
       const invitations = await memberClient.organization.listUserInvitations();
       const invitation = invitations.data!.find(
-        (inv) => inv.organizationId === org.data!.id
+        (inv) => inv.organizationId === org.data!.id,
       );
 
-      // Accept invitation
       await memberClient.organization.acceptInvitation({
         invitationId: invitation!.id,
       });
 
-      // Verify member now has access to organization
       const memberOrgs = await memberClient.organization.list();
       const orgIds = memberOrgs.data!.map((o) => o.id);
       expect(orgIds, "Member should have access to org").toContain(
-        org.data!.id
+        org.data!.id,
       );
     });
 
     it("should reject invitation", async () => {
+      const client = createTestAuthClient();
       const ownerClient = createTestAuthClient();
       const memberClient = createTestAuthClient();
       const ownerEmail = generateTestEmail("owner");
@@ -293,47 +293,44 @@ describe("Organizations", () => {
       const password = "TestPassword123!";
       const orgName = generateOrgName();
 
-      // Setup: owner creates org, member creates account
       await ownerClient.signUp.email({
         email: ownerEmail,
-        password,
+        password: password,
         name: ownerEmail,
       });
-      const org = await ownerClient.organization.create({
+      const org = await client.organization.create({
         name: orgName,
         slug: orgName.toLowerCase(),
       });
       await memberClient.signUp.email({
         email: memberEmail,
-        password,
+        password: password,
         name: memberEmail,
       });
 
-      // Invite and get invitation
-      await ownerClient.organization.inviteMember({
+      await memberClient.organization.inviteMember({
         email: memberEmail,
         organizationId: org.data!.id,
         role: "member",
       });
       const invitations = await memberClient.organization.listUserInvitations();
       const invitation = invitations.data!.find(
-        (inv) => inv.organizationId === org.data!.id
+        (inv) => inv.organizationId === org.data!.id,
       );
 
-      // Reject invitation
       await memberClient.organization.rejectInvitation({
         invitationId: invitation!.id,
       });
 
-      // Verify member does not have access to organization
       const memberOrgs = await memberClient.organization.list();
       const orgIds = memberOrgs.data!.map((o) => o.id);
       expect(orgIds, "Member should not have access to org").not.toContain(
-        org.data!.id
+        org.data!.id,
       );
     });
 
     it("should get organization members", async () => {
+      const client = createTestAuthClient();
       const ownerClient = createTestAuthClient();
       const memberClient = createTestAuthClient();
       const ownerEmail = generateTestEmail("owner");
@@ -341,22 +338,21 @@ describe("Organizations", () => {
       const password = "TestPassword123!";
       const orgName = generateOrgName();
 
-      // Setup: owner creates org, member accepts invitation
       await ownerClient.signUp.email({
         email: ownerEmail,
-        password,
+        password: password,
         name: ownerEmail,
       });
-      const org = await ownerClient.organization.create({
+      const org = await client.organization.create({
         name: orgName,
         slug: orgName.toLowerCase(),
       });
       await memberClient.signUp.email({
         email: memberEmail,
-        password,
+        password: password,
         name: memberEmail,
       });
-      await ownerClient.organization.inviteMember({
+      await memberClient.organization.inviteMember({
         email: memberEmail,
         organizationId: org.data!.id,
         role: "member",
@@ -364,21 +360,20 @@ describe("Organizations", () => {
 
       const invitations = await memberClient.organization.listUserInvitations();
       const invitation = invitations.data!.find(
-        (inv) => inv.organizationId === org.data!.id
+        (inv) => inv.organizationId === org.data!.id,
       );
       await memberClient.organization.acceptInvitation({
         invitationId: invitation!.id,
       });
 
-      // Get organization details with members
-      const orgDetails = await ownerClient.organization.getFullOrganization({
+      const orgDetails = await memberClient.organization.getFullOrganization({
         query: { organizationId: org.data!.id },
       });
 
       expect(orgDetails.data?.members, "Should have members").toBeDefined();
       expect(
         Array.isArray(orgDetails.data?.members),
-        "Members should be an array"
+        "Members should be an array",
       ).toBe(true);
       expect(orgDetails.data!.members.length, "Should have 2 members").toBe(2);
 
@@ -386,39 +381,37 @@ describe("Organizations", () => {
       expect(memberEmails, "Should include owner").toContain(ownerEmail);
       expect(memberEmails, "Should include member").toContain(memberEmail);
 
-      // Check roles
       const ownerMember = orgDetails.data!.members.find(
-        (m) => m.user.email === ownerEmail
+        (m) => m.user.email === ownerEmail,
       );
       expect(ownerMember?.role, "Owner should have owner role").toBe("owner");
     });
 
     it("should invite member with specific role", async () => {
-      const ownerClient = createTestAuthClient();
+      const client = createTestAuthClient();
       const ownerEmail = generateTestEmail("owner");
       const adminEmail = generateTestEmail("admin");
       const password = "TestPassword123!";
       const orgName = generateOrgName();
 
-      await ownerClient.signUp.email({
+      await client.signUp.email({
         email: ownerEmail,
-        password,
+        password: password,
         name: ownerEmail,
       });
-      const org = await ownerClient.organization.create({
+      const org = await client.organization.create({
         name: orgName,
         slug: orgName.toLowerCase(),
       });
 
-      // Invite as admin
-      const invitation = await ownerClient.organization.inviteMember({
+      const invitation = await client.organization.inviteMember({
         email: adminEmail,
         organizationId: org.data!.id,
         role: "admin",
       });
 
       expect(invitation.data?.role, "Invitation role should be admin").toBe(
-        "admin"
+        "admin",
       );
     });
   });
@@ -432,9 +425,12 @@ describe("Organizations", () => {
       const org2Name = generateOrgName("Personal");
       const org3Name = generateOrgName("Side Project");
 
-      await client.signUp.email({ email, password, name: email });
+      await client.signUp.email({
+        email: email,
+        password: password,
+        name: email,
+      });
 
-      // Create multiple organizations
       const org1 = await client.organization.create({
         name: org1Name,
         slug: org1Name.toLowerCase(),
@@ -448,14 +444,12 @@ describe("Organizations", () => {
         slug: org3Name.toLowerCase(),
       });
 
-      // List all organizations
       const orgs = await client.organization.list();
       expect(
         orgs.data!.length,
-        "Should have at least 3 organizations"
+        "Should have at least 3 organizations",
       ).toBeGreaterThanOrEqual(3);
 
-      // Switch between organizations
       await client.organization.setActive({ organizationId: org1.data!.id });
       let session = await client.getSession();
       expect(session.data?.session.activeOrganizationId).toBe(org1.data?.id);
@@ -480,10 +474,9 @@ describe("Organizations", () => {
       const org1Name = generateOrgName("Company A");
       const org2Name = generateOrgName("Company B");
 
-      // Setup: two owners create organizations
       await owner1Client.signUp.email({
         email: owner1Email,
-        password,
+        password: password,
         name: owner1Email,
       });
       const org1 = await owner1Client.organization.create({
@@ -491,24 +484,22 @@ describe("Organizations", () => {
         slug: org1Name.toLowerCase(),
       });
 
-      await owner2Client.signUp.email({
+      await owner1Client.signUp.email({
         email: owner2Email,
-        password,
+        password: password,
         name: owner2Email,
       });
-      const org2 = await owner2Client.organization.create({
+      const org2 = await owner1Client.organization.create({
         name: org2Name,
         slug: org2Name.toLowerCase(),
       });
 
-      // Member signs up
-      await memberClient.signUp.email({
+      await owner1Client.signUp.email({
         email: memberEmail,
-        password,
+        password: password,
         name: memberEmail,
       });
 
-      // Both owners invite the same member
       await owner1Client.organization.inviteMember({
         email: memberEmail,
         organizationId: org1.data!.id,
@@ -520,11 +511,10 @@ describe("Organizations", () => {
         role: "member",
       });
 
-      // Member accepts both invitations
       const invitations = await memberClient.organization.listUserInvitations();
       expect(
         invitations.data!.length,
-        "Should have at least 2 invitations"
+        "Should have at least 2 invitations",
       ).toBeGreaterThanOrEqual(2);
 
       for (const invitation of invitations.data!) {
@@ -538,13 +528,11 @@ describe("Organizations", () => {
         }
       }
 
-      // Verify member has access to both organizations
       const memberOrgs = await memberClient.organization.list();
       const orgIds = memberOrgs.data!.map((o) => o.id);
       expect(orgIds, "Should include org1").toContain(org1.data!.id);
       expect(orgIds, "Should include org2").toContain(org2.data!.id);
 
-      // Member can switch between organizations
       await memberClient.organization.setActive({
         organizationId: org1.data!.id,
       });
@@ -559,16 +547,16 @@ describe("Organizations", () => {
     });
 
     it("should maintain separate member lists per organization", async () => {
+      const client = createTestAuthClient();
       const owner1Client = createTestAuthClient();
       const owner2Client = createTestAuthClient();
       const member1Client = createTestAuthClient();
-      const member2Client = createTestAuthClient();
+      const _member2Client = createTestAuthClient();
       const password = "TestPassword123!";
 
-      // Setup organizations
       await owner1Client.signUp.email({
         email: generateTestEmail("owner1"),
-        password,
+        password: password,
         name: "Owner 1",
       });
       const org1 = await owner1Client.organization.create({
@@ -576,37 +564,35 @@ describe("Organizations", () => {
         slug: `org1-${Date.now()}`,
       });
 
-      await owner2Client.signUp.email({
+      await owner1Client.signUp.email({
         email: generateTestEmail("owner2"),
-        password,
+        password: password,
         name: "Owner 2",
       });
-      const org2 = await owner2Client.organization.create({
+      const org2 = await owner1Client.organization.create({
         name: generateOrgName("Org2"),
         slug: `org2-${Date.now()}`,
       });
 
-      // Create members
       const member1Email = generateTestEmail("member1");
       const member2Email = generateTestEmail("member2");
-      await member1Client.signUp.email({
+      await owner1Client.signUp.email({
         email: member1Email,
-        password,
+        password: password,
         name: "Member 1",
       });
-      await member2Client.signUp.email({
+      await owner1Client.signUp.email({
         email: member2Email,
-        password,
+        password: password,
         name: "Member 2",
       });
 
-      // Invite member1 to org1, member2 to org2
-      await owner1Client.organization.inviteMember({
+      await owner2Client.organization.inviteMember({
         email: member1Email,
         organizationId: org1.data!.id,
         role: "member",
       });
-      await owner2Client.organization.inviteMember({
+      await member1Client.organization.inviteMember({
         email: member2Email,
         organizationId: org2.data!.id,
         role: "member",
@@ -615,38 +601,38 @@ describe("Organizations", () => {
       // Accept invitations
       let invitations = await member1Client.organization.listUserInvitations();
       const inv1 = invitations.data!.find(
-        (i) => i.organizationId === org1.data!.id
+        (i) => i.organizationId === org1.data!.id,
       );
       await member1Client.organization.acceptInvitation({
         invitationId: inv1!.id,
       });
 
-      invitations = await member2Client.organization.listUserInvitations();
+      invitations = await member1Client.organization.listUserInvitations();
       const inv2 = invitations.data!.find(
-        (i) => i.organizationId === org2.data!.id
+        (i) => i.organizationId === org2.data!.id,
       );
-      await member2Client.organization.acceptInvitation({
-        invitationId: inv2!.id,
-      });
+      await client.organization.acceptInvitation({ invitationId: inv2!.id });
 
       // Verify org1 has member1, not member2
-      const org1Details = await owner1Client.organization.getFullOrganization({
+      const org1Details = await client.organization.getFullOrganization({
         query: { organizationId: org1.data!.id },
       });
-      expect(org1Details.data!.members.length, "Org1 should have 2 members").toBe(
-        2
-      );
+      expect(
+        org1Details.data!.members.length,
+        "Org1 should have 2 members",
+      ).toBe(2);
       const org1Emails = org1Details.data!.members.map((m) => m.user.email);
       expect(org1Emails).toContain(member1Email);
       expect(org1Emails).not.toContain(member2Email);
 
       // Verify org2 has member2, not member1
-      const org2Details = await owner2Client.organization.getFullOrganization({
+      const org2Details = await member1Client.organization.getFullOrganization({
         query: { organizationId: org2.data!.id },
       });
-      expect(org2Details.data!.members.length, "Org2 should have 2 members").toBe(
-        2
-      );
+      expect(
+        org2Details.data!.members.length,
+        "Org2 should have 2 members",
+      ).toBe(2);
       const org2Emails = org2Details.data!.members.map((m) => m.user.email);
       expect(org2Emails).toContain(member2Email);
       expect(org2Emails).not.toContain(member1Email);
@@ -659,7 +645,11 @@ describe("Organizations", () => {
       const email = generateTestEmail();
       const password = "TestPassword123!";
 
-      await client.signUp.email({ email, password, name: email });
+      await client.signUp.email({
+        email: email,
+        password: password,
+        name: email,
+      });
 
       const orgs = await client.organization.list();
       expect(orgs.data, "Should return array").not.toBeNull();
@@ -672,16 +662,28 @@ describe("Organizations", () => {
       const email = generateTestEmail();
       const password = "TestPassword123!";
 
-      await client.signUp.email({ email, password, name: email });
+      await client.signUp.email({
+        email: email,
+        password: password,
+        name: email,
+      });
 
       const invitations = await client.organization.listUserInvitations();
+
+      if (invitations.error) {
+        console.log(
+          "ERROR listing invitations (empty case):",
+          JSON.stringify(invitations.error, null, 2),
+        );
+      }
+
       expect(invitations.data, "Should return array").toBeDefined();
       expect(Array.isArray(invitations.data), "Should return empty array").toBe(
-        true
+        true,
       );
       expect(
         invitations.data!.length,
-        "New user should have 0 invitations"
+        "New user should have 0 invitations",
       ).toBe(0);
     });
 
@@ -691,7 +693,11 @@ describe("Organizations", () => {
       const password = "TestPassword123!";
       const orgName = generateOrgName();
 
-      await client.signUp.email({ email, password, name: email });
+      await client.signUp.email({
+        email: email,
+        password: password,
+        name: email,
+      });
       const org = await client.organization.create({
         name: orgName,
         slug: orgName.toLowerCase(),
@@ -703,14 +709,14 @@ describe("Organizations", () => {
 
       expect(
         orgDetails.data!.members.length,
-        "Creator should be only member"
+        "Creator should be only member",
       ).toBe(1);
       expect(orgDetails.data!.members[0].role, "Creator should be owner").toBe(
-        "owner"
+        "owner",
       );
       expect(
         orgDetails.data!.members[0].user.email,
-        "Member should be creator"
+        "Member should be creator",
       ).toBe(email);
     });
   });
