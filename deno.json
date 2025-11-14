@@ -28,6 +28,7 @@
     "debug": "npm:debug@^4.4.3",
     "eslint": "npm:eslint@^9.39.1",
     "globals": "npm:globals@^16.5.0",
+    "theme-change": "npm:theme-change@^2.5.0",
     "typescript-eslint": "npm:typescript-eslint@^8.46.3",
     "vite": "npm:vite@^7.2.0"
   },

@@ -9,6 +9,7 @@
     "npm:@react-router/remix-routes-option-adapter@^7.9.5": "7.9.5_@react-router+dev@7.9.5__@react-router+serve@7.9.5___react-router@7.9.5____react@19.2.0____react-dom@19.2.0_____react@19.2.0___express@4.21.2___typescript@5.9.3___react@19.2.0___react-dom@19.2.0____react@19.2.0__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__typescript@5.9.3__vite@7.2.0___yaml@2.8.1___picomatch@4.0.3__@babel+core@7.28.5__react@19.2.0__react-dom@19.2.0___react@19.2.0__yaml@2.8.1_typescript@5.9.3_@react-router+serve@7.9.5__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__express@4.21.2__typescript@5.9.3__react@19.2.0__react-dom@19.2.0___react@19.2.0_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_vite@7.2.0__yaml@2.8.1__picomatch@4.0.3_react@19.2.0_react-dom@19.2.0__react@19.2.0_yaml@2.8.1",
     "npm:@react-router/serve@*": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_express@4.21.2_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
     "npm:@react-router/serve@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_express@4.21.2_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
+    "npm:@tabler/icons-react@^3.35.0": "3.35.0_react@19.2.0",
     "npm:@tailwindcss/vite@^4.1.13": "4.1.17_vite@7.2.0__yaml@2.8.1__picomatch@4.0.3_yaml@2.8.1",
     "npm:@types/react-dom@^19.1.9": "19.2.2_@types+react@19.2.2",
     "npm:@types/react@^19.1.13": "19.2.2",
@@ -25,6 +26,7 @@
     "npm:react@^19.1.1": "19.2.0",
     "npm:remix-flat-routes@~0.8.5": "0.8.5",
     "npm:tailwindcss@^4.1.13": "4.1.17",
+    "npm:theme-change@^2.5.0": "2.5.0",
     "npm:typescript@^5.9.2": "5.9.3",
     "npm:use-stick-to-bottom@^1.1.1": "1.1.1_react@19.2.0",
     "npm:vite-tsconfig-paths@^5.1.4": "5.1.4_vite@7.2.0__yaml@2.8.1__picomatch@4.0.3_typescript@5.9.3_yaml@2.8.1",
@@ -848,6 +850,16 @@
         "@peculiar/asn1-x509",
         "@peculiar/x509"
       ]
+    },
+    "@tabler/icons-react@3.35.0_react@19.2.0": {
+      "integrity": "sha512-XG7t2DYf3DyHT5jxFNp5xyLVbL4hMJYJhiSdHADzAjLRYfL7AnjlRfiHDHeXxkb2N103rEIvTsBRazxXtAUz2g==",
+      "dependencies": [
+        "@tabler/icons",
+        "react"
+      ]
+    },
+    "@tabler/icons@3.35.0": {
+      "integrity": "sha512-yYXe+gJ56xlZFiXwV9zVoe3FWCGuZ/D7/G4ZIlDtGxSx5CGQK110wrnT29gUj52kEZoxqF7oURTk97GQxELOFQ=="
     },
     "@tailwindcss/node@4.1.17": {
       "integrity": "sha512-csIkHIgLb3JisEFQ0vxr2Y57GUNYh447C8xzwj89U/8fdW8LhProdxvnVH6U8M2Y73QKiTIH+LWbK3V2BBZsAg==",
@@ -2125,6 +2137,9 @@
     "tapable@2.3.0": {
       "integrity": "sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg=="
     },
+    "theme-change@2.5.0": {
+      "integrity": "sha512-B/UdsgdHAGhSKHTAQnxg/etN0RaMDpehuJmZIjLMDVJ6DGIliRHGD6pODi1CXLQAN9GV0GSyB3G6yCuK05PkPQ=="
+    },
     "tinyglobby@0.2.15_picomatch@4.0.3": {
       "integrity": "sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==",
       "dependencies": [
@@ -2313,6 +2328,7 @@
       "npm:@react-router/node@^7.9.2",
       "npm:@react-router/remix-routes-option-adapter@^7.9.5",
       "npm:@react-router/serve@^7.9.2",
+      "npm:@tabler/icons-react@^3.35.0",
       "npm:@tailwindcss/vite@^4.1.13",
       "npm:@types/react-dom@^19.1.9",
       "npm:@types/react@^19.1.13",
@@ -2329,6 +2345,7 @@
       "npm:react@^19.1.1",
       "npm:remix-flat-routes@~0.8.5",
       "npm:tailwindcss@^4.1.13",
+      "npm:theme-change@^2.5.0",
       "npm:typescript@^5.9.2",
       "npm:use-stick-to-bottom@^1.1.1",
       "npm:vite-tsconfig-paths@^5.1.4",

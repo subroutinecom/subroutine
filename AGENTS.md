@@ -37,5 +37,14 @@ Dont's
 Admin Panel Routing:
 
 - Use directory-based route structure with remix-flat-routes, not dot notation.
-- Layout files are `layout.tsx`, index files are `_index.tsx`.
-- Example: `routes/+_authRequired/layout.tsx` instead of `routes/+_authRequired.layout.tsx`.
+- Layout files are `_layout.tsx`, index files are `_index.tsx`.
+- Example: `routes/_authRequired+/_layout.tsx` instead of `routes/_authRequired.layout.tsx`.
+- Folder names use suffix notation: `_authRequired+/` not `+_authRequired/`.
+
+Admin Panel UI:
+
+- **Icons**: Use `@tabler/icons-react` for all UI icons. Never create inline SVGs.
+- **Social/brand icons**: Download to `public/icons/` and serve locally. Never hotlink external CDNs.
+- **Components**: All reusable UI patterns must be extracted to `app/components/ui/` as DaisyUI-based components.
+- **Styling**: Use DaisyUI components exclusively. No custom one-off styling in routes.
+- **Context providers**: Must be in `root.tsx` to wrap all routes (including login).
