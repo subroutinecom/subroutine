@@ -14,7 +14,7 @@ COPY ./tests ./tests
 
 WORKDIR /app/tests
 
-CMD ["deno", "test", "tests", "--allow-net"]
+CMD ["deno", "test", "tests", "--allow-net", "--allow-env", "--sloppy-imports"]
 
 FROM base AS ci
-CMD ["deno", "test", "tests", "--allow-net"]
+CMD ["deno", "test", "tests", "--allow-net", "--allow-env", "--sloppy-imports"]
