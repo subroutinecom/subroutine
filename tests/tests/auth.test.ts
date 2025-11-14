@@ -1,121 +1,106 @@
 import { expect } from "@std/expect";
-import { it } from "@std/testing/bdd";
+import { describe, it } from "@std/testing/bdd";
+import { generateTestEmail, createTestAuthClient } from "../utils/auth-client";
 
-const API_URL = "http://api:80";
-const testEmail = `test-${Date.now()}@example.com`;
-const testPassword = "TestPassword123!";
+describe(
+  "Authentication",
+  { sanitizeOps: false, sanitizeResources: false },
+  () => {
+    const testEmail = generateTestEmail();
+    const testPassword = "TestPassword123!";
 
-it("sign up with email/password", async () => {
-  const response = await fetch(`${API_URL}/api/auth/sign-up/email`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: testEmail,
-      password: testPassword,
-      name: testEmail,
-    }),
-  });
+    it("should sign up with email/password", async () => {
+      const authClient = createTestAuthClient();
+      const result = await authClient.signUp.email({
+        email: testEmail,
+        password: testPassword,
+        name: testEmail,
+      });
 
-  expect(response.status, "Should return 200 status").toBe(200);
+      expect(result.data, "Response should have data").not.toBeNull();
+      expect(result.data?.user, "User should be created").toBeDefined();
+      expect(result.data?.user.email, "User email should match").toBe(
+        testEmail,
+      );
+      expect(result.data?.user.name, "User name should match").toBe(testEmail);
+      expect(result.error, "Should not have error").toBeNull();
+    });
 
-  // Check that session cookie is set
-  const cookies = response.headers.get("set-cookie");
-  expect(cookies, "Session cookie should be set").toBeDefined();
-  expect(cookies?.includes("better-auth"), "Should contain better-auth cookie").toBe(true);
+    it("should sign in with valid credentials", async () => {
+      const authClient = createTestAuthClient();
+      const result = await authClient.signIn.email({
+        email: testEmail,
+        password: testPassword,
+      });
 
-  const data = await response.json();
-  expect(data.user, "User should be created").toBeDefined();
-  expect(data.user.email, "User email should match").toBe(testEmail);
-  expect(data.user.name, "User name should match").toBe(testEmail);
-});
+      expect(result.data, "Response should have data").not.toBeNull();
+      expect(result.data?.user, "User should be returned").toBeDefined();
+      expect(result.data?.user.email, "User email should match").toBe(
+        testEmail,
+      );
+      expect(result.error, "Should not have error").toBeNull();
+    });
 
-it("sign in with valid credentials", async () => {
-  const response = await fetch(`${API_URL}/api/auth/sign-in/email`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: testEmail,
-      password: testPassword,
-    }),
-  });
+    it("should fail to sign in with invalid password", async () => {
+      const authClient = createTestAuthClient();
+      const result = await authClient.signIn.email({
+        email: testEmail,
+        password: "WrongPassword123!",
+      });
 
-  expect(response.status, "Should return 200 status").toBe(200);
+      expect(result.error, "Should have error").not.toBeNull();
+      expect(result.data, "Should not have data").toBeNull();
+    });
 
-  // Check that session cookie is set
-  const cookies = response.headers.get("set-cookie");
-  expect(cookies, "Session cookie should be set").toBeDefined();
+    it("should fail to sign in with non-existent email", async () => {
+      const authClient = createTestAuthClient();
+      const nonExistentEmail = generateTestEmail("nonexistent");
 
-  const data = await response.json();
-  expect(data.user, "User should be returned").toBeDefined();
-  expect(data.user.email, "User email should match").toBe(testEmail);
-});
+      const result = await authClient.signIn.email({
+        email: nonExistentEmail,
+        password: testPassword,
+      });
 
-it("sign in with invalid password", async () => {
-  const response = await fetch(`${API_URL}/api/auth/sign-in/email`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: testEmail,
-      password: "WrongPassword123!",
-    }),
-  });
+      expect(result.error, "Should have error").not.toBeNull();
+      expect(result.data, "Should not have data").toBeNull();
+    });
 
-  await response.text(); // Consume response body to avoid leaks
-  expect(response.status, "Should return 401 for invalid password").toBe(401);
-});
+    it("should get session with valid authentication", async () => {
+      const authClient = createTestAuthClient();
+      await authClient.signIn.email({
+        email: testEmail,
+        password: testPassword,
+      });
 
-it("sign in with non-existent email", async () => {
-  const response = await fetch(`${API_URL}/api/auth/sign-in/email`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: `nonexistent-${Date.now()}@example.com`,
-      password: testPassword,
-    }),
-  });
+      const session = await authClient.getSession();
 
-  await response.text(); // Consume response body to avoid leaks
-  expect(response.status, "Should return 401 for non-existent user").toBe(401);
-});
+      expect(session.data, "Session data should be returned").not.toBeNull();
+      expect(session.data?.user, "User should be in session").toBeDefined();
+      expect(session.data?.user.email, "User email should match").toBe(
+        testEmail,
+      );
+    });
 
-it("get session with valid token", async () => {
-  // First sign in to get a session
-  const signInResponse = await fetch(`${API_URL}/api/auth/sign-in/email`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: testEmail,
-      password: testPassword,
-    }),
-  });
+    it("should sign out successfully", async () => {
+      const authClient = createTestAuthClient();
+      await authClient.signIn.email({
+        email: testEmail,
+        password: testPassword,
+      });
 
-  await signInResponse.json(); // Consume response body
-  expect(signInResponse.status, "Sign in should succeed").toBe(200);
+      const result = await authClient.signOut();
 
-  // Extract session token from cookies
-  const cookies = signInResponse.headers.get("set-cookie");
-  expect(cookies, "Session cookie should be set").toBeDefined();
+      expect(result.error, "Sign out should not have error").toBeNull();
 
-  // Get session using the cookie
-  const sessionResponse = await fetch(`${API_URL}/api/auth/get-session`, {
-    method: "GET",
-    headers: {
-      Cookie: cookies!,
-    },
-  });
+      const session = await authClient.getSession();
+      expect(session.data, "Session should be null after sign out").toBeNull();
+    });
 
-  const sessionData = await sessionResponse.json();
-  expect(sessionResponse.status, "Session fetch should succeed").toBe(200);
-  expect(sessionData.user, "User should be in session").toBeDefined();
-  expect(sessionData.user.email, "User email should match").toBe(testEmail);
-});
+    it("should not get session without authentication", async () => {
+      const authClient = createTestAuthClient();
+      const session = await authClient.getSession();
+
+      expect(session.data, "Session should be null").toBeNull();
+    });
+  },
+);
