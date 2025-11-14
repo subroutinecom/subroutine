@@ -71,8 +71,7 @@
     "dependencies": [
       "jsr:@std/assert@1",
       "jsr:@std/expect@^1.0.17",
-      "jsr:@std/testing@^1.0.16",
-      "npm:@playwright/test@^1.56.1"
+      "jsr:@std/testing@^1.0.16"
     ]
   }
 }
