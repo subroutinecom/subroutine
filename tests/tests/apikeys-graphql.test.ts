@@ -7,18 +7,94 @@ import {
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
 import { CookieJar } from "tough-cookie";
-import {
-  CREATE_API_KEY,
-  DELETE_API_KEY,
-  GET_API_KEY,
-  LIST_API_KEYS,
-  UPDATE_API_KEY,
-  type CreateApiKeyResponse,
-  type DeleteApiKeyResponse,
-  type GetApiKeyResponse,
-  type ListApiKeysResponse,
-  type UpdateApiKeyResponse,
-} from "../utils/graphql-operations.ts";
+import { gql } from "graphql-tag";
+import type {
+  CreateApiKeyMutation,
+  DeleteApiKeyMutation,
+  GetApiKeyQuery,
+  ListApiKeysQuery,
+  UpdateApiKeyMutation,
+} from "../generated/graphql.ts";
+
+// GraphQL operations colocated with tests
+const CREATE_API_KEY = gql`
+  mutation CreateApiKey($name: String, $prefix: String, $metadata: String) {
+    createApiKey(name: $name, prefix: $prefix, metadata: $metadata) {
+      id
+      name
+      start
+      prefix
+      key
+      organizationId
+      enabled
+      expiresAt
+      permissions
+      metadata
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const LIST_API_KEYS = gql`
+  query ListApiKeys {
+    apiKeys {
+      id
+      name
+      start
+      prefix
+      organizationId
+      enabled
+      expiresAt
+      permissions
+      metadata
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const GET_API_KEY = gql`
+  query GetApiKey($id: String!) {
+    apiKey(id: $id) {
+      id
+      name
+      start
+      prefix
+      organizationId
+      enabled
+      expiresAt
+      permissions
+      metadata
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const UPDATE_API_KEY = gql`
+  mutation UpdateApiKey($id: String!, $name: String, $metadata: String) {
+    updateApiKey(id: $id, name: $name, metadata: $metadata) {
+      id
+      name
+      start
+      prefix
+      organizationId
+      enabled
+      expiresAt
+      permissions
+      metadata
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const DELETE_API_KEY = gql`
+  mutation DeleteApiKey($id: String!) {
+    deleteApiKey(id: $id)
+  }
+`;
 
 describe(
   "API Keys - GraphQL",
@@ -51,19 +127,28 @@ describe(
         // Now use GraphQL client with shared cookie jar
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const response = await gqlClient.request<CreateApiKeyResponse>(
+        const response = await gqlClient.request<CreateApiKeyMutation>(
           CREATE_API_KEY,
           {
             name: "Test API Key",
           },
         );
 
-        expect(response.createApiKey, "API key should be created").not.toBeNull();
-        expect(response.createApiKey.id, "API key should have an ID").toBeDefined();
+        expect(
+          response.createApiKey,
+          "API key should be created",
+        ).not.toBeNull();
+        expect(
+          response.createApiKey.id,
+          "API key should have an ID",
+        ).toBeDefined();
         expect(response.createApiKey.name, "API key name should match").toBe(
           "Test API Key",
         );
-        expect(response.createApiKey.key, "API key should have a key").toBeDefined();
+        expect(
+          response.createApiKey.key,
+          "API key should have a key",
+        ).toBeDefined();
         expect(
           response.createApiKey.organizationId,
           "API key should be scoped to organization",
@@ -93,7 +178,7 @@ describe(
 
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const response = await gqlClient.request<CreateApiKeyResponse>(
+        const response = await gqlClient.request<CreateApiKeyMutation>(
           CREATE_API_KEY,
           {
             name: "Custom Prefix Key",
@@ -132,7 +217,7 @@ describe(
         const gqlClient = createGraphQLClient(cookieJar);
 
         const metadata = { environment: "test", purpose: "integration" };
-        const response = await gqlClient.request<CreateApiKeyResponse>(
+        const response = await gqlClient.request<CreateApiKeyMutation>(
           CREATE_API_KEY,
           {
             name: "Metadata Key",
@@ -155,12 +240,14 @@ describe(
 
         let errorThrown = false;
         try {
-          await gqlClient.request<CreateApiKeyResponse>(CREATE_API_KEY, {
+          await gqlClient.request<CreateApiKeyMutation>(CREATE_API_KEY, {
             name: "Unauthorized Key",
           });
         } catch (error: any) {
           errorThrown = true;
-          expect(error.response?.errors?.[0]?.message).toContain("Unauthorized");
+          expect(error.response?.errors?.[0]?.message).toContain(
+            "Unauthorized",
+          );
         }
         expect(errorThrown, "Should have thrown an error").toBe(true);
       });
@@ -182,7 +269,7 @@ describe(
 
         let errorThrown = false;
         try {
-          await gqlClient.request<CreateApiKeyResponse>(CREATE_API_KEY, {
+          await gqlClient.request<CreateApiKeyMutation>(CREATE_API_KEY, {
             name: "No Org Key",
           });
         } catch (error: any) {
@@ -220,16 +307,15 @@ describe(
         const gqlClient = createGraphQLClient(cookieJar);
 
         // Create multiple API keys
-        await gqlClient.request<CreateApiKeyResponse>(CREATE_API_KEY, {
+        await gqlClient.request<CreateApiKeyMutation>(CREATE_API_KEY, {
           name: "Key 1",
         });
-        await gqlClient.request<CreateApiKeyResponse>(CREATE_API_KEY, {
+        await gqlClient.request<CreateApiKeyMutation>(CREATE_API_KEY, {
           name: "Key 2",
         });
 
-        const response = await gqlClient.request<ListApiKeysResponse>(
-          LIST_API_KEYS,
-        );
+        const response =
+          await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
 
         expect(response.apiKeys).toHaveLength(2);
         expect(response.apiKeys[0].name).toBeDefined();
@@ -262,9 +348,8 @@ describe(
 
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const response = await gqlClient.request<ListApiKeysResponse>(
-          LIST_API_KEYS,
-        );
+        const response =
+          await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
 
         expect(response.apiKeys).toHaveLength(0);
       });
@@ -294,14 +379,14 @@ describe(
 
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const createResponse = await gqlClient.request<CreateApiKeyResponse>(
+        const createResponse = await gqlClient.request<CreateApiKeyMutation>(
           CREATE_API_KEY,
           {
             name: "Specific Key",
           },
         );
 
-        const getResponse = await gqlClient.request<GetApiKeyResponse>(
+        const getResponse = await gqlClient.request<GetApiKeyQuery>(
           GET_API_KEY,
           {
             id: createResponse.createApiKey.id,
@@ -336,7 +421,7 @@ describe(
 
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const getResponse = await gqlClient.request<GetApiKeyResponse>(
+        const getResponse = await gqlClient.request<GetApiKeyQuery>(
           GET_API_KEY,
           {
             id: "non-existent-id",
@@ -371,14 +456,14 @@ describe(
 
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const createResponse = await gqlClient.request<CreateApiKeyResponse>(
+        const createResponse = await gqlClient.request<CreateApiKeyMutation>(
           CREATE_API_KEY,
           {
             name: "Original Name",
           },
         );
 
-        const updateResponse = await gqlClient.request<UpdateApiKeyResponse>(
+        const updateResponse = await gqlClient.request<UpdateApiKeyMutation>(
           UPDATE_API_KEY,
           {
             id: createResponse.createApiKey.id,
@@ -413,7 +498,7 @@ describe(
 
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const createResponse = await gqlClient.request<CreateApiKeyResponse>(
+        const createResponse = await gqlClient.request<CreateApiKeyMutation>(
           CREATE_API_KEY,
           {
             name: "Metadata Key",
@@ -422,7 +507,7 @@ describe(
         );
 
         const newMetadata = { version: 2, updated: true };
-        const updateResponse = await gqlClient.request<UpdateApiKeyResponse>(
+        const updateResponse = await gqlClient.request<UpdateApiKeyMutation>(
           UPDATE_API_KEY,
           {
             id: createResponse.createApiKey.id,
@@ -431,7 +516,9 @@ describe(
         );
 
         expect(updateResponse.updateApiKey).not.toBeNull();
-        const parsedMetadata = JSON.parse(updateResponse.updateApiKey!.metadata!);
+        const parsedMetadata = JSON.parse(
+          updateResponse.updateApiKey!.metadata!,
+        );
         expect(parsedMetadata).toEqual(newMetadata);
       });
     });
@@ -460,14 +547,14 @@ describe(
 
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const createResponse = await gqlClient.request<CreateApiKeyResponse>(
+        const createResponse = await gqlClient.request<CreateApiKeyMutation>(
           CREATE_API_KEY,
           {
             name: "To Delete",
           },
         );
 
-        const deleteResponse = await gqlClient.request<DeleteApiKeyResponse>(
+        const deleteResponse = await gqlClient.request<DeleteApiKeyMutation>(
           DELETE_API_KEY,
           {
             id: createResponse.createApiKey.id,
@@ -477,7 +564,7 @@ describe(
         expect(deleteResponse.deleteApiKey).toBe(true);
 
         // Verify it's deleted
-        const getResponse = await gqlClient.request<GetApiKeyResponse>(
+        const getResponse = await gqlClient.request<GetApiKeyQuery>(
           GET_API_KEY,
           {
             id: createResponse.createApiKey.id,
@@ -510,7 +597,7 @@ describe(
 
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const deleteResponse = await gqlClient.request<DeleteApiKeyResponse>(
+        const deleteResponse = await gqlClient.request<DeleteApiKeyMutation>(
           DELETE_API_KEY,
           {
             id: "non-existent-id",
@@ -546,7 +633,7 @@ describe(
         const gqlClient = createGraphQLClient(cookieJar);
 
         // Create key in org1
-        await gqlClient.request<CreateApiKeyResponse>(CREATE_API_KEY, {
+        await gqlClient.request<CreateApiKeyMutation>(CREATE_API_KEY, {
           name: "Org1 Key",
         });
 
@@ -561,14 +648,13 @@ describe(
         });
 
         // Create key in org2
-        await gqlClient.request<CreateApiKeyResponse>(CREATE_API_KEY, {
+        await gqlClient.request<CreateApiKeyMutation>(CREATE_API_KEY, {
           name: "Org2 Key",
         });
 
         // List keys should only show org2's key
-        const listResponse = await gqlClient.request<ListApiKeysResponse>(
-          LIST_API_KEYS,
-        );
+        const listResponse =
+          await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
 
         expect(listResponse.apiKeys).toHaveLength(1);
         expect(listResponse.apiKeys[0].name).toBe("Org2 Key");

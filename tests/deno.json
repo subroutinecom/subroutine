@@ -11,6 +11,7 @@
     "better-auth": "npm:better-auth@^1.3.34",
     "fetch-cookie": "npm:fetch-cookie@^3.1.0",
     "graphql-request": "npm:graphql-request@^7.3.3",
+    "graphql-tag": "npm:graphql-tag@^2.12.6",
     "tough-cookie": "npm:tough-cookie@^6.0.0"
   },
   "tasks": {
