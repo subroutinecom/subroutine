@@ -15,6 +15,7 @@
     "graphql-yoga": "npm:graphql-yoga@^5.16.2",
     "hono": "npm:hono@^4.10.4",
     "kysely": "npm:kysely@^0.28.8",
+    "kysely-codegen": "npm:kysely-codegen@^0.19.0",
     "nanoid": "npm:nanoid@^5.1.6",
     "pg": "npm:pg@^8.16.3",
     "yaml": "npm:yaml@^2.8.1",

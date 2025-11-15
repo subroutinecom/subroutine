@@ -13,8 +13,8 @@ import {
   getSubroutine,
   listSubroutines,
 } from "./models/subroutine.ts";
-import { getAuth } from "./auth.ts";
-import { getConfig } from "@subroutinecom/config";
+import { getConfig } from "./config/loader.ts";
+import { auth } from "./auth.ts";
 
 const initialize = async () => {
   const app = new OpenAPIHono({
@@ -40,7 +40,6 @@ const initialize = async () => {
 
   await initializeDatabase();
 
-  const auth = await getAuth();
   const config = await getConfig();
 
   // Configure CORS for auth routes - must be before the route handler
