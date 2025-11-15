@@ -1,4 +1,4 @@
-import type { CodegenConfig } from "npm:@graphql-codegen/cli@6.0.2";
+import type { CodegenConfig } from "@graphql-codegen/cli";
 
 const config: CodegenConfig = {
   schema: "schema.graphql",

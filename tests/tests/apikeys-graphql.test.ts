@@ -138,6 +138,9 @@ describe(
           response.createApiKey,
           "API key should be created",
         ).not.toBeNull();
+
+        if (!response.createApiKey) throw new Error("API key not created");
+
         expect(
           response.createApiKey.id,
           "API key should have an ID",

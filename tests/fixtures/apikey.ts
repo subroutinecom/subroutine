@@ -1,9 +1,26 @@
 import { createTestAuthClientWithJar, generateTestEmail, generateOrgName } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
-import {
-  CREATE_API_KEY,
-  type CreateApiKeyResponse,
-} from "../utils/graphql-operations.ts";
+import { gql } from "graphql-tag";
+import type { CreateApiKeyMutation } from "../generated/graphql.ts";
+
+const CREATE_API_KEY = gql`
+  mutation CreateApiKey($name: String, $prefix: String, $metadata: String) {
+    createApiKey(name: $name, prefix: $prefix, metadata: $metadata) {
+      id
+      name
+      start
+      prefix
+      key
+      organizationId
+      enabled
+      expiresAt
+      permissions
+      metadata
+      createdAt
+      updatedAt
+    }
+  }
+`;
 
 /**
  * Fixture for creating a test API key with full setup
@@ -40,7 +57,7 @@ export const createTestApiKey = async (options?: {
 
   // Create API key via GraphQL
   const gqlClient = createGraphQLClient(cookieJar);
-  const response = await gqlClient.request<CreateApiKeyResponse>(
+  const response = await gqlClient.request<CreateApiKeyMutation>(
     CREATE_API_KEY,
     {
       name: options?.name || "Test API Key",
@@ -48,6 +65,10 @@ export const createTestApiKey = async (options?: {
       metadata: options?.metadata ? JSON.stringify(options.metadata) : undefined,
     },
   );
+
+  if (!response.createApiKey?.key || !response.createApiKey?.id) {
+    throw new Error("Failed to create API key");
+  }
 
   return {
     apiKey: response.createApiKey.key, // Plain key for use in tests
@@ -97,12 +118,15 @@ export const createMultipleTestApiKeys = async (count: number) => {
   const apiKeys: string[] = [];
 
   for (let i = 0; i < count; i++) {
-    const response = await gqlClient.request<CreateApiKeyResponse>(
+    const response = await gqlClient.request<CreateApiKeyMutation>(
       CREATE_API_KEY,
       {
         name: `Test API Key ${i + 1}`,
       },
     );
+    if (!response.createApiKey?.key) {
+      throw new Error(`Failed to create API key ${i + 1}`);
+    }
     apiKeys.push(response.createApiKey.key);
   }
 

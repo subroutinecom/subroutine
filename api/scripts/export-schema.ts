@@ -1,4 +1,4 @@
-import { printSchema } from "npm:graphql@16.10.0";
+import { printSchema } from "graphql";
 import { schema } from "../internal/schema.ts";
 
-console.log(printSchema(schema));
+console.log("GraphQL Schema:", printSchema(schema));
