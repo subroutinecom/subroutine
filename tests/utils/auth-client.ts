@@ -5,6 +5,8 @@ import { CookieJar } from "tough-cookie";
 
 // dummy client but helps for typing. typing of these things is dynamic and infered
 // and in case of factory, it cannot infer it upfront
+// NOTE: We don't use apiKeyClient because it doesn't support session-based auth
+// API keys must be created using session auth, not API key auth
 const _dummyClient = createAuthClient({
   baseURL: "http://api:80",
   plugins: [organizationClient()],
@@ -12,15 +14,33 @@ const _dummyClient = createAuthClient({
 
 export const createTestAuthClient = (): typeof _dummyClient => {
   const cookieJar = new CookieJar();
-  const cookieAwareFetch = (
+  const cookieAwareFetch = async (
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+
     const headers = new Headers(init?.headers);
     if (!headers.has("Origin")) {
-      headers.set("Origin", "http://api:80");
+      headers.set("Origin", "http://localhost:3001");
     }
-    return fetchCookie(fetch, cookieJar)(input, { ...init, headers });
+
+    // Manually add cookies from jar
+    const cookies = await cookieJar.getCookies(url);
+    if (cookies.length > 0) {
+      const cookieHeader = cookies.map(c => `${c.key}=${c.value}`).join("; ");
+      headers.set("Cookie", cookieHeader);
+    }
+
+    const res = await fetch(input, { ...init, headers });
+
+    // Store cookies from response
+    const setCookie = res.headers.get("set-cookie");
+    if (setCookie) {
+      await cookieJar.setCookie(setCookie, url);
+    }
+
+    return res;
   };
 
   return createAuthClient({

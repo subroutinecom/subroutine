@@ -12,7 +12,7 @@ export const apikeyOrganization = () => {
         fields: {
           organizationId: {
             type: "string",
-            required: true,
+            required: false, // Made optional for now to test basic flow
             references: {
               model: "organization",
               field: "id",

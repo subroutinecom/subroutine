@@ -4,7 +4,7 @@ import {
   createTestAuthClient,
   generateTestEmail,
   generateOrgName,
-} from "../utils/auth-client";
+} from "../utils/auth-client.ts";
 
 describe(
   "Organizations",

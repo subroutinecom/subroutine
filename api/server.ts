@@ -50,7 +50,9 @@ const initialize = async () => {
       origin: config.auth.allowedOrigins,
       credentials: true,
       allowMethods: ["GET", "POST", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization"],
+      allowHeaders: ["Content-Type", "Authorization", "Cookie", "x-api-key"],
+      exposeHeaders: ["Set-Cookie"],
+      maxAge: 86400,
     }),
   );
 
@@ -62,7 +64,6 @@ const initialize = async () => {
     const url = new URL(c.req.url);
     url.pathname = url.pathname.replace("/api/auth", "");
     const response = await auth.handler(c.req.raw);
-    console.log("Better Auth response status:", response.status);
     return response;
   });
 
