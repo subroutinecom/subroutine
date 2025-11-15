@@ -1,14 +1,7 @@
-import {
-  FileMigrationProvider,
-  Kysely,
-  Migrator,
-  PostgresDialect,
-} from "kysely";
+import { Kysely, Migrator, PostgresDialect } from "kysely";
 import type { Database as DB } from "./schema";
 import pg from "pg";
-import { promises as fs } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { migrations } from "./migrations-index";
 
 const { Pool } = pg;
 
@@ -27,22 +20,17 @@ export const db = new Kysely<DB>({
   dialect,
 });
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const migrationProvider = new FileMigrationProvider({
-  fs,
-  path: {
-    join,
-  },
-  migrationFolder: "/app/api/migrations",
-});
-
 export const initializeDatabase = async () => {
   try {
     console.log("Running database migrations...");
 
     const migrator = new Migrator({
       db,
-      provider: migrationProvider,
+      provider: {
+        async getMigrations() {
+          return migrations;
+        },
+      },
     });
 
     const { error, results } = await migrator.migrateToLatest();
