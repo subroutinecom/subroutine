@@ -189,6 +189,8 @@ describe(
           },
         );
 
+        if (!response.createApiKey) throw new Error("API key not created");
+
         expect(
           response.createApiKey.key,
           "API key should start with prefix",
@@ -227,6 +229,8 @@ describe(
             metadata: JSON.stringify(metadata),
           },
         );
+
+        if (!response.createApiKey) throw new Error("API key not created");
 
         expect(
           response.createApiKey.metadata,
@@ -320,6 +324,8 @@ describe(
         const response =
           await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
 
+        if (!response.apiKeys) throw new Error("API keys not returned");
+
         expect(response.apiKeys).toHaveLength(2);
         expect(response.apiKeys[0].name).toBeDefined();
         expect(response.apiKeys[1].name).toBeDefined();
@@ -353,6 +359,8 @@ describe(
 
         const response =
           await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
+
+        if (!response.apiKeys) throw new Error("API keys not returned");
 
         expect(response.apiKeys).toHaveLength(0);
       });
@@ -388,6 +396,8 @@ describe(
             name: "Specific Key",
           },
         );
+
+        if (!createResponse.createApiKey) throw new Error("API key not created");
 
         const getResponse = await gqlClient.request<GetApiKeyQuery>(
           GET_API_KEY,
@@ -466,6 +476,8 @@ describe(
           },
         );
 
+        if (!createResponse.createApiKey) throw new Error("API key not created");
+
         const updateResponse = await gqlClient.request<UpdateApiKeyMutation>(
           UPDATE_API_KEY,
           {
@@ -508,6 +520,8 @@ describe(
             metadata: JSON.stringify({ version: 1 }),
           },
         );
+
+        if (!createResponse.createApiKey) throw new Error("API key not created");
 
         const newMetadata = { version: 2, updated: true };
         const updateResponse = await gqlClient.request<UpdateApiKeyMutation>(
@@ -556,6 +570,8 @@ describe(
             name: "To Delete",
           },
         );
+
+        if (!createResponse.createApiKey) throw new Error("API key not created");
 
         const deleteResponse = await gqlClient.request<DeleteApiKeyMutation>(
           DELETE_API_KEY,
@@ -658,6 +674,8 @@ describe(
         // List keys should only show org2's key
         const listResponse =
           await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
+
+        if (!listResponse.apiKeys) throw new Error("API keys not returned");
 
         expect(listResponse.apiKeys).toHaveLength(1);
         expect(listResponse.apiKeys[0].name).toBe("Org2 Key");
