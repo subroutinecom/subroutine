@@ -33,7 +33,7 @@ const migrationProvider = new FileMigrationProvider({
   path: {
     join,
   },
-  migrationFolder: join(__dirname, "../migrations"),
+  migrationFolder: "/app/api/migrations",
 });
 
 export const initializeDatabase = async () => {
