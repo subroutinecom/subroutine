@@ -7,7 +7,7 @@ import {
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
 import { CookieJar } from "tough-cookie";
-import { gql } from "graphql-tag";
+import { gql } from "graphql-request";
 import type {
   CreateApiKeyMutation,
   DeleteApiKeyMutation,

@@ -1,6 +1,6 @@
 import { createTestAuthClientWithJar, generateTestEmail, generateOrgName } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
-import { gql } from "graphql-tag";
+import { gql } from "graphql-request";
 import type { CreateApiKeyMutation } from "../generated/graphql.ts";
 
 const CREATE_API_KEY = gql`

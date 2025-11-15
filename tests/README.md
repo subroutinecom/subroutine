@@ -26,10 +26,10 @@ This will:
 
 ### Writing Tests with GraphQL
 
-Colocate your GraphQL queries directly in test files using the `gql` tag from `graphql-tag`:
+Colocate your GraphQL queries directly in test files using the `gql` tag from `graphql-request`:
 
 ```typescript
-import { gql } from "graphql-tag";
+import { gql } from "graphql-request";
 import type { CreateApiKeyMutation } from "../generated/graphql.ts";
 
 const CREATE_API_KEY = gql`
