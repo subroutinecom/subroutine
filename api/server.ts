@@ -13,11 +13,12 @@ import {
   getSubroutine,
   listSubroutines,
 } from "./models/subroutine.ts";
-import { getAuth } from "./auth.ts";
-import { getConfig } from "@subroutinecom/config";
+import { getConfig } from "./config/loader.ts";
+import { auth } from "./auth.ts";
+import { authMiddleware, type AuthContext } from "./middlewares/auth.ts";
 
 const initialize = async () => {
-  const app = new OpenAPIHono({
+  const app = new OpenAPIHono<{ Variables: { auth: AuthContext } }>({
     defaultHook: (result, c) => {
       if (!result.success) {
         const message = result.error.issues
@@ -40,7 +41,6 @@ const initialize = async () => {
 
   await initializeDatabase();
 
-  const auth = await getAuth();
   const config = await getConfig();
 
   // Configure CORS for auth routes - must be before the route handler
@@ -51,7 +51,9 @@ const initialize = async () => {
       origin: config.auth.allowedOrigins,
       credentials: true,
       allowMethods: ["GET", "POST", "OPTIONS"],
-      allowHeaders: ["Content-Type", "Authorization"],
+      allowHeaders: ["Content-Type", "Authorization", "Cookie", "x-api-key"],
+      exposeHeaders: ["Set-Cookie"],
+      maxAge: 86400,
     }),
   );
 
@@ -63,9 +65,11 @@ const initialize = async () => {
     const url = new URL(c.req.url);
     url.pathname = url.pathname.replace("/api/auth", "");
     const response = await auth.handler(c.req.raw);
-    console.log("Better Auth response status:", response.status);
     return response;
   });
+
+  // Apply authentication middleware to all REST/MCP endpoints
+  app.use("*", authMiddleware);
 
   const transports: Record<string, StreamableHTTPServerTransport> = {};
 

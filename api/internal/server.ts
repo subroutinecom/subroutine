@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { createYoga } from "graphql-yoga";
 import process from "node:process";
-import { schema } from "./schema.ts";
+import { buildContext, schema } from "./schema.ts";
 
 const app = new Hono();
 const PORT = process.env.INTERNAL_PORT ? Number(process.env.INTERNAL_PORT) : 8080;
@@ -10,12 +10,16 @@ app.get("/status", (c) => {
   return c.json({ status: "ok" });
 });
 
-const yoga = createYoga({ schema });
+const yoga = createYoga({
+  schema,
+  context: async ({ request }) => {
+    return buildContext(request.headers);
+  },
+  maskedErrors: false,
+});
 
 app.use("/graphql", async (c) => {
-  const response = await yoga.fetch(c.req.raw, {
-    context: c,
-  });
+  const response = await yoga.fetch(c.req.raw);
   return response;
 });
 

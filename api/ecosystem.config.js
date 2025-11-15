@@ -31,7 +31,16 @@ const linter = {
   ignore_watch: ["node_modules", ".git"],
 };
 
+const migrationsWatcher = {
+  name: "migrations-watcher",
+  script: "deno",
+  args: ["task", "migrations:generate"],
+  autorestart: false,
+  watch: ["migrations/*.ts"],
+  ignore_watch: ["node_modules", ".git", "db/migrations-index.ts"],
+};
+
 module.exports = {
   exp_backoff_restart_delay: 100,
-  apps: [apiServerApp, ...(IS_BUILD ? [] : [linter])],
+  apps: [apiServerApp, ...(IS_BUILD ? [] : [linter, migrationsWatcher])],
 };

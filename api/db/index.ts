@@ -1,9 +1,7 @@
 import { Kysely, Migrator, PostgresDialect } from "kysely";
-import type { MigrationProvider } from "kysely";
 import type { Database as DB } from "./schema";
 import pg from "pg";
-import * as migration001 from "../migrations/001_initial_schema";
-import * as migration002 from "../migrations/002_auth_schema";
+import { migrations } from "./migrations-index";
 
 const { Pool } = pg;
 
@@ -22,21 +20,17 @@ export const db = new Kysely<DB>({
   dialect,
 });
 
-const migrationProvider: MigrationProvider = {
-  getMigrations: () =>
-    Promise.resolve({
-      "001_initial_schema": migration001,
-      "002_auth_schema": migration002,
-    }),
-};
-
 export const initializeDatabase = async () => {
   try {
     console.log("Running database migrations...");
 
     const migrator = new Migrator({
       db,
-      provider: migrationProvider,
+      provider: {
+        async getMigrations() {
+          return migrations;
+        },
+      },
     });
 
     const { error, results } = await migrator.migrateToLatest();

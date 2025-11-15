@@ -12,7 +12,6 @@ FROM base AS build
 
 COPY ./api ./api
 COPY ./eslint ./eslint
-COPY ./packages ./packages
 COPY ./eslint.config.ts ./eslint.config.ts
 
 WORKDIR /app/api

@@ -52,7 +52,6 @@ services:
       - api-node-modules:/app/api/node_modules
       - ./api:/app/api
       - ./eslint:/app/eslint
-      - ./packages:/app/packages
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/status"]
       interval: 3s

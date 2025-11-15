@@ -3,7 +3,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createVertex } from "@ai-sdk/google-vertex";
 import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic";
-import { getConfig } from "@subroutinecom/config";
+import { getConfig } from "../config/loader.ts";
 
 type ModelProvider =
   | "anthropic"

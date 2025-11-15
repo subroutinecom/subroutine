@@ -1,5 +1,6 @@
 import { expect } from "@std/expect";
 import { it } from "@std/testing/bdd";
+import { getTestApiKey } from "../fixtures/apikey.ts";
 
 interface TestResponse {
   status: number;
@@ -26,6 +27,15 @@ interface Run {
   error?: Record<string, unknown> | null;
 }
 
+// Get API key for authenticated tests
+let testApiKey: string;
+const getApiKey = async () => {
+  if (!testApiKey) {
+    testApiKey = await getTestApiKey();
+  }
+  return testApiKey;
+};
+
 const MOCK_HEADERS: HeadersInit = { "x-use-mock": "true" };
 
 async function pollRunCompletion(
@@ -51,7 +61,7 @@ async function pollRunCompletion(
   );
 }
 
-function makeRequest(
+async function makeRequest(
   options: {
     hostname: string;
     port?: number;
@@ -61,28 +71,28 @@ function makeRequest(
   },
   data?: string,
 ): Promise<TestResponse> {
-  return new Promise((resolve, reject) => {
-    const url = new URL(`http://${options.hostname}`);
-    if (options.port) {
-      url.port = options.port.toString();
-    }
-    url.pathname = options.path;
+  const url = new URL(`http://${options.hostname}`);
+  if (options.port) {
+    url.port = options.port.toString();
+  }
+  url.pathname = options.path;
 
-    const req = new Request(url, {
-      method: options.method || "GET",
-      headers: options.headers,
-      body: data,
-    });
+  // Add API key authentication for all protected routes
+  const headers = new Headers(options.headers);
+  if (!url.pathname.startsWith("/api/auth/") && url.pathname !== "/status") {
+    const apiKey = await getApiKey();
+    headers.set("x-api-key", apiKey);
+  }
 
-    fetch(req)
-      .then(async (res) => {
-        const body = await res.text();
-        resolve({ status: res.status, data: body });
-      })
-      .catch((error) => {
-        reject(error);
-      });
+  const req = new Request(url, {
+    method: options.method || "GET",
+    headers,
+    body: data,
   });
+
+  const res = await fetch(req);
+  const body = await res.text();
+  return { status: res.status, data: body };
 }
 
 it("admin-panel health check", async () => {

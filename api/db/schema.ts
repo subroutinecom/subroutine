@@ -8,6 +8,7 @@ import type {
 export interface Database {
   subroutine: SubroutineTable;
   run: RunTable;
+  apikey: ApiKeyTable;
   user: User;
   session: Session;
   account: Account;
@@ -34,4 +35,32 @@ export interface RunTable {
   ended_at: string | null;
   outputs: string | null;
   error: string | null;
+}
+
+export interface ApiKeyTable {
+  id: string;
+  name: string | null;
+  start: string | null;
+  prefix: string | null;
+  key: string; // Stores bcrypt hash of the API key
+  userId: string;
+  organizationId: string;
+  enabled: boolean | null;
+  expiresAt: string | null;
+  permissions: string | null;
+  metadata: string | null;
+  // Rate limiting fields
+  rateLimitEnabled: boolean | null;
+  rateLimitTimeWindow: number | null;
+  rateLimitMax: number | null;
+  requestCount: number | null;
+  remaining: number | null;
+  lastRequest: string | null;
+  // Refill fields
+  refillInterval: number | null;
+  refillAmount: number | null;
+  lastRefillAt: string | null;
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
 }
