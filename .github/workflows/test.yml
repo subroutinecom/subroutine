@@ -16,3 +16,26 @@ jobs:
 
       - name: Run tests
         run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up --build --abort-on-container-exit --exit-code-from tests tests
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: |
+          echo "=========================================="
+          echo "Container Status:"
+          echo "=========================================="
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml ps -a
+          echo ""
+          echo "=========================================="
+          echo "Logs from all services:"
+          echo "=========================================="
+          for service in postgres sandbox api admin-panel tests; do
+            echo ""
+            echo "=========================================="
+            echo "Logs for: $service"
+            echo "=========================================="
+            docker compose -f docker-compose.yml -f docker-compose.ci.yml logs "$service" || echo "Failed to get logs for $service"
+          done
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
