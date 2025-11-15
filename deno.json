@@ -1,11 +1,5 @@
 {
-  "workspace": [
-    "./api",
-    "./sandbox",
-    "./tests",
-    "./admin-panel",
-    "./packages/config"
-  ],
+  "workspace": ["./api", "./sandbox", "./tests", "./admin-panel"],
   "nodeModulesDir": "auto",
   "unstable": ["sloppy-imports"],
   "tasks": {
