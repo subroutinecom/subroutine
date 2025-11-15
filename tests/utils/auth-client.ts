@@ -1,15 +1,13 @@
 import { createAuthClient } from "better-auth/client";
-import { organizationClient } from "better-auth/client/plugins";
+import { apiKeyClient, organizationClient } from "better-auth/client/plugins";
 import fetchCookie from "fetch-cookie";
 import { CookieJar } from "tough-cookie";
 
 // dummy client but helps for typing. typing of these things is dynamic and infered
 // and in case of factory, it cannot infer it upfront
-// NOTE: We don't use apiKeyClient because it doesn't support session-based auth
-// API keys must be created using session auth, not API key auth
 const _dummyClient = createAuthClient({
   baseURL: "http://api:80",
-  plugins: [organizationClient()],
+  plugins: [organizationClient(), apiKeyClient()],
 });
 
 export const createTestAuthClient = (): typeof _dummyClient => {
@@ -45,7 +43,7 @@ export const createTestAuthClient = (): typeof _dummyClient => {
 
   return createAuthClient({
     baseURL: "http://api:80",
-    plugins: [organizationClient()],
+    plugins: [organizationClient(), apiKeyClient()],
     fetchOptions: {
       // deno-lint-ignore no-explicit-any
       customFetchImpl: cookieAwareFetch as any,

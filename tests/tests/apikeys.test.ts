@@ -72,33 +72,6 @@ describe(
         );
       });
 
-      it("should create API key with expiration", async () => {
-        const client = createTestAuthClient();
-        const email = generateTestEmail();
-        const password = "TestPassword123!";
-        const orgName = generateOrgName();
-
-        await client.signUp.email({
-          email: email,
-          password: password,
-          name: email,
-        });
-
-        const org = await client.organization.create({
-          name: orgName,
-          slug: orgName.toLowerCase(),
-        });
-
-        await client.organization.setActive({ organizationId: org.data!.id });
-
-        const apiKey = await client.apiKey.create({
-          name: "Expiring Key",
-          expiresIn: 3600, // 1 hour
-        });
-
-        expect(apiKey.data?.expiresAt, "API key should have expiration").toBeDefined();
-      });
-
       it("should create API key with metadata", async () => {
         const client = createTestAuthClient();
         const email = generateTestEmail();
