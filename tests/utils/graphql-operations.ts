@@ -1,38 +1,43 @@
 /**
- * Type-safe GraphQL operations for API Key testing
- * This provides a lightweight alternative to full codegen
+ * GraphQL operations for API Key testing
+ * Types and operations are auto-generated via graphql-codegen
+ * Run `deno task codegen` to regenerate
  */
 
-export type ApiKey = {
-  id: string;
-  name: string | null;
-  start: string | null;
-  prefix: string | null;
-  organizationId: string;
-  enabled: boolean | null;
-  expiresAt: string | null;
-  permissions: string | null;
-  metadata: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+// Export all generated types and operations
+export type {
+  ApiKey,
+  CreatedApiKey,
+  ListApiKeysQuery,
+  ListApiKeysQueryVariables,
+  GetApiKeyQuery,
+  GetApiKeyQueryVariables,
+  CreateApiKeyMutation,
+  CreateApiKeyMutationVariables,
+  UpdateApiKeyMutation,
+  UpdateApiKeyMutationVariables,
+  DeleteApiKeyMutation,
+  DeleteApiKeyMutationVariables,
+} from "../generated/graphql";
 
-export type CreatedApiKey = {
-  id: string;
-  name: string | null;
-  start: string | null;
-  prefix: string | null;
-  key: string; // Full key only available on creation
-  organizationId: string;
-  enabled: boolean | null;
-  expiresAt: string | null;
-  permissions: string | null;
-  metadata: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
+export {
+  ListApiKeysDocument,
+  GetApiKeyDocument,
+  CreateApiKeyDocument,
+  UpdateApiKeyDocument,
+  DeleteApiKeyDocument,
+} from "../generated/graphql";
 
-// GraphQL Queries
+// Re-export with legacy names for backward compatibility
+export type {
+  ListApiKeysQuery as ListApiKeysResponse,
+  GetApiKeyQuery as GetApiKeyResponse,
+  CreateApiKeyMutation as CreateApiKeyResponse,
+  UpdateApiKeyMutation as UpdateApiKeyResponse,
+  DeleteApiKeyMutation as DeleteApiKeyResponse,
+} from "../generated/graphql";
+
+// Legacy string queries (deprecated - use typed documents instead)
 export const LIST_API_KEYS = `
   query ListApiKeys {
     apiKeys {
@@ -69,7 +74,6 @@ export const GET_API_KEY = `
   }
 `;
 
-// GraphQL Mutations
 export const CREATE_API_KEY = `
   mutation CreateApiKey($name: String, $prefix: String, $metadata: String) {
     createApiKey(name: $name, prefix: $prefix, metadata: $metadata) {
@@ -112,24 +116,3 @@ export const DELETE_API_KEY = `
     deleteApiKey(id: $id)
   }
 `;
-
-// Response types for type-safe usage
-export type ListApiKeysResponse = {
-  apiKeys: ApiKey[];
-};
-
-export type GetApiKeyResponse = {
-  apiKey: ApiKey | null;
-};
-
-export type CreateApiKeyResponse = {
-  createApiKey: CreatedApiKey;
-};
-
-export type UpdateApiKeyResponse = {
-  updateApiKey: ApiKey | null;
-};
-
-export type DeleteApiKeyResponse = {
-  deleteApiKey: boolean;
-};

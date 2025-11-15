@@ -1,0 +1,51 @@
+type ApiKey {
+  createdAt: String
+  enabled: Boolean
+  expiresAt: String
+  id: String
+  metadata: String
+  name: String
+  organizationId: String
+  permissions: String
+  prefix: String
+  start: String
+  updatedAt: String
+}
+
+type CreatedApiKey {
+  createdAt: String
+  enabled: Boolean
+  expiresAt: String
+  id: String
+  key: String
+  metadata: String
+  name: String
+  organizationId: String
+  permissions: String
+  prefix: String
+  start: String
+  updatedAt: String
+}
+
+type Mutation {
+  createApiKey(
+    """JSON string of metadata"""
+    metadata: String
+    name: String
+    prefix: String
+  ): CreatedApiKey
+  deleteApiKey(id: String!): Boolean
+  updateApiKey(
+    id: String!
+
+    """JSON string of metadata"""
+    metadata: String
+    name: String
+  ): ApiKey
+}
+
+type Query {
+  apiKey(id: String!): ApiKey
+  apiKeys: [ApiKey!]
+  ping: String
+}
