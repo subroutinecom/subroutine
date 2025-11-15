@@ -31,7 +31,9 @@
   "tasks": {
     "build": "deno compile --allow-net --allow-read --allow-env --sloppy-imports --output api-server server.ts",
     "start": "deno run --env-file=.env --allow-net --allow-read --allow-env --sloppy-imports --node-modules-dir server.ts",
-    "typecheck": "deno check --sloppy-imports"
+    "typecheck": "deno check --sloppy-imports",
+    "auth:generate": "deno run --allow-read --allow-write --allow-run --allow-env scripts/better-auth-generate.ts",
+    "db:flush": "deno run --allow-read --allow-env --allow-net scripts/flush-db.ts"
   },
   "lint": {
     "exclude": ["ecosystem.config.js"]
