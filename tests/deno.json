@@ -5,6 +5,7 @@
     "@std/testing": "jsr:@std/testing@^1.0.16",
     "better-auth": "npm:better-auth@^1.3.34",
     "fetch-cookie": "npm:fetch-cookie@^3.1.0",
+    "graphql-request": "npm:graphql-request@^7.3.3",
     "tough-cookie": "npm:tough-cookie@^6.0.0"
   },
   "tasks": {

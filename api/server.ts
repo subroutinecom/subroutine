@@ -15,9 +15,10 @@ import {
 } from "./models/subroutine.ts";
 import { getConfig } from "./config/loader.ts";
 import { auth } from "./auth.ts";
+import { authMiddleware, type AuthContext } from "./middlewares/auth.ts";
 
 const initialize = async () => {
-  const app = new OpenAPIHono({
+  const app = new OpenAPIHono<{ Variables: { auth: AuthContext } }>({
     defaultHook: (result, c) => {
       if (!result.success) {
         const message = result.error.issues
@@ -66,6 +67,9 @@ const initialize = async () => {
     const response = await auth.handler(c.req.raw);
     return response;
   });
+
+  // Apply authentication middleware to all REST/MCP endpoints
+  app.use("*", authMiddleware);
 
   const transports: Record<string, StreamableHTTPServerTransport> = {};
 
