@@ -12,6 +12,8 @@ services:
   api:
     volumes: !override
       - ./example.config.yaml:/app/config.yaml:ro
+    environment:
+      ENCRYPTION_KEY: CHANGEME_CHANGEME_CHANGEME_CHANGEME_CHANGEME_CHANGEME_CHANGEME_01234567
     build:
       target: prod
       args:
