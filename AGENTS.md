@@ -16,6 +16,10 @@ Typescript Conventions:
 - Prefer `const fun = async () => {}` over `async fun() {}`
 - Prefer simple functions with options/config parameters over classes.
 
+Database Conventions:
+
+- **Column naming**: Always use camelCase for database column names (e.g., `organizationId`, `createdAt`), NOT snake_case.
+
 Interactions:
 
 - Use docker-compose to interact with services - start, stop, build and test them through docker-compose.
