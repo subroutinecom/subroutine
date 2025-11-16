@@ -4,9 +4,11 @@
 import * as migration_0 from "../migrations/001_initial_schema.ts";
 import * as migration_1 from "../migrations/002_auth_schema.ts";
 import * as migration_2 from "../migrations/20251115_0952_apikey_schema.ts";
+import * as migration_3 from "../migrations/20251115_2105_integrations_schema.ts";
 
 export const migrations = {
   "001_initial_schema": migration_0,
   "002_auth_schema": migration_1,
   "20251115_0952_apikey_schema": migration_2,
+  "20251115_2105_integrations_schema": migration_3,
 };

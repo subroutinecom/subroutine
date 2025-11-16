@@ -9,6 +9,8 @@ export interface Database {
   subroutine: SubroutineTable;
   run: RunTable;
   apikey: ApiKeyTable;
+  integration: IntegrationTable;
+  connected_account: ConnectedAccountTable;
   user: User;
   session: Session;
   account: Account;
@@ -61,6 +63,30 @@ export interface ApiKeyTable {
   refillAmount: number | null;
   lastRefillAt: string | null;
   // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IntegrationTable {
+  id: string;
+  organizationId: string;
+  provider: string;
+  name: string;
+  authConfig: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectedAccountTable {
+  id: string;
+  integrationId: string;
+  userId: string;
+  organizationId: string;
+  credentials: string;
+  accountIdentifier: string | null;
+  status: string;
+  lastUsedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
