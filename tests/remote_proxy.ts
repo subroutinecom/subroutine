@@ -10,10 +10,10 @@ export type CallRequest = {
 export type CallResponse =
   | { readonly id: string; readonly ok: true; readonly result: unknown }
   | {
-    readonly id: string;
-    readonly ok: false;
-    readonly error: { readonly name: string; readonly message: string };
-  };
+      readonly id: string;
+      readonly ok: false;
+      readonly error: { readonly name: string; readonly message: string };
+    };
 
 export interface Transport {
   request: (req: CallRequest) => Promise<CallResponse>;
@@ -29,8 +29,8 @@ export type Remote<T> = {
   readonly [K in keyof T]: T[K] extends (...args: infer A) => infer R
     ? (...args: A) => Promise<RemoteReturn<Awaited<R>>>
     : T[K] extends object
-      ? Remote<T[K]>
-      : unknown;
+    ? Remote<T[K]>
+    : unknown;
 };
 
 const isFunction = (v: unknown): v is (...args: unknown[]) => unknown => typeof v === "function";
@@ -51,7 +51,7 @@ export class RemoteProxyServer<T extends object = object> {
 
   constructor(target?: T) {
     // When no implementation is provided, use an empty object and rely on providers
-    this.#target = (target ?? ({} as T));
+    this.#target = target ?? ({} as T);
   }
 
   register(name: string, provider: (...args: readonly unknown[]) => Promise<object> | object): void {
@@ -150,7 +150,9 @@ export class RemoteProxyClient<T extends object = object> {
 
   getProxy<API = T>(): Remote<API> {
     const make = (path: Path): unknown => {
-      const target = () => { /* never called directly */ };
+      const target = () => {
+        /* never called directly */
+      };
       return new Proxy(target, {
         get: (_t, prop) => {
           if (prop === "then") return undefined; // avoid thenable traps
@@ -188,40 +190,43 @@ export class RemoteProxyClient<T extends object = object> {
 
     const makeInstance = (instanceId: string): unknown => {
       const pathPrefix: Path = [RemoteProxyServer.INSTANCE_PREFIX, instanceId];
-      const target = () => { /* never called directly */ };
-      const makeFrom = (path: Path): unknown => new Proxy(target, {
-        get: (_t, prop) => {
-          if (prop === "then") return undefined;
-          if (typeof prop === "symbol") return undefined;
-          return makeFrom([...path, String(prop)]);
-        },
-        apply: async (_t, _thisArg, argList) => {
-          const id = genId();
-          const req: CallRequest = { id, action: "call", path, args: [...argList] };
-          // Enforce JSON serialization across the wire
-          const wireReq = JSON.stringify(req);
-          const jsonReq = JSON.parse(wireReq) as CallRequest;
-          const resRaw = await this.#transport.request(jsonReq);
-          const wireRes = JSON.stringify(resRaw);
-          const res = JSON.parse(wireRes) as CallResponse;
-          if (!res.ok) {
-            const err = new Error(res.error.message);
-            err.name = res.error.name;
-            throw err;
-          }
-          const out = res.result as unknown;
-          const ref = out as { __remote_instance__?: string };
-          if (ref && typeof ref === "object" && typeof ref.__remote_instance__ === "string") {
-            const nestedId = ref.__remote_instance__;
-            const cached = this.#instanceCache.get(nestedId);
-            if (cached) return cached;
-            const nested = makeInstance(nestedId);
-            this.#instanceCache.set(nestedId, nested);
-            return nested;
-          }
-          return out;
-        },
-      });
+      const target = () => {
+        /* never called directly */
+      };
+      const makeFrom = (path: Path): unknown =>
+        new Proxy(target, {
+          get: (_t, prop) => {
+            if (prop === "then") return undefined;
+            if (typeof prop === "symbol") return undefined;
+            return makeFrom([...path, String(prop)]);
+          },
+          apply: async (_t, _thisArg, argList) => {
+            const id = genId();
+            const req: CallRequest = { id, action: "call", path, args: [...argList] };
+            // Enforce JSON serialization across the wire
+            const wireReq = JSON.stringify(req);
+            const jsonReq = JSON.parse(wireReq) as CallRequest;
+            const resRaw = await this.#transport.request(jsonReq);
+            const wireRes = JSON.stringify(resRaw);
+            const res = JSON.parse(wireRes) as CallResponse;
+            if (!res.ok) {
+              const err = new Error(res.error.message);
+              err.name = res.error.name;
+              throw err;
+            }
+            const out = res.result as unknown;
+            const ref = out as { __remote_instance__?: string };
+            if (ref && typeof ref === "object" && typeof ref.__remote_instance__ === "string") {
+              const nestedId = ref.__remote_instance__;
+              const cached = this.#instanceCache.get(nestedId);
+              if (cached) return cached;
+              const nested = makeInstance(nestedId);
+              this.#instanceCache.set(nestedId, nested);
+              return nested;
+            }
+            return out;
+          },
+        });
       return makeFrom(pathPrefix);
     };
 
@@ -255,9 +260,7 @@ export const createLocalClient = <T extends object>(server: RemoteProxyServer<ob
 };
 
 // Worker-based transport for cross-thread messaging
-type WireMessage =
-  | { kind: "rpc"; payload: CallRequest }
-  | { kind: "rpc_result"; payload: CallResponse };
+type WireMessage = { kind: "rpc"; payload: CallRequest } | { kind: "rpc_result"; payload: CallResponse };
 
 export class WorkerTransport implements Transport {
   #worker: Worker;
@@ -302,7 +305,7 @@ export const createWorkerClientFromPath = <T extends object>(workerPath: string 
   let url: string;
   try {
     // If absolute URL passed
-    url = new URL(typeof workerPath === 'string' ? workerPath : workerPath).href;
+    url = new URL(typeof workerPath === "string" ? workerPath : workerPath).href;
   } catch {
     // Resolve relative to this module
     url = new URL(String(workerPath), import.meta.url).href;

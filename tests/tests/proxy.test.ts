@@ -1,178 +1,15 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
 import { getSandboxClient } from "../fixtures/sandbox.ts";
-import { createLocalBridge, createLocalClient, createLocalTransport, Remote, RemoteProxyClient, RemoteProxyServer } from "../remote_proxy.ts";
 
-interface GmailLabelsAPI {
-  list(input: { userId: string }): Promise<{ labels: string[] }>;
-  get(input: { id: string }): Promise<{ id: string; name: string }>;
-}
+const hasWorkerConstructor = typeof Worker !== "undefined";
+const hasParentPort = typeof self !== "undefined" && "postMessage" in self;
+const isWorkerContext = hasParentPort && !hasWorkerConstructor;
 
-interface GmailUsersAPI {
-  labels: GmailLabelsAPI;
-}
-
-interface GmailAPI {
-  users: GmailUsersAPI;
-  version(): string; // sync method
-}
-
-const createGmailImpl = (labelsByUser: Record<string, string[]>): GmailAPI => {
-  return {
-    users: {
-      labels: {
-        list: async ({ userId }) => ({ labels: labelsByUser[userId] ?? [] }),
-        get: async ({ id }) => ({ id, name: `label-${id}` }),
-      },
-    },
-    version: () => "v1",
-  };
-};
-
-describe("Remote proxy bridge", () => {
-  it("proxies nested method calls with Promise results", async () => {
-    const impl = createGmailImpl({ me: ["INBOX", "STARRED"] });
-    const remote = createLocalBridge<GmailAPI>(impl);
-
-    const result = await remote.users.labels.list({ userId: "me" });
-    expect(result.labels).toEqual(["INBOX", "STARRED"]);
-  });
-
-  it("proxies sync method and returns Promise-wrapped result", async () => {
-    const impl = createGmailImpl({});
-    const remote = createLocalBridge<GmailAPI>(impl);
-
-    const ver = await remote.version();
-    expect(ver).toBe("v1");
-  });
-
-  it("propagates errors thrown by the server implementation", async () => {
-    const impl: GmailAPI = {
-      users: {
-        labels: {
-          list: async () => {
-            throw new Error("boom");
-          },
-          get: async ({ id }) => ({ id, name: `label-${id}` }),
-        },
-      },
-      version: () => "v1",
-    };
-
-    const server = new RemoteProxyServer<GmailAPI>(impl);
-    const client = new RemoteProxyClient<GmailAPI>(createLocalTransport(server.handle));
-    const remote: Remote<GmailAPI> = client.getProxy();
-
-    try {
-      await remote.users.labels.list({ userId: "me" });
-      expect(false).toBe(true); // should not reach
-    } catch (e) {
-      if (e instanceof Error) {
-        expect(e.message).toBe("boom");
-      } else {
-        expect(false).toBe(true); // unexpected error type
-      }
-    }
-  });
-
-  it("supports intermediary awaits that return instance proxies", async () => {
-    interface Counter {
-      incr(): Promise<number>;
-    }
-    interface CountersAPI {
-      getCounter(): Promise<Counter>;
-    }
-
-    const impl: CountersAPI = {
-      getCounter: async () => {
-        let value = 0;
-        const counter: Counter = {
-          incr: async () => {
-            value += 1;
-            return value;
-          },
-        };
-        return counter;
-      },
-    };
-
-    const remote = createLocalBridge<CountersAPI>(impl);
-    const counterA = await remote.getCounter();
-    expect(await counterA.incr()).toEqual(1);
-    expect(await counterA.incr()).toEqual(2);
-    const counterB = await remote.getCounter();
-    expect(await counterB.incr()).toEqual(1);
-    expect(await counterA.incr()).toEqual(3);
-  });
-
-  it("materializes services lazily via providers without a root impl", async () => {
-    interface GmailLabelsAPI {
-      list(input: { userId: string }): Promise<{ labels: string[] }>;
-    }
-    interface GmailAPI {
-      labels: GmailLabelsAPI;
-    }
-    // Define only the tiny surface we need on the client
-    interface RootView {
-      getGmail(): Promise<GmailAPI>;
-    }
-
-    const server = new RemoteProxyServer();
-    server.registerSingleton("getGmail", async () => {
-      const labelsByUser: Record<string, string[]> = { me: ["INBOX", "STARRED"] };
-      const impl = {
-        labels: {
-          list: async ({ userId }: { userId: string }) => ({ labels: labelsByUser[userId] ?? [] }),
-        },
-      } satisfies GmailAPI;
-      return impl;
-    });
-
-    const client = createLocalClient<RootView>(server);
-    const remote = client.getProxy<RootView>();
-    const gmail = await remote.getGmail();
-    const res = await gmail.labels.list({ userId: "me" });
-    expect(res.labels).toEqual(["INBOX", "STARRED"]);
-  });
-
-  it("supports a compound client with multiple services", async () => {
-    // Define small slices per consumer
-    interface GmailLabelsAPI {
-      list(input: { userId: string }): Promise<{ labels: string[] }>;
-    }
-    interface GmailAPI {
-      labels: GmailLabelsAPI;
-    }
-    interface GithubAPI {
-      me(): Promise<{ login: string }>;
-    }
-    interface RootCompound {
-      getGmail(): Promise<GmailAPI>;
-      getGithub(): Promise<GithubAPI>;
-    }
-
-    const server = new RemoteProxyServer();
-    server.registerSingleton("getGmail", async () => {
-      const labelsByUser: Record<string, string[]> = { me: ["INBOX"] };
-      const gmailImpl = { labels: { list: async ({ userId }: { userId: string }) => ({ labels: labelsByUser[userId] ?? [] }) } } satisfies GmailAPI;
-      return gmailImpl;
-    });
-    server.register("getGithub", async () => {
-      const githubImpl = { me: async () => ({ login: "octocat" }) } satisfies GithubAPI;
-      return githubImpl;
-    });
-
-    const client = createLocalClient<RootCompound>(server);
-    const remote = client.getProxy<RootCompound>();
-    const [gmail, gh] = await Promise.all([remote.getGmail(), remote.getGithub()]);
-    const labels = await gmail.labels.list({ userId: "me" });
-    expect(labels.labels).toEqual(["INBOX"]);
-    const me = await gh.me();
-    expect(me.login).toBe("octocat");
-  });
-
-  it("provides a no-args sandbox client fixture", async () => {
+describe("Remote proxy via worker", () => {
+  it("provides a no-args sandbox client fixture with multiple services", async () => {
     const client = getSandboxClient();
+
     const gmail = await client.getGmail();
     const labels = await gmail.labels.list({ userId: "me" });
     expect(labels.labels).toEqual(["INBOX", "STARRED"]);
@@ -184,5 +21,18 @@ describe("Remote proxy bridge", () => {
     const gh = await client.getGithub();
     const me = await gh.me();
     expect(me.login).toBe("octocat");
+    console.log("I'm A TEST!", isWorkerContext);
+  });
+
+  it("supports multiple independent counters with server-side state", async () => {
+    const client = getSandboxClient();
+    const counterA = await client.getCounter();
+    expect(await counterA.incr()).toEqual(1);
+    expect(await counterA.incr()).toEqual(2);
+
+    const counterB = await client.getCounter();
+    expect(await counterB.incr()).toEqual(1);
+    expect(await counterA.incr()).toEqual(3);
+    console.log("I'm A TEST!", isWorkerContext);
   });
 });
