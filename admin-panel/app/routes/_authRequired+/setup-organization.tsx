@@ -1,14 +1,26 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useForm } from "react-hook-form";
 import { authClient } from "~/lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
+
+type OrganizationFormData = {
+  organizationName: string;
+};
 
 export default function SetupOrganization() {
   const navigate = useNavigate();
   const { isAuthenticated, organizations, isLoading: authLoading, refetch } = useAuth();
-  const [organizationName, setOrganizationName] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<OrganizationFormData>();
+
+  const organizationName = watch("organizationName", "");
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -40,38 +52,28 @@ export default function SetupOrganization() {
       .replace(/^-|-$/g, "");
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const onSubmit = async (data: OrganizationFormData) => {
+    setServerError("");
 
-    if (!organizationName.trim()) {
-      setError("Organization name is required");
-      return;
-    }
-
-    const slug = generateSlug(organizationName);
+    const slug = generateSlug(data.organizationName);
     if (!slug) {
-      setError("Organization name must contain at least one alphanumeric character");
+      setServerError("Organization name must contain at least one alphanumeric character");
       return;
     }
-
-    setLoading(true);
 
     try {
       const { data: organization, error: createError } = await authClient.organization.create({
-        name: organizationName.trim(),
+        name: data.organizationName.trim(),
         slug,
       });
 
       if (createError) {
-        setError(createError.message || "Failed to create organization");
-        setLoading(false);
+        setServerError(createError.message || "Failed to create organization");
         return;
       }
 
       if (!organization) {
-        setError("Failed to create organization");
-        setLoading(false);
+        setServerError("Failed to create organization");
         return;
       }
 
@@ -80,8 +82,7 @@ export default function SetupOrganization() {
       });
 
       if (setActiveError) {
-        setError(setActiveError.message || "Failed to set organization as active");
-        setLoading(false);
+        setServerError(setActiveError.message || "Failed to set organization as active");
         return;
       }
 
@@ -89,8 +90,7 @@ export default function SetupOrganization() {
 
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
-      setLoading(false);
+      setServerError(err instanceof Error ? err.message : "An unexpected error occurred");
     }
   };
 
@@ -103,19 +103,24 @@ export default function SetupOrganization() {
             To get started, create an organization. You'll be able to invite team members later.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm mb-2">Organization Name</label>
               <input
                 type="text"
-                value={organizationName}
-                onChange={(e) => setOrganizationName(e.target.value)}
+                {...register("organizationName", {
+                  required: "Organization name is required",
+                })}
                 placeholder="Acme Inc"
                 className="input input-bordered w-full"
-                required
-                disabled={loading}
+                disabled={isSubmitting}
                 autoFocus
               />
+              {errors.organizationName && (
+                <p className="text-xs text-error mt-1">
+                  {errors.organizationName.message}
+                </p>
+              )}
               {organizationName && (
                 <p className="text-xs text-base-content/50 mt-1">
                   Slug: {generateSlug(organizationName) || "(invalid)"}
@@ -123,18 +128,18 @@ export default function SetupOrganization() {
               )}
             </div>
 
-            {error && (
+            {serverError && (
               <div className="alert alert-error">
-                <span>{error}</span>
+                <span>{serverError}</span>
               </div>
             )}
 
             <button
               type="submit"
               className="btn btn-primary w-full"
-              disabled={loading}
+              disabled={isSubmitting}
             >
-              {loading ? (
+              {isSubmitting ? (
                 <span className="loading loading-spinner"></span>
               ) : (
                 "Create Organization"

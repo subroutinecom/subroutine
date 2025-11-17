@@ -59,3 +59,13 @@ Admin Panel GraphQL:
 - **Unique operation names** globally (e.g., `GetIntegration`, `ToggleIntegrationEnabled`).
 - **Use generated types** from `~/__generated__/graphql` (auto-generated on file changes).
 - **Client usage**: `graphqlClient.request<TypeName>(QUERY, variables)` from `~/lib/graphql-client`.
+
+Admin Panel Forms:
+
+- **Use `react-hook-form`** for all form handling. Never use manual useState for form fields.
+- **Form state**: Use `useForm()` hook with TypeScript types for form data.
+- **Field registration**: Use `register()` for inputs, `control` with `Controller` for custom components.
+- **Validation**: Define validation rules inline with `register()` or use schema validation (zod/yup).
+- **Error display**: Access field errors via `formState.errors.fieldName?.message`.
+- **Submission**: Use `handleSubmit(onValid, onInvalid)` wrapper for form submission.
+- **No manual onChange**: Let react-hook-form manage field state automatically.

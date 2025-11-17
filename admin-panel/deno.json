@@ -21,6 +21,7 @@
     "lucide-react": "npm:lucide-react@^0.554.0",
     "react": "npm:react@^19.1.1",
     "react-dom": "npm:react-dom@^19.1.1",
+    "react-hook-form": "npm:react-hook-form@^7.66.0",
     "react-router": "npm:react-router@^7.9.2",
     "theme-change": "npm:theme-change@^2.5.0",
     "@react-router/dev": "npm:@react-router/dev@^7.9.2",

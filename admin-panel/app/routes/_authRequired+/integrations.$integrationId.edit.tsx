@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
+import { useForm } from "react-hook-form";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
@@ -76,6 +77,15 @@ const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
   },
 };
 
+type IntegrationFormData = {
+  name: string;
+  clientId: string;
+  clientSecret: string;
+  scopes: string;
+  redirectUri: string;
+  enabled: boolean;
+};
+
 export default function EditIntegrationPage() {
   const navigate = useNavigate();
   const params = useParams();
@@ -83,16 +93,15 @@ export default function EditIntegrationPage() {
   const integrationId = params.integrationId!;
 
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [integration, setIntegration] = useState<ParsedIntegration | null>(null);
 
-  const [name, setName] = useState("");
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
-  const [scopes, setScopes] = useState<string[]>([]);
-  const [redirectUri, setRedirectUri] = useState("");
-  const [enabled, setEnabled] = useState(true);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<IntegrationFormData>();
 
   useEffect(() => {
     const fetchIntegration = async () => {
@@ -107,60 +116,50 @@ export default function EditIntegrationPage() {
           authConfig: JSON.parse(data.integration.authConfig) as IntegrationAuthConfig,
         };
         setIntegration(parsed);
-        setName(parsed.name);
-        setClientId(parsed.authConfig.clientId);
-        setClientSecret(parsed.authConfig.clientSecret);
-        setScopes(parsed.authConfig.scopes);
-        setRedirectUri(parsed.authConfig.redirectUri);
-        setEnabled(parsed.enabled);
+        reset({
+          name: parsed.name,
+          clientId: parsed.authConfig.clientId,
+          clientSecret: parsed.authConfig.clientSecret,
+          scopes: parsed.authConfig.scopes.join(", "),
+          redirectUri: parsed.authConfig.redirectUri,
+          enabled: parsed.enabled,
+        });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load integration");
+        setServerError(err instanceof Error ? err.message : "Failed to load integration");
       } finally {
         setLoading(false);
       }
     };
 
     fetchIntegration();
-  }, [integrationId]);
+  }, [integrationId, reset]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const onSubmit = async (data: IntegrationFormData) => {
+    setServerError(null);
 
-    if (!name.trim()) {
-      setError("Name is required");
-      return;
-    }
+    const scopeArray = data.scopes
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
 
-    if (!clientId.trim()) {
-      setError("Client ID is required");
-      return;
-    }
-
-    if (!clientSecret.trim()) {
-      setError("Client Secret is required");
-      return;
-    }
-
-    if (scopes.length === 0) {
-      setError("At least one scope is required");
+    if (scopeArray.length === 0) {
+      setServerError("At least one scope is required");
       return;
     }
 
     if (!integration) return;
 
     try {
-      setSubmitting(true);
       const config = PROVIDER_CONFIGS[integration.provider as IntegrationProvider];
 
       const authConfig = JSON.stringify({
         type: "oauth2",
-        clientId: clientId.trim(),
-        clientSecret: clientSecret.trim(),
-        scopes,
+        clientId: data.clientId.trim(),
+        clientSecret: data.clientSecret.trim(),
+        scopes: scopeArray,
         authUrl: config.authUrl,
         tokenUrl: config.tokenUrl,
-        redirectUri: redirectUri.trim(),
+        redirectUri: data.redirectUri.trim(),
       });
 
       await graphqlClient.request<{
@@ -171,24 +170,15 @@ export default function EditIntegrationPage() {
         };
       }>(UPDATE_INTEGRATION_MUTATION, {
         id: integrationId,
-        name: name.trim(),
-        enabled,
+        name: data.name.trim(),
+        enabled: data.enabled,
         authConfig,
       });
 
       navigate(`/integrations/${integrationId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update integration");
-      setSubmitting(false);
+      setServerError(err instanceof Error ? err.message : "Failed to update integration");
     }
-  };
-
-  const handleScopesChange = (value: string) => {
-    const scopeArray = value
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    setScopes(scopeArray);
   };
 
   if (loading) {
@@ -225,10 +215,10 @@ export default function EditIntegrationPage() {
 
       <div className="card bg-base-100 shadow-sm border border-base-300 max-w-2xl">
         <div className="card-body">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {serverError && (
               <div className="alert alert-error">
-                <span>{error}</span>
+                <span>{serverError}</span>
               </div>
             )}
 
@@ -248,12 +238,17 @@ export default function EditIntegrationPage() {
               </label>
               <input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                {...register("name", { required: "Name is required" })}
                 placeholder="e.g., Production Gmail"
                 className="input input-bordered"
-                required
               />
+              {errors.name && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.name.message}
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control">
@@ -262,12 +257,17 @@ export default function EditIntegrationPage() {
               </label>
               <input
                 type="text"
-                value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
+                {...register("clientId", { required: "Client ID is required" })}
                 placeholder="OAuth Client ID"
                 className="input input-bordered font-mono text-sm"
-                required
               />
+              {errors.clientId && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.clientId.message}
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control">
@@ -276,12 +276,19 @@ export default function EditIntegrationPage() {
               </label>
               <input
                 type="password"
-                value={clientSecret}
-                onChange={(e) => setClientSecret(e.target.value)}
+                {...register("clientSecret", {
+                  required: "Client Secret is required",
+                })}
                 placeholder="OAuth Client Secret"
                 className="input input-bordered font-mono text-sm"
-                required
               />
+              {errors.clientSecret && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.clientSecret.message}
+                  </span>
+                </label>
+              )}
               <label className="label">
                 <span className="label-text-alt text-warning">
                   This will be stored encrypted
@@ -295,12 +302,17 @@ export default function EditIntegrationPage() {
               </label>
               <input
                 type="text"
-                value={scopes.join(", ")}
-                onChange={(e) => handleScopesChange(e.target.value)}
+                {...register("scopes", { required: "Scopes are required" })}
                 placeholder="Comma-separated scopes"
                 className="input input-bordered font-mono text-sm"
-                required
               />
+              {errors.scopes && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.scopes.message}
+                  </span>
+                </label>
+              )}
               <label className="label">
                 <span className="label-text-alt">
                   OAuth scopes required for this integration (comma-separated)
@@ -314,12 +326,19 @@ export default function EditIntegrationPage() {
               </label>
               <input
                 type="url"
-                value={redirectUri}
-                onChange={(e) => setRedirectUri(e.target.value)}
+                {...register("redirectUri", {
+                  required: "Redirect URI is required",
+                })}
                 placeholder="OAuth Redirect URI"
                 className="input input-bordered font-mono text-sm"
-                required
               />
+              {errors.redirectUri && (
+                <label className="label">
+                  <span className="label-text-alt text-error">
+                    {errors.redirectUri.message}
+                  </span>
+                </label>
+              )}
               <label className="label">
                 <span className="label-text-alt">
                   The callback URL configured in your OAuth app
@@ -331,8 +350,7 @@ export default function EditIntegrationPage() {
               <label className="label cursor-pointer justify-start gap-4">
                 <input
                   type="checkbox"
-                  checked={enabled}
-                  onChange={(e) => setEnabled(e.target.checked)}
+                  {...register("enabled")}
                   className="checkbox checkbox-primary"
                 />
                 <div>
@@ -356,9 +374,9 @@ export default function EditIntegrationPage() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={submitting}
+                disabled={isSubmitting}
               >
-                {submitting ? (
+                {isSubmitting ? (
                   <>
                     <span className="loading loading-spinner loading-sm"></span>
                     Saving...
