@@ -1,6 +1,6 @@
+import bcrypt from "bcrypt";
 import { nanoid } from "nanoid";
 import { randomBytes } from "node:crypto";
-import bcrypt from "bcrypt";
 import { db } from "../db/index.ts";
 
 const SALT_ROUNDS = 10;
@@ -52,9 +52,7 @@ const generateApiKey = (prefix?: string): string => {
   return prefix ? `${prefix}_${keyString}` : keyString;
 };
 
-export const createApiKey = async (
-  params: CreateApiKeyRequest,
-): Promise<ApiKey> => {
+export const createApiKey = async (params: CreateApiKeyRequest): Promise<ApiKey> => {
   const id = nanoid();
   const key = generateApiKey(params.prefix);
   const now = new Date().toISOString();
@@ -115,10 +113,7 @@ export const createApiKey = async (
   };
 };
 
-export const listApiKeys = async (
-  userId: string,
-  organizationId: string,
-): Promise<ApiKey[]> => {
+export const listApiKeys = async (userId: string, organizationId: string): Promise<ApiKey[]> => {
   const rows = await db
     .selectFrom("apikey")
     .selectAll()
@@ -153,11 +148,7 @@ export const listApiKeys = async (
   }));
 };
 
-export const getApiKey = async (
-  id: string,
-  userId: string,
-  organizationId: string,
-): Promise<ApiKey | null> => {
+export const getApiKey = async (id: string, userId: string, organizationId: string): Promise<ApiKey | null> => {
   const row = await db
     .selectFrom("apikey")
     .selectAll()
@@ -196,14 +187,8 @@ export const getApiKey = async (
   };
 };
 
-export const updateApiKey = async (
-  params: UpdateApiKeyRequest,
-): Promise<ApiKey | null> => {
-  const existing = await getApiKey(
-    params.id,
-    params.userId,
-    params.organizationId,
-  );
+export const updateApiKey = async (params: UpdateApiKeyRequest): Promise<ApiKey | null> => {
+  const existing = await getApiKey(params.id, params.userId, params.organizationId);
 
   if (!existing) {
     return null;
@@ -215,11 +200,7 @@ export const updateApiKey = async (
     .updateTable("apikey")
     .set({
       name: params.name !== undefined ? params.name : existing.name,
-      metadata: params.metadata
-        ? JSON.stringify(params.metadata)
-        : existing.metadata
-          ? JSON.stringify(existing.metadata)
-          : null,
+      metadata: params.metadata ? JSON.stringify(params.metadata) : existing.metadata ? JSON.stringify(existing.metadata) : null,
       updatedAt: now,
     })
     .where("id", "=", params.id)
@@ -230,11 +211,7 @@ export const updateApiKey = async (
   return getApiKey(params.id, params.userId, params.organizationId);
 };
 
-export const deleteApiKey = async (
-  id: string,
-  userId: string,
-  organizationId: string,
-): Promise<boolean> => {
+export const deleteApiKey = async (id: string, userId: string, organizationId: string): Promise<boolean> => {
   const result = await db
     .deleteFrom("apikey")
     .where("id", "=", id)
@@ -245,16 +222,19 @@ export const deleteApiKey = async (
   return (result?.numDeletedRows ?? 0n) > 0n;
 };
 
-export const verifyApiKey = async (
-  apiKey: string,
-): Promise<{ userId: string; organizationId: string } | null> => {
-  const allKeys = await db
+export const verifyApiKey = async (apiKey: string): Promise<{ userId: string; organizationId: string } | null> => {
+  // Use the indexed "start" column (first 8 chars of the key) to
+  // dramatically shrink the candidate set before bcrypt comparison.
+  const candidateStart = apiKey.substring(0, 8);
+
+  const candidates = await db
     .selectFrom("apikey")
-    .select(["id", "key", "userId", "organizationId", "enabled", "expiresAt"])
+    .select(["id", "key", "userId", "organizationId", "enabled", "expiresAt", "start"])
     .where("enabled", "=", true)
+    .where("start", "=", candidateStart)
     .execute();
 
-  for (const keyRecord of allKeys) {
+  for (const keyRecord of candidates) {
     if (keyRecord.expiresAt) {
       const expiryDate = new Date(keyRecord.expiresAt);
       if (expiryDate < new Date()) {

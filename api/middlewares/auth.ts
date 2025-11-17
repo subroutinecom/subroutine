@@ -10,10 +10,7 @@ export type AuthContext = {
   session?: any;
 };
 
-export const authMiddleware = async (
-  c: Context<{ Variables: { auth: AuthContext } }>,
-  next: Next,
-) => {
+export const authMiddleware = async (c: Context<{ Variables: { auth: AuthContext } }>, next: Next) => {
   const path = new URL(c.req.url).pathname;
 
   if (path.startsWith("/api/auth/") || path === "/status" || path === "/graphql") {
@@ -38,7 +35,7 @@ export const authMiddleware = async (
           message: "Invalid API key",
         },
       },
-      401,
+      401
     );
   }
 
@@ -65,10 +62,9 @@ export const authMiddleware = async (
     {
       error: {
         code: "UNAUTHORIZED",
-        message:
-          "Authentication required. Provide session cookie or x-api-key header.",
+        message: "Authentication required. Provide session cookie or x-api-key header.",
       },
     },
-    401,
+    401
   );
 };
