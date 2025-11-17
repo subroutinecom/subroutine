@@ -1,6 +1,7 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
 import { createLocalBridge, createLocalClient, createLocalTransport, Remote, RemoteProxyClient, RemoteProxyServer } from "../remote_proxy";
+import { getSandboxClient, SandboxRoot } from "../fixtures/sandbox";
 
 interface GmailLabelsAPI {
   list(input: { userId: string }): Promise<{ labels: string[] }>;
@@ -160,6 +161,21 @@ describe("Remote proxy bridge", () => {
     const [gmail, gh] = await Promise.all([remote.getGmail(), remote.getGithub()]);
     const labels = await gmail.labels.list({ userId: "me" });
     expect(labels.labels).toEqual(["INBOX"]);
+    const me = await gh.me();
+    expect(me.login).toBe("octocat");
+  });
+
+  it("provides a no-args sandbox client fixture", async () => {
+    const client = getSandboxClient();
+    const gmail = await client.getGmail();
+    const labels = await gmail.labels.list({ userId: "me" });
+    expect(labels.labels).toEqual(["INBOX", "STARRED"]);
+
+    const s3 = await client.getS3();
+    const buckets = await s3.listBuckets();
+    expect(buckets.buckets).toEqual(["photos", "backups"]);
+
+    const gh = await client.getGithub();
     const me = await gh.me();
     expect(me.login).toBe("octocat");
   });
