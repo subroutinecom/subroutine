@@ -1,6 +1,6 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
-import { createLocalBridge, createLocalClient, createLocalTransport, Remote, RemoteProxyClient, RemoteProxyServer } from "../remote_proxy.ts";
+import { createLocalBridge, createLocalClient, createLocalTransport, Remote, RemoteProxyClient, RemoteProxyServer } from "../remote_proxy";
 
 interface GmailLabelsAPI {
   list(input: { userId: string }): Promise<{ labels: string[] }>;
@@ -117,7 +117,7 @@ describe("Remote proxy bridge", () => {
     }
 
     const server = new RemoteProxyServer();
-    server.register("getGmail", async () => {
+    server.registerSingleton("getGmail", async () => {
       const labelsByUser: Record<string, string[]> = { me: ["INBOX", "STARRED"] };
       const impl = {
         labels: {
@@ -132,5 +132,35 @@ describe("Remote proxy bridge", () => {
     const gmail = await remote.getGmail();
     const res = await gmail.labels.list({ userId: "me" });
     expect(res.labels).toEqual(["INBOX", "STARRED"]);
+  });
+
+  it("supports a compound client with multiple services", async () => {
+    // Define small slices per consumer
+    interface GmailLabelsAPI { list(input: { userId: string }): Promise<{ labels: string[] }>; }
+    interface GmailAPI { labels: GmailLabelsAPI }
+    interface GithubAPI { me(): Promise<{ login: string }> }
+    interface RootCompound {
+      getGmail(): Promise<GmailAPI>;
+      getGithub(): Promise<GithubAPI>;
+    }
+
+    const server = new RemoteProxyServer();
+    server.registerSingleton("getGmail", async () => {
+      const labelsByUser: Record<string, string[]> = { me: ["INBOX"] };
+      const gmailImpl = { labels: { list: async ({ userId }: { userId: string }) => ({ labels: labelsByUser[userId] ?? [] }) } } satisfies GmailAPI;
+      return gmailImpl;
+    });
+    server.register("getGithub", async () => {
+      const githubImpl = { me: async () => ({ login: "octocat" }) } satisfies GithubAPI;
+      return githubImpl;
+    });
+
+    const client = createLocalClient<RootCompound>(server);
+    const remote = client.getProxy<RootCompound>();
+    const [gmail, gh] = await Promise.all([remote.getGmail(), remote.getGithub()]);
+    const labels = await gmail.labels.list({ userId: "me" });
+    expect(labels.labels).toEqual(["INBOX"]);
+    const me = await gh.me();
+    expect(me.login).toBe("octocat");
   });
 });

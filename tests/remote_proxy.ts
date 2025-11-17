@@ -37,10 +37,16 @@ const isFunction = (v: unknown): v is (...args: unknown[]) => unknown => typeof 
 
 const genId = () => crypto.randomUUID();
 
+type ProviderEntry = {
+  readonly factory: (...args: readonly unknown[]) => Promise<object> | object;
+  readonly singleton: boolean;
+  instanceId?: string;
+};
+
 export class RemoteProxyServer<T extends object = object> {
   #target: T;
   #instances: Map<string, object> = new Map();
-  #providers: Map<string, (...args: readonly unknown[]) => Promise<object> | object> = new Map();
+  #providers: Map<string, ProviderEntry> = new Map();
   static readonly INSTANCE_PREFIX = "@@instance" as const;
 
   constructor(target?: T) {
@@ -49,7 +55,11 @@ export class RemoteProxyServer<T extends object = object> {
   }
 
   register(name: string, provider: (...args: readonly unknown[]) => Promise<object> | object): void {
-    this.#providers.set(name, provider);
+    this.#providers.set(name, { factory: provider, singleton: false });
+  }
+
+  registerSingleton(name: string, provider: (...args: readonly unknown[]) => Promise<object> | object): void {
+    this.#providers.set(name, { factory: provider, singleton: true });
   }
 
   handle: Handler = async (req) => {
@@ -91,13 +101,20 @@ export class RemoteProxyServer<T extends object = object> {
       if (!isFunction(fnCandidate)) {
         // Lazy provider fallback if calling a root-level virtual method
         if (startIndex === 0 && this.#providers.has(leafKey)) {
-          const prov = this.#providers.get(leafKey)!;
-          const awaited = await Promise.resolve(prov(...args));
+          const entry = this.#providers.get(leafKey)!;
+          if (entry.singleton && entry.instanceId && this.#instances.has(entry.instanceId)) {
+            return { id: req.id, ok: true, result: { __remote_instance__: entry.instanceId } };
+          }
+
+          const awaited = await Promise.resolve(entry.factory(...args));
           if (typeof awaited !== "object" || awaited === null) {
             throw new Error(`Provider ${leafKey} did not return an object`);
           }
           const newId = genId();
           this.#instances.set(newId, awaited as object);
+          if (entry.singleton) {
+            entry.instanceId = newId;
+          }
           return { id: req.id, ok: true, result: { __remote_instance__: newId } };
         }
         throw new Error(`Target at ${leafKey} is not callable`);
