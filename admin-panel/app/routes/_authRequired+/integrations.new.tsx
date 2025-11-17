@@ -95,7 +95,6 @@ export default function NewIntegrationPage() {
     register,
     handleSubmit,
     control,
-    watch,
     setValue,
     formState: { errors, isSubmitting },
   } = useForm<IntegrationFormData>({
@@ -108,8 +107,6 @@ export default function NewIntegrationPage() {
       redirectUri: "http://localhost:3002/api/integrations/callback",
     },
   });
-
-  const provider = watch("provider");
 
   // Close dropdown when clicking outside
   useEffect(() => {
