@@ -1,7 +1,7 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
-import { createLocalBridge, createLocalClient, createLocalTransport, Remote, RemoteProxyClient, RemoteProxyServer } from "../remote_proxy";
-import { getSandboxClient, SandboxRoot } from "../fixtures/sandbox";
+import { getSandboxClient } from "../fixtures/sandbox.ts";
+import { createLocalBridge, createLocalClient, createLocalTransport, Remote, RemoteProxyClient, RemoteProxyServer } from "../remote_proxy.ts";
 
 interface GmailLabelsAPI {
   list(input: { userId: string }): Promise<{ labels: string[] }>;
@@ -137,9 +137,15 @@ describe("Remote proxy bridge", () => {
 
   it("supports a compound client with multiple services", async () => {
     // Define small slices per consumer
-    interface GmailLabelsAPI { list(input: { userId: string }): Promise<{ labels: string[] }>; }
-    interface GmailAPI { labels: GmailLabelsAPI }
-    interface GithubAPI { me(): Promise<{ login: string }> }
+    interface GmailLabelsAPI {
+      list(input: { userId: string }): Promise<{ labels: string[] }>;
+    }
+    interface GmailAPI {
+      labels: GmailLabelsAPI;
+    }
+    interface GithubAPI {
+      me(): Promise<{ login: string }>;
+    }
     interface RootCompound {
       getGmail(): Promise<GmailAPI>;
       getGithub(): Promise<GithubAPI>;

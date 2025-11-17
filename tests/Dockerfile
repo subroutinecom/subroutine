@@ -15,7 +15,7 @@ COPY ./tests ./tests
 WORKDIR /app/tests
 
 FROM base AS dev
-CMD ["deno", "test", "tests", "--allow-net", "--allow-env", "--sloppy-imports", "--watch"]
+CMD ["deno", "test", "tests", "--allow-net", "--allow-env", "--sloppy-imports", "--unstable-worker-options", "--watch"]
 
 FROM base AS ci
-CMD ["deno", "test", "tests", "--allow-net", "--allow-env", "--sloppy-imports"]
+CMD ["deno", "test", "tests", "--allow-net", "--allow-env", "--sloppy-imports", "--unstable-worker-options",]
