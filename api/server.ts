@@ -16,6 +16,7 @@ import {
 import { getConfig } from "./config/loader.ts";
 import { auth } from "./auth.ts";
 import { authMiddleware, type AuthContext } from "./middlewares/auth.ts";
+import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
 
 const initialize = async () => {
   const app = new OpenAPIHono<{ Variables: { auth: AuthContext } }>({
@@ -608,6 +609,7 @@ const initialize = async () => {
     try {
       let transport: StreamableHTTPServerTransport;
       const body = await c.req.json();
+      console.log("MCP request body:", JSON.stringify(body, null, 2));
 
       if (sessionId && transports[sessionId]) {
         transport = transports[sessionId];
@@ -633,10 +635,12 @@ const initialize = async () => {
         const server = createMcpServer();
         await server.connect(transport);
         const req = c.req.raw;
-        const res = new Response();
-        // @ts-ignore - MCP SDK expects Express types but works with Web standard Request/Response
+        const res = new NodeResponseAdapter();
+        // @ts-ignore - MCP SDK expects Node.js HTTP response types
         await transport.handleRequest(req, res, body);
-        return res;
+        const response = res.toResponse();
+        console.log("MCP response status:", response.status);
+        return response;
       } else {
         return c.json(
           {
@@ -652,10 +656,10 @@ const initialize = async () => {
       }
 
       const req = c.req.raw;
-      const res = new Response();
-      // @ts-ignore - MCP SDK expects Express types but works with Web standard Request/Response
+      const res = new NodeResponseAdapter();
+      // @ts-ignore - MCP SDK expects Node.js HTTP response types
       await transport.handleRequest(req, res, body);
-      return res;
+      return res.toResponse();
     } catch (error) {
       console.error("Error handling MCP request:", error);
       return c.json(
@@ -682,10 +686,10 @@ const initialize = async () => {
     console.log(`Establishing SSE stream for session ${sessionId}`);
     const transport = transports[sessionId];
     const req = c.req.raw;
-    const res = new Response();
-    // @ts-ignore - MCP SDK expects Express types but works with Web standard Request/Response
+    const res = new NodeResponseAdapter();
+    // @ts-ignore - MCP SDK expects Node.js HTTP response types
     await transport.handleRequest(req, res);
-    return res;
+    return res.toResponse();
   });
 
   app.delete("/mcp", async (c) => {
@@ -702,10 +706,10 @@ const initialize = async () => {
     try {
       const transport = transports[sessionId];
       const req = c.req.raw;
-      const res = new Response();
-      // @ts-ignore - MCP SDK expects Express types but works with Web standard Request/Response
+      const res = new NodeResponseAdapter();
+      // @ts-ignore - MCP SDK expects Node.js HTTP response types
       await transport.handleRequest(req, res);
-      return res;
+      return res.toResponse();
     } catch (error) {
       console.error("Error handling session termination:", error);
       return c.text("Error processing session termination", 500);

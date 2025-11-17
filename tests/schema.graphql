@@ -27,6 +27,30 @@ type CreatedApiKey {
   updatedAt: String
 }
 
+type Integration {
+  id: String!
+  organizationId: String!
+  provider: String!
+  name: String!
+  authConfig: String!
+  enabled: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type ConnectedAccount {
+  id: String!
+  integrationId: String!
+  userId: String!
+  organizationId: String!
+  credentials: String!
+  accountIdentifier: String
+  status: String!
+  lastUsedAt: String
+  createdAt: String!
+  updatedAt: String!
+}
+
 type Mutation {
   createApiKey(
     """JSON string of metadata"""
@@ -42,10 +66,36 @@ type Mutation {
     metadata: String
     name: String
   ): ApiKey
+  createIntegration(
+    provider: String!
+    name: String!
+    """JSON string of IntegrationAuthConfig"""
+    authConfig: String!
+  ): Integration
+  updateIntegration(
+    id: String!
+    name: String
+    """JSON string of IntegrationAuthConfig"""
+    authConfig: String
+    enabled: Boolean
+  ): Integration
+  deleteIntegration(id: String!): Boolean
+  createConnectedAccount(
+    integrationId: String!
+    """JSON string of ConnectedAccountCredentials"""
+    credentials: String!
+    accountIdentifier: String
+  ): ConnectedAccount
+  deleteConnectedAccount(id: String!): Boolean
 }
 
 type Query {
   apiKey(id: String!): ApiKey
   apiKeys: [ApiKey!]
   ping: String
+  integrations: [Integration!]
+  integration(id: String!): Integration
+  connectedAccounts: [ConnectedAccount!]
+  connectedAccount(id: String!): ConnectedAccount
+  connectedAccountsByIntegration(integrationId: String!): [ConnectedAccount!]
 }

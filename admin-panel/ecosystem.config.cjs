@@ -17,7 +17,7 @@ const adminPanelApp = IS_BUILD
       args: "task dev",
       autorestart: true,
       watch: ["vite.config.ts", "deno.json", "react-router.config.ts"],
-      ignore_watch: ["node_modules", ".git"],
+      ignore_watch: ["node_modules", ".git", "app/__generated__"],
       env: {
         NODE_ENV: "development",
       },
@@ -31,12 +31,22 @@ module.exports = {
       ? []
       : [
           {
+            name: "codegen",
+            script: "deno",
+            args: "task codegen",
+            autorestart: true,
+            watch: false,
+            env: {
+              NODE_ENV: "development",
+            },
+          },
+          {
             name: "linter",
             script: "deno",
             args: "lint --rules-exclude=no-sloppy-imports,no-explicit-any",
             autorestart: false,
             watch: ["*.tsx", "*.ts", "app/**/*.tsx", "app/**/*.ts"],
-            ignore_watch: ["node_modules", ".git", ".vite"],
+            ignore_watch: ["node_modules", ".git", ".vite", "app/__generated__"],
           },
         ]),
   ],

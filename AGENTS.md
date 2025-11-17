@@ -52,3 +52,10 @@ Admin Panel UI:
 - **Components**: All reusable UI patterns must be extracted to `app/components/ui/` as DaisyUI-based components.
 - **Styling**: Use DaisyUI components exclusively. No custom one-off styling in routes.
 - **Context providers**: Must be in `root.tsx` to wrap all routes (including login).
+
+Admin Panel GraphQL:
+
+- **ALWAYS use `gql` tag** from `graphql-request`. Never use template strings.
+- **Unique operation names** globally (e.g., `GetIntegration`, `ToggleIntegrationEnabled`).
+- **Use generated types** from `~/__generated__/graphql` (auto-generated on file changes).
+- **Client usage**: `graphqlClient.request<TypeName>(QUERY, variables)` from `~/lib/graphql-client`.

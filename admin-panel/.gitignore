@@ -6,3 +6,6 @@
 /.react-router/
 /build/
 /.vite/
+
+# GraphQL Codegen
+/app/__generated__/
