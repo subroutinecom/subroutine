@@ -37,13 +37,19 @@ const isFunction = (v: unknown): v is (...args: unknown[]) => unknown => typeof 
 
 const genId = () => crypto.randomUUID();
 
-export class RemoteProxyServer<T extends object> {
+export class RemoteProxyServer<T extends object = object> {
   #target: T;
   #instances: Map<string, object> = new Map();
+  #providers: Map<string, (...args: readonly unknown[]) => Promise<object> | object> = new Map();
   static readonly INSTANCE_PREFIX = "@@instance" as const;
 
-  constructor(target: T) {
-    this.#target = target;
+  constructor(target?: T) {
+    // When no implementation is provided, use an empty object and rely on providers
+    this.#target = (target ?? ({} as T));
+  }
+
+  register(name: string, provider: (...args: readonly unknown[]) => Promise<object> | object): void {
+    this.#providers.set(name, provider);
   }
 
   handle: Handler = async (req) => {
@@ -83,6 +89,17 @@ export class RemoteProxyServer<T extends object> {
       }
       const fnCandidate = (ctx as Record<string, unknown>)[leafKey];
       if (!isFunction(fnCandidate)) {
+        // Lazy provider fallback if calling a root-level virtual method
+        if (startIndex === 0 && this.#providers.has(leafKey)) {
+          const prov = this.#providers.get(leafKey)!;
+          const awaited = await Promise.resolve(prov(...args));
+          if (typeof awaited !== "object" || awaited === null) {
+            throw new Error(`Provider ${leafKey} did not return an object`);
+          }
+          const newId = genId();
+          this.#instances.set(newId, awaited as object);
+          return { id: req.id, ok: true, result: { __remote_instance__: newId } };
+        }
         throw new Error(`Target at ${leafKey} is not callable`);
       }
 
@@ -106,7 +123,7 @@ export class RemoteProxyServer<T extends object> {
   };
 }
 
-export class RemoteProxyClient<T extends object> {
+export class RemoteProxyClient<T extends object = object> {
   #transport: Transport;
   #instanceCache: Map<string, unknown> = new Map();
 
@@ -114,7 +131,7 @@ export class RemoteProxyClient<T extends object> {
     this.#transport = transport;
   }
 
-  getProxy(): Remote<T> {
+  getProxy<API = T>(): Remote<API> {
     const make = (path: Path): unknown => {
       const target = () => { /* never called directly */ };
       return new Proxy(target, {
@@ -182,7 +199,7 @@ export class RemoteProxyClient<T extends object> {
     };
 
     // The proxy value is structurally untyped at runtime; its static type is Remote<T>.
-    return make([]) as unknown as Remote<T>;
+    return make([]) as unknown as Remote<API>;
   }
 }
 
@@ -196,4 +213,9 @@ export const createLocalBridge = <T extends object>(target: T): Remote<T> => {
   const transport = createLocalTransport(server.handle);
   const client = new RemoteProxyClient<T>(transport);
   return client.getProxy();
+};
+
+export const createLocalClient = <T extends object>(server: RemoteProxyServer<object>): RemoteProxyClient<T> => {
+  const transport = createLocalTransport(server.handle);
+  return new RemoteProxyClient<T>(transport);
 };

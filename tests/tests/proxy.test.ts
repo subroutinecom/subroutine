@@ -1,6 +1,6 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
-import { createLocalBridge, createLocalTransport, Remote, RemoteProxyClient, RemoteProxyServer } from "../utils/remote_proxy.ts";
+import { createLocalBridge, createLocalClient, createLocalTransport, Remote, RemoteProxyClient, RemoteProxyServer } from "../remote_proxy.ts";
 
 interface GmailLabelsAPI {
   list(input: { userId: string }): Promise<{ labels: string[] }>;
@@ -102,5 +102,35 @@ describe("Remote proxy bridge", () => {
     const counterB = await remote.getCounter();
     expect(await counterB.incr()).toEqual(1);
     expect(await counterA.incr()).toEqual(3);
+  });
+
+  it("materializes services lazily via providers without a root impl", async () => {
+    interface GmailLabelsAPI {
+      list(input: { userId: string }): Promise<{ labels: string[] }>;
+    }
+    interface GmailAPI {
+      labels: GmailLabelsAPI;
+    }
+    // Define only the tiny surface we need on the client
+    interface RootView {
+      getGmail(): Promise<GmailAPI>;
+    }
+
+    const server = new RemoteProxyServer();
+    server.register("getGmail", async () => {
+      const labelsByUser: Record<string, string[]> = { me: ["INBOX", "STARRED"] };
+      const impl = {
+        labels: {
+          list: async ({ userId }: { userId: string }) => ({ labels: labelsByUser[userId] ?? [] }),
+        },
+      } satisfies GmailAPI;
+      return impl;
+    });
+
+    const client = createLocalClient<RootView>(server);
+    const remote = client.getProxy<RootView>();
+    const gmail = await remote.getGmail();
+    const res = await gmail.labels.list({ userId: "me" });
+    expect(res.labels).toEqual(["INBOX", "STARRED"]);
   });
 });
