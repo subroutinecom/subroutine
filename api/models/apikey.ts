@@ -223,35 +223,33 @@ export const deleteApiKey = async (id: string, userId: string, organizationId: s
 };
 
 export const verifyApiKey = async (apiKey: string): Promise<{ userId: string; organizationId: string } | null> => {
-  const startTime = Date.now();
-  try {
-    const allKeys = await db
-      .selectFrom("apikey")
-      .select(["id", "key", "userId", "organizationId", "enabled", "expiresAt"])
-      .where("enabled", "=", true)
-      .execute();
-    console.log(`Fetched ${allKeys.length} API keys from database in ${Date.now() - startTime}ms`);
+  // Use the indexed "start" column (first 8 chars of the key) to
+  // dramatically shrink the candidate set before bcrypt comparison.
+  const candidateStart = apiKey.substring(0, 8);
 
-    for (const keyRecord of allKeys) {
-      if (keyRecord.expiresAt) {
-        const expiryDate = new Date(keyRecord.expiresAt);
-        if (expiryDate < new Date()) {
-          continue;
-        }
-      }
+  const candidates = await db
+    .selectFrom("apikey")
+    .select(["id", "key", "userId", "organizationId", "enabled", "expiresAt", "start"])
+    .where("enabled", "=", true)
+    .where("start", "=", candidateStart)
+    .execute();
 
-      const isValid = await bcrypt.compare(apiKey, keyRecord.key);
-      console.log(`API key comparison completed in ${Date.now() - startTime}ms`);
-      if (isValid) {
-        return {
-          userId: keyRecord.userId,
-          organizationId: keyRecord.organizationId,
-        };
+  for (const keyRecord of candidates) {
+    if (keyRecord.expiresAt) {
+      const expiryDate = new Date(keyRecord.expiresAt);
+      if (expiryDate < new Date()) {
+        continue;
       }
     }
 
-    return null;
-  } finally {
-    console.log(`API key verification process completed in ${Date.now() - startTime}ms`);
+    const isValid = await bcrypt.compare(apiKey, keyRecord.key);
+    if (isValid) {
+      return {
+        userId: keyRecord.userId,
+        organizationId: keyRecord.organizationId,
+      };
+    }
   }
+
+  return null;
 };

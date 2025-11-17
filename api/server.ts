@@ -196,7 +196,6 @@ const initialize = async () => {
       },
     }),
     async (c) => {
-      const reqStartTime = Date.now();
       try {
         const { request } = c.req.valid("json");
 
@@ -214,16 +213,10 @@ const initialize = async () => {
 
         const useMock = c.req.header("x-use-mock") === "true";
 
-        const startTime = Date.now();
         const subroutine = await generateSubroutine({
           request,
           useMock,
         });
-        console.log(
-          `Created subroutine with ID ${subroutine.id} for ${request} in ${Date.now() - startTime}ms (request total time: ${
-            Date.now() - reqStartTime
-          }ms)`
-        );
 
         const response = c.json(
           {
@@ -232,7 +225,6 @@ const initialize = async () => {
           },
           201
         );
-        console.log(`Response prepared in ${Date.now() - startTime}ms`);
         return response;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to generate subroutine";
@@ -245,8 +237,6 @@ const initialize = async () => {
           },
           500
         );
-      } finally {
-        console.log(`Total /api/subroutine request time: ${Date.now() - reqStartTime}ms`);
       }
     }
   );
@@ -420,27 +410,22 @@ const initialize = async () => {
     }),
     // @ts-ignore - Hono OpenAPI types are overly strict about response unions
     async (c) => {
-      const startTime = Date.now();
-      try {
-        const { id } = c.req.valid("param");
-        const subroutine = await getSubroutine(id);
+      const { id } = c.req.valid("param");
+      const subroutine = await getSubroutine(id);
 
-        if (!subroutine) {
-          return c.json(
-            {
-              error: {
-                code: "NOT_FOUND",
-                message: "subroutine not found",
-              },
+      if (!subroutine) {
+        return c.json(
+          {
+            error: {
+              code: "NOT_FOUND",
+              message: "subroutine not found",
             },
-            404
-          );
-        }
-
-        return c.json({ subroutine });
-      } finally {
-        console.log(`Fetched subroutine ${c.req.valid("param").id} in ${Date.now() - startTime}ms`);
+          },
+          404
+        );
       }
+
+      return c.json({ subroutine });
     }
   );
 
