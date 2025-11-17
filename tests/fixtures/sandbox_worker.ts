@@ -1,7 +1,5 @@
 import { RemoteProxyServer, type CallRequest, type CallResponse } from "../remote_proxy";
 
-console.log("I'm A WORKER!", Deno.pid);
-
 // Define provider implementations inside the worker
 interface GmailLabelsAPI {
   list(input: { userId: string }): Promise<{ labels: string[] }>;
@@ -59,12 +57,12 @@ server.register("getCounter", async () => {
 
 type WireMessage = { kind: "rpc"; payload: CallRequest } | { kind: "rpc_result"; payload: CallResponse };
 
-self.onmessage = async (ev: MessageEvent<WireMessage>) => {
-  const msg = ev.data;
+addEventListener("message", async (ev: Event) => {
+  const msg = (ev as MessageEvent<WireMessage>).data;
   if (!msg || msg.kind !== "rpc") return;
   const req = msg.payload;
   // enforce JSON boundary inside worker too
   const res = await server.handle(JSON.parse(JSON.stringify(req)) as CallRequest);
   const wire: WireMessage = { kind: "rpc_result", payload: JSON.parse(JSON.stringify(res)) as CallResponse };
-  self.postMessage(wire);
-};
+  (self as unknown as { postMessage: (data: unknown) => void }).postMessage(wire);
+});
