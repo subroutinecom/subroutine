@@ -47,7 +47,7 @@ Admin Panel Routing:
 
 Admin Panel UI:
 
-- **Icons**: Use `@tabler/icons-react` for all UI icons. Never create inline SVGs.
+- **Icons**: Use `lucide-react` for all UI icons. Never create inline SVGs.
 - **Social/brand icons**: Download to `public/icons/` and serve locally. Never hotlink external CDNs.
 - **Components**: All reusable UI patterns must be extracted to `app/components/ui/` as DaisyUI-based components.
 - **Styling**: Use DaisyUI components exclusively. No custom one-off styling in routes.

@@ -1,14 +1,14 @@
 import { Link, useLocation } from "react-router";
 import { useState } from "react";
 import {
-  IconHome,
-  IconPlugConnected,
-  IconLogout,
-  IconSun,
-  IconMoon,
-  IconChevronDown,
-  IconBuilding,
-} from "@tabler/icons-react";
+  Home,
+  Plug,
+  LogOut,
+  Sun,
+  Moon,
+  ChevronDown,
+  Building,
+} from "lucide-react";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { authClient } from "~/lib/auth-client";
 import { useEffect } from "react";
@@ -62,8 +62,8 @@ export const Sidebar = () => {
     user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase();
 
   const navItems = [
-    { to: "/", icon: IconHome, label: "Dashboard" },
-    { to: "/integrations", icon: IconPlugConnected, label: "Integrations" },
+    { to: "/", icon: Home, label: "Dashboard" },
+    { to: "/integrations", icon: Plug, label: "Integrations" },
   ];
 
   const isActive = (path: string) => {
@@ -99,12 +99,12 @@ export const Sidebar = () => {
               className="w-full px-3 py-2 rounded-lg hover:bg-base-200 transition-colors flex items-center justify-between gap-2 text-left group"
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <IconBuilding size={16} className="text-base-content/50 flex-shrink-0" />
+                <Building size={16} className="text-base-content/50 flex-shrink-0" />
                 <span className="text-sm font-medium text-base-content truncate">
                   {activeOrganization.name}
                 </span>
               </div>
-              <IconChevronDown
+              <ChevronDown
                 size={14}
                 className={`text-base-content/60 transition-transform flex-shrink-0 ${
                   isOrgDropdownOpen ? "rotate-180" : ""
@@ -170,12 +170,12 @@ export const Sidebar = () => {
         >
           {theme === "light" ? (
             <>
-              <IconMoon size={20} />
+              <Moon size={20} />
               <span className="text-sm">Dark mode</span>
             </>
           ) : (
             <>
-              <IconSun size={20} />
+              <Sun size={20} />
               <span className="text-sm">Light mode</span>
             </>
           )}
@@ -214,7 +214,7 @@ export const Sidebar = () => {
             <div className="divider my-1"></div>
             <li>
               <Link to="/logout" className="text-error hover:bg-error/10">
-                <IconLogout size={16} />
+                <LogOut size={16} />
                 Logout
               </Link>
             </li>

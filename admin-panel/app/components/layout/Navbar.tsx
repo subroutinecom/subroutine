@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { useState } from "react";
-import { IconLogout } from "@tabler/icons-react";
+import { LogOut } from "lucide-react";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { authClient } from "~/lib/auth-client";
 import { ThemeToggle } from "~/components/ThemeToggle";
@@ -99,7 +99,7 @@ export const Navbar = () => {
 
               <li>
                 <Link to="/logout" className="text-error">
-                  <IconLogout size={16} />
+                  <LogOut size={16} />
                   Logout
                 </Link>
               </li>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
@@ -217,7 +217,7 @@ export default function EditIntegrationPage() {
         subtitle={activeOrganization?.name}
         action={
           <Link to={`/integrations/${integrationId}`} className="btn btn-ghost">
-            <IconArrowLeft size={20} />
+            <ArrowLeft size={20} />
             Back
           </Link>
         }

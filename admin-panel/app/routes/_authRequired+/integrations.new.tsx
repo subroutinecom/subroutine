@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { IconArrowLeft, IconBrandGithub, IconMail, IconChevronDown, IconCheck } from "@tabler/icons-react";
+import { ArrowLeft, Github, Mail, ChevronDown, Check } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
@@ -49,12 +49,12 @@ const PROVIDER_METADATA: Record<IntegrationProvider, ProviderMeta> = {
   gmail: {
     label: "Gmail",
     description: "Connect to Google email services for sending and reading emails",
-    icon: <IconMail size={20} />,
+    icon: <Mail size={20} />,
   },
   github: {
     label: "GitHub",
     description: "Integrate with GitHub repositories, issues, and pull requests",
-    icon: <IconBrandGithub size={20} />,
+    icon: <Github size={20} />,
   },
 };
 
@@ -187,7 +187,7 @@ export default function NewIntegrationPage() {
         description="Connect a new external service to automate workflows."
         action={
           <Link to="/integrations" className="btn btn-ghost gap-2 h-12">
-            <IconArrowLeft size={20} />
+            <ArrowLeft size={20} />
             Back
           </Link>
         }
@@ -227,7 +227,7 @@ export default function NewIntegrationPage() {
                   </div>
                 </div>
                 <div className="px-4">
-                  <IconChevronDown
+                  <ChevronDown
                     size={20}
                     className={`text-base-content/70 transition-transform duration-300 ${
                       dropdownOpen ? "rotate-180" : ""
@@ -270,7 +270,7 @@ export default function NewIntegrationPage() {
                               </span>
                             </div>
                             {isSelected && (
-                              <IconCheck size={20} className="text-primary" />
+                              <Check size={20} className="text-primary" />
                             )}
                           </button>
                         );

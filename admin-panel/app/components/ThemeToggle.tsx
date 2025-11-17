@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { IconMoon, IconSun } from "@tabler/icons-react";
+import { Moon, Sun } from "lucide-react";
 
 export const ThemeToggle = () => {
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -25,7 +25,7 @@ export const ThemeToggle = () => {
       className="btn btn-ghost btn-circle"
       aria-label="Toggle theme"
     >
-      {theme === "light" ? <IconMoon size={20} /> : <IconSun size={20} />}
+      {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
     </button>
   );
 };
