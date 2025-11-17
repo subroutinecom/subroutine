@@ -76,7 +76,7 @@ const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
 
 export default function NewIntegrationPage() {
   const navigate = useNavigate();
-  const { activeOrganization } = useAuth();
+  const { activeOrganization: _activeOrganization } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -114,7 +114,7 @@ export default function NewIntegrationPage() {
     setDropdownOpen(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (_e: React.FormEvent) => {
     setError(null);
 
     if (!name.trim()) {

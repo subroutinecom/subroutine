@@ -65,7 +65,7 @@ export class NodeResponseAdapter {
     delete this.headers[name];
   }
 
-  write(chunk: string | Uint8Array, encoding?: string): boolean {
+  write(chunk: string | Uint8Array, _encoding?: string): boolean {
     if (typeof chunk === "string") {
       this.chunks.push(new TextEncoder().encode(chunk));
     } else {

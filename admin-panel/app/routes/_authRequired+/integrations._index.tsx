@@ -80,7 +80,7 @@ const getProviderIcon = (provider: string) => {
 };
 
 export default function IntegrationsPage() {
-  const { activeOrganization } = useAuth();
+  const { activeOrganization: _activeOrganization } = useAuth();
   const [integrations, setIntegrations] = useState<ParsedIntegration[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
