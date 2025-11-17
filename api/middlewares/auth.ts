@@ -16,7 +16,7 @@ export const authMiddleware = async (
 ) => {
   const path = new URL(c.req.url).pathname;
 
-  if (path.startsWith("/api/auth/") || path === "/status") {
+  if (path.startsWith("/api/auth/") || path === "/status" || path === "/graphql") {
     return next();
   }
 

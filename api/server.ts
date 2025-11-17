@@ -4,8 +4,8 @@ import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { cors } from "@hono/hono/cors";
 import { randomUUID } from "node:crypto";
 import process from "node:process";
+import { createYoga } from "graphql-yoga";
 import { initializeDatabase } from "./db/index.ts";
-import { startInternalServer } from "./internal/server.ts";
 import { createMcpServer } from "./mcp-server.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import {
@@ -16,6 +16,8 @@ import {
 import { getConfig } from "./config/loader.ts";
 import { auth } from "./auth.ts";
 import { authMiddleware, type AuthContext } from "./middlewares/auth.ts";
+import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
+import { buildContext, schema } from "./internal/schema.ts";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
 
 const initialize = async () => {
@@ -44,10 +46,8 @@ const initialize = async () => {
 
   const config = await getConfig();
 
-  // Configure CORS for auth routes - must be before the route handler
   app.use(
     "/api/auth/*",
-    // @ts-ignore - OpenAPIHono and Hono CORS middleware type mismatch
     cors({
       origin: config.auth.allowedOrigins,
       credentials: true,
@@ -55,7 +55,7 @@ const initialize = async () => {
       allowHeaders: ["Content-Type", "Authorization", "Cookie", "x-api-key"],
       exposeHeaders: ["Set-Cookie"],
       maxAge: 86400,
-    }),
+    }) as any,
   );
 
   app.get("/api/auth/test-route", (c) => {
@@ -69,7 +69,34 @@ const initialize = async () => {
     return response;
   });
 
-  // Apply authentication middleware to all REST/MCP endpoints
+  app.use(
+    "/graphql",
+    cors({
+      origin: config.auth.allowedOrigins,
+      credentials: true,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+      exposeHeaders: ["Set-Cookie"],
+      maxAge: 86400,
+    }) as any,
+  );
+
+  app.use("/graphql", graphqlAuthMiddleware);
+
+  const yoga = createYoga({
+    schema,
+    context: async ({ request }) => {
+      return buildContext(request.headers);
+    },
+    maskedErrors: false,
+    cors: false,
+  });
+
+  app.all("/graphql", async (c) => {
+    const response = await yoga.fetch(c.req.raw);
+    return response;
+  });
+
   app.use("*", authMiddleware);
 
   const transports: Record<string, StreamableHTTPServerTransport> = {};
@@ -728,12 +755,11 @@ const initialize = async () => {
   Deno.serve({ port: PORT, hostname: "::" }, app.fetch);
 
   console.log(`Server running on port ${PORT}`);
+  console.log(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
   console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
   console.log(
     `OpenAPI spec available at http://localhost:${PORT}/openapi.json`,
   );
-
-  startInternalServer();
 };
 
 initialize();

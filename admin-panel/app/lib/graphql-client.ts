@@ -1,6 +1,6 @@
 import { GraphQLClient } from "graphql-request";
 
-const GRAPHQL_URL = "http://localhost:8080/graphql";
+const GRAPHQL_URL = "http://localhost:3002/graphql";
 
 const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
   return fetch(input, {
