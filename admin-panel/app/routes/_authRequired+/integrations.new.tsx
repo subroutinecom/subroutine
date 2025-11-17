@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useForm, Controller } from "react-hook-form";
 import { ArrowLeft, Github, Mail, ChevronDown, Check } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
@@ -74,24 +75,41 @@ const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
   },
 };
 
+type IntegrationFormData = {
+  provider: IntegrationProvider;
+  name: string;
+  clientId: string;
+  clientSecret: string;
+  scopes: string;
+  redirectUri: string;
+};
+
 export default function NewIntegrationPage() {
   const navigate = useNavigate();
   const { activeOrganization: _activeOrganization } = useAuth();
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [provider, setProvider] = useState<IntegrationProvider>("gmail");
-  const [name, setName] = useState("");
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
-  const [scopes, setScopes] = useState<string[]>(
-    PROVIDER_CONFIGS.gmail.defaultScopes,
-  );
-  const [redirectUri, setRedirectUri] = useState(
-    "http://localhost:3002/api/integrations/callback",
-  );
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<IntegrationFormData>({
+    defaultValues: {
+      provider: "gmail",
+      name: "",
+      clientId: "",
+      clientSecret: "",
+      scopes: PROVIDER_CONFIGS.gmail.defaultScopes.join(", "),
+      redirectUri: "http://localhost:3002/api/integrations/callback",
+    },
+  });
+
+  const provider = watch("provider");
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -109,46 +127,35 @@ export default function NewIntegrationPage() {
   }, []);
 
   const handleProviderChange = (newProvider: IntegrationProvider) => {
-    setProvider(newProvider);
-    setScopes(PROVIDER_CONFIGS[newProvider].defaultScopes);
+    setValue("provider", newProvider);
+    setValue("scopes", PROVIDER_CONFIGS[newProvider].defaultScopes.join(", "));
     setDropdownOpen(false);
   };
 
-  const handleSubmit = async (_e: React.FormEvent) => {
-    setError(null);
+  const onSubmit = async (data: IntegrationFormData) => {
+    setServerError(null);
 
-    if (!name.trim()) {
-      setError("Name is required");
-      return;
-    }
+    const scopeArray = data.scopes
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
 
-    if (!clientId.trim()) {
-      setError("Client ID is required");
-      return;
-    }
-
-    if (!clientSecret.trim()) {
-      setError("Client Secret is required");
-      return;
-    }
-
-    if (scopes.length === 0) {
-      setError("At least one scope is required");
+    if (scopeArray.length === 0) {
+      setServerError("At least one scope is required");
       return;
     }
 
     try {
-      setSubmitting(true);
-      const config = PROVIDER_CONFIGS[provider];
+      const config = PROVIDER_CONFIGS[data.provider];
 
       const authConfig = JSON.stringify({
         type: "oauth2",
-        clientId: clientId.trim(),
-        clientSecret: clientSecret.trim(),
-        scopes,
+        clientId: data.clientId.trim(),
+        clientSecret: data.clientSecret.trim(),
+        scopes: scopeArray,
         authUrl: config.authUrl,
         tokenUrl: config.tokenUrl,
-        redirectUri: redirectUri.trim(),
+        redirectUri: data.redirectUri.trim(),
       });
 
       await graphqlClient.request<{
@@ -158,26 +165,17 @@ export default function NewIntegrationPage() {
           name: string;
         };
       }>(CREATE_INTEGRATION_MUTATION, {
-        provider,
-        name: name.trim(),
+        provider: data.provider,
+        name: data.name.trim(),
         authConfig,
       });
 
       navigate("/integrations");
     } catch (err) {
-      setError(
+      setServerError(
         err instanceof Error ? err.message : "Failed to create integration",
       );
-      setSubmitting(false);
     }
-  };
-
-  const handleScopesChange = (value: string) => {
-    const scopeArray = value
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-    setScopes(scopeArray);
   };
 
   return (
@@ -194,96 +192,102 @@ export default function NewIntegrationPage() {
       />
 
       <div className="card bg-base-100 border border-base-300 max-w-4xl">
-        <form onSubmit={handleSubmit} className="card-body p-10 space-y-10">
-          {error && (
+        <form onSubmit={handleSubmit(onSubmit)} className="card-body p-10 space-y-10">
+          {serverError && (
             <div className="alert alert-error">
-              <span>{error}</span>
+              <span>{serverError}</span>
             </div>
           )}
 
-          <div className="space-y-3">
-            <label htmlFor="provider" className="block">
-              <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
-                Provider
-              </span>
-            </label>
-            <div className="relative" ref={dropdownRef}>
-              <button
-                type="button"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full input input-bordered h-auto p-0 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group"
-              >
-                <div className="flex items-center gap-3 px-4 py-3 flex-1">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/15 transition-colors">
-                    {PROVIDER_METADATA[provider].icon}
-                  </div>
-                  <div className="flex flex-col items-start">
-                    <span className="font-semibold text-base-content">
-                      {PROVIDER_METADATA[provider].label}
-                    </span>
-                    <span className="text-xs text-base-content/60">
-                      {PROVIDER_METADATA[provider].description}
-                    </span>
-                  </div>
-                </div>
-                <div className="px-4">
-                  <ChevronDown
-                    size={20}
-                    className={`text-base-content/70 transition-transform duration-300 ${
-                      dropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </div>
-              </button>
+          <Controller
+            name="provider"
+            control={control}
+            render={({ field }) => (
+              <div className="space-y-3">
+                <label htmlFor="provider" className="block">
+                  <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
+                    Provider
+                  </span>
+                </label>
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="w-full input input-bordered h-auto p-0 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group"
+                  >
+                    <div className="flex items-center gap-3 px-4 py-3 flex-1">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/15 transition-colors">
+                        {PROVIDER_METADATA[field.value].icon}
+                      </div>
+                      <div className="flex flex-col items-start">
+                        <span className="font-semibold text-base-content">
+                          {PROVIDER_METADATA[field.value].label}
+                        </span>
+                        <span className="text-xs text-base-content/60">
+                          {PROVIDER_METADATA[field.value].description}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="px-4">
+                      <ChevronDown
+                        size={20}
+                        className={`text-base-content/70 transition-transform duration-300 ${
+                          dropdownOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </div>
+                  </button>
 
-              {dropdownOpen && (
-                <div className="absolute z-50 w-full mt-2 bg-base-100 border border-neutral/20 rounded-lg overflow-hidden shadow-xl animate-slide-in-top">
-                  <div className="py-1">
-                    {(Object.keys(PROVIDER_METADATA) as IntegrationProvider[]).map(
-                      (providerKey) => {
-                        const meta = PROVIDER_METADATA[providerKey];
-                        const isSelected = provider === providerKey;
-                        return (
-                          <button
-                            key={providerKey}
-                            type="button"
-                            onClick={() => handleProviderChange(providerKey)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 transition-all ${
-                              isSelected
-                                ? "bg-primary/10 text-primary"
-                                : "hover:bg-base-200 text-base-content"
-                            }`}
-                          >
-                            <div
-                              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                                isSelected
-                                  ? "bg-primary text-primary-content"
-                                  : "bg-base-200 text-primary"
-                              }`}
-                            >
-                              {meta.icon}
-                            </div>
-                            <div className="flex-1 flex flex-col items-start">
-                              <span className="font-semibold">{meta.label}</span>
-                              <span className="text-xs text-base-content/60">
-                                {meta.description}
-                              </span>
-                            </div>
-                            {isSelected && (
-                              <Check size={20} className="text-primary" />
-                            )}
-                          </button>
-                        );
-                      },
-                    )}
-                  </div>
+                  {dropdownOpen && (
+                    <div className="absolute z-50 w-full mt-2 bg-base-100 border border-neutral/20 rounded-lg overflow-hidden shadow-xl animate-slide-in-top">
+                      <div className="py-1">
+                        {(Object.keys(PROVIDER_METADATA) as IntegrationProvider[]).map(
+                          (providerKey) => {
+                            const meta = PROVIDER_METADATA[providerKey];
+                            const isSelected = field.value === providerKey;
+                            return (
+                              <button
+                                key={providerKey}
+                                type="button"
+                                onClick={() => handleProviderChange(providerKey)}
+                                className={`w-full flex items-center gap-3 px-4 py-3 transition-all ${
+                                  isSelected
+                                    ? "bg-primary/10 text-primary"
+                                    : "hover:bg-base-200 text-base-content"
+                                }`}
+                              >
+                                <div
+                                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                                    isSelected
+                                      ? "bg-primary text-primary-content"
+                                      : "bg-base-200 text-primary"
+                                  }`}
+                                >
+                                  {meta.icon}
+                                </div>
+                                <div className="flex-1 flex flex-col items-start">
+                                  <span className="font-semibold">{meta.label}</span>
+                                  <span className="text-xs text-base-content/60">
+                                    {meta.description}
+                                  </span>
+                                </div>
+                                {isSelected && (
+                                  <Check size={20} className="text-primary" />
+                                )}
+                              </button>
+                            );
+                          },
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <p className="text-sm text-base-content/60">
-              Select the service you want to integrate with
-            </p>
-          </div>
+                <p className="text-sm text-base-content/60">
+                  Select the service you want to integrate with
+                </p>
+              </div>
+            )}
+          />
 
           <div className="space-y-3">
             <label htmlFor="name" className="block">
@@ -294,12 +298,13 @@ export default function NewIntegrationPage() {
             <input
               id="name"
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              {...register("name", { required: "Name is required" })}
               placeholder="e.g., Production Gmail"
               className="input input-bordered w-full text-base"
-              required
             />
+            {errors.name && (
+              <p className="text-sm text-error">{errors.name.message}</p>
+            )}
             <p className="text-sm text-base-content/60">
               A descriptive name for this integration
             </p>
@@ -314,12 +319,13 @@ export default function NewIntegrationPage() {
             <input
               id="clientId"
               type="text"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
+              {...register("clientId", { required: "Client ID is required" })}
               placeholder="OAuth Client ID"
               className="input input-bordered w-full font-mono text-sm"
-              required
             />
+            {errors.clientId && (
+              <p className="text-sm text-error">{errors.clientId.message}</p>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -331,12 +337,15 @@ export default function NewIntegrationPage() {
             <input
               id="clientSecret"
               type="password"
-              value={clientSecret}
-              onChange={(e) => setClientSecret(e.target.value)}
+              {...register("clientSecret", {
+                required: "Client Secret is required",
+              })}
               placeholder="OAuth Client Secret"
               className="input input-bordered w-full font-mono text-sm"
-              required
             />
+            {errors.clientSecret && (
+              <p className="text-sm text-error">{errors.clientSecret.message}</p>
+            )}
             <p className="text-sm text-warning flex items-center gap-2">
               <span className="inline-block w-1 h-1 rounded-full bg-warning"></span>
               This will be stored encrypted
@@ -352,12 +361,13 @@ export default function NewIntegrationPage() {
             <input
               id="scopes"
               type="text"
-              value={scopes.join(", ")}
-              onChange={(e) => handleScopesChange(e.target.value)}
+              {...register("scopes", { required: "Scopes are required" })}
               placeholder="Comma-separated scopes"
               className="input input-bordered w-full font-mono text-sm"
-              required
             />
+            {errors.scopes && (
+              <p className="text-sm text-error">{errors.scopes.message}</p>
+            )}
             <p className="text-sm text-base-content/60">
               OAuth scopes required for this integration (comma-separated)
             </p>
@@ -372,12 +382,15 @@ export default function NewIntegrationPage() {
             <input
               id="redirectUri"
               type="url"
-              value={redirectUri}
-              onChange={(e) => setRedirectUri(e.target.value)}
+              {...register("redirectUri", {
+                required: "Redirect URI is required",
+              })}
               placeholder="OAuth Redirect URI"
               className="input input-bordered w-full font-mono text-sm"
-              required
             />
+            {errors.redirectUri && (
+              <p className="text-sm text-error">{errors.redirectUri.message}</p>
+            )}
             <p className="text-sm text-base-content/60">
               The callback URL configured in your OAuth app
             </p>
@@ -392,9 +405,9 @@ export default function NewIntegrationPage() {
             <button
               type="submit"
               className="btn btn-primary px-8"
-              disabled={submitting}
+              disabled={isSubmitting}
             >
-              {submitting ? (
+              {isSubmitting ? (
                 <>
                   <span className="loading loading-spinner loading-sm"></span>
                   Creating...

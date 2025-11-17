@@ -1,16 +1,26 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useForm } from "react-hook-form";
 import { authClient } from "../lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
+
+type LoginFormData = {
+  email: string;
+  password: string;
+};
 
 export default function Login() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading, refetch } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<LoginFormData>();
 
   // TODO: use config file for this.
   const authProviders = {
@@ -25,41 +35,32 @@ export default function Login() {
     }
   }, [authLoading, isAuthenticated, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const onSubmit = async (data: LoginFormData) => {
+    setAuthError("");
 
     if (isSignUp) {
       await authClient.signUp.email(
-        { email, password, name: email },
+        { email: data.email, password: data.password, name: data.email },
         {
-          onRequest: () => {
-            setLoading(true);
-          },
           onSuccess: async () => {
             await refetch();
             navigate("/");
           },
           onError: (ctx) => {
-            setLoading(false);
-            setError(ctx.error.message || "Sign up failed");
+            setAuthError(ctx.error.message || "Sign up failed");
           },
         },
       );
     } else {
       await authClient.signIn.email(
-        { email, password },
+        { email: data.email, password: data.password },
         {
-          onRequest: () => {
-            setLoading(true);
-          },
           onSuccess: async () => {
             await refetch();
             navigate("/");
           },
           onError: (ctx) => {
-            setLoading(false);
-            setError(ctx.error.message || "Invalid credentials");
+            setAuthError(ctx.error.message || "Invalid credentials");
           },
         },
       );
@@ -71,7 +72,7 @@ export default function Login() {
       { provider, callbackURL: "/" },
       {
         onError: (ctx) => {
-          setError(ctx.error.message || `Failed to sign in with ${provider}`);
+          setAuthError(ctx.error.message || `Failed to sign in with ${provider}`);
         },
       },
     );
@@ -104,7 +105,7 @@ export default function Login() {
                     type="button"
                     onClick={() => handleSocialSignIn("github")}
                     className="btn btn-outline w-full gap-2"
-                    disabled={loading}
+                    disabled={isSubmitting}
                   >
                     <img
                       src="/icons/github.svg"
@@ -119,7 +120,7 @@ export default function Login() {
                     type="button"
                     onClick={() => handleSocialSignIn("google")}
                     className="btn btn-outline w-full gap-2"
-                    disabled={loading}
+                    disabled={isSubmitting}
                   >
                     <img
                       src="/icons/google.svg"
@@ -137,7 +138,7 @@ export default function Login() {
             )}
 
             {hasEmailPassword && (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="form-control">
                   <label htmlFor="email" className="label">
                     <span className="label-text font-medium">Email</span>
@@ -145,13 +146,18 @@ export default function Login() {
                   <input
                     id="email"
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    {...register("email", { required: "Email is required" })}
                     placeholder="you@example.com"
                     className="input input-bordered w-full"
-                    required
-                    disabled={loading}
+                    disabled={isSubmitting}
                   />
+                  {errors.email && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">
+                        {errors.email.message}
+                      </span>
+                    </label>
+                  )}
                 </div>
 
                 <div className="form-control">
@@ -161,27 +167,34 @@ export default function Login() {
                   <input
                     id="password"
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    {...register("password", {
+                      required: "Password is required",
+                    })}
                     placeholder="Enter your password"
                     className="input input-bordered w-full"
-                    required
-                    disabled={loading}
+                    disabled={isSubmitting}
                   />
+                  {errors.password && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">
+                        {errors.password.message}
+                      </span>
+                    </label>
+                  )}
                 </div>
 
-                {error && (
+                {authError && (
                   <div className="alert alert-error">
-                    <span>{error}</span>
+                    <span>{authError}</span>
                   </div>
                 )}
 
                 <button
                   type="submit"
                   className="btn btn-primary w-full"
-                  disabled={loading}
+                  disabled={isSubmitting}
                 >
-                  {loading ? (
+                  {isSubmitting ? (
                     <span className="loading loading-spinner"></span>
                   ) : isSignUp ? (
                     "Create Account"
@@ -195,10 +208,11 @@ export default function Login() {
                     type="button"
                     onClick={() => {
                       setIsSignUp(!isSignUp);
-                      setError("");
+                      setAuthError("");
+                      reset();
                     }}
                     className="link link-hover"
-                    disabled={loading}
+                    disabled={isSubmitting}
                   >
                     {isSignUp
                       ? "Already have an account? Sign in"
