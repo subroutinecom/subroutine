@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { authClient } from "~/lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
-import { Navbar } from "~/components/layout/Navbar";
+import { Sidebar } from "~/components/layout/Sidebar";
 
 export const handle = { id: "auth-required" };
 
@@ -70,10 +70,12 @@ export default function AuthRequired() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100">
-      <Navbar />
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <Outlet />
+    <div className="min-h-screen bg-base-100 flex">
+      <Sidebar />
+      <main className="flex-1 overflow-auto">
+        <div className="max-w-7xl mx-auto px-8 py-8">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

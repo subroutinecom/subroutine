@@ -9,20 +9,26 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ icon, title, description, action }: EmptyStateProps) => {
   return (
-    <div className="card bg-base-100 shadow-sm">
-      <div className="card-body items-center text-center">
-        <div className="avatar placeholder mb-4">
-          <div className="bg-primary/10 text-primary rounded-full w-16 flex items-center justify-center">
+    <div className="card bg-base-100 border border-base-300">
+      <div className="card-body p-16">
+        <div className="flex flex-col items-center text-center space-y-8 max-w-md mx-auto">
+          <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary">
             {icon}
           </div>
-        </div>
-        <h2 className="card-title">{title}</h2>
-        <p className="opacity-60">{description}</p>
-        {action && (
-          <div className="card-actions mt-4">
-            {action}
+          <div className="space-y-3">
+            <h3 className="text-2xl font-bold text-base-content">
+              {title}
+            </h3>
+            <p className="text-base text-base-content/60">
+              {description}
+            </p>
           </div>
-        )}
+          {action && (
+            <div className="pt-4">
+              {action}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

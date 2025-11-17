@@ -35,12 +35,12 @@ type User = {
 type Session = {
   id: string;
   userId: string;
-  activeOrganizationId?: string | null;
+  activeOrganizationId: string;
 };
 
 type Context = {
-  user: User | null;
-  session: Session | null;
+  user: User;
+  session: Session;
 };
 
 const builder = new SchemaBuilder<{
@@ -142,10 +142,6 @@ builder.queryType({
     apiKeys: t.field({
       type: [ApiKeyType],
       resolve: async (_parent, _args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return listApiKeys(ctx.user.id, ctx.session.activeOrganizationId);
       },
     }),
@@ -156,20 +152,12 @@ builder.queryType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return getApiKey(args.id, ctx.user.id, ctx.session.activeOrganizationId);
       },
     }),
     integrations: t.field({
       type: [IntegrationType],
       resolve: async (_parent, _args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return listIntegrations(ctx.session.activeOrganizationId);
       },
     }),
@@ -180,20 +168,12 @@ builder.queryType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return getIntegration(args.id, ctx.session.activeOrganizationId);
       },
     }),
     connectedAccounts: t.field({
       type: [ConnectedAccountType],
       resolve: async (_parent, _args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return listConnectedAccounts(ctx.user.id, ctx.session.activeOrganizationId);
       },
     }),
@@ -204,10 +184,6 @@ builder.queryType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return getConnectedAccount(args.id, ctx.user.id, ctx.session.activeOrganizationId);
       },
     }),
@@ -217,10 +193,6 @@ builder.queryType({
         integrationId: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return listConnectedAccountsByIntegration(args.integrationId, ctx.session.activeOrganizationId);
       },
     }),
@@ -240,13 +212,6 @@ builder.mutationType({
         }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user) {
-          throw new Error("Unauthorized");
-        }
-        if (!ctx.session?.activeOrganizationId) {
-          throw new Error("No active organization");
-        }
-
         const metadata = args.metadata ? JSON.parse(args.metadata) : undefined;
 
         return createApiKey({
@@ -270,10 +235,6 @@ builder.mutationType({
         }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         const metadata = args.metadata ? JSON.parse(args.metadata) : undefined;
 
         return updateApiKey({
@@ -291,10 +252,6 @@ builder.mutationType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return deleteApiKey(
           args.id,
           ctx.user.id,
@@ -313,10 +270,6 @@ builder.mutationType({
         }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         const authConfig = JSON.parse(args.authConfig);
 
         return createIntegration({
@@ -340,10 +293,6 @@ builder.mutationType({
         enabled: t.arg.boolean({ required: false }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         const authConfig = args.authConfig ? JSON.parse(args.authConfig) : undefined;
 
         return updateIntegration({
@@ -361,10 +310,6 @@ builder.mutationType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return deleteIntegration(args.id, ctx.session.activeOrganizationId);
       },
     }),
@@ -379,10 +324,6 @@ builder.mutationType({
         accountIdentifier: t.arg.string({ required: false }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         const credentials = JSON.parse(args.credentials);
 
         return createConnectedAccount({
@@ -400,10 +341,6 @@ builder.mutationType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        if (!ctx.user || !ctx.session?.activeOrganizationId) {
-          throw new Error("Unauthorized: No active organization");
-        }
-
         return deleteConnectedAccount(
           args.id,
           ctx.user.id,
@@ -419,29 +356,26 @@ export const schema = builder.toSchema();
 export const buildContext = async (
   headers: Headers,
 ): Promise<Context> => {
-  try {
-    const sessionData = await auth.api.getSession({
-      headers,
-    });
+  const sessionData = await auth.api.getSession({ headers });
 
-    if (!sessionData?.session || !sessionData?.user) {
-      return { user: null, session: null };
-    }
-
-    return {
-      user: {
-        id: sessionData.user.id,
-        email: sessionData.user.email,
-        name: sessionData.user.name,
-      },
-      session: {
-        id: sessionData.session.id,
-        userId: sessionData.session.userId,
-        activeOrganizationId: sessionData.session.activeOrganizationId,
-      },
-    };
-  } catch (error) {
-    console.error("Error building GraphQL context:", error);
-    return { user: null, session: null };
+  if (!sessionData?.session || !sessionData?.user) {
+    throw new Error("Unauthorized");
   }
+
+  if (!sessionData.session.activeOrganizationId) {
+    throw new Error("No active organization");
+  }
+
+  return {
+    user: {
+      id: sessionData.user.id,
+      email: sessionData.user.email,
+      name: sessionData.user.name,
+    },
+    session: {
+      id: sessionData.session.id,
+      userId: sessionData.session.userId,
+      activeOrganizationId: sessionData.session.activeOrganizationId,
+    },
+  };
 };

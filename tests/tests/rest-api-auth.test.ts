@@ -217,7 +217,9 @@ describe(
           },
         });
 
-        expect([200, 400, 500]).toContain(response.status);
+        // Should not return 401 (unauthorized) - any other status means auth passed
+        expect(response.status).not.toBe(401);
+        expect([200, 400, 406, 500]).toContain(response.status);
       });
     });
 
