@@ -2,15 +2,237 @@
 @plugin "daisyui";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Source Code Pro",
+    Menlo, Consolas, "DejaVu Sans Mono", monospace;
+}
+
+/* Custom DaisyUI theme configuration */
+@layer base {
+  :root {
+    /* Light theme - Modern SaaS with vibrant accents */
+    --color-primary: 217 91% 60%;
+    --color-primary-content: 0 0% 100%;
+    --color-secondary: 262 83% 58%;
+    --color-secondary-content: 0 0% 100%;
+    --color-accent: 14 90% 53%;
+    --color-accent-content: 0 0% 100%;
+    --color-neutral: 220 13% 18%;
+    --color-neutral-content: 0 0% 100%;
+    --color-base-100: 210 20% 98%;
+    --color-base-200: 214 20% 94%;
+    --color-base-300: 213 18% 87%;
+    --color-base-content: 220 13% 18%;
+    --color-info: 199 89% 48%;
+    --color-success: 158 64% 52%;
+    --color-warning: 43 96% 56%;
+    --color-error: 0 84% 60%;
+
+    /* Custom semantic colors */
+    --color-border: 214 20% 88%;
+    --color-border-strong: 213 18% 78%;
+    --color-surface: 0 0% 100%;
+    --color-surface-secondary: 210 25% 96%;
+    --color-text-primary: 220 13% 18%;
+    --color-text-secondary: 215 14% 34%;
+    --color-text-tertiary: 215 13% 54%;
+  }
+
+  [data-theme="dark"] {
+    /* Dark theme - Rich dark with vibrant accents */
+    --color-primary: 217 91% 65%;
+    --color-primary-content: 220 18% 12%;
+    --color-secondary: 262 83% 63%;
+    --color-secondary-content: 220 18% 12%;
+    --color-accent: 14 90% 58%;
+    --color-accent-content: 220 18% 12%;
+    --color-neutral: 210 20% 88%;
+    --color-neutral-content: 220 18% 12%;
+    --color-base-100: 220 18% 12%;
+    --color-base-200: 220 17% 16%;
+    --color-base-300: 220 16% 22%;
+    --color-base-content: 210 20% 92%;
+    --color-info: 199 89% 58%;
+    --color-success: 158 64% 57%;
+    --color-warning: 43 96% 61%;
+    --color-error: 0 84% 65%;
+
+    /* Custom semantic colors */
+    --color-border: 220 16% 24%;
+    --color-border-strong: 220 16% 32%;
+    --color-surface: 220 17% 14%;
+    --color-surface-secondary: 220 17% 18%;
+    --color-text-primary: 210 20% 92%;
+    --color-text-secondary: 215 18% 72%;
+    --color-text-tertiary: 215 16% 58%;
+  }
 }
 
 html {
   @apply antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  letter-spacing: -0.01em;
+}
+
+body {
+  @apply bg-base-100 text-base-content;
+  @apply transition-colors duration-200;
 }
 
 html,
 body {
   @apply transition-colors duration-200;
+}
+
+/* Refined button styles - flat design */
+.btn {
+  @apply rounded-lg;
+  @apply font-medium;
+  @apply transition-all duration-150;
+  @apply shadow-none;
+  letter-spacing: -0.01em;
+}
+
+.btn-primary {
+  @apply border-0;
+}
+
+.btn-ghost:hover {
+  @apply bg-base-200;
+}
+
+/* Refined input styles */
+.input,
+.textarea,
+.select {
+  @apply rounded-lg;
+  @apply border-[hsl(var(--color-border))];
+  @apply transition-all duration-150;
+  @apply shadow-none;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  @apply outline-none;
+  @apply ring-2 ring-primary/20;
+  @apply border-primary;
+}
+
+/* Refined table styles */
+.table {
+  @apply border-collapse;
+}
+
+.table :where(thead, tbody) :where(tr:not(:last-child)),
+.table :where(thead, tbody) :where(tr:first-child:last-child) {
+  @apply border-b border-[hsl(var(--color-border))];
+}
+
+.table :where(thead tr) {
+  @apply border-b-2 border-[hsl(var(--color-border-strong))];
+}
+
+/* Remove default shadows globally for flat design */
+.shadow,
+.shadow-sm,
+.shadow-md,
+.shadow-lg,
+.shadow-xl,
+.shadow-2xl {
+  @apply shadow-none;
+}
+
+/* Custom animations for micro-interactions */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInTop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+.animate-slide-in-top {
+  animation: slideInTop 0.2s ease-out;
+}
+
+/* Smooth transitions for interactive elements */
+a, button {
+  @apply transition-colors duration-150;
+}
+
+/* Typography refinements */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-semibold;
+  letter-spacing: -0.02em;
+}
+
+/* Stats card styling for dashboard */
+.stat {
+  background-color: hsl(var(--color-surface));
+  border: 1px solid hsl(var(--color-border));
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.stat-title {
+  color: hsl(var(--color-text-tertiary));
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  color: hsl(var(--color-text-primary));
+  font-size: 1.875rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
