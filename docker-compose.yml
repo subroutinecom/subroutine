@@ -90,6 +90,7 @@ services:
     build:
       context: .
       dockerfile: ./tests/Dockerfile
+      target: dev
     volumes:
       - ./tests:/app/tests
     depends_on:

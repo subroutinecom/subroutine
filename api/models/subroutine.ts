@@ -37,7 +37,7 @@ export const generateSubroutine = async (params: GenerateSubroutineRequest): Pro
   let initialInputs: Record<string, unknown> | undefined;
 
   if (params.useMock) {
-    console.log("Using mock code generation (requested via useMock flag)");
+    console.log(`Using mock code generation for ${params.request} (requested via useMock flag)`);
     source = generateMockCode(params.request);
     if (params.needsImmediateInputs) {
       initialInputs = {};
@@ -69,6 +69,7 @@ export const generateSubroutine = async (params: GenerateSubroutineRequest): Pro
 
   const createdAt = new Date().toISOString();
 
+  console.log(`Storing generated subroutine with ID ${subroutineId}`);
   await db
     .insertInto("subroutine")
     .values({
@@ -93,6 +94,7 @@ export const generateSubroutine = async (params: GenerateSubroutineRequest): Pro
     createdAt,
   };
 
+  console.log(`Generated subroutine ${subroutineId} successfully`);
   return subroutine;
 };
 

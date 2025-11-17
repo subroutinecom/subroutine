@@ -1,32 +1,26 @@
+import { cors } from "@hono/hono/cors";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
-import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
-import { cors } from "@hono/hono/cors";
+import { createYoga } from "graphql-yoga";
 import { randomUUID } from "node:crypto";
 import process from "node:process";
-import { createYoga } from "graphql-yoga";
-import { initializeDatabase } from "./db/index.ts";
-import { createMcpServer } from "./mcp-server.ts";
-import { getRun, listRuns, runSubroutine } from "./models/run.ts";
-import {
-  generateSubroutine,
-  getSubroutine,
-  listSubroutines,
-} from "./models/subroutine.ts";
-import { getConfig } from "./config/loader.ts";
 import { auth } from "./auth.ts";
+import { getConfig } from "./config/loader.ts";
+import { initializeDatabase } from "./db/index.ts";
+import { buildContext, schema } from "./internal/schema.ts";
+import { createMcpServer } from "./mcp-server.ts";
 import { authMiddleware, type AuthContext } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
-import { buildContext, schema } from "./internal/schema.ts";
+import { getRun, listRuns, runSubroutine } from "./models/run.ts";
+import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
 
 const initialize = async () => {
   const app = new OpenAPIHono<{ Variables: { auth: AuthContext } }>({
     defaultHook: (result, c) => {
       if (!result.success) {
-        const message = result.error.issues
-          .map((i) => `${i.path.join(".")} ${i.message.toLowerCase()}`)
-          .join(", ");
+        const message = result.error.issues.map((i) => `${i.path.join(".")} ${i.message.toLowerCase()}`).join(", ");
         return c.json(
           {
             error: {
@@ -34,7 +28,7 @@ const initialize = async () => {
               message,
             },
           },
-          400,
+          400
         );
       }
     },
@@ -55,7 +49,7 @@ const initialize = async () => {
       allowHeaders: ["Content-Type", "Authorization", "Cookie", "x-api-key"],
       exposeHeaders: ["Set-Cookie"],
       maxAge: 86400,
-    }) as any,
+    }) as any
   );
 
   app.get("/api/auth/test-route", (c) => {
@@ -78,7 +72,7 @@ const initialize = async () => {
       allowHeaders: ["Content-Type", "Authorization", "Cookie"],
       exposeHeaders: ["Set-Cookie"],
       maxAge: 86400,
-    }) as any,
+    }) as any
   );
 
   app.use("/graphql", graphqlAuthMiddleware);
@@ -149,25 +143,20 @@ const initialize = async () => {
     }),
     (c) => {
       return c.json({ status: "ok" });
-    },
+    }
   );
 
   app.openapi(
     createRoute({
       method: "post",
       path: "/api/subroutine",
-      description:
-        "Create a new subroutine from a natural language description",
+      description: "Create a new subroutine from a natural language description",
       request: {
         body: {
           content: {
             "application/json": {
               schema: z.object({
-                request: z
-                  .string()
-                  .describe(
-                    "Natural language description of the desired subroutine",
-                  ),
+                request: z.string().describe("Natural language description of the desired subroutine"),
               }),
             },
           },
@@ -207,6 +196,7 @@ const initialize = async () => {
       },
     }),
     async (c) => {
+      const reqStartTime = Date.now();
       try {
         const { request } = c.req.valid("json");
 
@@ -218,29 +208,34 @@ const initialize = async () => {
                 message: "request field is required and must be a string",
               },
             },
-            400,
+            400
           );
         }
 
         const useMock = c.req.header("x-use-mock") === "true";
 
+        const startTime = Date.now();
         const subroutine = await generateSubroutine({
           request,
           useMock,
         });
+        console.log(
+          `Created subroutine with ID ${subroutine.id} for ${request} in ${Date.now() - startTime}ms (request total time: ${
+            Date.now() - reqStartTime
+          }ms)`
+        );
 
-        return c.json(
+        const response = c.json(
           {
             subroutineUri: `resource://subroutine/${subroutine.id}`,
             subroutine,
           },
-          201,
+          201
         );
+        console.log(`Response prepared in ${Date.now() - startTime}ms`);
+        return response;
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Failed to generate subroutine";
+        const message = error instanceof Error ? error.message : "Failed to generate subroutine";
         return c.json(
           {
             error: {
@@ -248,10 +243,12 @@ const initialize = async () => {
               message,
             },
           },
-          500,
+          500
         );
+      } finally {
+        console.log(`Total /api/subroutine request time: ${Date.now() - reqStartTime}ms`);
       }
-    },
+    }
   );
 
   app.openapi(
@@ -264,11 +261,7 @@ const initialize = async () => {
           content: {
             "application/json": {
               schema: z.object({
-                request: z
-                  .string()
-                  .describe(
-                    "Natural language description of the desired subroutine",
-                  ),
+                request: z.string().describe("Natural language description of the desired subroutine"),
                 timeoutMs: z.number().optional(),
               }),
             },
@@ -323,7 +316,7 @@ const initialize = async () => {
                 message: "request field is required and must be a string",
               },
             },
-            400,
+            400
           );
         }
 
@@ -333,11 +326,10 @@ const initialize = async () => {
           useMock,
           needsImmediateInputs: true,
         });
+        console.log(`Created execute subroutine with ID ${subroutine.id} for ${request}`);
 
         if (!subroutine.initialInputs) {
-          throw new Error(
-            "Generated subroutine did not include immediate inputs",
-          );
+          throw new Error("Generated subroutine did not include immediate inputs");
         }
 
         const run = await runSubroutine({
@@ -354,13 +346,10 @@ const initialize = async () => {
             run,
             initialInputs: subroutine.initialInputs,
           },
-          201,
+          201
         );
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Failed to create and run subroutine";
+        const message = error instanceof Error ? error.message : "Failed to create and run subroutine";
         return c.json(
           {
             error: {
@@ -368,10 +357,10 @@ const initialize = async () => {
               message,
             },
           },
-          500,
+          500
         );
       }
-    },
+    }
   );
 
   app.openapi(
@@ -395,7 +384,7 @@ const initialize = async () => {
     async (c) => {
       const subroutines = await listSubroutines();
       return c.json({ subroutines });
-    },
+    }
   );
 
   app.openapi(
@@ -431,23 +420,28 @@ const initialize = async () => {
     }),
     // @ts-ignore - Hono OpenAPI types are overly strict about response unions
     async (c) => {
-      const { id } = c.req.valid("param");
-      const subroutine = await getSubroutine(id);
+      const startTime = Date.now();
+      try {
+        const { id } = c.req.valid("param");
+        const subroutine = await getSubroutine(id);
 
-      if (!subroutine) {
-        return c.json(
-          {
-            error: {
-              code: "NOT_FOUND",
-              message: "subroutine not found",
+        if (!subroutine) {
+          return c.json(
+            {
+              error: {
+                code: "NOT_FOUND",
+                message: "subroutine not found",
+              },
             },
-          },
-          404,
-        );
-      }
+            404
+          );
+        }
 
-      return c.json({ subroutine });
-    },
+        return c.json({ subroutine });
+      } finally {
+        console.log(`Fetched subroutine ${c.req.valid("param").id} in ${Date.now() - startTime}ms`);
+      }
+    }
   );
 
   app.openapi(
@@ -517,13 +511,10 @@ const initialize = async () => {
             runUri: `resource://run/${run.id}`,
             run,
           },
-          201,
+          201
         );
       } catch (error) {
-        if (
-          error instanceof Error &&
-          error.message === "Subroutine not found"
-        ) {
+        if (error instanceof Error && error.message === "Subroutine not found") {
           return c.json(
             {
               error: {
@@ -531,7 +522,7 @@ const initialize = async () => {
                 message: "subroutine not found",
               },
             },
-            404,
+            404
           );
         }
 
@@ -542,10 +533,10 @@ const initialize = async () => {
               message: "Failed to run subroutine",
             },
           },
-          500,
+          500
         );
       }
-    },
+    }
   );
 
   app.openapi(
@@ -569,7 +560,7 @@ const initialize = async () => {
     async (c) => {
       const runs = await listRuns();
       return c.json({ runs });
-    },
+    }
   );
 
   app.openapi(
@@ -605,8 +596,10 @@ const initialize = async () => {
     }),
     // @ts-ignore - Hono OpenAPI types are overly strict about response unions
     async (c) => {
+      console.log("Fetching run with ID:", c.req.valid("param").id);
       const { id } = c.req.valid("param");
       const run = await getRun(id);
+      console.log("Fetched run:", run);
 
       if (!run) {
         return c.json(
@@ -616,12 +609,12 @@ const initialize = async () => {
               message: "run not found",
             },
           },
-          404,
+          404
         );
       }
 
       return c.json({ run });
-    },
+    }
   );
 
   app.post("/mcp", async (c) => {
@@ -652,9 +645,7 @@ const initialize = async () => {
         transport.onclose = () => {
           const sid = transport.sessionId;
           if (sid && transports[sid]) {
-            console.log(
-              `Transport closed for session ${sid}, removing from transports map`,
-            );
+            console.log(`Transport closed for session ${sid}, removing from transports map`);
             delete transports[sid];
           }
         };
@@ -678,7 +669,7 @@ const initialize = async () => {
             },
             id: null,
           },
-          400,
+          400
         );
       }
 
@@ -698,7 +689,7 @@ const initialize = async () => {
           },
           id: null,
         },
-        500,
+        500
       );
     }
   });
@@ -726,9 +717,7 @@ const initialize = async () => {
       return c.text("Invalid or missing session ID", 400);
     }
 
-    console.log(
-      `Received session termination request for session ${sessionId}`,
-    );
+    console.log(`Received session termination request for session ${sessionId}`);
 
     try {
       const transport = transports[sessionId];
@@ -757,9 +746,7 @@ const initialize = async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
   console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
-  console.log(
-    `OpenAPI spec available at http://localhost:${PORT}/openapi.json`,
-  );
+  console.log(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
 };
 
 initialize();
