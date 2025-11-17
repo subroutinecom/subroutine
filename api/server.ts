@@ -316,7 +316,6 @@ const initialize = async () => {
           useMock,
           needsImmediateInputs: true,
         });
-        console.log(`Created execute subroutine with ID ${subroutine.id} for ${request}`);
 
         if (!subroutine.initialInputs) {
           throw new Error("Generated subroutine did not include immediate inputs");

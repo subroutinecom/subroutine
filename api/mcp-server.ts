@@ -164,7 +164,6 @@ export function createMcpServer(): McpServer {
         request,
         useMock,
       });
-      console.log(`Created MCP subroutine with ID ${subroutine.id} for ${request}`);
 
       return {
         content: [
@@ -207,7 +206,6 @@ export function createMcpServer(): McpServer {
         useMock,
         needsImmediateInputs: true,
       });
-      console.log(`Created execute MCP subroutine with ID ${subroutine.id} for ${request}`);
 
       if (!subroutine.initialInputs) {
         throw new Error("Generated subroutine is missing initial inputs");
