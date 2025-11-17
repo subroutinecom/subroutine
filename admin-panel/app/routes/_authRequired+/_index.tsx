@@ -1,11 +1,11 @@
 import {
-  IconPlugConnected,
-  IconUsers,
-  IconActivity,
-  IconTrendingUp,
-  IconSparkles,
-  IconArrowRight,
-} from "@tabler/icons-react";
+  Plug,
+  Users,
+  Activity,
+  TrendingUp,
+  Sparkles,
+  ArrowRight,
+} from "lucide-react";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { Link } from "react-router";
 
@@ -25,28 +25,28 @@ export default function Home() {
       label: "Active Integrations",
       value: "3",
       change: "+2 this month",
-      icon: IconPlugConnected,
+      icon: Plug,
       trend: "up" as const,
     },
     {
       label: "Subroutines",
       value: "0",
       change: "Get started",
-      icon: IconActivity,
+      icon: Activity,
       trend: "neutral" as const,
     },
     {
       label: "Team Members",
       value: "1",
       change: "Invite teammates",
-      icon: IconUsers,
+      icon: Users,
       trend: "neutral" as const,
     },
     {
       label: "API Calls",
       value: "1.2k",
       change: "+18% this week",
-      icon: IconTrendingUp,
+      icon: TrendingUp,
       trend: "up" as const,
     },
   ];
@@ -55,21 +55,21 @@ export default function Home() {
     {
       title: "Create Subroutine",
       description: "Automate workflows with custom logic",
-      icon: IconSparkles,
+      icon: Sparkles,
       href: "#",
       primary: true,
     },
     {
       title: "Add Integration",
       description: "Connect to Gmail, GitHub, and more",
-      icon: IconPlugConnected,
+      icon: Plug,
       href: "/integrations/new",
       primary: false,
     },
     {
       title: "Invite Team",
       description: "Collaborate with your organization",
-      icon: IconUsers,
+      icon: Users,
       href: "#",
       primary: false,
     },
@@ -152,7 +152,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-xl font-bold text-base-content mb-3 flex items-center justify-between">
                     {action.title}
-                    <IconArrowRight
+                    <ArrowRight
                       size={20}
                       className="text-base-content/30 group-hover:translate-x-1 transition-transform"
                     />
@@ -175,7 +175,7 @@ export default function Home() {
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body p-16 text-center">
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-              <IconActivity size={32} className="text-primary" />
+              <Activity size={32} className="text-primary" />
             </div>
             <h3 className="text-xl font-bold text-base-content mb-3">
               No activity yet

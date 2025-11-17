@@ -36,7 +36,6 @@
     "npm:@react-router/node@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
     "npm:@react-router/remix-routes-option-adapter@^7.9.5": "7.9.5_@react-router+dev@7.9.5__@react-router+serve@7.9.5___react-router@7.9.5____react@19.2.0____react-dom@19.2.0_____react@19.2.0___express@4.21.2___typescript@5.9.3___react@19.2.0___react-dom@19.2.0____react@19.2.0__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__typescript@5.9.3__vite@7.2.0___@types+node@24.2.0___yaml@2.8.1___picomatch@4.0.3__@babel+core@7.28.5__react@19.2.0__react-dom@19.2.0___react@19.2.0__@types+node@24.2.0__yaml@2.8.1_typescript@5.9.3_@react-router+serve@7.9.5__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__express@4.21.2__typescript@5.9.3__react@19.2.0__react-dom@19.2.0___react@19.2.0_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_react@19.2.0_react-dom@19.2.0__react@19.2.0_@types+node@24.2.0_yaml@2.8.1",
     "npm:@react-router/serve@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_express@4.21.2_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
-    "npm:@tabler/icons-react@^3.35.0": "3.35.0_react@19.2.0",
     "npm:@tailwindcss/vite@^4.1.13": "4.1.17_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_@types+node@24.2.0_yaml@2.8.1",
     "npm:@types/node@*": "24.2.0",
     "npm:@types/node@^24.2.0": "24.2.0",
@@ -68,7 +67,7 @@
     "npm:js-yaml@^4.1.1": "4.1.1",
     "npm:kysely-codegen@0.19": "0.19.0_kysely@0.28.8_pg@8.16.3_typescript@5.9.3",
     "npm:kysely@~0.28.8": "0.28.8",
-    "npm:lucide-react@0.553": "0.553.0_react@19.2.0",
+    "npm:lucide-react@0.554": "0.554.0_react@19.2.0",
     "npm:nanoid@^5.1.6": "5.1.6",
     "npm:pg@^8.16.3": "8.16.3",
     "npm:react-dom@^19.1.1": "19.2.0_react@19.2.0",
@@ -87,6 +86,7 @@
     "npm:vite@*": "7.2.0_@types+node@24.2.0_yaml@2.8.1_picomatch@4.0.3",
     "npm:vite@^7.1.7": "7.2.0_@types+node@24.2.0_yaml@2.8.1_picomatch@4.0.3",
     "npm:vite@^7.2.0": "7.2.0_@types+node@24.2.0_yaml@2.8.1_picomatch@4.0.3",
+    "npm:yaml@*": "2.8.1",
     "npm:yaml@^2.8.1": "2.8.1",
     "npm:zod@^3.25.76": "3.25.76"
   },
@@ -2205,16 +2205,6 @@
     },
     "@standard-schema/spec@1.0.0": {
       "integrity": "sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA=="
-    },
-    "@tabler/icons-react@3.35.0_react@19.2.0": {
-      "integrity": "sha512-XG7t2DYf3DyHT5jxFNp5xyLVbL4hMJYJhiSdHADzAjLRYfL7AnjlRfiHDHeXxkb2N103rEIvTsBRazxXtAUz2g==",
-      "dependencies": [
-        "@tabler/icons",
-        "react"
-      ]
-    },
-    "@tabler/icons@3.35.0": {
-      "integrity": "sha512-yYXe+gJ56xlZFiXwV9zVoe3FWCGuZ/D7/G4ZIlDtGxSx5CGQK110wrnT29gUj52kEZoxqF7oURTk97GQxELOFQ=="
     },
     "@tailwindcss/node@4.1.17": {
       "integrity": "sha512-csIkHIgLb3JisEFQ0vxr2Y57GUNYh447C8xzwj89U/8fdW8LhProdxvnVH6U8M2Y73QKiTIH+LWbK3V2BBZsAg==",
@@ -4692,8 +4682,8 @@
     "lru-cache@7.18.3": {
       "integrity": "sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA=="
     },
-    "lucide-react@0.553.0_react@19.2.0": {
-      "integrity": "sha512-BRgX5zrWmNy/lkVAe0dXBgd7XQdZ3HTf+Hwe3c9WK6dqgnj9h+hxV+MDncM88xDWlCq27+TKvHGE70ViODNILw==",
+    "lucide-react@0.554.0_react@19.2.0": {
+      "integrity": "sha512-St+z29uthEJVx0Is7ellNkgTEhaeSoA42I7JjOCBCrc5X6LYMGSv0P/2uS5HDLTExP5tpiqRD2PyUEOS6s9UXA==",
       "dependencies": [
         "react"
       ]
@@ -6525,7 +6515,6 @@
           "npm:@react-router/node@^7.9.2",
           "npm:@react-router/remix-routes-option-adapter@^7.9.5",
           "npm:@react-router/serve@^7.9.2",
-          "npm:@tabler/icons-react@^3.35.0",
           "npm:@tailwindcss/vite@^4.1.13",
           "npm:@types/react-dom@^19.1.9",
           "npm:@types/react@^19.1.13",
@@ -6537,7 +6526,7 @@
           "npm:graphql-request@^7.3.3",
           "npm:isbot@^5.1.31",
           "npm:js-yaml@^4.1.1",
-          "npm:lucide-react@0.553",
+          "npm:lucide-react@0.554",
           "npm:react-dom@^19.1.1",
           "npm:react-router@^7.9.2",
           "npm:react@^19.1.1",

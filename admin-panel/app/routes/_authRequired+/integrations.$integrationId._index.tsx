@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
-import { IconArrowLeft, IconPencil, IconTrash, IconBrandGithub, IconMail, IconCheck, IconX, IconClock } from "@tabler/icons-react";
+import { ArrowLeft, Pencil, Trash2, Github, Mail, Check, X, Clock } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
@@ -81,9 +81,9 @@ interface ConnectedAccountResponse {
 const getProviderIcon = (provider: string) => {
   switch (provider) {
     case "github":
-      return <IconBrandGithub size={24} />;
+      return <Github size={24} />;
     case "gmail":
-      return <IconMail size={24} />;
+      return <Mail size={24} />;
     default:
       return null;
   }
@@ -92,12 +92,12 @@ const getProviderIcon = (provider: string) => {
 const getStatusIcon = (status: string) => {
   switch (status) {
     case "active":
-      return <IconCheck size={16} className="text-success" />;
+      return <Check size={16} className="text-success" />;
     case "expired":
-      return <IconClock size={16} className="text-warning" />;
+      return <Clock size={16} className="text-warning" />;
     case "revoked":
     case "error":
-      return <IconX size={16} className="text-error" />;
+      return <X size={16} className="text-error" />;
     default:
       return null;
   }
@@ -184,14 +184,14 @@ export default function IntegrationDetailPage() {
         action={
           <div className="flex gap-2">
             <Link to="/integrations" className="btn btn-ghost">
-              <IconArrowLeft size={20} />
+              <ArrowLeft size={20} />
               Back
             </Link>
             <Link
               to={`/integrations/${integrationId}/edit`}
               className="btn btn-primary"
             >
-              <IconPencil size={20} />
+              <Pencil size={20} />
               Edit
             </Link>
             <button
@@ -204,7 +204,7 @@ export default function IntegrationDetailPage() {
                 <span className="loading loading-spinner loading-sm"></span>
               ) : (
                 <>
-                  <IconTrash size={20} />
+                  <Trash2 size={20} />
                   Delete
                 </>
               )}

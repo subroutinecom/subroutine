@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import {
-  IconPlus,
-  IconBrandGithub,
-  IconMail,
-  IconPencil,
-  IconTrash,
-  IconToggleLeft,
-  IconToggleRight,
-} from "@tabler/icons-react";
+  Plus,
+  Github,
+  Mail,
+  Pencil,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+} from "lucide-react";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
@@ -71,9 +71,9 @@ interface ParsedIntegration extends Omit<IntegrationResponse, "authConfig"> {
 const getProviderIcon = (provider: string) => {
   switch (provider) {
     case "github":
-      return <IconBrandGithub size={20} />;
+      return <Github size={20} />;
     case "gmail":
-      return <IconMail size={20} />;
+      return <Mail size={20} />;
     default:
       return null;
   }
@@ -172,7 +172,7 @@ export default function IntegrationsPage() {
         description="Connect external services to automate workflows and streamline operations."
         action={
           <Link to="/integrations/new" className="btn btn-primary gap-2 h-12">
-            <IconPlus size={20} />
+            <Plus size={20} />
             Add Integration
           </Link>
         }
@@ -186,12 +186,12 @@ export default function IntegrationsPage() {
 
       {integrations.length === 0 ? (
         <EmptyState
-          icon={<IconPlus size={40} />}
+          icon={<Plus size={40} />}
           title="No integrations yet"
           description="Add your first integration to connect external services like Gmail or GitHub."
           action={
             <Link to="/integrations/new" className="btn btn-primary gap-2 h-12">
-              <IconPlus size={20} />
+              <Plus size={20} />
               Add Integration
             </Link>
           }
@@ -288,7 +288,7 @@ export default function IntegrationsPage() {
                           <span className="loading loading-spinner loading-xs"></span>
                         ) : integration.enabled ? (
                           <>
-                            <IconToggleRight
+                            <ToggleRight
                               size={18}
                               className="text-success"
                             />
@@ -298,7 +298,7 @@ export default function IntegrationsPage() {
                           </>
                         ) : (
                           <>
-                            <IconToggleLeft
+                            <ToggleLeft
                               size={18}
                               className="text-base-content/60"
                             />
@@ -321,7 +321,7 @@ export default function IntegrationsPage() {
                           to={`/integrations/${integration.id}/edit`}
                           className="btn btn-sm btn-ghost text-base-content/70 hover:text-base-content"
                         >
-                          <IconPencil size={16} />
+                          <Pencil size={16} />
                         </Link>
                         <button
                           type="button"
@@ -332,7 +332,7 @@ export default function IntegrationsPage() {
                           {deletingId === integration.id ? (
                             <span className="loading loading-spinner loading-xs"></span>
                           ) : (
-                            <IconTrash size={16} />
+                            <Trash2 size={16} />
                           )}
                         </button>
                       </div>
