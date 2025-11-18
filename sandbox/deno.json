@@ -10,7 +10,7 @@
   "tasks": {
     "lint": "npx eslint",
     "dev": "deno run --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write main.ts",
-    "build": "deno compile --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write --include worker.ts integrationProxyWorker.ts main.ts"
+    "build": "deno compile --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write --include worker.ts --include integrationProxyWorker.ts main.ts"
   },
   "lint": {
     "exclude": ["ecosystem.config.js"]
