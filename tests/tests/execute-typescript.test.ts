@@ -405,4 +405,59 @@ describe("Sandbox", () => {
     expect(result.stdout ?? "", "Python script should greet").toContain("Hello from Python");
     expect(result.stdout ?? "", "Python script should compute 2+2").toContain("4");
   });
+
+  // Integration RPC tests
+  it("ping integration via RPC worker", async () => {
+    const code = `
+      const ping = await integrations.getPing();
+      const response = await ping.ping("Hello from user code!");
+      return response;
+    `;
+    const { status, result } = await executeTypescript(code);
+
+    expect(status, "HTTP status is 200").toBe(200);
+    expect(result.success, "Result should indicate success").toBe(true);
+    expect(result.result, "Should return ping response").toHaveProperty("echo");
+    expect((result.result as { echo: string }).echo, "Should echo message").toBe("Hello from user code!");
+    expect(result.result, "Should have timestamp").toHaveProperty("timestamp");
+  });
+
+  it("gmail integration via RPC worker", async () => {
+    const code = `
+      const gmail = await integrations.getGmail();
+      const labels = await gmail.labels.list({ userId: "me" });
+      return labels;
+    `;
+    const { status, result } = await executeTypescript(code);
+
+    expect(status, "HTTP status is 200").toBe(200);
+    expect(result.success, "Result should indicate success").toBe(true);
+    expect((result.result as { labels: string[] }).labels, "Should return labels").toEqual(["INBOX", "STARRED"]);
+  });
+
+  it("s3 integration via RPC worker", async () => {
+    const code = `
+      const s3 = await integrations.getS3();
+      const buckets = await s3.listBuckets();
+      return buckets;
+    `;
+    const { status, result } = await executeTypescript(code);
+
+    expect(status, "HTTP status is 200").toBe(200);
+    expect(result.success, "Result should indicate success").toBe(true);
+    expect((result.result as { buckets: string[] }).buckets, "Should return buckets").toEqual(["photos", "backups"]);
+  });
+
+  it("github integration via RPC worker", async () => {
+    const code = `
+      const github = await integrations.getGithub();
+      const me = await github.me();
+      return me;
+    `;
+    const { status, result } = await executeTypescript(code);
+
+    expect(status, "HTTP status is 200").toBe(200);
+    expect(result.success, "Result should indicate success").toBe(true);
+    expect((result.result as { login: string }).login, "Should return login").toBe("octocat");
+  });
 });

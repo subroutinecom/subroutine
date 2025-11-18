@@ -4,7 +4,8 @@
   "unstable": ["sloppy-imports"],
   "tasks": {
     "check": "deno check --sloppy-imports",
-    "eslint": "deno run -A --sloppy-imports npm:eslint@9"
+    "eslint": "deno run -A --sloppy-imports npm:eslint@9",
+    "test": "docker compose run --rm tests deno test tests --allow-net --allow-env --allow-read --sloppy-imports --unstable-worker-options"
   },
   "fmt": {
     "useTabs": false,
