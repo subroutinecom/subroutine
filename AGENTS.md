@@ -22,17 +22,13 @@ Database Conventions:
 
 Interactions:
 
-- Use docker-compose to interact with services - start, stop, build and test them through docker-compose.
-- All integration tests run inside the docker-compose stack (tests service depends on the others), so bring the test container up via docker-compose whenever you need to validate changes.
 - Services can be started once and do not need to be restarted. They are set up to watch the source code and internally restart when the code changes.
 
 Feedback Loop:
 
-- After implementing any feature, create the tests inside ./tests and validate that they are passing.
-- Validate type checking by running: deno task check in repository root.
-- Validate lint by running in the root:
-  - deno task eslint
-  - deno lint
+- After implementing any feature, create tests inside ./tests and validate: `deno task test`
+- Validate type checking: `deno task check`
+- Validate lint: `deno task eslint` or `deno lint`
 
 Dont's
 

@@ -1,7 +1,8 @@
 {
   "imports": {
     "hono": "npm:hono@^4.10.4",
-    "typescript": "npm:typescript"
+    "typescript": "npm:typescript",
+    "googleapis": "npm:googleapis@^134.0.0"
   },
   "compilerOptions": {
     "types": ["npm:@types/node"]
@@ -9,7 +10,7 @@
   "tasks": {
     "lint": "npx eslint",
     "dev": "deno run --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write main.ts",
-    "build": "deno compile --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write --include worker.ts main.ts"
+    "build": "deno compile --unstable-sloppy-imports --unstable-worker-options --allow-ffi --allow-env --allow-sys --allow-read --allow-net --allow-run --allow-write --include worker.ts --include integrationProxyWorker.ts main.ts"
   },
   "lint": {
     "exclude": ["ecosystem.config.js"]
