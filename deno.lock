@@ -56,6 +56,7 @@
     "npm:fetch-cookie@^3.1.0": "3.1.0",
     "npm:globals@^16.5.0": "16.5.0",
     "npm:google-auth-library@^10.5.0": "10.5.0",
+    "npm:googleapis@134": "134.0.0",
     "npm:graphql-request@7.3.3": "7.3.3_graphql@16.10.0",
     "npm:graphql-request@^7.3.3": "7.3.3_graphql@16.10.0",
     "npm:graphql-tag@^2.12.6": "2.12.6_graphql@16.10.0",
@@ -4036,6 +4037,24 @@
     "google-logging-utils@1.1.2": {
       "integrity": "sha512-YsFPGVgDFf4IzSwbwIR0iaFJQFmR5Jp7V1WuYSjuRgAm9yWqsMhKE9YPlL+wvFLnc/wMiFV4SQUD9Y/JMpxIxQ=="
     },
+    "googleapis-common@7.2.0": {
+      "integrity": "sha512-/fhDZEJZvOV3X5jmD+fKxMqma5q2Q9nZNSF3kn1F18tpxmA86BcTxAGBQdM0N89Z3bEaIs+HVznSmFJEAmMTjA==",
+      "dependencies": [
+        "extend",
+        "gaxios@6.7.1",
+        "google-auth-library@9.15.1",
+        "qs@6.14.0",
+        "url-template",
+        "uuid"
+      ]
+    },
+    "googleapis@134.0.0": {
+      "integrity": "sha512-o8LhD1754W6MHWtpwAPeP1WUHgNxuMxCnLMDFlMKAA5kCMTNqX9/eaTXnkkAIv6YRfoKMQ6D1vyR6/biXuhE9g==",
+      "dependencies": [
+        "google-auth-library@9.15.1",
+        "googleapis-common"
+      ]
+    },
     "gopd@1.2.0": {
       "integrity": "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg=="
     },
@@ -6268,6 +6287,9 @@
         "punycode"
       ]
     },
+    "url-template@2.0.8": {
+      "integrity": "sha512-XdVKMF4SJ0nP/O7XIPB0JwAEuT9lDIYnNsK8yGVe43y0AWoKeJNdv3ZNWh7ksJ6KqQFjOO6ox/VEitLnaVNufw=="
+    },
     "urlpattern-polyfill@10.1.0": {
       "integrity": "sha512-IGjKp/o0NL3Bso1PymYURCJxMPNAf/ILOpendP9f5B6e1rTJgdgiOvgfoT8VxCAdY+Wisb9uhGaJJf3yZ2V9nw=="
     },
@@ -6577,6 +6599,7 @@
       "sandbox": {
         "dependencies": [
           "npm:@types/node@*",
+          "npm:googleapis@134",
           "npm:hono@^4.10.4",
           "npm:typescript@*"
         ]

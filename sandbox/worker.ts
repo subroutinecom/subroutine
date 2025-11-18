@@ -2,6 +2,7 @@
 
 import type { ExecuteMessage } from "./sandbox-manager";
 import { createMessagePortClient, type Remote } from "./remoteProxy";
+import type { GmailAPI } from "./integrations/gmail/types";
 
 // Additional message types for worker communication
 interface ConnectMessage {
@@ -11,14 +12,6 @@ interface ConnectMessage {
 type WorkerMessage = ExecuteMessage | ConnectMessage;
 
 // Integration interfaces for type safety
-interface GmailLabelsAPI {
-  list(input: { userId: string }): Promise<{ labels: string[] }>;
-}
-
-interface GmailAPI {
-  labels: GmailLabelsAPI;
-}
-
 interface S3API {
   listBuckets(): Promise<{ buckets: string[] }>;
 }

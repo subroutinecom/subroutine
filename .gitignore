@@ -143,6 +143,9 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Sandbox persisted data
+sandbox/.data/
+
 # Implementation specs and planning docs
 *_SPEC.md
 *_IMPLEMENTATION_SPEC.md

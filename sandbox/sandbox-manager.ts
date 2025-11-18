@@ -44,24 +44,21 @@ export class SandboxManager {
     }
 
     // Create integration proxy worker for integrations
-    const integrationProxyWorker = new Worker(
-      new URL(`./integrationProxyWorker`, import.meta.url).href,
-      {
-        type: "module",
-        name: "integration-proxy-worker",
-        deno: {
-          permissions: {
-            read: false,
-            write: false,
-            ffi: false,
-            sys: false,
-            run: false,
-            env: false,
-            net: false,
-          },
+    const integrationProxyWorker = new Worker(new URL(`./integrationProxyWorker`, import.meta.url).href, {
+      type: "module",
+      name: "integration-proxy-worker",
+      deno: {
+        permissions: {
+          read: true,
+          write: true,
+          ffi: false,
+          sys: false,
+          run: false,
+          env: true,
+          net: true,
         },
       },
-    );
+    });
 
     // Create execution worker
     const executionWorker = new Worker(

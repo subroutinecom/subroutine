@@ -5,15 +5,8 @@ import {
   type CallRequest,
   type CallResponse,
 } from "./remoteProxy";
-
-// Integration API interfaces
-interface GmailLabelsAPI {
-  list(input: { userId: string }): Promise<{ labels: string[] }>;
-}
-
-interface GmailAPI {
-  labels: GmailLabelsAPI;
-}
+import { createGmailIntegration } from "./integrations/gmail/mod";
+import type { GmailAPI } from "./integrations/gmail/types";
 
 interface S3API {
   listBuckets(): Promise<{ buckets: string[] }>;
@@ -31,15 +24,8 @@ interface PingAPI {
 const server = new RemoteProxyServer<object>();
 
 // Register Gmail integration (singleton)
-server.registerSingleton("getGmail", async () => {
-  const labelsByUser: Record<string, string[]> = { me: ["INBOX", "STARRED"] };
-  const gmail: GmailAPI = {
-    labels: {
-      list: async ({ userId }) => ({ labels: labelsByUser[userId] ?? [] }),
-    },
-  };
-  return gmail as unknown as object;
-});
+const gmailIntegration: GmailAPI = await createGmailIntegration();
+server.registerSingleton("getGmail", async () => gmailIntegration as unknown as object);
 
 // Register S3 integration (singleton)
 server.registerSingleton("getS3", async () => {
