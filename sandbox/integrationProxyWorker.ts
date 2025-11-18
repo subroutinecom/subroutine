@@ -105,7 +105,7 @@ addEventListener("message", (ev: Event) => {
       // Send acknowledgment back to parent
       (self as unknown as { postMessage: (data: unknown) => void }).postMessage(
         {
-          type: "rpc_ready",
+          type: "integration_proxy_ready",
         },
       );
     }

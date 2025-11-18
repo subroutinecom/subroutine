@@ -43,12 +43,12 @@ export class SandboxManager {
       });
     }
 
-    // Create RPC worker for integrations
-    const rpcWorker = new Worker(
-      new URL(`./rpc_worker.ts`, import.meta.url).href,
+    // Create integration proxy worker for integrations
+    const integrationProxyWorker = new Worker(
+      new URL(`./integrationProxyWorker`, import.meta.url).href,
       {
         type: "module",
-        name: "rpc-worker",
+        name: "integration-proxy-worker",
         deno: {
           permissions: {
             read: false,
@@ -87,12 +87,12 @@ export class SandboxManager {
     const channel = new MessageChannel();
 
     return new Promise<ExecutionResult>((resolve) => {
-      let rpcReady = false;
+      let integrationProxyReady = false;
       let executionReady = false;
 
       const timeoutId = setTimeout(() => {
         executionWorker.terminate();
-        rpcWorker.terminate();
+        integrationProxyWorker.terminate();
         resolve({
           success: false,
           error: "Execution timed out after 5 seconds",
@@ -100,7 +100,7 @@ export class SandboxManager {
       }, this.timeout);
 
       const checkAndExecute = () => {
-        if (rpcReady && executionReady) {
+        if (integrationProxyReady && executionReady) {
           // Both workers are ready, send execution message
           executionWorker.postMessage({
             type: "execute",
@@ -111,10 +111,10 @@ export class SandboxManager {
         }
       };
 
-      // Listen for RPC worker ready signal
-      rpcWorker.onmessage = (event: MessageEvent) => {
-        if (event.data?.type === "rpc_ready") {
-          rpcReady = true;
+      // Listen for integration proxy worker ready signal
+      integrationProxyWorker.onmessage = (event: MessageEvent) => {
+        if (event.data?.type === "integration_proxy_ready") {
+          integrationProxyReady = true;
           checkAndExecute();
         }
       };
@@ -129,7 +129,7 @@ export class SandboxManager {
         } else if (type === "result") {
           clearTimeout(timeoutId);
           executionWorker.terminate();
-          rpcWorker.terminate();
+          integrationProxyWorker.terminate();
           resolve({
             success: true,
             result: data,
@@ -137,7 +137,7 @@ export class SandboxManager {
         } else if (type === "error") {
           clearTimeout(timeoutId);
           executionWorker.terminate();
-          rpcWorker.terminate();
+          integrationProxyWorker.terminate();
           resolve({
             success: false,
             error,
@@ -148,26 +148,26 @@ export class SandboxManager {
       executionWorker.onerror = (error) => {
         clearTimeout(timeoutId);
         executionWorker.terminate();
-        rpcWorker.terminate();
+        integrationProxyWorker.terminate();
         resolve({
           success: false,
           error: error.message || "Worker execution failed",
         });
       };
 
-      rpcWorker.onerror = (error) => {
+      integrationProxyWorker.onerror = (error) => {
         clearTimeout(timeoutId);
         executionWorker.terminate();
-        rpcWorker.terminate();
+        integrationProxyWorker.terminate();
         resolve({
           success: false,
-          error: `RPC worker failed: ${error.message || "Unknown error"}`,
+          error: `Integration proxy worker failed: ${error.message || "Unknown error"}`,
         });
       };
 
       // Connect the workers via MessageChannel
-      // Send port2 to RPC worker, port1 to execution worker
-      rpcWorker.postMessage({ type: "connect" }, [channel.port2]);
+      // Send port2 to integration proxy worker, port1 to execution worker
+      integrationProxyWorker.postMessage({ type: "connect" }, [channel.port2]);
       executionWorker.postMessage({ type: "connect" }, [channel.port1]);
     });
   }

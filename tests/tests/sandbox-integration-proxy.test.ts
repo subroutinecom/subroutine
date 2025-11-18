@@ -69,8 +69,8 @@ const executeTypescript = async (code: string): Promise<{ status: number; result
   };
 };
 
-describe("Sandbox RPC Integration - Two Worker Setup", () => {
-  describe("Basic RPC Communication", () => {
+describe("Sandbox Integration Proxy - Two Worker Setup", () => {
+  describe("Basic Integration Proxy Communication", () => {
     it("should establish MessageChannel connection between workers", async () => {
       const code = `
         // If integrations is available, the MessageChannel is connected
@@ -83,7 +83,7 @@ describe("Sandbox RPC Integration - Two Worker Setup", () => {
       expect(result.result, "Integrations should be available").toBe(true);
     });
 
-    it("should access ping integration through RPC worker", async () => {
+    it("should access ping integration through integration proxy worker", async () => {
       const code = `
         const ping = await integrations.getPing();
         const response = await ping.ping("Test message");
@@ -152,7 +152,7 @@ describe("Sandbox RPC Integration - Two Worker Setup", () => {
   });
 
   describe("Nested Method Calls", () => {
-    it("should support nested object access via RPC", async () => {
+    it("should support nested object access via integration proxy", async () => {
       const code = `
         const gmail = await integrations.getGmail();
         // gmail.labels is a nested object with methods
@@ -224,7 +224,7 @@ describe("Sandbox RPC Integration - Two Worker Setup", () => {
     });
   });
 
-  describe("Concurrent RPC Calls", () => {
+  describe("Concurrent Integration Proxy Calls", () => {
     it("should handle concurrent calls to same integration", async () => {
       const code = `
         const ping = await integrations.getPing();

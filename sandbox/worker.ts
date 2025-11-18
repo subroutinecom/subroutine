@@ -1,7 +1,7 @@
 /// <reference lib="deno.worker" />
 
-import type { ExecuteMessage } from "./sandbox-manager.ts";
-import { createMessagePortClient, type Remote } from "./remote_proxy";
+import type { ExecuteMessage } from "./sandbox-manager";
+import { createMessagePortClient, type Remote } from "./remoteProxy";
 
 // Additional message types for worker communication
 interface ConnectMessage {
@@ -50,7 +50,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     if (ports && ports.length > 0) {
       const port = ports[0];
 
-      // Create RPC client using the MessagePort
+      // Create integration proxy client using the MessagePort
       const client = createMessagePortClient<Integrations>(port);
       integrations = client.getProxy<Integrations>();
 
