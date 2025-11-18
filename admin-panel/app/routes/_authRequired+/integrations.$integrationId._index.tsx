@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useState } from "react";
+import { useNavigate, useLoaderData } from "react-router";
 import { ArrowLeft, Pencil, Trash2, Github, Mail, Check, X, Clock } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
@@ -78,6 +78,31 @@ interface ConnectedAccountResponse {
   updatedAt: string;
 }
 
+export const clientLoader = async ({ params }: { params: { integrationId: string } }) => {
+  const integrationId = params.integrationId;
+
+  const [integrationData, accountsData] = await Promise.all([
+    graphqlClient.request<{ integration: IntegrationResponse }>(
+      GET_INTEGRATION_QUERY,
+      { id: integrationId }
+    ),
+    graphqlClient.request<{ connectedAccountsByIntegration: ConnectedAccountResponse[] }>(
+      GET_CONNECTED_ACCOUNTS_QUERY,
+      { integrationId }
+    ),
+  ]);
+
+  const integration = {
+    ...integrationData.integration,
+    authConfig: JSON.parse(integrationData.integration.authConfig) as IntegrationAuthConfig,
+  };
+
+  return {
+    integration,
+    connectedAccounts: accountsData.connectedAccountsByIntegration,
+  };
+};
+
 const getProviderIcon = (provider: string) => {
   switch (provider) {
     case "github":
@@ -105,40 +130,11 @@ const getStatusIcon = (status: string) => {
 
 export default function IntegrationDetailPage() {
   const navigate = useNavigate();
-  const params = useParams();
   const { activeOrganization } = useAuth();
-  const integrationId = params.integrationId!;
+  const { integration, connectedAccounts } = useLoaderData<typeof clientLoader>();
 
-  const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [integration, setIntegration] = useState<ParsedIntegration | null>(null);
-  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccountResponse[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [integrationData, accountsData] = await Promise.all([
-          graphqlClient.request<{ integration: IntegrationResponse }>(GET_INTEGRATION_QUERY, { id: integrationId }),
-          graphqlClient.request<{ connectedAccountsByIntegration: ConnectedAccountResponse[] }>(GET_CONNECTED_ACCOUNTS_QUERY, {
-            integrationId,
-          }),
-        ]);
-        setIntegration({
-          ...integrationData.integration,
-          authConfig: JSON.parse(integrationData.integration.authConfig) as IntegrationAuthConfig,
-        });
-        setConnectedAccounts(accountsData.connectedAccountsByIntegration);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load integration");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [integrationId]);
 
   const handleDelete = async () => {
     if (!confirm("Are you sure you want to delete this integration? This will also remove all connected accounts.")) {
@@ -148,7 +144,7 @@ export default function IntegrationDetailPage() {
     try {
       setDeleting(true);
       await graphqlClient.request<{ deleteIntegration: boolean }>(DELETE_INTEGRATION_MUTATION, {
-        id: integrationId,
+        id: integration.id,
       });
       navigate("/integrations");
     } catch (err) {
@@ -156,25 +152,6 @@ export default function IntegrationDetailPage() {
       setDeleting(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
-    );
-  }
-
-  if (!integration) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title="Integration Not Found" subtitle={activeOrganization?.name} />
-        <div className="alert alert-error">
-          <span>Integration not found</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -188,7 +165,7 @@ export default function IntegrationDetailPage() {
               Back
             </Link>
             <Link
-              to={`/integrations/${integrationId}/edit`}
+              to={`/integrations/${integration.id}/edit`}
               className="btn btn-primary"
             >
               <Pencil size={20} />

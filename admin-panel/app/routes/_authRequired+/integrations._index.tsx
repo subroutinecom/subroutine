@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router";
+import { useState } from "react";
+import { Link, useLoaderData } from "react-router";
 import {
   Plus,
   Github,
@@ -68,6 +68,19 @@ interface ParsedIntegration extends Omit<IntegrationResponse, "authConfig"> {
   authConfig: IntegrationAuthConfig;
 }
 
+export const clientLoader = async () => {
+  const data = await graphqlClient.request<{
+    integrations: IntegrationResponse[];
+  }>(INTEGRATIONS_QUERY);
+
+  const integrations = data.integrations.map((integration) => ({
+    ...integration,
+    authConfig: JSON.parse(integration.authConfig) as IntegrationAuthConfig,
+  }));
+
+  return { integrations };
+};
+
 const getProviderIcon = (provider: string) => {
   switch (provider) {
     case "github":
@@ -81,36 +94,11 @@ const getProviderIcon = (provider: string) => {
 
 export default function IntegrationsPage() {
   const { activeOrganization: _activeOrganization } = useAuth();
-  const [integrations, setIntegrations] = useState<ParsedIntegration[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { integrations: initialIntegrations } = useLoaderData<typeof clientLoader>();
+  const [integrations, setIntegrations] = useState<ParsedIntegration[]>(initialIntegrations);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-
-  const fetchIntegrations = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await graphqlClient.request<{
-        integrations: IntegrationResponse[];
-      }>(INTEGRATIONS_QUERY);
-      const parsed = data.integrations.map((integration) => ({
-        ...integration,
-        authConfig: JSON.parse(integration.authConfig) as IntegrationAuthConfig,
-      }));
-      setIntegrations(parsed);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load integrations",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchIntegrations();
-  }, []);
 
   const handleDelete = async (id: string) => {
     if (
@@ -156,14 +144,6 @@ export default function IntegrationsPage() {
       setTogglingId(null);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-10">
