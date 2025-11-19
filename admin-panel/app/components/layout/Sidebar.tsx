@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router";
 import { useState } from "react";
-import { Building, ChevronDown, Home, LogOut, Moon, Plug, Sun } from "lucide-react";
+import { Building, ChevronDown, Home, Key, LogOut, Moon, Plug, Sun } from "lucide-react";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { authClient } from "~/lib/auth-client";
 import { useEffect } from "react";
@@ -55,6 +55,7 @@ export const Sidebar = () => {
   const navItems = [
     { to: "/", icon: Home, label: "Dashboard" },
     { to: "/integrations", icon: Plug, label: "Integrations" },
+    { to: "/api-keys", icon: Key, label: "API Keys" },
   ];
 
   const isActive = (path: string) => {
