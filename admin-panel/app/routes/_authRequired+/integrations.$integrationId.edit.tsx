@@ -7,7 +7,7 @@ import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
-import type { IntegrationAuthConfig, IntegrationProvider } from "~/types/integration";
+import type { IntegrationAuthConfig } from "~/types/integration";
 
 export function meta() {
   return [
@@ -60,22 +60,6 @@ interface IntegrationResponse {
 interface ParsedIntegration extends Omit<IntegrationResponse, "authConfig"> {
   authConfig: IntegrationAuthConfig;
 }
-
-interface ProviderConfig {
-  authUrl: string;
-  tokenUrl: string;
-}
-
-const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
-  gmail: {
-    authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-    tokenUrl: "https://oauth2.googleapis.com/token",
-  },
-  github: {
-    authUrl: "https://github.com/login/oauth/authorize",
-    tokenUrl: "https://github.com/login/oauth/access_token",
-  },
-};
 
 type IntegrationFormData = {
   name: string;
@@ -159,15 +143,13 @@ export default function EditIntegrationPage() {
     if (!integration) return;
 
     try {
-      const config = PROVIDER_CONFIGS[integration.provider as IntegrationProvider];
-
       const secret = data.clientSecret.trim();
       const authConfigPayload: Record<string, unknown> = {
         type: "oauth2",
         clientId: data.clientId.trim(),
         scopes: scopeArray,
-        authUrl: config.authUrl,
-        tokenUrl: config.tokenUrl,
+        authUrl: integration.authConfig.authUrl,
+        tokenUrl: integration.authConfig.tokenUrl,
         redirectUri: data.redirectUri.trim(),
       };
       if (secret) {

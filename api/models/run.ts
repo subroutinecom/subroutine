@@ -5,7 +5,7 @@ import { getIntegration } from "./integration.ts";
 import { getSubroutine } from "./subroutine.ts";
 import type { ConnectedAccountCredentials } from "./connected-account.ts";
 import { getConnectedAccountByAccountIdentifier } from "./connected-account.ts";
-import type { IntegrationProvider } from "../integrations/providers.ts";
+import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import { IntegrationAuthRequiredError } from "./errors.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
 
@@ -49,9 +49,10 @@ type SandboxIntegrationDefinition = {
   account?: SandboxIntegrationAccount;
 };
 
-const VIEWER_SCOPED_PROVIDERS = new Set<IntegrationProvider>(["gmail", "mock_oauth"]);
-const requiresViewerScopedAccount = (provider: IntegrationProvider): boolean =>
-  VIEWER_SCOPED_PROVIDERS.has(provider);
+const requiresViewerScopedAccount = (provider: IntegrationProvider): boolean => {
+  const definition = getProviderDefinition(provider);
+  return Boolean(definition.viewerScoped);
+};
 
 export const runSubroutine = async (
   params: RunSubroutineRequest,

@@ -1,4 +1,4 @@
-import { getProviderConfig, type IntegrationProvider } from "../integrations/providers.ts";
+import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import { getIntegration } from "../models/integration.ts";
 import { createConnectedAccount } from "../models/connected-account.ts";
 
@@ -81,7 +81,10 @@ export const generateAuthorizationUrl = async (params: {
   }
 
   const provider = integration.provider as IntegrationProvider;
-  const providerConfig = getProviderConfig(provider);
+  const definition = getProviderDefinition(provider);
+  if (definition.auth.type !== "oauth2") {
+    throw new Error(`Provider ${provider} does not support OAuth2 authorization`);
+  }
 
   const state: OAuthState = {
     integrationId,
@@ -103,7 +106,7 @@ export const generateAuthorizationUrl = async (params: {
 
   const scopes = authConfig.scopes && authConfig.scopes.length > 0
     ? authConfig.scopes
-    : providerConfig.defaultScopes;
+    : definition.auth.defaultScopes;
   authUrl.searchParams.set("scope", scopes.join(" "));
 
   if (provider === "gmail") {

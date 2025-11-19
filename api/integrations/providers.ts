@@ -1,63 +1,34 @@
-export const INTEGRATION_PROVIDERS = ["gmail", "github", "mock_oauth"] as const;
+import { githubDefinition } from "./providers/definitions/github.ts";
+import { gmailDefinition } from "./providers/definitions/gmail.ts";
+import { mockOAuthDefinition } from "./providers/definitions/mock_oauth.ts";
+import type { IntegrationDefinition } from "./providers/types.ts";
 
+const definitions = [
+  gmailDefinition,
+  githubDefinition,
+  mockOAuthDefinition,
+] as const;
+
+export const INTEGRATION_PROVIDERS = definitions.map((definition) => definition.id) as const;
 export type IntegrationProvider = typeof INTEGRATION_PROVIDERS[number];
 
-export interface ProviderConfig {
-  name: string;
-  authUrl: string;
-  tokenUrl: string;
-  defaultScopes: string[];
-  requiredScopes: string[];
-}
+const definitionMap = new Map(
+  definitions.map((definition) => [definition.id, definition] as const),
+);
 
-export const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
-  gmail: {
-    name: "Gmail",
-    authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-    tokenUrl: "https://oauth2.googleapis.com/token",
-    defaultScopes: [
-      "https://www.googleapis.com/auth/gmail.readonly",
-      "https://www.googleapis.com/auth/gmail.send",
-    ],
-    requiredScopes: [
-      "https://www.googleapis.com/auth/gmail.readonly",
-    ],
-  },
+export const isValidProvider = (value: string): value is IntegrationProvider =>
+  definitionMap.has(value as IntegrationProvider);
 
-  github: {
-    name: "GitHub",
-    authUrl: "https://github.com/login/oauth/authorize",
-    tokenUrl: "https://github.com/login/oauth/access_token",
-    defaultScopes: [
-      "repo",
-      "read:user",
-    ],
-    requiredScopes: [
-      "read:user",
-    ],
-  },
-
-  mock_oauth: {
-    name: "Mock OAuth",
-    authUrl: "http://api/tests/mock_oauth/authorize",
-    tokenUrl: "http://api/tests/mock_oauth/token",
-    defaultScopes: [],
-    requiredScopes: [],
-  },
-};
-
-export const isValidProvider = (
-  provider: string,
-): provider is IntegrationProvider => {
-  return INTEGRATION_PROVIDERS.includes(provider as IntegrationProvider);
-};
-
-export const getProviderConfig = (
+export const getProviderDefinition = (
   provider: IntegrationProvider,
-): ProviderConfig => {
-  const config = PROVIDER_CONFIGS[provider];
-  if (!config) {
+): IntegrationDefinition => {
+  const definition = definitionMap.get(provider);
+  if (!definition) {
     throw new Error(`Unsupported provider: ${provider}`);
   }
-  return config;
+  return definition;
 };
+
+export const getAllProviderDefinitions = (): IntegrationDefinition[] => [...definitions];
+
+export type { IntegrationDefinition, AuthStrategyDefinition } from "./providers/types.ts";

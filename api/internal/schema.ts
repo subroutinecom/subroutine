@@ -25,7 +25,11 @@ import {
   listConnectedAccounts,
   listConnectedAccountsByIntegration,
 } from "../models/connected-account.ts";
-import type { IntegrationProvider } from "../integrations/providers.ts";
+import {
+  getAllProviderDefinitions,
+  type IntegrationDefinition,
+  type IntegrationProvider,
+} from "../integrations/providers.ts";
 
 type User = {
   id: string;
@@ -133,6 +137,48 @@ ConnectedAccountType.implement({
   }),
 });
 
+const OAuthIntegrationConfigType = builder.objectRef<
+  Extract<IntegrationDefinition["auth"], { type: "oauth2" }>
+>("IntegrationProviderOAuthConfig");
+
+OAuthIntegrationConfigType.implement({
+  fields: (t) => ({
+    authUrl: t.exposeString("authUrl"),
+    tokenUrl: t.exposeString("tokenUrl"),
+    defaultScopes: t.stringList({
+      resolve: (parent) => parent.defaultScopes,
+    }),
+    requiredScopes: t.stringList({
+      nullable: true,
+      resolve: (parent) => parent.requiredScopes ?? null,
+    }),
+    defaultRedirectPath: t.exposeString("defaultRedirectPath", { nullable: true }),
+  }),
+});
+
+const IntegrationProviderDefinitionType = builder.objectRef<IntegrationDefinition>(
+  "IntegrationProviderDefinition",
+);
+
+IntegrationProviderDefinitionType.implement({
+  fields: (t) => ({
+    id: t.exposeString("id"),
+    name: t.exposeString("name"),
+    description: t.exposeString("description", { nullable: true }),
+    viewerScoped: t.boolean({
+      resolve: (parent) => parent.viewerScoped ?? false,
+    }),
+    authType: t.string({
+      resolve: (parent) => parent.auth.type,
+    }),
+    oauthConfig: t.field({
+      type: OAuthIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => parent.auth.type === "oauth2" ? parent.auth : null,
+    }),
+  }),
+});
+
 builder.queryType({
   fields: (t) => ({
     ping: t.string({
@@ -169,6 +215,10 @@ builder.queryType({
       resolve: async (_parent, args, ctx) => {
         return getIntegration(args.id, ctx.session.activeOrganizationId);
       },
+    }),
+    integrationProviders: t.field({
+      type: [IntegrationProviderDefinitionType],
+      resolve: () => getAllProviderDefinitions(),
     }),
     connectedAccounts: t.field({
       type: [ConnectedAccountType],
