@@ -244,7 +244,7 @@ describe(
       // Verify authConfig is encrypted (not same as input)
       const returnedAuthConfig = JSON.parse(createResult.createIntegration.authConfig);
       expect(returnedAuthConfig.clientId).toBe(authConfig.clientId);
-      expect(returnedAuthConfig.clientSecret).toBe(authConfig.clientSecret);
+      expect("clientSecret" in returnedAuthConfig).toBe(false);
 
       // 2. List integrations
       const listResult: any = await graphqlClient.request(LIST_INTEGRATIONS);

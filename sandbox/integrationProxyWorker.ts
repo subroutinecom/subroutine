@@ -7,7 +7,10 @@ import {
   type GmailTokenPayload,
 } from "./integrations/gmail/mod";
 import type { GmailAPI } from "./integrations/gmail/types";
-import type { SandboxIntegrationPayload } from "./types.ts";
+import type {
+  SandboxIntegrationAccountPayload,
+  SandboxIntegrationPayload,
+} from "./types.ts";
 
 interface S3API {
   listBuckets(): Promise<{ buckets: string[] }>;
@@ -26,6 +29,20 @@ type WireMessage =
   | { kind: "rpc_result"; payload: CallResponse };
 
 let messagePort: MessagePort | null = null;
+
+const resolveAccountIdentifier = (
+  account?: SandboxIntegrationAccountPayload,
+): string | undefined => {
+  if (!account) return undefined;
+  const metadataId = account.credentials.metadata?.providerAccountIdentifier;
+  if (metadataId && typeof metadataId === "string" && metadataId.length > 0) {
+    return metadataId;
+  }
+  if (account.accountIdentifier && account.accountIdentifier.length > 0) {
+    return account.accountIdentifier;
+  }
+  return account.userId;
+};
 
 const buildDefaultServer = async (): Promise<RemoteProxyServer<object>> => {
   const defaultServer = new RemoteProxyServer<object>();
@@ -82,6 +99,10 @@ const buildServerForIntegrations = async (
           if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.redirectUri) {
             throw new Error("Gmail integration missing OAuth client configuration");
           }
+          const gmailUserId = resolveAccountIdentifier(integration.account);
+          if (!gmailUserId) {
+            throw new Error("Unable to resolve Gmail account identifier");
+          }
           const gmail = await createGmailIntegrationFromSecrets({
             config: {
               clientId: authConfig.clientId,
@@ -90,7 +111,7 @@ const buildServerForIntegrations = async (
               tokenFile: undefined,
             },
             tokens: mapCredentialsToGmailTokens(integration),
-            userId: integration.account.accountIdentifier ?? integration.account.userId,
+            userId: gmailUserId,
           });
 
           server.registerSingleton(

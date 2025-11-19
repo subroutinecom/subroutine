@@ -12,6 +12,7 @@ import {
   createIntegration,
   deleteIntegration,
   getIntegration,
+  getPublicIntegrationAuthConfig,
   type IntegrationWithConfig,
   listIntegrations,
   updateIntegration,
@@ -103,7 +104,7 @@ IntegrationType.implement({
     name: t.exposeString("name"),
     authConfig: t.field({
       type: "String",
-      resolve: (parent) => JSON.stringify(parent.authConfig),
+      resolve: (parent) => JSON.stringify(getPublicIntegrationAuthConfig(parent.authConfig)),
     }),
     enabled: t.exposeBoolean("enabled"),
     createdAt: t.exposeString("createdAt"),

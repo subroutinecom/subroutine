@@ -3,7 +3,7 @@ export type IntegrationProvider = "gmail" | "github";
 export interface IntegrationAuthConfig {
   type: "oauth2";
   clientId: string;
-  clientSecret: string;
+  clientSecret?: string;
   scopes: string[];
   authUrl: string;
   tokenUrl: string;

@@ -18,7 +18,11 @@ export const completeMockAuthorization = async (encodedState: string) => {
     accountIdentifier: state.viewerId,
     credentials: {
       ...MOCK_CREDENTIAL,
-      metadata: { linkedAt: new Date().toISOString() },
+      metadata: {
+        linkedAt: new Date().toISOString(),
+        providerAccountIdentifier: state.viewerId,
+        viewerId: state.viewerId,
+      },
     },
   });
 

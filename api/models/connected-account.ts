@@ -12,13 +12,19 @@ export const CONNECTED_ACCOUNT_STATUS = [
 
 export type ConnectedAccountStatus = typeof CONNECTED_ACCOUNT_STATUS[number];
 
+export interface ConnectedAccountMetadata {
+  providerAccountIdentifier?: string;
+  viewerId?: string;
+  [key: string]: unknown;
+}
+
 export interface ConnectedAccountCredentials {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
   tokenType: "Bearer";
   scope?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: ConnectedAccountMetadata;
 }
 
 export interface ConnectedAccountWithCredentials

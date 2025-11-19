@@ -101,7 +101,16 @@ export default function EditIntegrationPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<IntegrationFormData>();
+  } = useForm<IntegrationFormData>({
+    defaultValues: {
+      name: "",
+      clientId: "",
+      clientSecret: "",
+      scopes: "",
+      redirectUri: "",
+      enabled: true,
+    },
+  });
 
   useEffect(() => {
     const fetchIntegration = async () => {
@@ -119,7 +128,7 @@ export default function EditIntegrationPage() {
         reset({
           name: parsed.name,
           clientId: parsed.authConfig.clientId,
-          clientSecret: parsed.authConfig.clientSecret,
+          clientSecret: "",
           scopes: parsed.authConfig.scopes.join(", "),
           redirectUri: parsed.authConfig.redirectUri,
           enabled: parsed.enabled,
@@ -152,15 +161,19 @@ export default function EditIntegrationPage() {
     try {
       const config = PROVIDER_CONFIGS[integration.provider as IntegrationProvider];
 
-      const authConfig = JSON.stringify({
+      const secret = data.clientSecret.trim();
+      const authConfigPayload: Record<string, unknown> = {
         type: "oauth2",
         clientId: data.clientId.trim(),
-        clientSecret: data.clientSecret.trim(),
         scopes: scopeArray,
         authUrl: config.authUrl,
         tokenUrl: config.tokenUrl,
         redirectUri: data.redirectUri.trim(),
-      });
+      };
+      if (secret) {
+        authConfigPayload.clientSecret = secret;
+      }
+      const authConfig = JSON.stringify(authConfigPayload);
 
       await graphqlClient.request<{
         updateIntegration: {
@@ -276,9 +289,7 @@ export default function EditIntegrationPage() {
               </label>
               <input
                 type="password"
-                {...register("clientSecret", {
-                  required: "Client Secret is required",
-                })}
+                {...register("clientSecret")}
                 placeholder="OAuth Client Secret"
                 className="input input-bordered font-mono text-sm"
               />
@@ -291,7 +302,7 @@ export default function EditIntegrationPage() {
               )}
               <label className="label">
                 <span className="label-text-alt text-warning">
-                  This will be stored encrypted
+                  Provide a new secret to rotate credentials. Leave blank to keep the current secret.
                 </span>
               </label>
             </div>

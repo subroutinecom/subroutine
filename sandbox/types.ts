@@ -1,3 +1,9 @@
+export interface SandboxIntegrationCredentialsMetadata {
+  providerAccountIdentifier?: string;
+  viewerId?: string;
+  [key: string]: unknown;
+}
+
 export interface SandboxIntegrationAccountPayload {
   id: string;
   userId: string;
@@ -8,7 +14,7 @@ export interface SandboxIntegrationAccountPayload {
     expiresAt: number;
     tokenType: string;
     scope?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: SandboxIntegrationCredentialsMetadata;
   };
 }
 

@@ -104,7 +104,7 @@ export default function NewIntegrationPage() {
       clientId: "",
       clientSecret: "",
       scopes: PROVIDER_CONFIGS.gmail.defaultScopes.join(", "),
-      redirectUri: "http://localhost:3002/api/integrations/callback",
+      redirectUri: "http://localhost:3002/api/oauth/callback",
     },
   });
 

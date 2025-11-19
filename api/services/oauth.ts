@@ -285,6 +285,8 @@ export const handleOAuthCallback = async (params: {
       scope: tokenData.scope,
       metadata: {
         obtainedAt: new Date().toISOString(),
+        providerAccountIdentifier: accountIdentifier,
+        viewerId: stateData.viewerId,
       },
     };
 

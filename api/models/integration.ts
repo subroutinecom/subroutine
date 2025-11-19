@@ -20,6 +20,34 @@ export interface IntegrationWithConfig extends Omit<IntegrationTable, "authConfi
   authConfig: IntegrationAuthConfig;
 }
 
+const validateIntegrationAuthConfig = (config: IntegrationAuthConfig) => {
+  if (config.type !== "oauth2") {
+    throw new Error(`Unsupported auth config type: ${config.type}`);
+  }
+  if (!config.clientId) {
+    throw new Error("authConfig.clientId is required");
+  }
+  if (!config.clientSecret) {
+    throw new Error("authConfig.clientSecret is required");
+  }
+  if (!config.authUrl) {
+    throw new Error("authConfig.authUrl is required");
+  }
+  if (!config.tokenUrl) {
+    throw new Error("authConfig.tokenUrl is required");
+  }
+  if (!config.redirectUri) {
+    throw new Error("authConfig.redirectUri is required");
+  }
+};
+
+export const getPublicIntegrationAuthConfig = (
+  config: IntegrationAuthConfig,
+): Omit<IntegrationAuthConfig, "clientSecret"> => {
+  const { clientSecret: _clientSecret, ...rest } = config;
+  return rest;
+};
+
 export type CreateIntegrationRequest = {
   organizationId: string;
   provider: IntegrationProvider;
@@ -31,7 +59,7 @@ export type UpdateIntegrationRequest = {
   id: string;
   organizationId: string;
   name?: string;
-  authConfig?: IntegrationAuthConfig;
+  authConfig?: Partial<IntegrationAuthConfig>;
   enabled?: boolean;
 };
 
@@ -42,6 +70,7 @@ export const createIntegration = async (
     throw new Error(`Invalid provider: ${params.provider}`);
   }
 
+  validateIntegrationAuthConfig(params.authConfig);
   const id = nanoid();
   const now = new Date().toISOString();
 
@@ -171,7 +200,12 @@ export const updateIntegration = async (
   }
 
   if (params.authConfig !== undefined) {
-    updateValues.authConfig = encrypt(JSON.stringify(params.authConfig));
+    const mergedConfig = {
+      ...existing.authConfig,
+      ...params.authConfig,
+    } as IntegrationAuthConfig;
+    validateIntegrationAuthConfig(mergedConfig);
+    updateValues.authConfig = encrypt(JSON.stringify(mergedConfig));
   }
 
   if (params.enabled !== undefined) {
