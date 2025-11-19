@@ -1,12 +1,18 @@
 /// <reference lib="deno.worker" />
 
-import type { ExecuteMessage } from "./sandbox-manager";
 import { createMessagePortClient, type Remote } from "./remoteProxy";
 import type { GmailAPI } from "./integrations/gmail/types";
 
 // Additional message types for worker communication
 interface ConnectMessage {
   type: "connect";
+}
+
+export interface ExecuteMessage {
+  type: "execute";
+  code: string;
+  id: string;
+  contentType?: string;
 }
 
 type WorkerMessage = ExecuteMessage | ConnectMessage;

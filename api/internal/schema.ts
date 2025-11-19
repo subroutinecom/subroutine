@@ -1,28 +1,28 @@
 import SchemaBuilder from "@pothos/core";
 import { auth } from "../auth.ts";
 import {
+  type ApiKey as ApiKeyModel,
   createApiKey,
   deleteApiKey,
   getApiKey,
   listApiKeys,
   updateApiKey,
-  type ApiKey as ApiKeyModel,
 } from "../models/apikey.ts";
 import {
   createIntegration,
   deleteIntegration,
   getIntegration,
+  type IntegrationWithConfig,
   listIntegrations,
   updateIntegration,
-  type IntegrationWithConfig,
 } from "../models/integration.ts";
 import {
+  type ConnectedAccountWithCredentials,
   createConnectedAccount,
   deleteConnectedAccount,
   getConnectedAccount,
   listConnectedAccounts,
   listConnectedAccountsByIntegration,
-  type ConnectedAccountWithCredentials,
 } from "../models/connected-account.ts";
 import type { IntegrationProvider } from "../integrations/providers.ts";
 
@@ -62,8 +62,7 @@ ApiKeyType.implement({
     metadata: t.field({
       type: "String",
       nullable: true,
-      resolve: (parent) =>
-        parent.metadata ? JSON.stringify(parent.metadata) : null,
+      resolve: (parent) => parent.metadata ? JSON.stringify(parent.metadata) : null,
     }),
     createdAt: t.exposeString("createdAt"),
     updatedAt: t.exposeString("updatedAt"),
@@ -86,8 +85,7 @@ CreatedApiKeyType.implement({
     metadata: t.field({
       type: "String",
       nullable: true,
-      resolve: (parent) =>
-        parent.metadata ? JSON.stringify(parent.metadata) : null,
+      resolve: (parent) => parent.metadata ? JSON.stringify(parent.metadata) : null,
     }),
     createdAt: t.exposeString("createdAt"),
     updatedAt: t.exposeString("updatedAt"),
@@ -193,7 +191,10 @@ builder.queryType({
         integrationId: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        return listConnectedAccountsByIntegration(args.integrationId, ctx.session.activeOrganizationId);
+        return listConnectedAccountsByIntegration(
+          args.integrationId,
+          ctx.session.activeOrganizationId,
+        );
       },
     }),
   }),

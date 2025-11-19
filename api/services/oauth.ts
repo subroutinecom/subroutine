@@ -1,7 +1,4 @@
-import {
-  type IntegrationProvider,
-  getProviderConfig,
-} from "../integrations/providers.ts";
+import { getProviderConfig, type IntegrationProvider } from "../integrations/providers.ts";
 import { getIntegration } from "../models/integration.ts";
 import { createConnectedAccount } from "../models/connected-account.ts";
 
@@ -12,6 +9,7 @@ interface OAuthState {
   provider: IntegrationProvider;
   timestamp: number;
   nonce: string;
+  viewerId: string;
 }
 
 interface OAuthTokenResponse {
@@ -60,8 +58,9 @@ export const generateAuthorizationUrl = async (params: {
   integrationId: string;
   userId: string;
   organizationId: string;
+  viewerId: string;
 }): Promise<{ url: string; state: string }> => {
-  const { integrationId, userId, organizationId } = params;
+  const { integrationId, userId, organizationId, viewerId } = params;
 
   const integration = await getIntegration(integrationId, organizationId);
   if (!integration) {
@@ -89,6 +88,7 @@ export const generateAuthorizationUrl = async (params: {
     provider,
     timestamp: Date.now(),
     nonce: generateNonce(),
+    viewerId,
   };
 
   const encodedState = encodeState(state);
@@ -291,7 +291,7 @@ export const handleOAuthCallback = async (params: {
       userId: stateData.userId,
       organizationId: stateData.organizationId,
       credentials,
-      accountIdentifier,
+      accountIdentifier: stateData.viewerId ?? accountIdentifier,
     });
 
     return {

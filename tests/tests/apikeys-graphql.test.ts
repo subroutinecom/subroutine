@@ -2,8 +2,8 @@ import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
 import {
   createTestAuthClientWithJar,
-  generateTestEmail,
   generateOrgName,
+  generateTestEmail,
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
 import { CookieJar } from "tough-cookie";
@@ -321,8 +321,7 @@ describe(
           name: "Key 2",
         });
 
-        const response =
-          await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
+        const response = await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
 
         if (!response.apiKeys) throw new Error("API keys not returned");
 
@@ -357,8 +356,7 @@ describe(
 
         const gqlClient = createGraphQLClient(cookieJar);
 
-        const response =
-          await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
+        const response = await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
 
         if (!response.apiKeys) throw new Error("API keys not returned");
 
@@ -672,8 +670,7 @@ describe(
         });
 
         // List keys should only show org2's key
-        const listResponse =
-          await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
+        const listResponse = await gqlClient.request<ListApiKeysQuery>(LIST_API_KEYS);
 
         if (!listResponse.apiKeys) throw new Error("API keys not returned");
 

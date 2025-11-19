@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useForm } from "react-hook-form";
 import { ArrowLeft } from "lucide-react";
@@ -7,7 +7,7 @@ import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
-import type { IntegrationProvider, IntegrationAuthConfig } from "~/types/integration";
+import type { IntegrationAuthConfig, IntegrationProvider } from "~/types/integration";
 
 export function meta() {
   return [
@@ -109,7 +109,7 @@ export default function EditIntegrationPage() {
         setLoading(true);
         const data = await graphqlClient.request<{ integration: IntegrationResponse }>(
           GET_INTEGRATION_QUERY,
-          { id: integrationId }
+          { id: integrationId },
         );
         const parsed: ParsedIntegration = {
           ...data.integration,
@@ -376,14 +376,16 @@ export default function EditIntegrationPage() {
                 className="btn btn-primary"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Saving...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
+                {isSubmitting
+                  ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Saving...
+                    </>
+                  )
+                  : (
+                    "Save Changes"
+                  )}
               </button>
             </div>
           </form>

@@ -148,7 +148,11 @@ export const listApiKeys = async (userId: string, organizationId: string): Promi
   }));
 };
 
-export const getApiKey = async (id: string, userId: string, organizationId: string): Promise<ApiKey | null> => {
+export const getApiKey = async (
+  id: string,
+  userId: string,
+  organizationId: string,
+): Promise<ApiKey | null> => {
   const row = await db
     .selectFrom("apikey")
     .selectAll()
@@ -200,7 +204,11 @@ export const updateApiKey = async (params: UpdateApiKeyRequest): Promise<ApiKey 
     .updateTable("apikey")
     .set({
       name: params.name !== undefined ? params.name : existing.name,
-      metadata: params.metadata ? JSON.stringify(params.metadata) : existing.metadata ? JSON.stringify(existing.metadata) : null,
+      metadata: params.metadata
+        ? JSON.stringify(params.metadata)
+        : existing.metadata
+        ? JSON.stringify(existing.metadata)
+        : null,
       updatedAt: now,
     })
     .where("id", "=", params.id)
@@ -211,7 +219,11 @@ export const updateApiKey = async (params: UpdateApiKeyRequest): Promise<ApiKey 
   return getApiKey(params.id, params.userId, params.organizationId);
 };
 
-export const deleteApiKey = async (id: string, userId: string, organizationId: string): Promise<boolean> => {
+export const deleteApiKey = async (
+  id: string,
+  userId: string,
+  organizationId: string,
+): Promise<boolean> => {
   const result = await db
     .deleteFrom("apikey")
     .where("id", "=", id)
@@ -222,7 +234,9 @@ export const deleteApiKey = async (id: string, userId: string, organizationId: s
   return (result?.numDeletedRows ?? 0n) > 0n;
 };
 
-export const verifyApiKey = async (apiKey: string): Promise<{ userId: string; organizationId: string } | null> => {
+export const verifyApiKey = async (
+  apiKey: string,
+): Promise<{ userId: string; organizationId: string } | null> => {
   // Use the indexed "start" column (first 8 chars of the key) to
   // dramatically shrink the candidate set before bcrypt comparison.
   const candidateStart = apiKey.substring(0, 8);

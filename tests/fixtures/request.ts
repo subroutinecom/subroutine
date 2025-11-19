@@ -22,7 +22,7 @@ export async function makeRequest(
     method?: string;
     headers?: HeadersInit;
   },
-  data?: string
+  data?: string,
 ): Promise<TestResponse> {
   const url = new URL(`http://${options.hostname}`);
   if (options.port) {
@@ -43,10 +43,14 @@ export async function makeRequest(
     headers,
     body: data,
   });
-  console.log(`Making request to ${url.pathname} with method ${req.method} after ${Date.now() - startTime}ms`);
+  console.log(
+    `Making request to ${url.pathname} with method ${req.method} after ${Date.now() - startTime}ms`,
+  );
 
   const res = await fetch(req);
-  console.log(`Request to ${url.pathname} completed in ${Date.now() - startTime}ms with status ${res.status}`);
+  console.log(
+    `Request to ${url.pathname} completed in ${Date.now() - startTime}ms with status ${res.status}`,
+  );
   const body = await res.text();
   console.log(`Response body finished after ${Date.now() - startTime}ms`);
   return { status: res.status, data: body };

@@ -1,14 +1,6 @@
 import { Link, useLocation } from "react-router";
 import { useState } from "react";
-import {
-  Home,
-  Plug,
-  LogOut,
-  Sun,
-  Moon,
-  ChevronDown,
-  Building,
-} from "lucide-react";
+import { Building, ChevronDown, Home, LogOut, Moon, Plug, Sun } from "lucide-react";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { authClient } from "~/lib/auth-client";
 import { useEffect } from "react";
@@ -58,8 +50,7 @@ export const Sidebar = () => {
     }
   };
 
-  const userInitial =
-    user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase();
+  const userInitial = user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase();
 
   const navItems = [
     { to: "/", icon: Home, label: "Dashboard" },
@@ -147,10 +138,10 @@ export const Sidebar = () => {
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
                 ${
-                  active
-                    ? "bg-primary text-primary-content font-medium"
-                    : "text-base-content/70 hover:bg-base-200 hover:text-base-content"
-                }
+                active
+                  ? "bg-primary text-primary-content font-medium"
+                  : "text-base-content/70 hover:bg-base-200 hover:text-base-content"
+              }
               `}
             >
               <Icon size={20} className="flex-shrink-0" />
@@ -168,17 +159,19 @@ export const Sidebar = () => {
           onClick={toggleTheme}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors text-base-content/60 hover:text-base-content"
         >
-          {theme === "light" ? (
-            <>
-              <Moon size={20} />
-              <span className="text-sm">Dark mode</span>
-            </>
-          ) : (
-            <>
-              <Sun size={20} />
-              <span className="text-sm">Light mode</span>
-            </>
-          )}
+          {theme === "light"
+            ? (
+              <>
+                <Moon size={20} />
+                <span className="text-sm">Dark mode</span>
+              </>
+            )
+            : (
+              <>
+                <Sun size={20} />
+                <span className="text-sm">Light mode</span>
+              </>
+            )}
         </button>
 
         {/* User Menu Dropdown */}

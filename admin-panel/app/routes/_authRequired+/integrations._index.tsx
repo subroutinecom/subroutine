@@ -1,14 +1,6 @@
 import { useState } from "react";
 import { Link, useLoaderData } from "react-router";
-import {
-  Plus,
-  Github,
-  Mail,
-  Pencil,
-  Trash2,
-  ToggleLeft,
-  ToggleRight,
-} from "lucide-react";
+import { Github, Mail, Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
@@ -132,9 +124,7 @@ export default function IntegrationsPage() {
         updateIntegration: IntegrationResponse;
       }>(UPDATE_INTEGRATION_MUTATION, { id, enabled: !currentEnabled });
       setIntegrations((prev) =>
-        prev.map((i) =>
-          i.id === id ? { ...i, enabled: data.updateIntegration.enabled } : i,
-        ),
+        prev.map((i) => i.id === id ? { ...i, enabled: data.updateIntegration.enabled } : i)
       );
     } catch (err) {
       setError(
@@ -164,166 +154,167 @@ export default function IntegrationsPage() {
         </div>
       )}
 
-      {integrations.length === 0 ? (
-        <EmptyState
-          icon={<Plus size={40} />}
-          title="No integrations yet"
-          description="Add your first integration to connect external services like Gmail or GitHub."
-          action={
-            <Link to="/integrations/new" className="btn btn-primary gap-2 h-12">
-              <Plus size={20} />
-              Add Integration
-            </Link>
-          }
-        />
-      ) : (
-        <div className="card bg-base-100 border border-base-300 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="table table-lg w-full">
-              <thead>
-                <tr className="border-b-2 border-neutral/20">
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Provider
-                  </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Name
-                  </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Client ID
-                  </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Scopes
-                  </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Status
-                  </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6 text-right">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {integrations.map((integration, index) => (
-                  <tr
-                    key={integration.id}
-                    className="border-b border-base-300 hover:bg-base-200/50 transition-colors animate-slide-in-right"
-                    style={{ animationDelay: `${index * 30}ms` }}
-                  >
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-base-200 flex items-center justify-center text-primary">
-                          {getProviderIcon(integration.provider)}
-                        </div>
-                        <span className="font-medium text-base-content capitalize">
-                          {integration.provider}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <span className="text-base-content font-medium">
-                        {integration.name}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6">
-                      <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70">
-                        {integration.authConfig.clientId}
-                      </code>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex gap-1.5 flex-wrap max-w-xs">
-                        {integration.authConfig.scopes
-                          .slice(0, 3)
-                          .map((scope) => (
-                            <span
-                              key={scope}
-                              className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300"
-                            >
-                              {scope}
-                            </span>
-                          ))}
-                        {integration.authConfig.scopes.length > 3 && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/60 border border-base-300">
-                            +{integration.authConfig.scopes.length - 3} more
+      {integrations.length === 0
+        ? (
+          <EmptyState
+            icon={<Plus size={40} />}
+            title="No integrations yet"
+            description="Add your first integration to connect external services like Gmail or GitHub."
+            action={
+              <Link to="/integrations/new" className="btn btn-primary gap-2 h-12">
+                <Plus size={20} />
+                Add Integration
+              </Link>
+            }
+          />
+        )
+        : (
+          <div className="card bg-base-100 border border-base-300 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="table table-lg w-full">
+                <thead>
+                  <tr className="border-b-2 border-neutral/20">
+                    <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
+                      Provider
+                    </th>
+                    <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
+                      Name
+                    </th>
+                    <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
+                      Client ID
+                    </th>
+                    <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
+                      Scopes
+                    </th>
+                    <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
+                      Status
+                    </th>
+                    <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6 text-right">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {integrations.map((integration, index) => (
+                    <tr
+                      key={integration.id}
+                      className="border-b border-base-300 hover:bg-base-200/50 transition-colors animate-slide-in-right"
+                      style={{ animationDelay: `${index * 30}ms` }}
+                    >
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-base-200 flex items-center justify-center text-primary">
+                            {getProviderIcon(integration.provider)}
+                          </div>
+                          <span className="font-medium text-base-content capitalize">
+                            {integration.provider}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleToggleEnabled(
-                            integration.id,
-                            integration.enabled,
-                          )
-                        }
-                        disabled={togglingId === integration.id}
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
-                          integration.enabled
-                            ? "bg-success/10 hover:bg-success/20"
-                            : "bg-base-200 hover:bg-base-300"
-                        }`}
-                      >
-                        {togglingId === integration.id ? (
-                          <span className="loading loading-spinner loading-xs"></span>
-                        ) : integration.enabled ? (
-                          <>
-                            <ToggleRight
-                              size={18}
-                              className="text-success"
-                            />
-                            <span className="text-sm font-medium text-success">
-                              Enabled
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="text-base-content font-medium">
+                          {integration.name}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70">
+                          {integration.authConfig.clientId}
+                        </code>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex gap-1.5 flex-wrap max-w-xs">
+                          {integration.authConfig.scopes
+                            .slice(0, 3)
+                            .map((scope) => (
+                              <span
+                                key={scope}
+                                className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300"
+                              >
+                                {scope}
+                              </span>
+                            ))}
+                          {integration.authConfig.scopes.length > 3 && (
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/60 border border-base-300">
+                              +{integration.authConfig.scopes.length - 3} more
                             </span>
-                          </>
-                        ) : (
-                          <>
-                            <ToggleLeft
-                              size={18}
-                              className="text-base-content/60"
-                            />
-                            <span className="text-sm font-medium text-base-content/60">
-                              Disabled
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex justify-end gap-2">
-                        <Link
-                          to={`/integrations/${integration.id}`}
-                          className="btn btn-sm bg-base-200 hover:bg-base-300 border-0 text-base-content"
-                        >
-                          View
-                        </Link>
-                        <Link
-                          to={`/integrations/${integration.id}/edit`}
-                          className="btn btn-sm btn-ghost text-base-content/70 hover:text-base-content"
-                        >
-                          <Pencil size={16} />
-                        </Link>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
                         <button
                           type="button"
-                          onClick={() => handleDelete(integration.id)}
-                          disabled={deletingId === integration.id}
-                          className="btn btn-sm btn-ghost text-error hover:bg-error/10"
+                          onClick={() =>
+                            handleToggleEnabled(
+                              integration.id,
+                              integration.enabled,
+                            )}
+                          disabled={togglingId === integration.id}
+                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
+                            integration.enabled
+                              ? "bg-success/10 hover:bg-success/20"
+                              : "bg-base-200 hover:bg-base-300"
+                          }`}
                         >
-                          {deletingId === integration.id ? (
-                            <span className="loading loading-spinner loading-xs"></span>
-                          ) : (
-                            <Trash2 size={16} />
-                          )}
+                          {togglingId === integration.id
+                            ? <span className="loading loading-spinner loading-xs"></span>
+                            : integration.enabled
+                            ? (
+                              <>
+                                <ToggleRight
+                                  size={18}
+                                  className="text-success"
+                                />
+                                <span className="text-sm font-medium text-success">
+                                  Enabled
+                                </span>
+                              </>
+                            )
+                            : (
+                              <>
+                                <ToggleLeft
+                                  size={18}
+                                  className="text-base-content/60"
+                                />
+                                <span className="text-sm font-medium text-base-content/60">
+                                  Disabled
+                                </span>
+                              </>
+                            )}
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            to={`/integrations/${integration.id}`}
+                            className="btn btn-sm bg-base-200 hover:bg-base-300 border-0 text-base-content"
+                          >
+                            View
+                          </Link>
+                          <Link
+                            to={`/integrations/${integration.id}/edit`}
+                            className="btn btn-sm btn-ghost text-base-content/70 hover:text-base-content"
+                          >
+                            <Pencil size={16} />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(integration.id)}
+                            disabled={deletingId === integration.id}
+                            className="btn btn-sm btn-ghost text-error hover:bg-error/10"
+                          >
+                            {deletingId === integration.id
+                              ? <span className="loading loading-spinner loading-xs"></span>
+                              : <Trash2 size={16} />}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }

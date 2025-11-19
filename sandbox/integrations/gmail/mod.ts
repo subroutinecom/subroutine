@@ -1,4 +1,4 @@
-import { google, type gmail_v1 } from "googleapis";
+import { type gmail_v1, google } from "googleapis";
 import type { GmailAPI } from "./types";
 
 const SANDBOX_ROOT = new URL("../../", import.meta.url);
@@ -80,6 +80,31 @@ export class FileTokenStore implements TokenStore {
   }
 }
 
+export class InMemoryTokenStore implements TokenStore {
+  #tokens = new Map<string, GmailTokenPayload>();
+
+  constructor(initial?: { userId?: string; tokens?: GmailTokenPayload }) {
+    if (initial?.tokens) {
+      const key = initial.userId ?? DEFAULT_USER_ID;
+      this.#tokens.set(key, { ...initial.tokens });
+    }
+  }
+
+  async get(userId: string): Promise<GmailTokenPayload | null> {
+    return this.#tokens.get(userId) ?? null;
+  }
+
+  async set(userId: string, payload: GmailTokenPayload): Promise<void> {
+    this.#tokens.set(userId, { ...payload });
+  }
+
+  async merge(userId: string, update: GmailTokenPayload): Promise<void> {
+    const current = await this.get(userId);
+    const next = { ...(current ?? {}), ...update };
+    await this.set(userId, next);
+  }
+}
+
 const serializeAuthErrorMessage = (
   message: string,
   options?: { authUrl?: string; scopes?: readonly string[] },
@@ -107,7 +132,11 @@ export class GmailAuthManager {
   #tokenStore: TokenStore;
   readonly scopes: readonly string[];
 
-  constructor(config: GmailConfig, tokenStore: TokenStore, scopes: readonly string[] = GMAIL_SCOPES) {
+  constructor(
+    config: GmailConfig,
+    tokenStore: TokenStore,
+    scopes: readonly string[] = GMAIL_SCOPES,
+  ) {
     this.#config = config;
     this.#tokenStore = tokenStore;
     this.scopes = scopes;
@@ -157,7 +186,11 @@ export class GmailAuthManager {
   }
 
   #createOAuthClient() {
-    return new google.auth.OAuth2(this.#config.clientId, this.#config.clientSecret, this.#config.redirectUri);
+    return new google.auth.OAuth2(
+      this.#config.clientId,
+      this.#config.clientSecret,
+      this.#config.redirectUri,
+    );
   }
 }
 
@@ -174,7 +207,9 @@ class GmailIntegrationImpl {
         list: async ({ userId }) => this.#listLabels(userId ?? DEFAULT_USER_ID),
       },
       auth: {
-        status: async ({ userId } = {}) => ({ authenticated: await this.#auth.hasCredentials(userId ?? DEFAULT_USER_ID) }),
+        status: async ({ userId } = {}) => ({
+          authenticated: await this.#auth.hasCredentials(userId ?? DEFAULT_USER_ID),
+        }),
         begin: async ({ userId, state, loginHint } = {}) => ({
           authUrl: this.#auth.generateAuthUrl({
             state,
@@ -194,8 +229,9 @@ class GmailIntegrationImpl {
   async #listLabels(userId: string): Promise<{ labels: string[] }> {
     const gmailClient = await this.#auth.getGmailClient(userId);
     const response = await gmailClient.users.labels.list({ userId });
-    const labels =
-      response.data.labels?.map((label) => label.name ?? label.id ?? "").filter((label): label is string => Boolean(label)) ??
+    const labels = response.data.labels?.map((label) => label.name ?? label.id ?? "").filter((
+      label,
+    ): label is string => Boolean(label)) ??
       [];
     return { labels };
   }
@@ -257,5 +293,18 @@ export const createGmailIntegration = async (): Promise<GmailAPI> => {
     return createMockGmailIntegration();
   }
 
+  return new GmailIntegrationImpl(authManager).api;
+};
+
+export const createGmailIntegrationFromSecrets = async (options: {
+  config: GmailConfig;
+  tokens: GmailTokenPayload;
+  userId?: string;
+}): Promise<GmailAPI> => {
+  const store = new InMemoryTokenStore({
+    userId: options.userId ?? DEFAULT_USER_ID,
+    tokens: options.tokens,
+  });
+  const authManager = new GmailAuthManager(options.config, store);
   return new GmailIntegrationImpl(authManager).api;
 };

@@ -20,7 +20,6 @@ auth:
   # Base URL override (optional - inherits from top-level baseUrl if not set)
   # Only needed for separate auth domain (e.g., auth.yourdomain.com)
   # baseUrl: "https://auth.your-domain.com"
-
   providers:
     github:
       enabled: false

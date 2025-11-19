@@ -16,9 +16,7 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .createTable("run")
     .ifNotExists()
     .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("subroutine_id", "text", (col) =>
-      col.notNull().references("subroutine.id"),
-    )
+    .addColumn("subroutine_id", "text", (col) => col.notNull().references("subroutine.id"))
     .addColumn("status", "text", (col) => col.notNull())
     .addColumn("started_at", "text")
     .addColumn("ended_at", "text")

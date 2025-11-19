@@ -1,11 +1,4 @@
-import {
-  Plug,
-  Users,
-  Activity,
-  TrendingUp,
-  Sparkles,
-  ArrowRight,
-} from "lucide-react";
+import { Activity, ArrowRight, Plug, Sparkles, TrendingUp, Users } from "lucide-react";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { Link } from "react-router";
 
@@ -109,9 +102,7 @@ export default function Home() {
                   <div className="text-4xl font-bold text-base-content">{stat.value}</div>
                   <div
                     className={`text-sm font-medium ${
-                      stat.trend === "up"
-                        ? "text-success"
-                        : "text-base-content/50"
+                      stat.trend === "up" ? "text-success" : "text-base-content/50"
                     }`}
                   >
                     {stat.change}

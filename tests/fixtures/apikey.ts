@@ -1,4 +1,8 @@
-import { createTestAuthClientWithJar, generateTestEmail, generateOrgName } from "../utils/auth-client.ts";
+import {
+  createTestAuthClientWithJar,
+  generateOrgName,
+  generateTestEmail,
+} from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
 import { gql } from "graphql-request";
 import type { CreateApiKeyMutation } from "../generated/graphql.ts";
@@ -26,6 +30,16 @@ const CREATE_API_KEY = gql`
  * Fixture for creating a test API key with full setup
  * Returns the API key, user context, and organization info
  */
+type ApiKeySetup = {
+  apiKey: string;
+  apiKeyId: string;
+  organizationId: string;
+  authClient: ReturnType<typeof createTestAuthClientWithJar>["client"];
+  cookieJar: ReturnType<typeof createTestAuthClientWithJar>["cookieJar"];
+};
+
+let cachedSetup: ApiKeySetup | null = null;
+
 export const createTestApiKey = async (options?: {
   name?: string;
   prefix?: string;
@@ -83,9 +97,20 @@ export const createTestApiKey = async (options?: {
  * Simple fixture that just creates an API key and returns it
  * Useful for quick test setup
  */
+export const ensureDefaultApiKeySetup = async (): Promise<ApiKeySetup> => {
+  if (!cachedSetup) {
+    cachedSetup = await createTestApiKey();
+  }
+  return cachedSetup;
+};
+
 export const getTestApiKey = async (): Promise<string> => {
-  const { apiKey } = await createTestApiKey();
-  return apiKey;
+  const setup = await ensureDefaultApiKeySetup();
+  return setup.apiKey;
+};
+
+export const getDefaultAuthContext = async (): Promise<ApiKeySetup> => {
+  return ensureDefaultApiKeySetup();
 };
 
 /**

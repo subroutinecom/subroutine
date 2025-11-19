@@ -10,7 +10,8 @@ export const graphqlAuthMiddleware = async (
       {
         error: {
           code: "UNAUTHORIZED",
-          message: "GraphQL endpoint does not accept API key authentication. Please use session cookies.",
+          message:
+            "GraphQL endpoint does not accept API key authentication. Please use session cookies.",
         },
       },
       401,

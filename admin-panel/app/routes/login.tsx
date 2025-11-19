@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { authClient } from "../lib/auth-client";
@@ -78,8 +78,7 @@ export default function Login() {
     );
   };
 
-  const hasSocialProviders =
-    authProviders.github.enabled || authProviders.google.enabled;
+  const hasSocialProviders = authProviders.github.enabled || authProviders.google.enabled;
   const hasEmailPassword = authProviders.emailPassword.enabled;
   const showSocialLogins = !isSignUp && hasSocialProviders;
 
@@ -133,9 +132,7 @@ export default function Login() {
               </div>
             )}
 
-            {showSocialLogins && hasEmailPassword && (
-              <div className="divider">OR</div>
-            )}
+            {showSocialLogins && hasEmailPassword && <div className="divider">OR</div>}
 
             {hasEmailPassword && (
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -194,13 +191,13 @@ export default function Login() {
                   className="btn btn-primary w-full"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? (
-                    <span className="loading loading-spinner"></span>
-                  ) : isSignUp ? (
-                    "Create Account"
-                  ) : (
-                    "Sign In"
-                  )}
+                  {isSubmitting ? <span className="loading loading-spinner"></span> : isSignUp
+                    ? (
+                      "Create Account"
+                    )
+                    : (
+                      "Sign In"
+                    )}
                 </button>
 
                 <div className="text-center">

@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { useForm, Controller } from "react-hook-form";
-import { ArrowLeft, Github, Mail, ChevronDown, Check } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
+import { ArrowLeft, Check, ChevronDown, Github, Mail } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
@@ -268,9 +268,7 @@ export default function NewIntegrationPage() {
                                     {meta.description}
                                   </span>
                                 </div>
-                                {isSelected && (
-                                  <Check size={20} className="text-primary" />
-                                )}
+                                {isSelected && <Check size={20} className="text-primary" />}
                               </button>
                             );
                           },
@@ -299,9 +297,7 @@ export default function NewIntegrationPage() {
               placeholder="e.g., Production Gmail"
               className="input input-bordered w-full text-base"
             />
-            {errors.name && (
-              <p className="text-sm text-error">{errors.name.message}</p>
-            )}
+            {errors.name && <p className="text-sm text-error">{errors.name.message}</p>}
             <p className="text-sm text-base-content/60">
               A descriptive name for this integration
             </p>
@@ -320,9 +316,7 @@ export default function NewIntegrationPage() {
               placeholder="OAuth Client ID"
               className="input input-bordered w-full font-mono text-sm"
             />
-            {errors.clientId && (
-              <p className="text-sm text-error">{errors.clientId.message}</p>
-            )}
+            {errors.clientId && <p className="text-sm text-error">{errors.clientId.message}</p>}
           </div>
 
           <div className="space-y-3">
@@ -362,9 +356,7 @@ export default function NewIntegrationPage() {
               placeholder="Comma-separated scopes"
               className="input input-bordered w-full font-mono text-sm"
             />
-            {errors.scopes && (
-              <p className="text-sm text-error">{errors.scopes.message}</p>
-            )}
+            {errors.scopes && <p className="text-sm text-error">{errors.scopes.message}</p>}
             <p className="text-sm text-base-content/60">
               OAuth scopes required for this integration (comma-separated)
             </p>
@@ -404,14 +396,16 @@ export default function NewIntegrationPage() {
               className="btn btn-primary px-8"
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Creating...
-                </>
-              ) : (
-                "Create Integration"
-              )}
+              {isSubmitting
+                ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Creating...
+                  </>
+                )
+                : (
+                  "Create Integration"
+                )}
             </button>
           </div>
         </form>

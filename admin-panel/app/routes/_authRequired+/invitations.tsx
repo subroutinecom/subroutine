@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { authClient } from "~/lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
@@ -55,10 +55,9 @@ export default function Invitations() {
     setLoading(invitationId);
 
     try {
-      const { data: result, error: acceptError } =
-        await authClient.organization.acceptInvitation({
-          invitationId,
-        });
+      const { data: result, error: acceptError } = await authClient.organization.acceptInvitation({
+        invitationId,
+      });
 
       if (acceptError) {
         setError(acceptError.message || "Failed to accept invitation");
@@ -95,10 +94,9 @@ export default function Invitations() {
     setLoading(invitationId);
 
     try {
-      const { error: rejectError } =
-        await authClient.organization.rejectInvitation({
-          invitationId,
-        });
+      const { error: rejectError } = await authClient.organization.rejectInvitation({
+        invitationId,
+      });
 
       if (rejectError) {
         setError(rejectError.message || "Failed to reject invitation");
@@ -151,8 +149,7 @@ export default function Invitations() {
           <h2 className="card-title text-2xl mb-2">Organization Invitations</h2>
           <p className="text-sm text-base-content/70 mb-4">
             You have been invited to join {invitations.length} organization
-            {invitations.length !== 1 ? "s" : ""}. Accept an invitation to get
-            started.
+            {invitations.length !== 1 ? "s" : ""}. Accept an invitation to get started.
           </p>
 
           {error && (
@@ -189,11 +186,11 @@ export default function Invitations() {
                         className="btn btn-success btn-sm"
                         disabled={loading === invitation.id}
                       >
-                        {loading === invitation.id ? (
-                          <span className="loading loading-spinner loading-xs"></span>
-                        ) : (
-                          "Accept"
-                        )}
+                        {loading === invitation.id
+                          ? <span className="loading loading-spinner loading-xs"></span>
+                          : (
+                            "Accept"
+                          )}
                       </button>
                       <button
                         type="button"

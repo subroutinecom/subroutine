@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "../db/index.ts";
 import type { IntegrationTable } from "../db/schema.ts";
-import { encrypt, decrypt } from "../utils/encryption.ts";
+import { decrypt, encrypt } from "../utils/encryption.ts";
 import type { IntegrationProvider } from "../integrations/providers.ts";
 import { isValidProvider } from "../integrations/providers.ts";
 
@@ -16,8 +16,7 @@ export interface IntegrationAuthConfig {
   metadata?: Record<string, unknown>;
 }
 
-export interface IntegrationWithConfig
-  extends Omit<IntegrationTable, "authConfig"> {
+export interface IntegrationWithConfig extends Omit<IntegrationTable, "authConfig"> {
   authConfig: IntegrationAuthConfig;
 }
 
@@ -37,7 +36,7 @@ export type UpdateIntegrationRequest = {
 };
 
 export const createIntegration = async (
-  params: CreateIntegrationRequest
+  params: CreateIntegrationRequest,
 ): Promise<IntegrationWithConfig> => {
   if (!isValidProvider(params.provider)) {
     throw new Error(`Invalid provider: ${params.provider}`);
@@ -75,7 +74,7 @@ export const createIntegration = async (
 };
 
 export const listIntegrations = async (
-  organizationId: string
+  organizationId: string,
 ): Promise<IntegrationWithConfig[]> => {
   const rows = await db
     .selectFrom("integration")
@@ -98,7 +97,7 @@ export const listIntegrations = async (
 
 export const listIntegrationsByProvider = async (
   organizationId: string,
-  provider: IntegrationProvider
+  provider: IntegrationProvider,
 ): Promise<IntegrationWithConfig[]> => {
   const rows = await db
     .selectFrom("integration")
@@ -122,7 +121,7 @@ export const listIntegrationsByProvider = async (
 
 export const getIntegration = async (
   id: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<IntegrationWithConfig | null> => {
   const row = await db
     .selectFrom("integration")
@@ -148,7 +147,7 @@ export const getIntegration = async (
 };
 
 export const updateIntegration = async (
-  params: UpdateIntegrationRequest
+  params: UpdateIntegrationRequest,
 ): Promise<IntegrationWithConfig | null> => {
   const existing = await getIntegration(params.id, params.organizationId);
 
@@ -191,7 +190,7 @@ export const updateIntegration = async (
 
 export const deleteIntegration = async (
   id: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<boolean> => {
   const result = await db
     .deleteFrom("integration")
@@ -205,7 +204,7 @@ export const deleteIntegration = async (
 export const integrationExists = async (
   organizationId: string,
   provider: IntegrationProvider,
-  name: string
+  name: string,
 ): Promise<boolean> => {
   const row = await db
     .selectFrom("integration")

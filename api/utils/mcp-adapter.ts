@@ -13,7 +13,7 @@ export class NodeResponseAdapter {
   writeHead(
     statusCode: number,
     statusMessageOrHeaders?: string | Record<string, string | string[]>,
-    headers?: Record<string, string | string[]>
+    headers?: Record<string, string | string[]>,
   ): this {
     this._statusCode = statusCode;
 

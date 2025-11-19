@@ -24,7 +24,7 @@ const makeRequest = (
     method?: string;
     headers?: HeadersInit;
   },
-  data?: string
+  data?: string,
 ): Promise<TestResponse> => {
   return new Promise((resolve, reject) => {
     const url = new URL(`http://${options.hostname}`);
@@ -50,7 +50,10 @@ const makeRequest = (
   });
 };
 
-const executeTypescript = async (code: string): Promise<{ status: number; result: ExecutionResult }> => {
+const executeTypescript = async (
+  code: string,
+  integrations?: unknown,
+): Promise<{ status: number; result: ExecutionResult }> => {
   const wrappedCode = "\nexport default async function() {\n  " + code + "\n}\n";
 
   const response = await makeRequest(
@@ -60,7 +63,7 @@ const executeTypescript = async (code: string): Promise<{ status: number; result
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ code: wrappedCode })
+    JSON.stringify({ code: wrappedCode, integrations }),
   );
 
   return {
@@ -96,10 +99,69 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
       expect(result.result, "Should return ping response").toHaveProperty("echo");
       expect((result.result as { echo: string }).echo, "Should echo message").toBe("Test message");
       expect(result.result, "Should have timestamp").toHaveProperty("timestamp");
-      expect(typeof (result.result as { timestamp: number }).timestamp, "Timestamp should be number").toBe("number");
+      expect(
+        typeof (result.result as { timestamp: number }).timestamp,
+        "Timestamp should be number",
+      ).toBe("number");
     });
   });
 
+  describe("Integration configuration overrides", () => {
+    const gmailIntegrationPayload = [
+      {
+        id: "integration-1",
+        provider: "gmail",
+        name: "Test Gmail",
+        authConfig: {
+          clientId: "test-client-id",
+          clientSecret: "test-client-secret",
+          redirectUri: "https://example.com/callback",
+        },
+        account: {
+          id: "account-1",
+          userId: "user-1",
+          accountIdentifier: "me",
+          credentials: {
+            accessToken: "access-token",
+            refreshToken: "refresh-token",
+            expiresAt: Date.now() + 60_000,
+            tokenType: "Bearer",
+          },
+        },
+      },
+    ];
+
+    it("should expose only provided integrations when payload supplied", async () => {
+      const code = `
+        const gmail = await integrations.getGmail();
+        return typeof gmail.labels?.list === "function";
+      `;
+      const { status, result } = await executeTypescript(code, gmailIntegrationPayload);
+
+      expect(status, "HTTP status is 200").toBe(200);
+      expect(result.success, "Execution should succeed").toBe(true);
+      expect(result.result, "Should expose Gmail integration").toBe(true);
+    });
+
+    it("should block integrations not provided in payload", async () => {
+      const code = `
+        try {
+          await integrations.getS3();
+          return "unexpected-success";
+        } catch (error) {
+          return (error as Error).message;
+        }
+      `;
+      const { status, result } = await executeTypescript(code, gmailIntegrationPayload);
+
+      expect(status, "HTTP status is 200").toBe(200);
+      expect(result.success, "Execution should succeed").toBe(true);
+      expect(
+        String(result.result),
+        "Should not allow S3 access when not provided",
+      ).toContain("Target at getS3 is not callable");
+    });
+  });
   describe("Singleton Behavior", () => {
     it("should return same Gmail instance on multiple calls", async () => {
       const code = `
@@ -163,7 +225,9 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
       expect(status, "HTTP status is 200").toBe(200);
       expect(result.success, "Result should indicate success").toBe(true);
-      expect((result.result as { labels: string[] }).labels, "Should access nested object").toEqual(["INBOX", "STARRED"]);
+      expect((result.result as { labels: string[] }).labels, "Should access nested object").toEqual(
+        ["INBOX", "STARRED"],
+      );
     });
 
     it("should handle different user IDs in Gmail labels", async () => {

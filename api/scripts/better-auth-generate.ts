@@ -3,8 +3,7 @@
 const sqlDir = "better-auth_migrations";
 const tsDir = "migrations";
 
-const DATABASE_URL =
-  Deno.env.get("DATABASE_URL") ||
+const DATABASE_URL = Deno.env.get("DATABASE_URL") ||
   "postgresql://subroutine:subroutine@localhost:5432/subroutine";
 
 const command = new Deno.Command("deno", {

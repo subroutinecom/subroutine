@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate, useLoaderData } from "react-router";
-import { ArrowLeft, Pencil, Trash2, Github, Mail, Check, X, Clock } from "lucide-react";
+import { useLoaderData, useNavigate } from "react-router";
+import { ArrowLeft, Check, Clock, Github, Mail, Pencil, Trash2, X } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
@@ -84,11 +84,11 @@ export const clientLoader = async ({ params }: { params: { integrationId: string
   const [integrationData, accountsData] = await Promise.all([
     graphqlClient.request<{ integration: IntegrationResponse }>(
       GET_INTEGRATION_QUERY,
-      { id: integrationId }
+      { id: integrationId },
     ),
     graphqlClient.request<{ connectedAccountsByIntegration: ConnectedAccountResponse[] }>(
       GET_CONNECTED_ACCOUNTS_QUERY,
-      { integrationId }
+      { integrationId },
     ),
   ]);
 
@@ -137,7 +137,11 @@ export default function IntegrationDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this integration? This will also remove all connected accounts.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this integration? This will also remove all connected accounts.",
+      )
+    ) {
       return;
     }
 
@@ -177,9 +181,7 @@ export default function IntegrationDetailPage() {
               disabled={deleting}
               className="btn btn-error"
             >
-              {deleting ? (
-                <span className="loading loading-spinner loading-sm"></span>
-              ) : (
+              {deleting ? <span className="loading loading-spinner loading-sm"></span> : (
                 <>
                   <Trash2 size={20} />
                   Delete
@@ -219,9 +221,7 @@ export default function IntegrationDetailPage() {
                 <label className="text-sm text-base-content/70">Status</label>
                 <div className="mt-1">
                   <span
-                    className={`badge ${
-                      integration.enabled ? "badge-success" : "badge-ghost"
-                    }`}
+                    className={`badge ${integration.enabled ? "badge-success" : "badge-ghost"}`}
                   >
                     {integration.enabled ? "Enabled" : "Disabled"}
                   </span>
@@ -301,51 +301,53 @@ export default function IntegrationDetailPage() {
             <span className="badge badge-neutral">{connectedAccounts.length}</span>
           </h2>
 
-          {connectedAccounts.length === 0 ? (
-            <div className="text-center py-8 text-base-content/70">
-              <p>No accounts connected yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th>Status</th>
-                    <th>Last Used</th>
-                    <th>Connected</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {connectedAccounts.map((account) => (
-                    <tr key={account.id}>
-                      <td>
-                        {account.accountIdentifier || (
-                          <span className="text-base-content/50 italic">
-                            Not specified
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(account.status)}
-                          <span className="capitalize">{account.status}</span>
-                        </div>
-                      </td>
-                      <td>
-                        {account.lastUsedAt ? (
-                          format(new Date(account.lastUsedAt), "PPp")
-                        ) : (
-                          <span className="text-base-content/50 italic">Never</span>
-                        )}
-                      </td>
-                      <td>{format(new Date(account.createdAt), "PPp")}</td>
+          {connectedAccounts.length === 0
+            ? (
+              <div className="text-center py-8 text-base-content/70">
+                <p>No accounts connected yet</p>
+              </div>
+            )
+            : (
+              <div className="overflow-x-auto">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Account</th>
+                      <th>Status</th>
+                      <th>Last Used</th>
+                      <th>Connected</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {connectedAccounts.map((account) => (
+                      <tr key={account.id}>
+                        <td>
+                          {account.accountIdentifier || (
+                            <span className="text-base-content/50 italic">
+                              Not specified
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(account.status)}
+                            <span className="capitalize">{account.status}</span>
+                          </div>
+                        </td>
+                        <td>
+                          {account.lastUsedAt
+                            ? (
+                              format(new Date(account.lastUsedAt), "PPp")
+                            )
+                            : <span className="text-base-content/50 italic">Never</span>}
+                        </td>
+                        <td>{format(new Date(account.createdAt), "PPp")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
         </div>
       </div>
     </div>

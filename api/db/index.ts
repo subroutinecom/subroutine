@@ -5,8 +5,7 @@ import { migrations } from "./migrations-index";
 
 const { Pool } = pg;
 
-const DATABASE_URL =
-  Deno.env.get("DATABASE_URL") ||
+const DATABASE_URL = Deno.env.get("DATABASE_URL") ||
   "postgresql://subroutine:subroutine@localhost:5432/subroutine";
 
 const dialect = new PostgresDialect({

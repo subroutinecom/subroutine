@@ -36,8 +36,10 @@ const rule = createRule({
           }
           const hasDescriptiveText = args.some((arg) => {
             return (
-              (arg.type === "Literal" && typeof arg.value === "string" && arg.value.trim().length > 0) ||
-              (arg.type === "TemplateLiteral" && arg.quasis.some((q) => q.value.raw.trim().length > 0))
+              (arg.type === "Literal" && typeof arg.value === "string" &&
+                arg.value.trim().length > 0) ||
+              (arg.type === "TemplateLiteral" &&
+                arg.quasis.some((q) => q.value.raw.trim().length > 0))
             );
           });
           if (!hasDescriptiveText) {

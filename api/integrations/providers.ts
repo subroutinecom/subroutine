@@ -39,13 +39,13 @@ export const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
 };
 
 export const isValidProvider = (
-  provider: string
+  provider: string,
 ): provider is IntegrationProvider => {
   return INTEGRATION_PROVIDERS.includes(provider as IntegrationProvider);
 };
 
 export const getProviderConfig = (
-  provider: IntegrationProvider
+  provider: IntegrationProvider,
 ): ProviderConfig => {
   const config = PROVIDER_CONFIGS[provider];
   if (!config) {

@@ -1,5 +1,5 @@
 import { cors } from "@hono/hono/cors";
-import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createYoga } from "graphql-yoga";
@@ -10,17 +10,20 @@ import { getConfig } from "./config/loader.ts";
 import { initializeDatabase } from "./db/index.ts";
 import { buildContext, schema } from "./internal/schema.ts";
 import { createMcpServer } from "./mcp-server.ts";
-import { authMiddleware, type AuthContext } from "./middlewares/auth.ts";
+import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
+import { IntegrationAuthRequiredError } from "./models/errors.ts";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
 
 const initialize = async () => {
   const app = new OpenAPIHono<{ Variables: { auth: AuthContext } }>({
     defaultHook: (result, c) => {
       if (!result.success) {
-        const message = result.error.issues.map((i) => `${i.path.join(".")} ${i.message.toLowerCase()}`).join(", ");
+        const message = result.error.issues.map((i) =>
+          `${i.path.join(".")} ${i.message.toLowerCase()}`
+        ).join(", ");
         return c.json(
           {
             error: {
@@ -28,7 +31,7 @@ const initialize = async () => {
               message,
             },
           },
-          400
+          400,
         );
       }
     },
@@ -49,7 +52,7 @@ const initialize = async () => {
       allowHeaders: ["Content-Type", "Authorization", "Cookie", "x-api-key"],
       exposeHeaders: ["Set-Cookie"],
       maxAge: 86400,
-    }) as any
+    }) as any,
   );
 
   app.get("/api/auth/test-route", (c) => {
@@ -72,7 +75,7 @@ const initialize = async () => {
       allowHeaders: ["Content-Type", "Authorization", "Cookie"],
       exposeHeaders: ["Set-Cookie"],
       maxAge: 86400,
-    }) as any
+    }) as any,
   );
 
   app.get("/api/oauth/callback", async (c) => {
@@ -139,7 +142,7 @@ const initialize = async () => {
       allowHeaders: ["Content-Type", "Authorization", "Cookie"],
       exposeHeaders: ["Set-Cookie"],
       maxAge: 86400,
-    }) as any
+    }) as any,
   );
 
   app.use("/graphql", graphqlAuthMiddleware);
@@ -171,6 +174,8 @@ const initialize = async () => {
 
   const SubroutineSchema = z.object({
     id: z.string(),
+    organizationId: z.string(),
+    integrationIds: z.array(z.string()),
     source: z.string(),
     inputsSchema: z.record(z.unknown()).optional(),
     outputsSchema: z.record(z.unknown()).optional(),
@@ -183,6 +188,7 @@ const initialize = async () => {
 
   const RunSchema = z.object({
     id: z.string(),
+    organizationId: z.string(),
     subroutineId: z.string(),
     status: z.enum(["queued", "running", "succeeded", "failed"]),
     startedAt: z.string().nullable().optional(),
@@ -210,7 +216,7 @@ const initialize = async () => {
     }),
     (c) => {
       return c.json({ status: "ok" });
-    }
+    },
   );
 
   app.openapi(
@@ -223,7 +229,10 @@ const initialize = async () => {
           content: {
             "application/json": {
               schema: z.object({
-                request: z.string().describe("Natural language description of the desired subroutine"),
+                request: z.string().describe(
+                  "Natural language description of the desired subroutine",
+                ),
+                integrations: z.array(z.string()).optional(),
               }),
             },
           },
@@ -263,8 +272,21 @@ const initialize = async () => {
       },
     }),
     async (c) => {
+      const auth = c.get("auth");
+      if (!auth?.organizationId) {
+        return c.json(
+          {
+            error: {
+              code: "ORGANIZATION_REQUIRED",
+              message: "Active organization is required to create subroutines",
+            },
+          },
+          403,
+        );
+      }
+
       try {
-        const { request } = c.req.valid("json");
+        const { request, integrations } = c.req.valid("json");
 
         if (!request || typeof request !== "string") {
           return c.json(
@@ -274,7 +296,7 @@ const initialize = async () => {
                 message: "request field is required and must be a string",
               },
             },
-            400
+            400,
           );
         }
 
@@ -282,6 +304,8 @@ const initialize = async () => {
 
         const subroutine = await generateSubroutine({
           request,
+          integrations,
+          organizationId: auth.organizationId,
           useMock,
         });
 
@@ -290,7 +314,7 @@ const initialize = async () => {
             subroutineUri: `resource://subroutine/${subroutine.id}`,
             subroutine,
           },
-          201
+          201,
         );
         return response;
       } catch (error) {
@@ -302,10 +326,10 @@ const initialize = async () => {
               message,
             },
           },
-          500
+          500,
         );
       }
-    }
+    },
   );
 
   app.openapi(
@@ -318,8 +342,12 @@ const initialize = async () => {
           content: {
             "application/json": {
               schema: z.object({
-                request: z.string().describe("Natural language description of the desired subroutine"),
+                request: z.string().describe(
+                  "Natural language description of the desired subroutine",
+                ),
+                viewerId: z.string().describe("External viewer identifier"),
                 timeoutMs: z.number().optional(),
+                integrations: z.array(z.string()).optional(),
               }),
             },
           },
@@ -362,8 +390,21 @@ const initialize = async () => {
       },
     }),
     async (c) => {
+      const auth = c.get("auth");
+      if (!auth?.organizationId) {
+        return c.json(
+          {
+            error: {
+              code: "ORGANIZATION_REQUIRED",
+              message: "Active organization is required to create subroutines",
+            },
+          },
+          403,
+        );
+      }
+
       try {
-        const { request, timeoutMs } = c.req.valid("json");
+        const { request, timeoutMs, integrations, viewerId } = c.req.valid("json");
 
         if (!request || typeof request !== "string") {
           return c.json(
@@ -373,13 +414,15 @@ const initialize = async () => {
                 message: "request field is required and must be a string",
               },
             },
-            400
+            400,
           );
         }
 
         const useMock = c.req.header("x-use-mock") === "true";
         const subroutine = await generateSubroutine({
           request,
+          integrations,
+          organizationId: auth.organizationId,
           useMock,
           needsImmediateInputs: true,
         });
@@ -390,6 +433,9 @@ const initialize = async () => {
 
         const run = await runSubroutine({
           subroutineId: subroutine.id,
+          organizationId: auth.organizationId,
+          userId: auth.userId,
+          viewerId,
           inputs: subroutine.initialInputs,
           timeoutMs,
         });
@@ -402,10 +448,29 @@ const initialize = async () => {
             run,
             initialInputs: subroutine.initialInputs,
           },
-          201
+          201,
         );
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to create and run subroutine";
+        if (error instanceof IntegrationAuthRequiredError) {
+          return c.json(
+            {
+              error: {
+                code: "INTEGRATION_AUTH_REQUIRED",
+                message: error.message,
+                integrationId: error.integrationId,
+                provider: error.provider,
+                authorizationUrl: error.authorizationUrl,
+                state: error.state,
+                viewerId: error.viewerId,
+              },
+            },
+            403,
+          );
+        }
+
+        const message = error instanceof Error
+          ? error.message
+          : "Failed to create and run subroutine";
         return c.json(
           {
             error: {
@@ -413,10 +478,10 @@ const initialize = async () => {
               message,
             },
           },
-          500
+          500,
         );
       }
-    }
+    },
   );
 
   app.openapi(
@@ -438,9 +503,22 @@ const initialize = async () => {
       },
     }),
     async (c) => {
-      const subroutines = await listSubroutines();
-      return c.json({ subroutines });
-    }
+      const auth = c.get("auth");
+      if (!auth?.organizationId) {
+        return c.json(
+          {
+            error: {
+              code: "ORGANIZATION_REQUIRED",
+              message: "Active organization is required to list subroutines",
+            },
+          },
+          403,
+        );
+      }
+
+      const subroutines = await listSubroutines(auth.organizationId);
+      return c.json({ subroutines }) as never;
+    },
   );
 
   app.openapi(
@@ -476,8 +554,21 @@ const initialize = async () => {
     }),
     // @ts-ignore - Hono OpenAPI types are overly strict about response unions
     async (c) => {
+      const auth = c.get("auth");
+      if (!auth?.organizationId) {
+        return c.json(
+          {
+            error: {
+              code: "ORGANIZATION_REQUIRED",
+              message: "Active organization is required to view this subroutine",
+            },
+          },
+          403,
+        );
+      }
+
       const { id } = c.req.valid("param");
-      const subroutine = await getSubroutine(id);
+      const subroutine = await getSubroutine(id, auth.organizationId);
 
       if (!subroutine) {
         return c.json(
@@ -487,12 +578,12 @@ const initialize = async () => {
               message: "subroutine not found",
             },
           },
-          404
+          404,
         );
       }
 
       return c.json({ subroutine });
-    }
+    },
   );
 
   app.openapi(
@@ -508,6 +599,7 @@ const initialize = async () => {
           content: {
             "application/json": {
               schema: z.object({
+                viewerId: z.string().describe("External viewer identifier"),
                 inputs: z.record(z.unknown()).optional(),
                 timeoutMs: z.number().optional(),
               }),
@@ -547,12 +639,28 @@ const initialize = async () => {
     }),
     // @ts-ignore - Hono OpenAPI types are overly strict about response unions
     async (c) => {
+      const auth = c.get("auth");
+      if (!auth?.organizationId) {
+        return c.json(
+          {
+            error: {
+              code: "ORGANIZATION_REQUIRED",
+              message: "Active organization is required to run a subroutine",
+            },
+          },
+          403,
+        );
+      }
+
       try {
         const { id } = c.req.valid("param");
-        const { inputs, timeoutMs } = c.req.valid("json");
+        const { viewerId, inputs, timeoutMs } = c.req.valid("json");
 
         const run = await runSubroutine({
           subroutineId: id,
+          organizationId: auth.organizationId,
+          userId: auth.userId,
+          viewerId,
           inputs,
           timeoutMs,
         });
@@ -562,7 +670,7 @@ const initialize = async () => {
             runUri: `resource://run/${run.id}`,
             run,
           },
-          201
+          201,
         );
       } catch (error) {
         if (error instanceof Error && error.message === "Subroutine not found") {
@@ -573,7 +681,24 @@ const initialize = async () => {
                 message: "subroutine not found",
               },
             },
-            404
+            404,
+          );
+        }
+
+        if (error instanceof IntegrationAuthRequiredError) {
+          return c.json(
+            {
+              error: {
+                code: "INTEGRATION_AUTH_REQUIRED",
+                message: error.message,
+                integrationId: error.integrationId,
+                provider: error.provider,
+                authorizationUrl: error.authorizationUrl,
+                state: error.state,
+                viewerId: error.viewerId,
+              },
+            },
+            403,
           );
         }
 
@@ -584,10 +709,10 @@ const initialize = async () => {
               message: "Failed to run subroutine",
             },
           },
-          500
+          500,
         );
       }
-    }
+    },
   );
 
   app.openapi(
@@ -609,9 +734,22 @@ const initialize = async () => {
       },
     }),
     async (c) => {
-      const runs = await listRuns();
-      return c.json({ runs });
-    }
+      const auth = c.get("auth");
+      if (!auth?.organizationId) {
+        return c.json(
+          {
+            error: {
+              code: "ORGANIZATION_REQUIRED",
+              message: "Active organization is required to list runs",
+            },
+          },
+          403,
+        );
+      }
+
+      const runs = await listRuns(auth.organizationId);
+      return c.json({ runs }) as never;
+    },
   );
 
   app.openapi(
@@ -647,9 +785,22 @@ const initialize = async () => {
     }),
     // @ts-ignore - Hono OpenAPI types are overly strict about response unions
     async (c) => {
+      const auth = c.get("auth");
+      if (!auth?.organizationId) {
+        return c.json(
+          {
+            error: {
+              code: "ORGANIZATION_REQUIRED",
+              message: "Active organization is required to view run details",
+            },
+          },
+          403,
+        );
+      }
+
       console.log("Fetching run with ID:", c.req.valid("param").id);
       const { id } = c.req.valid("param");
-      const run = await getRun(id);
+      const run = await getRun(id, auth.organizationId);
       console.log("Fetched run:", run);
 
       if (!run) {
@@ -660,15 +811,28 @@ const initialize = async () => {
               message: "run not found",
             },
           },
-          404
+          404,
         );
       }
 
       return c.json({ run });
-    }
+    },
   );
 
   app.post("/mcp", async (c) => {
+    const auth = c.get("auth");
+    if (!auth?.organizationId) {
+      return c.json(
+        {
+          error: {
+            code: "ORGANIZATION_REQUIRED",
+            message: "Active organization is required to use MCP",
+          },
+        },
+        403,
+      );
+    }
+
     const sessionId = c.req.header("mcp-session-id");
 
     if (sessionId) {
@@ -701,7 +865,7 @@ const initialize = async () => {
           }
         };
 
-        const server = createMcpServer();
+        const server = createMcpServer(auth);
         await server.connect(transport);
         const req = c.req.raw;
         const res = new NodeResponseAdapter();
@@ -720,7 +884,7 @@ const initialize = async () => {
             },
             id: null,
           },
-          400
+          400,
         );
       }
 
@@ -740,7 +904,7 @@ const initialize = async () => {
           },
           id: null,
         },
-        500
+        500,
       );
     }
   });

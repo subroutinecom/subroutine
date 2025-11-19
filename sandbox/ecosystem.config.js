@@ -8,12 +8,12 @@ module.exports = {
 
       ...(IS_BUILD
         ? {
-            script: "/release/build",
-          }
+          script: "/release/build",
+        }
         : {
-            script: "deno",
-            args: "task dev",
-          }),
+          script: "deno",
+          args: "task dev",
+        }),
       autorestart: true,
 
       watch: ["*.ts", "*.js", "*.json"],
@@ -24,19 +24,17 @@ module.exports = {
         NODE_ENV: "development",
       },
     },
-    ...(IS_BUILD
-      ? []
-      : [
-          {
-            name: "linter",
-            script: "deno",
-            args: "lint",
-            autorestart: false,
+    ...(IS_BUILD ? [] : [
+      {
+        name: "linter",
+        script: "deno",
+        args: "lint",
+        autorestart: false,
 
-            watch: ["*.ts"],
+        watch: ["*.ts"],
 
-            ignore_watch: ["node_modules", ".git"],
-          },
-        ]),
+        ignore_watch: ["node_modules", ".git"],
+      },
+    ]),
   ],
 };
