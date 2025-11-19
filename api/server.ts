@@ -216,7 +216,7 @@ const initialize = async () => {
     error: z.object({
       code: z.string(),
       message: z.string(),
-    }),
+    }).passthrough(),
   });
 
   const SubroutineSchema = z.object({
@@ -297,6 +297,14 @@ const initialize = async () => {
                 subroutineUri: z.string(),
                 subroutine: SubroutineSchema,
               }),
+            },
+          },
+        },
+        403: {
+          description: "Organization required",
+          content: {
+            "application/json": {
+              schema: ErrorSchema,
             },
           },
         },
@@ -415,6 +423,14 @@ const initialize = async () => {
                 run: RunSchema,
                 initialInputs: z.record(z.unknown()),
               }),
+            },
+          },
+        },
+        403: {
+          description: "Organization required or integration authorization needed",
+          content: {
+            "application/json": {
+              schema: ErrorSchema,
             },
           },
         },
@@ -547,6 +563,14 @@ const initialize = async () => {
             },
           },
         },
+        403: {
+          description: "Organization required",
+          content: {
+            "application/json": {
+              schema: ErrorSchema,
+            },
+          },
+        },
       },
     }),
     async (c) => {
@@ -586,6 +610,14 @@ const initialize = async () => {
               schema: z.object({
                 subroutine: SubroutineSchema,
               }),
+            },
+          },
+        },
+        403: {
+          description: "Organization required",
+          content: {
+            "application/json": {
+              schema: ErrorSchema,
             },
           },
         },
@@ -663,6 +695,14 @@ const initialize = async () => {
                 runUri: z.string(),
                 run: RunSchema,
               }),
+            },
+          },
+        },
+        403: {
+          description: "Organization required or integration authorization needed",
+          content: {
+            "application/json": {
+              schema: ErrorSchema,
             },
           },
         },
@@ -778,6 +818,14 @@ const initialize = async () => {
             },
           },
         },
+        403: {
+          description: "Organization required",
+          content: {
+            "application/json": {
+              schema: ErrorSchema,
+            },
+          },
+        },
       },
     }),
     async (c) => {
@@ -817,6 +865,14 @@ const initialize = async () => {
               schema: z.object({
                 run: RunSchema,
               }),
+            },
+          },
+        },
+        403: {
+          description: "Organization required",
+          content: {
+            "application/json": {
+              schema: ErrorSchema,
             },
           },
         },

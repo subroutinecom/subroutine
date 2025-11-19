@@ -2,12 +2,16 @@ import * as ts from "typescript";
 import type { SandboxIntegrationPayload } from "./types.ts";
 import type { ExecuteMessage } from "./worker.ts";
 
-export type WorkerMessage =
-  | ExecuteMessage
+type ExecutionWorkerMessage =
   | {
-    type: "result" | "error" | "execution_ready";
-    id?: string;
-    data?: unknown;
+    type: "execution_ready";
+  }
+  | {
+    type: "result";
+    data: unknown;
+  }
+  | {
+    type: "error";
     error?: string;
   };
 
@@ -117,28 +121,26 @@ export class SandboxManager {
 
       // Listen for execution results from execution worker
       executionWorker.onmessage = (
-        event: MessageEvent<Extract<WorkerMessage, { type: string }>>,
+        event: MessageEvent<ExecutionWorkerMessage>,
       ) => {
-        const { type, data, error } = event.data;
-
-        if (type === "execution_ready") {
+        if (event.data.type === "execution_ready") {
           executionReady = true;
           checkAndExecute();
-        } else if (type === "result") {
+        } else if (event.data.type === "result") {
           clearTimeout(timeoutId);
           executionWorker.terminate();
           integrationProxyWorker.terminate();
           resolve({
             success: true,
-            result: data,
+            result: event.data.data,
           });
-        } else if (type === "error") {
+        } else if (event.data.type === "error") {
           clearTimeout(timeoutId);
           executionWorker.terminate();
           integrationProxyWorker.terminate();
           resolve({
             success: false,
-            error,
+            error: event.data.error,
           });
         }
       };

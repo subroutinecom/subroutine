@@ -9,8 +9,10 @@ const definitions = [
   mockOAuthDefinition,
 ] as const;
 
-export const INTEGRATION_PROVIDERS = definitions.map((definition) => definition.id) as const;
-export type IntegrationProvider = typeof INTEGRATION_PROVIDERS[number];
+export type IntegrationProvider = (typeof definitions)[number]["id"];
+export const INTEGRATION_PROVIDERS: ReadonlyArray<IntegrationProvider> = definitions.map(
+  (definition) => definition.id,
+);
 
 const definitionMap = new Map(
   definitions.map((definition) => [definition.id, definition] as const),
