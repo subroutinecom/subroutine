@@ -64,6 +64,73 @@ const initialize = async () => {
   });
 
   app.use(
+    "/api/oauth/*",
+    cors({
+      origin: config.auth.allowedOrigins,
+      credentials: true,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+      exposeHeaders: ["Set-Cookie"],
+      maxAge: 86400,
+    }) as any
+  );
+
+  app.get("/api/oauth/callback", async (c) => {
+    try {
+      const code = c.req.query("code");
+      const state = c.req.query("state");
+      const error = c.req.query("error");
+      const errorDescription = c.req.query("error_description");
+
+      const adminPanelUrl = config.adminPanelUrl || "http://localhost:3001";
+
+      if (error) {
+        const message = errorDescription || error;
+        const params = new URLSearchParams({
+          success: "false",
+          error: message,
+        });
+        return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+      }
+
+      if (!code || !state) {
+        const params = new URLSearchParams({
+          success: "false",
+          error: "Missing required parameters",
+        });
+        return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+      }
+
+      const { handleOAuthCallback } = await import("./services/oauth.ts");
+      const result = await handleOAuthCallback({ code, state });
+
+      if (result.success) {
+        const params = new URLSearchParams({
+          success: "true",
+          provider: result.provider || "",
+          integrationId: result.integrationId || "",
+          connectedAccountId: result.connectedAccountId || "",
+        });
+        return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+      } else {
+        const params = new URLSearchParams({
+          success: "false",
+          error: result.error || "Unknown error",
+        });
+        return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+      }
+    } catch (error) {
+      console.error("OAuth callback error:", error);
+      const adminPanelUrl = config.adminPanelUrl || "http://localhost:3001";
+      const params = new URLSearchParams({
+        success: "false",
+        error: "An unexpected error occurred",
+      });
+      return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+    }
+  });
+
+  app.use(
     "/graphql",
     cors({
       origin: config.auth.allowedOrigins,
