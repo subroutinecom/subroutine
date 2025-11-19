@@ -30,6 +30,8 @@ export const authConfigSchema = z.object({
 
 export const configSchema = z.object({
   baseUrl: z.string().url("Base URL must be a valid URL").optional(),
+  adminPanelUrl: z.string().url("Admin panel URL must be a valid URL").optional(),
+  apiUrl: z.string().url("API URL must be a valid URL").optional(),
   ai: aiConfigSchema,
   auth: authConfigSchema,
 });
