@@ -27,16 +27,6 @@ const DELETE_API_KEY_MUTATION = gql`
   }
 `;
 
-const UPDATE_API_KEY_MUTATION = gql`
-  mutation UpdateApiKey($id: String!, $name: String, $metadata: String) {
-    updateApiKey(id: $id, name: $name, metadata: $metadata) {
-      id
-      name
-      enabled
-    }
-  }
-`;
-
 interface ApiKey {
   id: string;
   name?: string | null;
@@ -190,6 +180,7 @@ export default function ApiKeysPage() {
                         </code>
                         {apiKey.start && (
                           <button
+                            type="button"
                             onClick={() => handleCopy(apiKey.start!, apiKey.id)}
                             className="btn btn-ghost btn-xs"
                             title="Copy key prefix"
@@ -240,6 +231,7 @@ export default function ApiKeysPage() {
                     <td className="py-4 px-6 text-right">
                       <div className="flex gap-2 justify-end">
                         <button
+                          type="button"
                           onClick={() => handleDelete(apiKey.id, apiKey.name)}
                           disabled={deletingId === apiKey.id}
                           className="btn btn-sm btn-ghost text-error hover:bg-error/10 gap-1"

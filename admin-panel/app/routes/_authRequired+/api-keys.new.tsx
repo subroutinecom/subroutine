@@ -125,6 +125,7 @@ export default function NewApiKeyPage() {
                     {showKey ? createdKey.key : "•".repeat(64)}
                   </div>
                   <button
+                    type="button"
                     onClick={() => setShowKey(!showKey)}
                     className="btn join-item"
                     title={showKey ? "Hide key" : "Show key"}
@@ -132,6 +133,7 @@ export default function NewApiKeyPage() {
                     {showKey ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleCopy(createdKey.key)}
                     className="btn join-item btn-primary"
                   >
@@ -172,7 +174,7 @@ export default function NewApiKeyPage() {
             </div>
 
             <div className="card-actions justify-end mt-6">
-              <button onClick={handleDone} className="btn btn-primary">
+              <button type="button" onClick={handleDone} className="btn btn-primary">
                 Done
               </button>
             </div>
