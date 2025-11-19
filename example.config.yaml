@@ -8,13 +8,13 @@
 # AI Model Configuration
 ai:
   # Provider: anthropic | openai | vertex-anthropic | vertex-gemini
-  provider: anthropic
+  provider: vertex-gemini
   # Model name to use
   # Examples:
   #   - claude-sonnet-4-5-20250929 (for Anthropic)
   #   - gpt-4 (for OpenAI)
-  #   - gemini-2.5-pro (for Vertex AI Gemini)
-  model: claude-sonnet-4-5-20250929
+  #   - gemini-3-pro-preview (for Vertex AI Gemini 3 Pro)
+  model: gemini-3-pro-preview
 
 auth:
   # Base URL override (optional - inherits from top-level baseUrl if not set)
