@@ -41,6 +41,20 @@ export async function main(ctx: any, inputs: any) {
 }`;
   }
 
+  if (lowerRequest.includes("mock integration")) {
+    return `// Generated from: ${request}
+export async function main(ctx: any, inputs: any) {
+  const message = inputs?.message ?? "hello";
+  const mock = await integrations.getMockOAuth();
+  const result = await mock.ping(message);
+  return {
+    viewerId: result.viewerId,
+    echo: result.echo,
+    inputMessage: message
+  };
+}`;
+  }
+
   // Default hello world example with timestamp
   return `// Generated from: ${request}
 export async function main(ctx: any, inputs: any) {

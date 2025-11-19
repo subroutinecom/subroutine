@@ -1,4 +1,4 @@
-export const INTEGRATION_PROVIDERS = ["gmail", "github"] as const;
+export const INTEGRATION_PROVIDERS = ["gmail", "github", "mock_oauth"] as const;
 
 export type IntegrationProvider = typeof INTEGRATION_PROVIDERS[number];
 
@@ -35,6 +35,14 @@ export const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
     requiredScopes: [
       "read:user",
     ],
+  },
+
+  mock_oauth: {
+    name: "Mock OAuth",
+    authUrl: "http://api/tests/mock_oauth/authorize",
+    tokenUrl: "http://api/tests/mock_oauth/token",
+    defaultScopes: [],
+    requiredScopes: [],
   },
 };
 

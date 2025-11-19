@@ -15,7 +15,10 @@ import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
+import { completeMockAuthorization } from "./services/mock-oauth.ts";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
+
+const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";
 
 const initialize = async () => {
   const app = new OpenAPIHono<{ Variables: { auth: AuthContext } }>({
@@ -132,6 +135,50 @@ const initialize = async () => {
       return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
     }
   });
+
+  if (ENABLE_MOCK_OAUTH) {
+    app.get("/tests/mock_oauth/authorize", (c) => {
+      const state = c.req.query("state");
+      if (!state) {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION",
+              message: "state parameter is required",
+            },
+          },
+          400,
+        );
+      }
+
+      const redirectParam = c.req.query("redirect_uri");
+      const origin = new URL(c.req.url);
+      const callbackUrl = redirectParam
+        ? new URL(redirectParam)
+        : new URL("/tests/mock_oauth/callback", `${origin.protocol}//${origin.host}`);
+      callbackUrl.searchParams.set("state", state);
+      callbackUrl.searchParams.set("code", randomUUID());
+      return c.redirect(callbackUrl.toString());
+    });
+
+    app.get("/tests/mock_oauth/callback", async (c) => {
+      const state = c.req.query("state");
+      if (!state) {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION",
+              message: "state parameter is required",
+            },
+          },
+          400,
+        );
+      }
+
+      await completeMockAuthorization(state);
+      return c.json({ success: true });
+    });
+  }
 
   app.use(
     "/graphql",

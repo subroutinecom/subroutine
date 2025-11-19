@@ -2,7 +2,7 @@ import { getProviderConfig, type IntegrationProvider } from "../integrations/pro
 import { getIntegration } from "../models/integration.ts";
 import { createConnectedAccount } from "../models/connected-account.ts";
 
-interface OAuthState {
+export interface OAuthState {
   integrationId: string;
   userId: string;
   organizationId: string;
@@ -45,6 +45,8 @@ const decodeState = (encoded: string): OAuthState => {
     throw new Error("Invalid state parameter");
   }
 };
+
+export const decodeAuthorizationState = (encoded: string): OAuthState => decodeState(encoded);
 
 const generateNonce = (): string => {
   const array = new Uint8Array(16);

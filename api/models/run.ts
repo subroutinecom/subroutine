@@ -49,7 +49,7 @@ type SandboxIntegrationDefinition = {
   account?: SandboxIntegrationAccount;
 };
 
-const VIEWER_SCOPED_PROVIDERS = new Set<IntegrationProvider>(["gmail"]);
+const VIEWER_SCOPED_PROVIDERS = new Set<IntegrationProvider>(["gmail", "mock_oauth"]);
 const requiresViewerScopedAccount = (provider: IntegrationProvider): boolean =>
   VIEWER_SCOPED_PROVIDERS.has(provider);
 

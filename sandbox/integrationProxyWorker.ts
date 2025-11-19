@@ -99,6 +99,23 @@ const buildServerForIntegrations = async (
           );
           break;
         }
+        case "mock_oauth": {
+          if (!integration.account) {
+            throw new Error("Mock OAuth integration requires credentials");
+          }
+          const viewerId = integration.account.accountIdentifier ?? integration.account.userId;
+          server.registerSingleton(
+            "getMockOAuth",
+            async () =>
+              ({
+                ping: async (message: string) => ({
+                  echo: message,
+                  viewerId,
+                }),
+              }) as unknown as object,
+          );
+          break;
+        }
         default:
           throw new Error(`Unsupported integration provider: ${integration.provider}`);
       }
