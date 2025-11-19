@@ -52,10 +52,8 @@ export const createModel = async (): Promise<LanguageModel | null> => {
     case "vertex-anthropic":
     case "vertex-gemini": {
       const project = Deno.env.get("GOOGLE_VERTEX_PROJECT");
-      const defaultLocation =
-        config.provider === "vertex-anthropic" ? "us-east5" : "us-central1";
-      const location =
-        Deno.env.get("GOOGLE_VERTEX_LOCATION") ?? defaultLocation;
+      const defaultLocation = config.provider === "vertex-anthropic" ? "us-east5" : "us-central1";
+      const location = Deno.env.get("GOOGLE_VERTEX_LOCATION") ?? defaultLocation;
       const googleServiceAccountEmial = Deno.env.get(
         "GOOGLE_SERVICE_ACCOUNT_EMAIL",
       );
@@ -81,10 +79,9 @@ export const createModel = async (): Promise<LanguageModel | null> => {
         };
       }
 
-      const providerFactory =
-        config.provider === "vertex-anthropic"
-          ? createVertexAnthropic
-          : createVertex;
+      const providerFactory = config.provider === "vertex-anthropic"
+        ? createVertexAnthropic
+        : createVertex;
 
       const vertexAnthropic = providerFactory({
         project,

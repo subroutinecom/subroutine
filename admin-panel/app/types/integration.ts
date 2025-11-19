@@ -1,9 +1,9 @@
-export type IntegrationProvider = "gmail" | "github";
+export type IntegrationProvider = "gmail" | "github" | "mock_oauth";
 
 export interface IntegrationAuthConfig {
   type: "oauth2";
   clientId: string;
-  clientSecret: string;
+  clientSecret?: string;
   scopes: string[];
   authUrl: string;
   tokenUrl: string;
@@ -20,6 +20,25 @@ export interface Integration {
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export type IntegrationProviderAuthType = "oauth2" | "custom";
+
+export interface OAuthIntegrationProviderConfig {
+  authUrl: string;
+  tokenUrl: string;
+  defaultScopes: string[];
+  requiredScopes?: string[];
+  defaultRedirectPath?: string;
+}
+
+export interface IntegrationProviderDefinition {
+  id: IntegrationProvider;
+  name: string;
+  description?: string;
+  viewerScoped: boolean;
+  authType: IntegrationProviderAuthType;
+  oauthConfig?: OAuthIntegrationProviderConfig | null;
 }
 
 export type ConnectedAccountStatus = "active" | "expired" | "revoked" | "error";

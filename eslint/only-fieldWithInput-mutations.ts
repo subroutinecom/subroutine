@@ -56,7 +56,9 @@ const rule = createRule({
             // make sure the child is an object and has an input property and no args property
             if (current.arguments.length > 0 && current.arguments[0].type === "ObjectExpression") {
               const hasArgs = current.arguments[0].properties.some(
-                (prop: TSESTree.Node) => prop.type === "Property" && prop.key.type === "Identifier" && prop.key.name === "args",
+                (prop: TSESTree.Node) =>
+                  prop.type === "Property" && prop.key.type === "Identifier" &&
+                  prop.key.name === "args",
               );
               if (hasArgs) {
                 context.report({

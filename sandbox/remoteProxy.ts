@@ -10,10 +10,10 @@ export type CallRequest = {
 export type CallResponse =
   | { readonly id: string; readonly ok: true; readonly result: unknown }
   | {
-      readonly id: string;
-      readonly ok: false;
-      readonly error: { readonly name: string; readonly message: string };
-    };
+    readonly id: string;
+    readonly ok: false;
+    readonly error: { readonly name: string; readonly message: string };
+  };
 
 export interface Transport {
   request: (req: CallRequest) => Promise<CallResponse>;
@@ -28,8 +28,7 @@ type RemoteReturn<R> = R extends object ? Remote<R> : R;
 export type Remote<T> = {
   readonly [K in keyof T]: T[K] extends (...args: infer A) => infer R
     ? (...args: A) => Promise<RemoteReturn<Awaited<R>>>
-    : T[K] extends object
-    ? Remote<T[K]>
+    : T[K] extends object ? Remote<T[K]>
     : unknown;
 };
 
@@ -54,11 +53,17 @@ export class RemoteProxyServer<T extends object = object> {
     this.#target = target ?? ({} as T);
   }
 
-  register(name: string, provider: (...args: readonly unknown[]) => Promise<object> | object): void {
+  register(
+    name: string,
+    provider: (...args: readonly unknown[]) => Promise<object> | object,
+  ): void {
     this.#providers.set(name, { factory: provider, singleton: false });
   }
 
-  registerSingleton(name: string, provider: (...args: readonly unknown[]) => Promise<object> | object): void {
+  registerSingleton(
+    name: string,
+    provider: (...args: readonly unknown[]) => Promise<object> | object,
+  ): void {
     this.#providers.set(name, { factory: provider, singleton: true });
   }
 
@@ -125,7 +130,8 @@ export class RemoteProxyServer<T extends object = object> {
 
       // If the result is an object with callable members, surface it as a remote instance
       const isObject = typeof awaited === "object" && awaited !== null;
-      const hasCallable = isObject && Object.values(awaited as Record<string, unknown>).some(isFunction);
+      const hasCallable = isObject &&
+        Object.values(awaited as Record<string, unknown>).some(isFunction);
       if (hasCallable) {
         const newId = genId();
         this.#instances.set(newId, awaited as object);
@@ -236,7 +242,10 @@ export class RemoteProxyClient<T extends object = object> {
 }
 
 // MessagePort-based transport for MessageChannel communication
-type WireMessage = { kind: "rpc"; payload: CallRequest } | { kind: "rpc_result"; payload: CallResponse };
+type WireMessage = { kind: "rpc"; payload: CallRequest } | {
+  kind: "rpc_result";
+  payload: CallResponse;
+};
 export class MessagePortTransport implements Transport {
   #port: MessagePort;
   #pending = new Map<string, (res: CallResponse) => void>();
@@ -270,7 +279,9 @@ export class MessagePortTransport implements Transport {
   }
 }
 
-export const createMessagePortClient = <T extends object>(port: MessagePort): RemoteProxyClient<T> => {
+export const createMessagePortClient = <T extends object>(
+  port: MessagePort,
+): RemoteProxyClient<T> => {
   const transport = new MessagePortTransport(port);
   return new RemoteProxyClient<T>(transport);
 };

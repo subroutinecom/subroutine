@@ -1,17 +1,15 @@
-import {
-  type IntegrationProvider,
-  getProviderConfig,
-} from "../integrations/providers.ts";
+import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import { getIntegration } from "../models/integration.ts";
 import { createConnectedAccount } from "../models/connected-account.ts";
 
-interface OAuthState {
+export interface OAuthState {
   integrationId: string;
   userId: string;
   organizationId: string;
   provider: IntegrationProvider;
   timestamp: number;
   nonce: string;
+  viewerId: string;
 }
 
 interface OAuthTokenResponse {
@@ -48,6 +46,8 @@ const decodeState = (encoded: string): OAuthState => {
   }
 };
 
+export const decodeAuthorizationState = (encoded: string): OAuthState => decodeState(encoded);
+
 const generateNonce = (): string => {
   const array = new Uint8Array(16);
   crypto.getRandomValues(array);
@@ -60,8 +60,9 @@ export const generateAuthorizationUrl = async (params: {
   integrationId: string;
   userId: string;
   organizationId: string;
+  viewerId: string;
 }): Promise<{ url: string; state: string }> => {
-  const { integrationId, userId, organizationId } = params;
+  const { integrationId, userId, organizationId, viewerId } = params;
 
   const integration = await getIntegration(integrationId, organizationId);
   if (!integration) {
@@ -80,7 +81,10 @@ export const generateAuthorizationUrl = async (params: {
   }
 
   const provider = integration.provider as IntegrationProvider;
-  const providerConfig = getProviderConfig(provider);
+  const definition = getProviderDefinition(provider);
+  if (definition.auth.type !== "oauth2") {
+    throw new Error(`Provider ${provider} does not support OAuth2 authorization`);
+  }
 
   const state: OAuthState = {
     integrationId,
@@ -89,6 +93,7 @@ export const generateAuthorizationUrl = async (params: {
     provider,
     timestamp: Date.now(),
     nonce: generateNonce(),
+    viewerId,
   };
 
   const encodedState = encodeState(state);
@@ -101,7 +106,7 @@ export const generateAuthorizationUrl = async (params: {
 
   const scopes = authConfig.scopes && authConfig.scopes.length > 0
     ? authConfig.scopes
-    : providerConfig.defaultScopes;
+    : definition.auth.defaultScopes;
   authUrl.searchParams.set("scope", scopes.join(" "));
 
   if (provider === "gmail") {
@@ -283,6 +288,8 @@ export const handleOAuthCallback = async (params: {
       scope: tokenData.scope,
       metadata: {
         obtainedAt: new Date().toISOString(),
+        providerAccountIdentifier: accountIdentifier,
+        viewerId: stateData.viewerId,
       },
     };
 
@@ -291,7 +298,7 @@ export const handleOAuthCallback = async (params: {
       userId: stateData.userId,
       organizationId: stateData.organizationId,
       credentials,
-      accountIdentifier,
+      accountIdentifier: stateData.viewerId ?? accountIdentifier,
     });
 
     return {

@@ -1,10 +1,6 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
-import {
-  createTestAuthClient,
-  generateTestEmail,
-  generateOrgName,
-} from "../utils/auth-client.ts";
+import { createTestAuthClient, generateOrgName, generateTestEmail } from "../utils/auth-client.ts";
 
 describe(
   "Organizations",
@@ -228,8 +224,7 @@ describe(
           role: "member",
         });
 
-        const invitations =
-          await memberClient.organization.listUserInvitations();
+        const invitations = await memberClient.organization.listUserInvitations();
 
         expect(invitations.data, "Should have data").not.toBeNull();
         expect(
@@ -278,8 +273,7 @@ describe(
           organizationId: org.data!.id,
           role: "member",
         });
-        const invitations =
-          await memberClient.organization.listUserInvitations();
+        const invitations = await memberClient.organization.listUserInvitations();
         const invitation = invitations.data!.find(
           (inv) => inv.organizationId === org.data!.id,
         );
@@ -323,8 +317,7 @@ describe(
           organizationId: org.data!.id,
           role: "member",
         });
-        const invitations =
-          await memberClient.organization.listUserInvitations();
+        const invitations = await memberClient.organization.listUserInvitations();
         const invitation = invitations.data!.find(
           (inv) => inv.organizationId === org.data!.id,
         );
@@ -368,8 +361,7 @@ describe(
           role: "member",
         });
 
-        const invitations =
-          await memberClient.organization.listUserInvitations();
+        const invitations = await memberClient.organization.listUserInvitations();
         const invitation = invitations.data!.find(
           (inv) => inv.organizationId === org.data!.id,
         );
@@ -524,8 +516,7 @@ describe(
           role: "member",
         });
 
-        const invitations =
-          await memberClient.organization.listUserInvitations();
+        const invitations = await memberClient.organization.listUserInvitations();
         expect(
           invitations.data!.length,
           "Should have at least 2 invitations",
@@ -614,8 +605,7 @@ describe(
         });
 
         // Accept invitations
-        let invitations =
-          await member1Client.organization.listUserInvitations();
+        let invitations = await member1Client.organization.listUserInvitations();
         const inv1 = invitations.data!.find(
           (i) => i.organizationId === org1.data!.id,
         );

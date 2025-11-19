@@ -30,8 +30,7 @@ export const Navbar = () => {
     }
   };
 
-  const userInitial =
-    user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase();
+  const userInitial = user.name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase();
 
   return (
     <div className="navbar bg-base-100 border-b border-base-300 sticky top-0 z-50">
@@ -80,9 +79,7 @@ export const Navbar = () => {
                         type="button"
                         onClick={() => handleSwitchOrganization(org.id)}
                         disabled={switchingOrg}
-                        className={
-                          activeOrganization?.id === org.id ? "active" : ""
-                        }
+                        className={activeOrganization?.id === org.id ? "active" : ""}
                       >
                         {org.name}
                         {activeOrganization?.id === org.id && (

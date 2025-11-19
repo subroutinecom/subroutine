@@ -1,30 +1,35 @@
 import SchemaBuilder from "@pothos/core";
 import { auth } from "../auth.ts";
 import {
+  type ApiKey as ApiKeyModel,
   createApiKey,
   deleteApiKey,
   getApiKey,
   listApiKeys,
   updateApiKey,
-  type ApiKey as ApiKeyModel,
 } from "../models/apikey.ts";
 import {
   createIntegration,
   deleteIntegration,
   getIntegration,
+  getPublicIntegrationAuthConfig,
+  type IntegrationWithConfig,
   listIntegrations,
   updateIntegration,
-  type IntegrationWithConfig,
 } from "../models/integration.ts";
 import {
+  type ConnectedAccountWithCredentials,
   createConnectedAccount,
   deleteConnectedAccount,
   getConnectedAccount,
   listConnectedAccounts,
   listConnectedAccountsByIntegration,
-  type ConnectedAccountWithCredentials,
 } from "../models/connected-account.ts";
-import type { IntegrationProvider } from "../integrations/providers.ts";
+import {
+  getAllProviderDefinitions,
+  type IntegrationDefinition,
+  type IntegrationProvider,
+} from "../integrations/providers.ts";
 
 type User = {
   id: string;
@@ -62,8 +67,7 @@ ApiKeyType.implement({
     metadata: t.field({
       type: "String",
       nullable: true,
-      resolve: (parent) =>
-        parent.metadata ? JSON.stringify(parent.metadata) : null,
+      resolve: (parent) => parent.metadata ? JSON.stringify(parent.metadata) : null,
     }),
     createdAt: t.exposeString("createdAt"),
     updatedAt: t.exposeString("updatedAt"),
@@ -86,8 +90,7 @@ CreatedApiKeyType.implement({
     metadata: t.field({
       type: "String",
       nullable: true,
-      resolve: (parent) =>
-        parent.metadata ? JSON.stringify(parent.metadata) : null,
+      resolve: (parent) => parent.metadata ? JSON.stringify(parent.metadata) : null,
     }),
     createdAt: t.exposeString("createdAt"),
     updatedAt: t.exposeString("updatedAt"),
@@ -105,7 +108,7 @@ IntegrationType.implement({
     name: t.exposeString("name"),
     authConfig: t.field({
       type: "String",
-      resolve: (parent) => JSON.stringify(parent.authConfig),
+      resolve: (parent) => JSON.stringify(getPublicIntegrationAuthConfig(parent.authConfig)),
     }),
     enabled: t.exposeBoolean("enabled"),
     createdAt: t.exposeString("createdAt"),
@@ -131,6 +134,48 @@ ConnectedAccountType.implement({
     lastUsedAt: t.exposeString("lastUsedAt", { nullable: true }),
     createdAt: t.exposeString("createdAt"),
     updatedAt: t.exposeString("updatedAt"),
+  }),
+});
+
+const OAuthIntegrationConfigType = builder.objectRef<
+  Extract<IntegrationDefinition["auth"], { type: "oauth2" }>
+>("IntegrationProviderOAuthConfig");
+
+OAuthIntegrationConfigType.implement({
+  fields: (t) => ({
+    authUrl: t.exposeString("authUrl"),
+    tokenUrl: t.exposeString("tokenUrl"),
+    defaultScopes: t.stringList({
+      resolve: (parent) => parent.defaultScopes,
+    }),
+    requiredScopes: t.stringList({
+      nullable: true,
+      resolve: (parent) => parent.requiredScopes ?? null,
+    }),
+    defaultRedirectPath: t.exposeString("defaultRedirectPath", { nullable: true }),
+  }),
+});
+
+const IntegrationProviderDefinitionType = builder.objectRef<IntegrationDefinition>(
+  "IntegrationProviderDefinition",
+);
+
+IntegrationProviderDefinitionType.implement({
+  fields: (t) => ({
+    id: t.exposeString("id"),
+    name: t.exposeString("name"),
+    description: t.exposeString("description", { nullable: true }),
+    viewerScoped: t.boolean({
+      resolve: (parent) => parent.viewerScoped ?? false,
+    }),
+    authType: t.string({
+      resolve: (parent) => parent.auth.type,
+    }),
+    oauthConfig: t.field({
+      type: OAuthIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => parent.auth.type === "oauth2" ? parent.auth : null,
+    }),
   }),
 });
 
@@ -171,6 +216,10 @@ builder.queryType({
         return getIntegration(args.id, ctx.session.activeOrganizationId);
       },
     }),
+    integrationProviders: t.field({
+      type: [IntegrationProviderDefinitionType],
+      resolve: () => getAllProviderDefinitions(),
+    }),
     connectedAccounts: t.field({
       type: [ConnectedAccountType],
       resolve: async (_parent, _args, ctx) => {
@@ -193,7 +242,10 @@ builder.queryType({
         integrationId: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        return listConnectedAccountsByIntegration(args.integrationId, ctx.session.activeOrganizationId);
+        return listConnectedAccountsByIntegration(
+          args.integrationId,
+          ctx.session.activeOrganizationId,
+        );
       },
     }),
   }),

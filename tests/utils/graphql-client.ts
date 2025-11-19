@@ -12,11 +12,7 @@ export const createGraphQLClient = (cookieJar: CookieJar) => {
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> => {
-    const url = typeof input === "string"
-      ? input
-      : input instanceof URL
-        ? input.href
-        : input.url;
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
 
     const headers = new Headers(init?.headers);
 

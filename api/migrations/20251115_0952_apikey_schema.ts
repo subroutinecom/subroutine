@@ -9,11 +9,11 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .addColumn("start", "text")
     .addColumn("prefix", "text")
     .addColumn("key", "text", (col) => col.notNull())
-    .addColumn("userId", "text", (col) =>
-      col.notNull().references("user.id").onDelete("cascade"),
-    )
-    .addColumn("organizationId", "text", (col) =>
-      col.notNull().references("organization.id").onDelete("cascade"),
+    .addColumn("userId", "text", (col) => col.notNull().references("user.id").onDelete("cascade"))
+    .addColumn(
+      "organizationId",
+      "text",
+      (col) => col.notNull().references("organization.id").onDelete("cascade"),
     )
     .addColumn("enabled", "boolean")
     .addColumn("expiresAt", "text")

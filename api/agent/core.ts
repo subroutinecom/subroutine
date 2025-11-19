@@ -66,10 +66,10 @@ export const generateCode = async (
 
     const toolSchema = options?.needsImmediateInputs
       ? baseToolSchema.extend({
-          immediateInputs: z
-            .record(z.unknown())
-            .describe("Concrete values conforming to inputsSchema for immediate execution"),
-        })
+        immediateInputs: z
+          .record(z.unknown())
+          .describe("Concrete values conforming to inputsSchema for immediate execution"),
+      })
       : baseToolSchema;
 
     const result = await streamText({
@@ -84,8 +84,9 @@ export const generateCode = async (
           inputSchema: toolSchema,
           execute: (params: z.infer<typeof toolSchema>) => {
             const { inputsSchema, outputsSchema, code } = params;
-            const immediateInputs =
-              "immediateInputs" in params ? (params.immediateInputs as Record<string, unknown>) : undefined;
+            const immediateInputs = "immediateInputs" in params
+              ? (params.immediateInputs as Record<string, unknown>)
+              : undefined;
             const validation = validateCode(code);
 
             if (!validation.valid) {

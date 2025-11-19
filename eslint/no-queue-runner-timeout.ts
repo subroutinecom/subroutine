@@ -7,7 +7,8 @@ const rule = createRule({
   meta: {
     type: "problem",
     docs: {
-      description: "Disallow specifying timeout in QueueRunner calls (define timeouts in the queue type instead)",
+      description:
+        "Disallow specifying timeout in QueueRunner calls (define timeouts in the queue type instead)",
     },
     messages: {
       noQueueRunnerTimeout: "Specify timeouts in the queue type instead of in QueueRunner calls.",
@@ -32,7 +33,10 @@ const rule = createRule({
           const optionsArg = args[1];
           if (optionsArg.type === "ObjectExpression") {
             for (const prop of optionsArg.properties) {
-              if (prop.type === "Property" && prop.key.type === "Identifier" && prop.key.name === "timeout") {
+              if (
+                prop.type === "Property" && prop.key.type === "Identifier" &&
+                prop.key.name === "timeout"
+              ) {
                 context.report({
                   node: optionsArg,
                   messageId: "noQueueRunnerTimeout",

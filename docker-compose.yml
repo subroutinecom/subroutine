@@ -47,6 +47,7 @@ services:
       - "3002:80"
     environment:
       DATABASE_URL: postgresql://subroutine:subroutine@postgres:5432/subroutine
+      ENABLE_MOCK_OAUTH: "true"
     volumes:
       - ./config.yaml:/app/config.yaml:ro
       - api-node-modules:/app/api/node_modules

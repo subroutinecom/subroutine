@@ -33,7 +33,7 @@ function makeRequest(
     method?: string;
     headers?: HeadersInit;
   },
-  data?: string
+  data?: string,
 ): Promise<TestResponse> {
   return new Promise((resolve, reject) => {
     const url = new URL(`http://${options.hostname}`);
@@ -59,7 +59,9 @@ function makeRequest(
   });
 }
 
-async function executeTypescript(code: string): Promise<{ status: number; result: ExecutionResult }> {
+async function executeTypescript(
+  code: string,
+): Promise<{ status: number; result: ExecutionResult }> {
   // Wrap code in module format with default export
   // Use string concatenation to avoid template literal conflicts
   const wrappedCode = "\nexport default async function() {\n  " + code + "\n}\n";
@@ -71,7 +73,7 @@ async function executeTypescript(code: string): Promise<{ status: number; result
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ code: wrappedCode })
+    JSON.stringify({ code: wrappedCode }),
   );
 
   return {
@@ -85,7 +87,7 @@ async function executeCommand(
   args?: string[],
   filesystem?: Record<string, string>,
   env?: Record<string, string>,
-  timeout?: number
+  timeout?: number,
 ): Promise<{ status: number; result: CommandExecutionResult }> {
   const response = await makeRequest(
     {
@@ -94,7 +96,7 @@ async function executeCommand(
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ command, args, filesystem, env, timeout })
+    JSON.stringify({ command, args, filesystem, env, timeout }),
   );
 
   return {
@@ -141,7 +143,11 @@ describe("Sandbox", () => {
 
     expect(status, "HTTP status is 200").toBe(200);
     expect(result.success, "Result should indicate success").toBe(true);
-    expect(result.result, "Should return expected object").toEqual({ name: "test", value: 123, nested: { key: "value" } });
+    expect(result.result, "Should return expected object").toEqual({
+      name: "test",
+      value: 123,
+      nested: { key: "value" },
+    });
   });
 
   it("execute TypeScript with array operations", async () => {
@@ -175,7 +181,9 @@ describe("Sandbox", () => {
     expect(status, "HTTP status should be 400 for syntax errors").toBe(400);
     expect(result.success, "Result should indicate failure").toBe(false);
     // Deno's TS compiler gives different error messages like "Expected ';', got 'is'"
-    expect(result.error ?? "", "Error should mention parse failure").toContain("could not be parsed");
+    expect(result.error ?? "", "Error should mention parse failure").toContain(
+      "could not be parsed",
+    );
   });
 
   it("handle runtime errors", async () => {
@@ -265,7 +273,10 @@ describe("Sandbox", () => {
 
     expect(status, "HTTP status is 200").toBe(200);
     expect(result.success, "Result should indicate success").toBe(true);
-    expect(result.result, "Should compute count and averageAge").toEqual({ count: 3, averageAge: 30 });
+    expect(result.result, "Should compute count and averageAge").toEqual({
+      count: 3,
+      averageAge: 30,
+    });
   });
 
   // Bubblewrap command execution tests
@@ -418,7 +429,9 @@ describe("Sandbox", () => {
     expect(status, "HTTP status is 200").toBe(200);
     expect(result.success, "Result should indicate success").toBe(true);
     expect(result.result, "Should return ping response").toHaveProperty("echo");
-    expect((result.result as { echo: string }).echo, "Should echo message").toBe("Hello from user code!");
+    expect((result.result as { echo: string }).echo, "Should echo message").toBe(
+      "Hello from user code!",
+    );
     expect(result.result, "Should have timestamp").toHaveProperty("timestamp");
   });
 
@@ -432,7 +445,10 @@ describe("Sandbox", () => {
 
     expect(status, "HTTP status is 200").toBe(200);
     expect(result.success, "Result should indicate success").toBe(true);
-    expect((result.result as { labels: string[] }).labels, "Should return labels").toEqual(["INBOX", "STARRED"]);
+    expect((result.result as { labels: string[] }).labels, "Should return labels").toEqual([
+      "INBOX",
+      "STARRED",
+    ]);
   });
 
   it("s3 integration via RPC worker", async () => {
@@ -445,7 +461,10 @@ describe("Sandbox", () => {
 
     expect(status, "HTTP status is 200").toBe(200);
     expect(result.success, "Result should indicate success").toBe(true);
-    expect((result.result as { buckets: string[] }).buckets, "Should return buckets").toEqual(["photos", "backups"]);
+    expect((result.result as { buckets: string[] }).buckets, "Should return buckets").toEqual([
+      "photos",
+      "backups",
+    ]);
   });
 
   it("github integration via RPC worker", async () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { authClient } from "~/lib/auth-client";
@@ -139,9 +139,7 @@ export default function SetupOrganization() {
               className="btn btn-primary w-full"
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <span className="loading loading-spinner"></span>
-              ) : (
+              {isSubmitting ? <span className="loading loading-spinner"></span> : (
                 "Create Organization"
               )}
             </button>

@@ -1,13 +1,10 @@
 import type { Account, Session, User, Verification } from "better-auth/db";
-import type {
-  Invitation,
-  Member,
-  Organization,
-} from "better-auth/plugins/organization";
+import type { Invitation, Member, Organization } from "better-auth/plugins/organization";
 
 export interface Database {
   subroutine: SubroutineTable;
   run: RunTable;
+  subroutine_integration: SubroutineIntegrationTable;
   apikey: ApiKeyTable;
   integration: IntegrationTable;
   connected_account: ConnectedAccountTable;
@@ -22,6 +19,7 @@ export interface Database {
 
 export interface SubroutineTable {
   id: string;
+  organization_id: string | null;
   source: string;
   inputs_schema: string | null;
   outputs_schema: string | null;
@@ -32,11 +30,19 @@ export interface SubroutineTable {
 export interface RunTable {
   id: string;
   subroutine_id: string;
+  organization_id: string | null;
   status: "queued" | "running" | "succeeded" | "failed";
   started_at: string | null;
   ended_at: string | null;
   outputs: string | null;
   error: string | null;
+}
+
+export interface SubroutineIntegrationTable {
+  subroutine_id: string;
+  integration_id: string;
+  organization_id: string;
+  created_at: string;
 }
 
 export interface ApiKeyTable {

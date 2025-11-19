@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useForm } from "react-hook-form";
 import { ArrowLeft } from "lucide-react";
@@ -7,7 +7,7 @@ import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
-import type { IntegrationProvider, IntegrationAuthConfig } from "~/types/integration";
+import type { IntegrationAuthConfig } from "~/types/integration";
 
 export function meta() {
   return [
@@ -61,22 +61,6 @@ interface ParsedIntegration extends Omit<IntegrationResponse, "authConfig"> {
   authConfig: IntegrationAuthConfig;
 }
 
-interface ProviderConfig {
-  authUrl: string;
-  tokenUrl: string;
-}
-
-const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
-  gmail: {
-    authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-    tokenUrl: "https://oauth2.googleapis.com/token",
-  },
-  github: {
-    authUrl: "https://github.com/login/oauth/authorize",
-    tokenUrl: "https://github.com/login/oauth/access_token",
-  },
-};
-
 type IntegrationFormData = {
   name: string;
   clientId: string;
@@ -101,7 +85,16 @@ export default function EditIntegrationPage() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<IntegrationFormData>();
+  } = useForm<IntegrationFormData>({
+    defaultValues: {
+      name: "",
+      clientId: "",
+      clientSecret: "",
+      scopes: "",
+      redirectUri: "",
+      enabled: true,
+    },
+  });
 
   useEffect(() => {
     const fetchIntegration = async () => {
@@ -109,7 +102,7 @@ export default function EditIntegrationPage() {
         setLoading(true);
         const data = await graphqlClient.request<{ integration: IntegrationResponse }>(
           GET_INTEGRATION_QUERY,
-          { id: integrationId }
+          { id: integrationId },
         );
         const parsed: ParsedIntegration = {
           ...data.integration,
@@ -119,7 +112,7 @@ export default function EditIntegrationPage() {
         reset({
           name: parsed.name,
           clientId: parsed.authConfig.clientId,
-          clientSecret: parsed.authConfig.clientSecret,
+          clientSecret: "",
           scopes: parsed.authConfig.scopes.join(", "),
           redirectUri: parsed.authConfig.redirectUri,
           enabled: parsed.enabled,
@@ -150,17 +143,19 @@ export default function EditIntegrationPage() {
     if (!integration) return;
 
     try {
-      const config = PROVIDER_CONFIGS[integration.provider as IntegrationProvider];
-
-      const authConfig = JSON.stringify({
+      const secret = data.clientSecret.trim();
+      const authConfigPayload: Record<string, unknown> = {
         type: "oauth2",
         clientId: data.clientId.trim(),
-        clientSecret: data.clientSecret.trim(),
         scopes: scopeArray,
-        authUrl: config.authUrl,
-        tokenUrl: config.tokenUrl,
+        authUrl: integration.authConfig.authUrl,
+        tokenUrl: integration.authConfig.tokenUrl,
         redirectUri: data.redirectUri.trim(),
-      });
+      };
+      if (secret) {
+        authConfigPayload.clientSecret = secret;
+      }
+      const authConfig = JSON.stringify(authConfigPayload);
 
       await graphqlClient.request<{
         updateIntegration: {
@@ -276,9 +271,7 @@ export default function EditIntegrationPage() {
               </label>
               <input
                 type="password"
-                {...register("clientSecret", {
-                  required: "Client Secret is required",
-                })}
+                {...register("clientSecret")}
                 placeholder="OAuth Client Secret"
                 className="input input-bordered font-mono text-sm"
               />
@@ -291,7 +284,7 @@ export default function EditIntegrationPage() {
               )}
               <label className="label">
                 <span className="label-text-alt text-warning">
-                  This will be stored encrypted
+                  Provide a new secret to rotate credentials. Leave blank to keep the current secret.
                 </span>
               </label>
             </div>
@@ -376,14 +369,16 @@ export default function EditIntegrationPage() {
                 className="btn btn-primary"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Saving...
-                  </>
-                ) : (
-                  "Save Changes"
-                )}
+                {isSubmitting
+                  ? (
+                    <>
+                      <span className="loading loading-spinner loading-sm"></span>
+                      Saving...
+                    </>
+                  )
+                  : (
+                    "Save Changes"
+                  )}
               </button>
             </div>
           </form>

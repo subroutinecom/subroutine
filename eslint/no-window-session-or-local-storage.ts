@@ -24,7 +24,8 @@ const rule = createRule({
           node.object.object.type === "Identifier" &&
           node.object.object.name === "window" &&
           node.object.property.type === "Identifier" &&
-          (node.object.property.name === "sessionStorage" || node.object.property.name === "localStorage")
+          (node.object.property.name === "sessionStorage" ||
+            node.object.property.name === "localStorage")
         ) {
           context.report({
             node,

@@ -5,8 +5,10 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .createTable("integration")
     .ifNotExists()
     .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("organizationId", "text", (col) =>
-      col.notNull().references("organization.id").onDelete("cascade")
+    .addColumn(
+      "organizationId",
+      "text",
+      (col) => col.notNull().references("organization.id").onDelete("cascade"),
     )
     .addColumn("provider", "text", (col) => col.notNull())
     .addColumn("name", "text", (col) => col.notNull())
@@ -43,14 +45,16 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .createTable("connected_account")
     .ifNotExists()
     .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("integrationId", "text", (col) =>
-      col.notNull().references("integration.id").onDelete("cascade")
+    .addColumn(
+      "integrationId",
+      "text",
+      (col) => col.notNull().references("integration.id").onDelete("cascade"),
     )
-    .addColumn("userId", "text", (col) =>
-      col.notNull().references("user.id").onDelete("cascade")
-    )
-    .addColumn("organizationId", "text", (col) =>
-      col.notNull().references("organization.id").onDelete("cascade")
+    .addColumn("userId", "text", (col) => col.notNull().references("user.id").onDelete("cascade"))
+    .addColumn(
+      "organizationId",
+      "text",
+      (col) => col.notNull().references("organization.id").onDelete("cascade"),
     )
     .addColumn("credentials", "text", (col) => col.notNull())
     .addColumn("accountIdentifier", "text")

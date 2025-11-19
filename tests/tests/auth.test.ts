@@ -1,6 +1,6 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
-import { generateTestEmail, createTestAuthClient } from "../utils/auth-client.ts";
+import { createTestAuthClient, generateTestEmail } from "../utils/auth-client.ts";
 
 describe(
   "Authentication",

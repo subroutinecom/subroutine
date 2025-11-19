@@ -10,12 +10,8 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .addColumn("email", "text", (col) => col.notNull().unique())
     .addColumn("emailVerified", "boolean", (col) => col.notNull())
     .addColumn("image", "text")
-    .addColumn("createdAt", "timestamptz", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
-    .addColumn("updatedAt", "timestamptz", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
+    .addColumn("createdAt", "timestamptz", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn("updatedAt", "timestamptz", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .execute();
 
   await db.schema
@@ -35,15 +31,11 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .addColumn("id", "text", (col) => col.primaryKey())
     .addColumn("expiresAt", "timestamptz", (col) => col.notNull())
     .addColumn("token", "text", (col) => col.notNull().unique())
-    .addColumn("createdAt", "timestamptz", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
+    .addColumn("createdAt", "timestamptz", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .addColumn("updatedAt", "timestamptz", (col) => col.notNull())
     .addColumn("ipAddress", "text")
     .addColumn("userAgent", "text")
-    .addColumn("userId", "text", (col) =>
-      col.notNull().references("user.id").onDelete("cascade"),
-    )
+    .addColumn("userId", "text", (col) => col.notNull().references("user.id").onDelete("cascade"))
     .addColumn("activeOrganizationId", "text")
     .execute();
 
@@ -53,9 +45,7 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .addColumn("id", "text", (col) => col.primaryKey())
     .addColumn("accountId", "text", (col) => col.notNull())
     .addColumn("providerId", "text", (col) => col.notNull())
-    .addColumn("userId", "text", (col) =>
-      col.notNull().references("user.id").onDelete("cascade"),
-    )
+    .addColumn("userId", "text", (col) => col.notNull().references("user.id").onDelete("cascade"))
     .addColumn("accessToken", "text")
     .addColumn("refreshToken", "text")
     .addColumn("idToken", "text")
@@ -63,9 +53,7 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .addColumn("refreshTokenExpiresAt", "timestamptz")
     .addColumn("scope", "text")
     .addColumn("password", "text")
-    .addColumn("createdAt", "timestamptz", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
+    .addColumn("createdAt", "timestamptz", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .addColumn("updatedAt", "timestamptz", (col) => col.notNull())
     .execute();
 
@@ -76,24 +64,20 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .addColumn("identifier", "text", (col) => col.notNull())
     .addColumn("value", "text", (col) => col.notNull())
     .addColumn("expiresAt", "timestamptz", (col) => col.notNull())
-    .addColumn("createdAt", "timestamptz", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
-    .addColumn("updatedAt", "timestamptz", (col) =>
-      col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-    )
+    .addColumn("createdAt", "timestamptz", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn("updatedAt", "timestamptz", (col) => col.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
     .execute();
 
   await db.schema
     .createTable("member")
     .ifNotExists()
     .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("organizationId", "text", (col) =>
-      col.notNull().references("organization.id").onDelete("cascade"),
+    .addColumn(
+      "organizationId",
+      "text",
+      (col) => col.notNull().references("organization.id").onDelete("cascade"),
     )
-    .addColumn("userId", "text", (col) =>
-      col.notNull().references("user.id").onDelete("cascade"),
-    )
+    .addColumn("userId", "text", (col) => col.notNull().references("user.id").onDelete("cascade"))
     .addColumn("role", "text", (col) => col.notNull())
     .addColumn("createdAt", "timestamptz", (col) => col.notNull())
     .execute();
@@ -102,15 +86,19 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .createTable("invitation")
     .ifNotExists()
     .addColumn("id", "text", (col) => col.primaryKey())
-    .addColumn("organizationId", "text", (col) =>
-      col.notNull().references("organization.id").onDelete("cascade"),
+    .addColumn(
+      "organizationId",
+      "text",
+      (col) => col.notNull().references("organization.id").onDelete("cascade"),
     )
     .addColumn("email", "text", (col) => col.notNull())
     .addColumn("role", "text")
     .addColumn("status", "text", (col) => col.notNull())
     .addColumn("expiresAt", "timestamptz", (col) => col.notNull())
-    .addColumn("inviterId", "text", (col) =>
-      col.notNull().references("user.id").onDelete("cascade"),
+    .addColumn(
+      "inviterId",
+      "text",
+      (col) => col.notNull().references("user.id").onDelete("cascade"),
     )
     .execute();
 };

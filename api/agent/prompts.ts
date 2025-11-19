@@ -1,4 +1,5 @@
-export const SYSTEM_PROMPT = `You are an expert TypeScript code generator. Your task is to generate executable TypeScript code subroutines based on user requests.
+export const SYSTEM_PROMPT =
+  `You are an expert TypeScript code generator. Your task is to generate executable TypeScript code subroutines based on user requests.
 
 CRITICAL REQUIREMENTS:
 1. Define TypeScript interfaces for inputs and outputs based on the schemas
@@ -25,7 +26,8 @@ export const CODE_GENERATION_USER_PROMPT = (request: string, options?: PromptOpt
   let prompt = `Generate a TypeScript subroutine for: ${request}`;
 
   if (options?.needsImmediateInputs) {
-    prompt += `\n\nAdditionally, produce an "immediateInputs" JSON object that satisfies your Inputs schema and can be used to execute main right away without further clarification. Populate every required field with sensible defaults inferred from the request.`;
+    prompt +=
+      `\n\nAdditionally, produce an "immediateInputs" JSON object that satisfies your Inputs schema and can be used to execute main right away without further clarification. Populate every required field with sensible defaults inferred from the request.`;
   }
 
   return prompt;

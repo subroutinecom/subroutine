@@ -1,18 +1,19 @@
 import * as ts from "typescript";
+import type { SandboxIntegrationPayload } from "./types.ts";
+import type { ExecuteMessage } from "./worker.ts";
 
-export interface ExecuteMessage {
-  type: "execute";
-  code: string;
-  id: string;
-  contentType?: string;
-}
-
-export interface ResultMessage {
-  type: "result" | "error" | "execution_ready";
-  id?: string;
-  data?: unknown;
-  error?: string;
-}
+type ExecutionWorkerMessage =
+  | {
+    type: "execution_ready";
+  }
+  | {
+    type: "result";
+    data: unknown;
+  }
+  | {
+    type: "error";
+    error?: string;
+  };
 
 export interface ExecutionResult {
   success: boolean;
@@ -27,7 +28,10 @@ export class SandboxManager {
     this.timeout = timeout;
   }
 
-  executeCode(code: string): Promise<ExecutionResult> {
+  executeCode(
+    code: string,
+    options?: { integrations?: SandboxIntegrationPayload[] },
+  ): Promise<ExecutionResult> {
     const executionId = crypto.randomUUID();
 
     let transpiledCode: string;
@@ -36,29 +40,29 @@ export class SandboxManager {
     } catch (error) {
       return Promise.resolve({
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to transpile TypeScript code",
+        error: error instanceof Error ? error.message : "Failed to transpile TypeScript code",
       });
     }
 
     // Create integration proxy worker for integrations
-    const integrationProxyWorker = new Worker(new URL(`./integrationProxyWorker`, import.meta.url).href, {
-      type: "module",
-      name: "integration-proxy-worker",
-      deno: {
-        permissions: {
-          read: true,
-          write: true,
-          ffi: false,
-          sys: false,
-          run: false,
-          env: true,
-          net: true,
+    const integrationProxyWorker = new Worker(
+      new URL(`./integrationProxyWorker`, import.meta.url).href,
+      {
+        type: "module",
+        name: "integration-proxy-worker",
+        deno: {
+          permissions: {
+            read: true,
+            write: true,
+            ffi: false,
+            sys: false,
+            run: false,
+            env: true,
+            net: true,
+          },
         },
       },
-    });
+    );
 
     // Create execution worker
     const executionWorker = new Worker(
@@ -80,7 +84,6 @@ export class SandboxManager {
       },
     );
 
-    // Create MessageChannel to connect the two workers
     const channel = new MessageChannel();
 
     return new Promise<ExecutionResult>((resolve) => {
@@ -117,27 +120,27 @@ export class SandboxManager {
       };
 
       // Listen for execution results from execution worker
-      executionWorker.onmessage = (event: MessageEvent<ResultMessage>) => {
-        const { type, data, error } = event.data;
-
-        if (type === "execution_ready") {
+      executionWorker.onmessage = (
+        event: MessageEvent<ExecutionWorkerMessage>,
+      ) => {
+        if (event.data.type === "execution_ready") {
           executionReady = true;
           checkAndExecute();
-        } else if (type === "result") {
+        } else if (event.data.type === "result") {
           clearTimeout(timeoutId);
           executionWorker.terminate();
           integrationProxyWorker.terminate();
           resolve({
             success: true,
-            result: data,
+            result: event.data.data,
           });
-        } else if (type === "error") {
+        } else if (event.data.type === "error") {
           clearTimeout(timeoutId);
           executionWorker.terminate();
           integrationProxyWorker.terminate();
           resolve({
             success: false,
-            error,
+            error: event.data.error,
           });
         }
       };
@@ -164,7 +167,13 @@ export class SandboxManager {
 
       // Connect the workers via MessageChannel
       // Send port2 to integration proxy worker, port1 to execution worker
-      integrationProxyWorker.postMessage({ type: "connect" }, [channel.port2]);
+      integrationProxyWorker.postMessage(
+        {
+          type: "connect",
+          integrations: options?.integrations ?? [],
+        },
+        [channel.port2],
+      );
       executionWorker.postMessage({ type: "connect" }, [channel.port1]);
     });
   }
@@ -216,7 +225,6 @@ const flattenDiagnosticMessage = (
     return message;
   }
 
-  const nextMessages =
-    message.next?.map((entry) => flattenDiagnosticMessage(entry)) ?? [];
+  const nextMessages = message.next?.map((entry) => flattenDiagnosticMessage(entry)) ?? [];
   return [message.messageText, ...nextMessages].join("\n");
 };

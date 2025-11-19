@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Outlet, useNavigate, useLocation } from "react-router";
+import { Outlet, useLocation, useNavigate } from "react-router";
 import { authClient } from "~/lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { Sidebar } from "~/components/layout/Sidebar";
@@ -22,8 +22,7 @@ export default function AuthRequired() {
       }
 
       const pathname = location.pathname;
-      const isSetupRoute =
-        pathname === "/invitations" ||
+      const isSetupRoute = pathname === "/invitations" ||
         pathname === "/setup-organization" ||
         pathname === "/logout";
 
@@ -59,7 +58,15 @@ export default function AuthRequired() {
     };
 
     handleRouting();
-  }, [isLoading, isAuthenticated, organizations, activeOrganizationId, location.pathname, navigate, refetch]);
+  }, [
+    isLoading,
+    isAuthenticated,
+    organizations,
+    activeOrganizationId,
+    location.pathname,
+    navigate,
+    refetch,
+  ]);
 
   if (isLoading || isCheckingRoute) {
     return (

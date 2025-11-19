@@ -2,8 +2,19 @@ import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mc
 import { z } from "zod";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
+import type { AuthContext } from "./middlewares/auth.ts";
+import { IntegrationAuthRequiredError } from "./models/errors.ts";
 
-export function createMcpServer(): McpServer {
+const requireOrganizationId = (auth: AuthContext): string => {
+  if (!auth.organizationId) {
+    throw new Error("Active organization is required to use MCP");
+  }
+  return auth.organizationId;
+};
+
+export function createMcpServer(auth: AuthContext): McpServer {
+  const organizationId = requireOrganizationId(auth);
+
   const server = new McpServer(
     {
       name: "subroutine-mcp-server",
@@ -14,7 +25,7 @@ export function createMcpServer(): McpServer {
         resources: {},
         tools: {},
       },
-    }
+    },
   );
 
   server.registerResource(
@@ -26,7 +37,7 @@ export function createMcpServer(): McpServer {
       mimeType: "application/json",
     },
     async () => {
-      const allSubroutines = await listSubroutines();
+      const allSubroutines = await listSubroutines(organizationId);
       return {
         contents: [
           {
@@ -36,14 +47,14 @@ export function createMcpServer(): McpServer {
           },
         ],
       };
-    }
+    },
   );
 
   server.registerResource(
     "subroutine-item",
     new ResourceTemplate("resource://subroutine/{id}", {
       list: async () => {
-        const subroutines = await listSubroutines();
+        const subroutines = await listSubroutines(organizationId);
         return {
           resources: subroutines.map((sub) => ({
             uri: `resource://subroutine/${sub.id}`,
@@ -61,7 +72,7 @@ export function createMcpServer(): McpServer {
     },
     async (uri, variables) => {
       const subroutineId = variables.id as string;
-      const subroutine = await getSubroutine(subroutineId);
+      const subroutine = await getSubroutine(subroutineId, organizationId);
 
       if (!subroutine) {
         return {
@@ -89,15 +100,14 @@ export function createMcpServer(): McpServer {
           },
         ],
       };
-    }
+    },
   );
 
-  // Resource: run results
   server.registerResource(
     "run-item",
     new ResourceTemplate("resource://run/{id}", {
       list: async () => {
-        const runs = await listRuns();
+        const runs = await listRuns(organizationId);
         return {
           resources: runs.map((run) => ({
             uri: `resource://run/${run.id}`,
@@ -115,7 +125,7 @@ export function createMcpServer(): McpServer {
     },
     async (uri, variables) => {
       const runId = variables.id as string;
-      const run = await getRun(runId);
+      const run = await getRun(runId, organizationId);
 
       if (!run) {
         return {
@@ -143,10 +153,9 @@ export function createMcpServer(): McpServer {
           },
         ],
       };
-    }
+    },
   );
 
-  // Tool: subroutine.generate
   server.registerTool(
     "subroutine.generate",
     {
@@ -154,14 +163,19 @@ export function createMcpServer(): McpServer {
       description: "Create and persist a subroutine from a natural request",
       inputSchema: {
         request: z.string().describe("Natural language request"),
-        useMock: z.boolean().optional().describe("Use mock code generation instead of AI (for testing)"),
+        integrations: z.array(z.string()).optional(),
+        useMock: z.boolean().optional().describe(
+          "Use mock code generation instead of AI (for testing)",
+        ),
       },
     },
-    async ({ request, useMock }) => {
+    async ({ request, useMock, integrations }) => {
       console.log(`Generating subroutine for request: ${request}, useMock: ${useMock}`);
 
       const subroutine = await generateSubroutine({
         request,
+        integrations,
+        organizationId,
         useMock,
       });
 
@@ -174,15 +188,14 @@ export function createMcpServer(): McpServer {
                 subroutineUri: `resource://subroutine/${subroutine.id}`,
               },
               null,
-              2
+              2,
             ),
           },
         ],
       };
-    }
+    },
   );
 
-  // Tool: subroutine.executeRequest
   server.registerTool(
     "subroutine.executeRequest",
     {
@@ -191,11 +204,15 @@ export function createMcpServer(): McpServer {
         "Generate a brand-new subroutine for the provided request, immediately queue it for execution, and return references to track its progress.",
       inputSchema: {
         request: z.string().describe("Natural language description of the desired workflow"),
+        viewerId: z.string().describe("External viewer identifier"),
         timeoutMs: z.number().optional(),
-        useMock: z.boolean().optional().describe("Use mock code generation instead of AI (for testing)"),
+        integrations: z.array(z.string()).optional(),
+        useMock: z.boolean().optional().describe(
+          "Use mock code generation instead of AI (for testing)",
+        ),
       },
     },
-    async ({ request, timeoutMs, useMock }) => {
+    async ({ request, viewerId, timeoutMs, useMock, integrations }) => {
       console.log(`Executing request via generated subroutine: ${request}`, {
         useMock,
         timeoutMs,
@@ -203,6 +220,8 @@ export function createMcpServer(): McpServer {
 
       const subroutine = await generateSubroutine({
         request,
+        integrations,
+        organizationId,
         useMock,
         needsImmediateInputs: true,
       });
@@ -211,38 +230,64 @@ export function createMcpServer(): McpServer {
         throw new Error("Generated subroutine is missing initial inputs");
       }
 
-      const run = await runSubroutine({
-        subroutineId: subroutine.id,
-        inputs: subroutine.initialInputs,
-        timeoutMs,
-      });
+      try {
+        const run = await runSubroutine({
+          subroutineId: subroutine.id,
+          organizationId,
+          userId: auth.userId,
+          viewerId,
+          inputs: subroutine.initialInputs,
+          timeoutMs,
+        });
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              [
-                {
-                  subroutineUri: `resource://subroutine/${subroutine.id}`,
-                  request,
-                  initialInputs: subroutine.initialInputs,
-                },
-                {
-                  runUri: `resource://run/${run.id}`,
-                  status: run.status,
-                },
-              ],
-              null,
-              2
-            ),
-          },
-        ],
-      };
-    }
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                [
+                  {
+                    subroutineUri: `resource://subroutine/${subroutine.id}`,
+                    request,
+                    initialInputs: subroutine.initialInputs,
+                  },
+                  {
+                    runUri: `resource://run/${run.id}`,
+                    status: run.status,
+                  },
+                ],
+                null,
+                2,
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof IntegrationAuthRequiredError) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  error: {
+                    code: "INTEGRATION_AUTH_REQUIRED",
+                    message: error.message,
+                    integrationId: error.integrationId,
+                    provider: error.provider,
+                    authorizationUrl: error.authorizationUrl,
+                    state: error.state,
+                    viewerId: error.viewerId,
+                  },
+                }),
+              },
+            ],
+          };
+        }
+        throw error;
+      }
+    },
   );
 
-  // Tool: subroutine.run
   server.registerTool(
     "subroutine.run",
     {
@@ -250,11 +295,12 @@ export function createMcpServer(): McpServer {
       description: "Execute a previously generated subroutine",
       inputSchema: {
         subroutineUri: z.string().describe("URI of the subroutine"),
+        viewerId: z.string().describe("External viewer identifier"),
         inputs: z.record(z.unknown()).optional(),
         timeoutMs: z.number().optional(),
       },
     },
-    async ({ subroutineUri, inputs, timeoutMs }) => {
+    async ({ subroutineUri, viewerId, inputs, timeoutMs }) => {
       const match = subroutineUri.match(/^resource:\/\/subroutine\/(.+)$/);
       if (!match) {
         return {
@@ -277,6 +323,9 @@ export function createMcpServer(): McpServer {
       try {
         const run = await runSubroutine({
           subroutineId,
+          organizationId,
+          userId: auth.userId,
+          viewerId,
           inputs,
           timeoutMs,
         });
@@ -291,27 +340,52 @@ export function createMcpServer(): McpServer {
                   status: run.status,
                 },
                 null,
-                2
+                2,
               ),
             },
           ],
         };
-      } catch (_error) {
+      } catch (error) {
+        if (error instanceof IntegrationAuthRequiredError) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  error: {
+                    code: "INTEGRATION_AUTH_REQUIRED",
+                    message: error.message,
+                    integrationId: error.integrationId,
+                    provider: error.provider,
+                    authorizationUrl: error.authorizationUrl,
+                    state: error.state,
+                    viewerId: error.viewerId,
+                  },
+                }),
+              },
+            ],
+          };
+        }
+
         return {
           content: [
             {
               type: "text",
               text: JSON.stringify({
                 error: {
-                  code: "NOT_FOUND",
-                  message: "subroutine not found",
+                  code: error instanceof Error && error.message === "Subroutine not found"
+                    ? "NOT_FOUND"
+                    : "UNKNOWN",
+                  message: error instanceof Error && error.message === "Subroutine not found"
+                    ? "subroutine not found"
+                    : "failed to run subroutine",
                 },
               }),
             },
           ],
         };
       }
-    }
+    },
   );
 
   return server;

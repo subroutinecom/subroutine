@@ -1,5 +1,5 @@
 import { parse } from "yaml";
-import { configSchema, type Config } from "./schema.ts";
+import { type Config, configSchema } from "./schema.ts";
 
 let cachedConfig: Config | null = null;
 

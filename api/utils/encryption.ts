@@ -10,7 +10,7 @@ const getEncryptionKey = (): Buffer => {
   }
   if (keyHex.length !== 64) {
     throw new Error(
-      "ENCRYPTION_KEY must be 64 hex characters (32 bytes). Generate with: openssl rand -hex 32"
+      "ENCRYPTION_KEY must be 64 hex characters (32 bytes). Generate with: openssl rand -hex 32",
     );
   }
   return Buffer.from(keyHex, "hex");
@@ -35,7 +35,7 @@ export const decrypt = (ciphertext: string): string => {
 
   if (parts.length !== 3) {
     throw new Error(
-      "Invalid ciphertext format. Expected format: iv:authTag:ciphertext"
+      "Invalid ciphertext format. Expected format: iv:authTag:ciphertext",
     );
   }
 

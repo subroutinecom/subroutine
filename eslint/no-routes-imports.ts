@@ -8,7 +8,8 @@ const rule = createRule({
   meta: {
     type: "problem",
     docs: {
-      description: "Disallow importing from the routes dir, move common code to server or components dir",
+      description:
+        "Disallow importing from the routes dir, move common code to server or components dir",
     },
     messages: {
       noRouteImport: "Importing from the routes directory is not allowed.",

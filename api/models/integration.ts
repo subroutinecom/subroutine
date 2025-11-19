@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { db } from "../db/index.ts";
 import type { IntegrationTable } from "../db/schema.ts";
-import { encrypt, decrypt } from "../utils/encryption.ts";
+import { decrypt, encrypt } from "../utils/encryption.ts";
 import type { IntegrationProvider } from "../integrations/providers.ts";
 import { isValidProvider } from "../integrations/providers.ts";
 
@@ -16,10 +16,37 @@ export interface IntegrationAuthConfig {
   metadata?: Record<string, unknown>;
 }
 
-export interface IntegrationWithConfig
-  extends Omit<IntegrationTable, "authConfig"> {
+export interface IntegrationWithConfig extends Omit<IntegrationTable, "authConfig"> {
   authConfig: IntegrationAuthConfig;
 }
+
+const validateIntegrationAuthConfig = (config: IntegrationAuthConfig) => {
+  if (config.type !== "oauth2") {
+    throw new Error(`Unsupported auth config type: ${config.type}`);
+  }
+  if (!config.clientId) {
+    throw new Error("authConfig.clientId is required");
+  }
+  if (!config.clientSecret) {
+    throw new Error("authConfig.clientSecret is required");
+  }
+  if (!config.authUrl) {
+    throw new Error("authConfig.authUrl is required");
+  }
+  if (!config.tokenUrl) {
+    throw new Error("authConfig.tokenUrl is required");
+  }
+  if (!config.redirectUri) {
+    throw new Error("authConfig.redirectUri is required");
+  }
+};
+
+export const getPublicIntegrationAuthConfig = (
+  config: IntegrationAuthConfig,
+): Omit<IntegrationAuthConfig, "clientSecret"> => {
+  const { clientSecret: _clientSecret, ...rest } = config;
+  return rest;
+};
 
 export type CreateIntegrationRequest = {
   organizationId: string;
@@ -32,17 +59,18 @@ export type UpdateIntegrationRequest = {
   id: string;
   organizationId: string;
   name?: string;
-  authConfig?: IntegrationAuthConfig;
+  authConfig?: Partial<IntegrationAuthConfig>;
   enabled?: boolean;
 };
 
 export const createIntegration = async (
-  params: CreateIntegrationRequest
+  params: CreateIntegrationRequest,
 ): Promise<IntegrationWithConfig> => {
   if (!isValidProvider(params.provider)) {
     throw new Error(`Invalid provider: ${params.provider}`);
   }
 
+  validateIntegrationAuthConfig(params.authConfig);
   const id = nanoid();
   const now = new Date().toISOString();
 
@@ -75,7 +103,7 @@ export const createIntegration = async (
 };
 
 export const listIntegrations = async (
-  organizationId: string
+  organizationId: string,
 ): Promise<IntegrationWithConfig[]> => {
   const rows = await db
     .selectFrom("integration")
@@ -98,7 +126,7 @@ export const listIntegrations = async (
 
 export const listIntegrationsByProvider = async (
   organizationId: string,
-  provider: IntegrationProvider
+  provider: IntegrationProvider,
 ): Promise<IntegrationWithConfig[]> => {
   const rows = await db
     .selectFrom("integration")
@@ -122,7 +150,7 @@ export const listIntegrationsByProvider = async (
 
 export const getIntegration = async (
   id: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<IntegrationWithConfig | null> => {
   const row = await db
     .selectFrom("integration")
@@ -148,7 +176,7 @@ export const getIntegration = async (
 };
 
 export const updateIntegration = async (
-  params: UpdateIntegrationRequest
+  params: UpdateIntegrationRequest,
 ): Promise<IntegrationWithConfig | null> => {
   const existing = await getIntegration(params.id, params.organizationId);
 
@@ -172,7 +200,12 @@ export const updateIntegration = async (
   }
 
   if (params.authConfig !== undefined) {
-    updateValues.authConfig = encrypt(JSON.stringify(params.authConfig));
+    const mergedConfig = {
+      ...existing.authConfig,
+      ...params.authConfig,
+    } as IntegrationAuthConfig;
+    validateIntegrationAuthConfig(mergedConfig);
+    updateValues.authConfig = encrypt(JSON.stringify(mergedConfig));
   }
 
   if (params.enabled !== undefined) {
@@ -191,7 +224,7 @@ export const updateIntegration = async (
 
 export const deleteIntegration = async (
   id: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<boolean> => {
   const result = await db
     .deleteFrom("integration")
@@ -205,7 +238,7 @@ export const deleteIntegration = async (
 export const integrationExists = async (
   organizationId: string,
   provider: IntegrationProvider,
-  name: string
+  name: string,
 ): Promise<boolean> => {
   const row = await db
     .selectFrom("integration")

@@ -16,7 +16,7 @@ app.get("/_status", (c) => {
 app.post("/test/executeTypescript", async (c) => {
   try {
     const body = await c.req.json();
-    const { code } = body;
+    const { code, integrations } = body;
 
     if (!code || typeof code !== "string") {
       return c.json(
@@ -28,7 +28,9 @@ app.post("/test/executeTypescript", async (c) => {
       );
     }
 
-    const result = await sandboxManager.executeCode(code);
+    const result = await sandboxManager.executeCode(code, {
+      integrations: Array.isArray(integrations) ? integrations : undefined,
+    });
 
     if (result.success) {
       return c.json(result);

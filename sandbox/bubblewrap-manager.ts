@@ -56,11 +56,16 @@ export class BubblewrapManager {
       // We keep it simple to avoid pivot_root issues
       const bwrapArgs = [
         // Bind the entire root - this prevents pivot_root from being attempted
-        "--dev-bind", "/", "/",
+        "--dev-bind",
+        "/",
+        "/",
 
         // Bind our workspace
-        "--bind", executionDir, workingDir,
-        "--chdir", workingDir,
+        "--bind",
+        executionDir,
+        workingDir,
+        "--chdir",
+        workingDir,
 
         // Basic isolation - keep it minimal
         "--unshare-pid",

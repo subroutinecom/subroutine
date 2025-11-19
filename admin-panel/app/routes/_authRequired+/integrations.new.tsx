@@ -1,13 +1,16 @@
-import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router";
-import { useForm, Controller } from "react-hook-form";
-import { ArrowLeft, Github, Mail, ChevronDown, Check } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLoaderData, useNavigate } from "react-router";
+import { Controller, useForm } from "react-hook-form";
+import { ArrowLeft, Check, ChevronDown, Github, Mail, Plug } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
-import type { IntegrationProvider } from "~/types/integration";
+import type {
+  IntegrationProvider,
+  IntegrationProviderDefinition,
+} from "~/types/integration";
 
 export function meta() {
   return [
@@ -15,6 +18,25 @@ export function meta() {
     { name: "description", content: "Create a new integration" },
   ];
 }
+
+const INTEGRATION_PROVIDERS_QUERY = gql`
+  query IntegrationProviders {
+    integrationProviders {
+      id
+      name
+      description
+      viewerScoped
+      authType
+      oauthConfig {
+        authUrl
+        tokenUrl
+        defaultScopes
+        requiredScopes
+        defaultRedirectPath
+      }
+    }
+  }
+`;
 
 const CREATE_INTEGRATION_MUTATION = gql`
   mutation CreateIntegration(
@@ -34,47 +56,6 @@ const CREATE_INTEGRATION_MUTATION = gql`
   }
 `;
 
-interface ProviderConfig {
-  authUrl: string;
-  tokenUrl: string;
-  defaultScopes: string[];
-}
-
-interface ProviderMeta {
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-}
-
-const PROVIDER_METADATA: Record<IntegrationProvider, ProviderMeta> = {
-  gmail: {
-    label: "Gmail",
-    description: "Connect to Google email services for sending and reading emails",
-    icon: <Mail size={20} />,
-  },
-  github: {
-    label: "GitHub",
-    description: "Integrate with GitHub repositories, issues, and pull requests",
-    icon: <Github size={20} />,
-  },
-};
-
-const PROVIDER_CONFIGS: Record<IntegrationProvider, ProviderConfig> = {
-  gmail: {
-    authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
-    tokenUrl: "https://oauth2.googleapis.com/token",
-    defaultScopes: [
-      "https://www.googleapis.com/auth/gmail.readonly",
-      "https://www.googleapis.com/auth/gmail.send",
-    ],
-  },
-  github: {
-    authUrl: "https://github.com/login/oauth/authorize",
-    tokenUrl: "https://github.com/login/oauth/access_token",
-    defaultScopes: ["user", "repo"],
-  },
-};
-
 type IntegrationFormData = {
   provider: IntegrationProvider;
   name: string;
@@ -84,12 +65,58 @@ type IntegrationFormData = {
   redirectUri: string;
 };
 
+export const clientLoader = async () => {
+  const data = await graphqlClient.request<{
+    integrationProviders: IntegrationProviderDefinition[];
+  }>(INTEGRATION_PROVIDERS_QUERY);
+  return { providerDefinitions: data.integrationProviders ?? [] };
+};
+
+const DEFAULT_REDIRECT_BASE = "http://localhost:3002";
+
+const getProviderIcon = (provider: IntegrationProvider) => {
+  switch (provider) {
+    case "github":
+      return <Github size={20} />;
+    case "gmail":
+      return <Mail size={20} />;
+    default:
+      return <Plug size={20} />;
+  }
+};
+
 export default function NewIntegrationPage() {
   const navigate = useNavigate();
   const { activeOrganization: _activeOrganization } = useAuth();
+  const { providerDefinitions } = useLoaderData<typeof clientLoader>();
   const [serverError, setServerError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const getProviderDefinition = (id: IntegrationProvider) =>
+    providerDefinitions.find((provider) => provider.id === id);
+
+  const initialProviderId = useMemo<IntegrationProvider>(() => {
+    return providerDefinitions[0]?.id ?? "gmail";
+  }, [providerDefinitions]);
+
+  const buildDefaultRedirectUri = (definition?: IntegrationProviderDefinition) => {
+    const redirectPath = definition?.oauthConfig?.defaultRedirectPath ?? "/api/oauth/callback";
+    if (redirectPath.startsWith("http://") || redirectPath.startsWith("https://")) {
+      return redirectPath;
+    }
+    return `${DEFAULT_REDIRECT_BASE}${redirectPath}`;
+  };
+
+  const initialScopes = useMemo(() => {
+    const definition = getProviderDefinition(initialProviderId);
+    return definition?.oauthConfig?.defaultScopes ?? [];
+  }, [initialProviderId, providerDefinitions]);
+
+  const initialRedirectUri = useMemo(() => {
+    const definition = getProviderDefinition(initialProviderId);
+    return buildDefaultRedirectUri(definition);
+  }, [initialProviderId, providerDefinitions]);
 
   const {
     register,
@@ -99,16 +126,15 @@ export default function NewIntegrationPage() {
     formState: { errors, isSubmitting },
   } = useForm<IntegrationFormData>({
     defaultValues: {
-      provider: "gmail",
+      provider: initialProviderId,
       name: "",
       clientId: "",
       clientSecret: "",
-      scopes: PROVIDER_CONFIGS.gmail.defaultScopes.join(", "),
-      redirectUri: "http://localhost:3002/api/integrations/callback",
+      scopes: initialScopes.join(", "),
+      redirectUri: initialRedirectUri,
     },
   });
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -124,8 +150,10 @@ export default function NewIntegrationPage() {
   }, []);
 
   const handleProviderChange = (newProvider: IntegrationProvider) => {
+    const definition = getProviderDefinition(newProvider);
     setValue("provider", newProvider);
-    setValue("scopes", PROVIDER_CONFIGS[newProvider].defaultScopes.join(", "));
+    setValue("scopes", (definition?.oauthConfig?.defaultScopes ?? []).join(", "));
+    setValue("redirectUri", buildDefaultRedirectUri(definition));
     setDropdownOpen(false);
   };
 
@@ -142,16 +170,20 @@ export default function NewIntegrationPage() {
       return;
     }
 
-    try {
-      const config = PROVIDER_CONFIGS[data.provider];
+    const definition = getProviderDefinition(data.provider);
+    if (!definition || definition.authType !== "oauth2" || !definition.oauthConfig) {
+      setServerError("Selected provider is not configured for OAuth2");
+      return;
+    }
 
+    try {
       const authConfig = JSON.stringify({
-        type: "oauth2",
+        type: "oauth2" as const,
         clientId: data.clientId.trim(),
         clientSecret: data.clientSecret.trim(),
         scopes: scopeArray,
-        authUrl: config.authUrl,
-        tokenUrl: config.tokenUrl,
+        authUrl: definition.oauthConfig.authUrl,
+        tokenUrl: definition.oauthConfig.tokenUrl,
         redirectUri: data.redirectUri.trim(),
       });
 
@@ -174,6 +206,26 @@ export default function NewIntegrationPage() {
       );
     }
   };
+
+  if (providerDefinitions.length === 0) {
+    return (
+      <div className="space-y-10">
+        <PageHeader
+          title="New Integration"
+          description="Connect a new external service to automate workflows."
+          action={
+            <Link to="/integrations" className="btn btn-ghost gap-2 h-12">
+              <ArrowLeft size={20} />
+              Back
+            </Link>
+          }
+        />
+        <div className="alert alert-error">
+          <span>No integration providers are available.</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10">
@@ -199,54 +251,56 @@ export default function NewIntegrationPage() {
           <Controller
             name="provider"
             control={control}
-            render={({ field }) => (
-              <div className="space-y-3">
-                <label htmlFor="provider" className="block">
-                  <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
-                    Provider
-                  </span>
-                </label>
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="w-full input input-bordered h-auto p-0 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group"
-                  >
-                    <div className="flex items-center gap-3 px-4 py-3 flex-1">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/15 transition-colors">
-                        {PROVIDER_METADATA[field.value].icon}
+            render={({ field }) => {
+              const selectedDefinition = getProviderDefinition(field.value);
+              return (
+                <div className="space-y-3">
+                  <label htmlFor="provider" className="block">
+                    <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
+                      Provider
+                    </span>
+                  </label>
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setDropdownOpen(!dropdownOpen)}
+                      className="w-full input input-bordered h-auto p-0 flex items-center justify-between cursor-pointer hover:border-primary/50 transition-all group"
+                    >
+                      <div className="flex items-center gap-3 px-4 py-3 flex-1">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/15 transition-colors">
+                          {getProviderIcon(field.value)}
+                        </div>
+                        <div className="flex flex-col items-start">
+                          <span className="font-semibold text-base-content capitalize">
+                            {selectedDefinition?.name ?? field.value}
+                          </span>
+                          {selectedDefinition?.description && (
+                            <span className="text-xs text-base-content/60">
+                              {selectedDefinition.description}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex flex-col items-start">
-                        <span className="font-semibold text-base-content">
-                          {PROVIDER_METADATA[field.value].label}
-                        </span>
-                        <span className="text-xs text-base-content/60">
-                          {PROVIDER_METADATA[field.value].description}
-                        </span>
+                      <div className="px-4">
+                        <ChevronDown
+                          size={20}
+                          className={`text-base-content/70 transition-transform duration-300 ${
+                            dropdownOpen ? "rotate-180" : ""
+                          }`}
+                        />
                       </div>
-                    </div>
-                    <div className="px-4">
-                      <ChevronDown
-                        size={20}
-                        className={`text-base-content/70 transition-transform duration-300 ${
-                          dropdownOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </div>
-                  </button>
+                    </button>
 
-                  {dropdownOpen && (
-                    <div className="absolute z-50 w-full mt-2 bg-base-100 border border-neutral/20 rounded-lg overflow-hidden shadow-xl animate-slide-in-top">
-                      <div className="py-1">
-                        {(Object.keys(PROVIDER_METADATA) as IntegrationProvider[]).map(
-                          (providerKey) => {
-                            const meta = PROVIDER_METADATA[providerKey];
-                            const isSelected = field.value === providerKey;
+                    {dropdownOpen && (
+                      <div className="absolute z-50 w-full mt-2 bg-base-100 border border-neutral/20 rounded-lg overflow-hidden shadow-xl animate-slide-in-top">
+                        <div className="py-1">
+                          {providerDefinitions.map((definition) => {
+                            const isSelected = field.value === definition.id;
                             return (
                               <button
-                                key={providerKey}
+                                key={definition.id}
                                 type="button"
-                                onClick={() => handleProviderChange(providerKey)}
+                                onClick={() => handleProviderChange(definition.id)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 transition-all ${
                                   isSelected
                                     ? "bg-primary/10 text-primary"
@@ -260,30 +314,30 @@ export default function NewIntegrationPage() {
                                       : "bg-base-200 text-primary"
                                   }`}
                                 >
-                                  {meta.icon}
+                                  {getProviderIcon(definition.id)}
                                 </div>
                                 <div className="flex-1 flex flex-col items-start">
-                                  <span className="font-semibold">{meta.label}</span>
-                                  <span className="text-xs text-base-content/60">
-                                    {meta.description}
-                                  </span>
+                                  <span className="font-semibold">{definition.name}</span>
+                                  {definition.description && (
+                                    <span className="text-xs text-base-content/60">
+                                      {definition.description}
+                                    </span>
+                                  )}
                                 </div>
-                                {isSelected && (
-                                  <Check size={20} className="text-primary" />
-                                )}
+                                {isSelected && <Check size={20} className="text-primary" />}
                               </button>
                             );
-                          },
-                        )}
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  <p className="text-sm text-base-content/60">
+                    Select the service you want to integrate with
+                  </p>
                 </div>
-                <p className="text-sm text-base-content/60">
-                  Select the service you want to integrate with
-                </p>
-              </div>
-            )}
+              );
+            }}
           />
 
           <div className="space-y-3">
@@ -299,9 +353,7 @@ export default function NewIntegrationPage() {
               placeholder="e.g., Production Gmail"
               className="input input-bordered w-full text-base"
             />
-            {errors.name && (
-              <p className="text-sm text-error">{errors.name.message}</p>
-            )}
+            {errors.name && <p className="text-sm text-error">{errors.name.message}</p>}
             <p className="text-sm text-base-content/60">
               A descriptive name for this integration
             </p>
@@ -320,9 +372,7 @@ export default function NewIntegrationPage() {
               placeholder="OAuth Client ID"
               className="input input-bordered w-full font-mono text-sm"
             />
-            {errors.clientId && (
-              <p className="text-sm text-error">{errors.clientId.message}</p>
-            )}
+            {errors.clientId && <p className="text-sm text-error">{errors.clientId.message}</p>}
           </div>
 
           <div className="space-y-3">
@@ -362,9 +412,7 @@ export default function NewIntegrationPage() {
               placeholder="Comma-separated scopes"
               className="input input-bordered w-full font-mono text-sm"
             />
-            {errors.scopes && (
-              <p className="text-sm text-error">{errors.scopes.message}</p>
-            )}
+            {errors.scopes && <p className="text-sm text-error">{errors.scopes.message}</p>}
             <p className="text-sm text-base-content/60">
               OAuth scopes required for this integration (comma-separated)
             </p>
@@ -404,14 +452,16 @@ export default function NewIntegrationPage() {
               className="btn btn-primary px-8"
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
-                  Creating...
-                </>
-              ) : (
-                "Create Integration"
-              )}
+              {isSubmitting
+                ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Creating...
+                  </>
+                )
+                : (
+                  "Create Integration"
+                )}
             </button>
           </div>
         </form>

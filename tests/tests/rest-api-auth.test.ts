@@ -3,6 +3,7 @@ import { describe, it } from "@std/testing/bdd";
 import { getTestApiKey } from "../fixtures/apikey.ts";
 
 const API_BASE = "http://api:80";
+const VIEWER_ID = "viewer-123";
 
 /**
  * Helper to make REST API requests
@@ -152,7 +153,7 @@ describe(
           {
             method: "POST",
             apiKey,
-            body: { inputs: { a: 5, b: 3 } },
+            body: { viewerId: VIEWER_ID, inputs: { a: 5, b: 3 } },
           },
         );
 
@@ -170,6 +171,7 @@ describe(
           body: {
             request: "Create a function that multiplies two numbers",
             timeoutMs: 5000,
+            viewerId: VIEWER_ID,
           },
         });
 
