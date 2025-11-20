@@ -1,17 +1,22 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-env
 
+import { fromFileUrl } from "@std/path/from-file-url";
+
 const sqlDir = "better-auth_migrations";
 const tsDir = "migrations";
 
 const DATABASE_URL = Deno.env.get("DATABASE_URL") ||
   "postgresql://subroutine:subroutine@localhost:5432/subroutine";
 
+const cliPath = fromFileUrl(
+  new URL("../node_modules/@better-auth/cli/dist/index.mjs", import.meta.url),
+);
+
 const command = new Deno.Command("deno", {
   args: [
     "run",
     "--allow-all",
-    "--node-modules-dir",
-    "npm:@better-auth/cli@latest",
+    cliPath,
     "generate",
     "--yes",
   ],

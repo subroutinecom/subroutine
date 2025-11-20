@@ -2377,6 +2377,21 @@
       "npm:graphql-request@^7.3.3",
       "npm:graphql-tag@^2.12.6",
       "npm:tough-cookie@6"
-    ]
+    ],
+    "packageJson": {
+      "dependencies": [
+        "npm:@graphql-codegen/cli@6.0.2",
+        "npm:@graphql-codegen/typed-document-node@6.1.2",
+        "npm:@graphql-codegen/typescript-operations@5.0.4",
+        "npm:@graphql-codegen/typescript@5.0.4",
+        "npm:@graphql-typed-document-node/core@3.2.0",
+        "npm:better-auth@1.3.34",
+        "npm:fetch-cookie@3.1.0",
+        "npm:graphql-request@7.3.3",
+        "npm:graphql-tag@2.12.6",
+        "npm:graphql@16.12.0",
+        "npm:tough-cookie@6.0.0"
+      ]
+    }
   }
 }

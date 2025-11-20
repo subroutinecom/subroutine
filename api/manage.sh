@@ -9,7 +9,7 @@ else
 fi
 
 install_deps() {
-  deno install --node-modules-dir
+  pnpm install --filter @subroutine/api...
 }
 
 do_run() {

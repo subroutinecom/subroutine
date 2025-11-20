@@ -1,43 +1,5 @@
 {
   "exclude": [".react-router/", ".vite/", "app/__generated__/"],
-  "imports": {
-    "@cap.js/server": "npm:@cap.js/server@^4.0.3",
-    "@cap.js/widget": "npm:@cap.js/widget@^0.1.31",
-    "@graphql-codegen/cli": "npm:@graphql-codegen/cli@^6.0.2",
-    "@graphql-codegen/typed-document-node": "npm:@graphql-codegen/typed-document-node@^6.1.2",
-    "@graphql-codegen/typescript": "npm:@graphql-codegen/typescript@^5.0.4",
-    "@graphql-codegen/typescript-operations": "npm:@graphql-codegen/typescript-operations@^5.0.4",
-    "@graphql-typed-document-node/core": "npm:@graphql-typed-document-node/core@^3.2.0",
-    "@react-router/node": "npm:@react-router/node@^7.9.2",
-    "@react-router/remix-routes-option-adapter": "npm:@react-router/remix-routes-option-adapter@^7.9.5",
-    "@react-router/serve": "npm:@react-router/serve@^7.9.2",
-    "@uidotdev/usehooks": "npm:@uidotdev/usehooks@^2.4.1",
-    "better-auth": "npm:better-auth@^1.3.34",
-    "daisyui": "npm:daisyui@^5.4.7",
-    "date-fns": "npm:date-fns@^4.1.0",
-    "graphql-request": "npm:graphql-request@^7.3.3",
-    "isbot": "npm:isbot@^5.1.31",
-    "js-yaml": "npm:js-yaml@^4.1.1",
-    "lucide-react": "npm:lucide-react@^0.554.0",
-    "react": "npm:react@^19.1.1",
-    "react-dom": "npm:react-dom@^19.1.1",
-    "react-hook-form": "npm:react-hook-form@^7.66.0",
-    "react-router": "npm:react-router@^7.9.2",
-    "theme-change": "npm:theme-change@^2.5.0",
-    "@react-router/dev": "npm:@react-router/dev@^7.9.2",
-    "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.13",
-    "@types/react": "npm:@types/react@^19.1.13",
-    "@types/react-dom": "npm:@types/react-dom@^19.1.9",
-    "remix-flat-routes": "npm:remix-flat-routes@^0.8.5",
-    "tailwindcss": "npm:tailwindcss@^4.1.13",
-    "typescript": "npm:typescript@^5.9.2",
-    "use-stick-to-bottom": "npm:use-stick-to-bottom@^1.1.1",
-    "vite": "npm:vite@^7.1.7",
-    "vite-tsconfig-paths": "npm:vite-tsconfig-paths@^5.1.4",
-    "arg": "npm:arg@^5",
-    "yaml": "npm:yaml@^2.8.1",
-    "~/": "./app/"
-  },
   "compilerOptions": {
     "lib": ["deno.ns", "DOM", "DOM.Iterable", "ES2022"],
     "types": ["npm:vite/client"],
@@ -47,11 +9,11 @@
     "verbatimModuleSyntax": true
   },
   "tasks": {
-    "build": "deno run --allow-all --node-modules-dir npm:@react-router/dev/react-router build",
-    "dev": "deno run --allow-all --node-modules-dir npm:@react-router/dev/react-router dev",
-    "start": "deno run --allow-all --node-modules-dir npm:@react-router/serve ./build/server/index.js",
+    "build": "deno run --unstable-bare-node-builtins --allow-all npm:@react-router/dev build",
+    "dev": "deno run --unstable-bare-node-builtins --allow-all npm:@react-router/dev dev",
+    "start": "deno run --unstable-bare-node-builtins --allow-all --node-modules-dir npm:@react-router/serve ./build/server/index.js",
     "typecheck": "deno check --sloppy-imports",
-    "codegen": "deno run --allow-read --allow-write --allow-net --allow-env --allow-sys npm:@graphql-codegen/cli@6.0.2/graphql-codegen --config codegen.ts"
+    "codegen": "deno run --unstable-bare-node-builtins --allow-read --allow-write --allow-net --allow-env --allow-sys npm:@graphql-codegen/cli@6.0.2/graphql-codegen --config codegen.ts"
   },
   "lint": {
     "exclude": ["ecosystem.config.cjs"]

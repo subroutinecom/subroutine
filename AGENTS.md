@@ -3,7 +3,8 @@
 - All TypeScript projects must be written in type-safe TS, and in strict mode. Don't add any usage of `any` or cast types over.
 - The runtime of choice for all projects using Typescript is Deno. Never use NodeJS directly.
 - When using Deno, we use --sloppy-imports. You Must Not add extensions (.ts) to file imports.
-- When adding new dependencies, only do so by calling `deno install <dep>` without specifying a version.
+- npm dependencies are managed via pnpm workspaces. Use `pnpm add <dep> --filter @subroutine/<project>` (or `pnpm install` for bootstrap). Deno must stay the runtime.
+- Each Deno project keeps its TypeScript/task config in `deno.json`, but dependencies resolve from the shared `node_modules` hydrated by pnpm (`nodeModulesDir` is set to `manual`).
 
 Configuration:
 

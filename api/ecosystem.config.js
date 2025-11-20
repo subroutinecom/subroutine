@@ -40,7 +40,15 @@ const migrationsWatcher = {
   ignore_watch: ["node_modules", ".git", "db/migrations-index.ts"],
 };
 
+const schemaSync = {
+  name: "schema-sync",
+  script: "deno",
+  args: ["task", "schema:watch"],
+  autorestart: true,
+  watch: false,
+};
+
 module.exports = {
   exp_backoff_restart_delay: 100,
-  apps: [apiServerApp, ...(IS_BUILD ? [] : [linter, migrationsWatcher])],
+  apps: [apiServerApp, ...(IS_BUILD ? [] : [linter, migrationsWatcher, schemaSync])],
 };

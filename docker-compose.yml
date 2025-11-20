@@ -24,6 +24,7 @@ services:
     ports:
       - "3000:80"
     volumes:
+      - sandbox-node-modules:/app/sandbox/node_modules
       - ./sandbox:/app/sandbox
       - ./eslint:/app/eslint
     cap_add:
@@ -93,6 +94,7 @@ services:
       dockerfile: ./tests/Dockerfile
       target: dev
     volumes:
+      - tests-node-modules:/app/tests/node_modules
       - ./tests:/app/tests
     depends_on:
       sandbox:
@@ -112,4 +114,8 @@ volumes:
   admin-panel-react-router:
     driver: local
   admin-panel-vite:
+    driver: local
+  sandbox-node-modules:
+    driver: local
+  tests-node-modules:
     driver: local

@@ -1,4 +1,4 @@
-import { cors } from "@hono/hono/cors";
+import { cors } from "hono/cors";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
@@ -13,7 +13,11 @@ import { createMcpServer } from "./mcp-server.ts";
 import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
-import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
+import {
+  generateSubroutine,
+  getSubroutine,
+  listSubroutines,
+} from "./models/subroutine.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
 import { completeMockAuthorization } from "./services/mock-oauth.ts";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
@@ -24,9 +28,9 @@ const initialize = async () => {
   const app = new OpenAPIHono<{ Variables: { auth: AuthContext } }>({
     defaultHook: (result, c) => {
       if (!result.success) {
-        const message = result.error.issues.map((i) =>
-          `${i.path.join(".")} ${i.message.toLowerCase()}`
-        ).join(", ");
+        const message = result.error.issues
+          .map((i) => `${i.path.join(".")} ${i.message.toLowerCase()}`)
+          .join(", ");
         return c.json(
           {
             error: {
@@ -155,7 +159,10 @@ const initialize = async () => {
       const origin = new URL(c.req.url);
       const callbackUrl = redirectParam
         ? new URL(redirectParam)
-        : new URL("/tests/mock_oauth/callback", `${origin.protocol}//${origin.host}`);
+        : new URL(
+            "/tests/mock_oauth/callback",
+            `${origin.protocol}//${origin.host}`,
+          );
       callbackUrl.searchParams.set("state", state);
       callbackUrl.searchParams.set("code", randomUUID());
       return c.redirect(callbackUrl.toString());
@@ -213,10 +220,12 @@ const initialize = async () => {
   const transports: Record<string, StreamableHTTPServerTransport> = {};
 
   const ErrorSchema = z.object({
-    error: z.object({
-      code: z.string(),
-      message: z.string(),
-    }).passthrough(),
+    error: z
+      .object({
+        code: z.string(),
+        message: z.string(),
+      })
+      .passthrough(),
   });
 
   const SubroutineSchema = z.object({
@@ -270,15 +279,18 @@ const initialize = async () => {
     createRoute({
       method: "post",
       path: "/api/subroutine",
-      description: "Create a new subroutine from a natural language description",
+      description:
+        "Create a new subroutine from a natural language description",
       request: {
         body: {
           content: {
             "application/json": {
               schema: z.object({
-                request: z.string().describe(
-                  "Natural language description of the desired subroutine",
-                ),
+                request: z
+                  .string()
+                  .describe(
+                    "Natural language description of the desired subroutine",
+                  ),
                 integrations: z.array(z.string()).optional(),
               }),
             },
@@ -373,7 +385,10 @@ const initialize = async () => {
         );
         return response;
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to generate subroutine";
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to generate subroutine";
         return c.json(
           {
             error: {
@@ -397,9 +412,11 @@ const initialize = async () => {
           content: {
             "application/json": {
               schema: z.object({
-                request: z.string().describe(
-                  "Natural language description of the desired subroutine",
-                ),
+                request: z
+                  .string()
+                  .describe(
+                    "Natural language description of the desired subroutine",
+                  ),
                 viewerId: z.string().describe("External viewer identifier"),
                 timeoutMs: z.number().optional(),
                 integrations: z.array(z.string()).optional(),
@@ -427,7 +444,8 @@ const initialize = async () => {
           },
         },
         403: {
-          description: "Organization required or integration authorization needed",
+          description:
+            "Organization required or integration authorization needed",
           content: {
             "application/json": {
               schema: ErrorSchema,
@@ -467,7 +485,8 @@ const initialize = async () => {
       }
 
       try {
-        const { request, timeoutMs, integrations, viewerId } = c.req.valid("json");
+        const { request, timeoutMs, integrations, viewerId } =
+          c.req.valid("json");
 
         if (!request || typeof request !== "string") {
           return c.json(
@@ -491,7 +510,9 @@ const initialize = async () => {
         });
 
         if (!subroutine.initialInputs) {
-          throw new Error("Generated subroutine did not include immediate inputs");
+          throw new Error(
+            "Generated subroutine did not include immediate inputs",
+          );
         }
 
         const run = await runSubroutine({
@@ -531,9 +552,10 @@ const initialize = async () => {
           );
         }
 
-        const message = error instanceof Error
-          ? error.message
-          : "Failed to create and run subroutine";
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to create and run subroutine";
         return c.json(
           {
             error: {
@@ -639,7 +661,8 @@ const initialize = async () => {
           {
             error: {
               code: "ORGANIZATION_REQUIRED",
-              message: "Active organization is required to view this subroutine",
+              message:
+                "Active organization is required to view this subroutine",
             },
           },
           403,
@@ -699,7 +722,8 @@ const initialize = async () => {
           },
         },
         403: {
-          description: "Organization required or integration authorization needed",
+          description:
+            "Organization required or integration authorization needed",
           content: {
             "application/json": {
               schema: ErrorSchema,
@@ -760,7 +784,10 @@ const initialize = async () => {
           201,
         );
       } catch (error) {
-        if (error instanceof Error && error.message === "Subroutine not found") {
+        if (
+          error instanceof Error &&
+          error.message === "Subroutine not found"
+        ) {
           return c.json(
             {
               error: {
@@ -963,7 +990,9 @@ const initialize = async () => {
         transport.onclose = () => {
           const sid = transport.sessionId;
           if (sid && transports[sid]) {
-            console.log(`Transport closed for session ${sid}, removing from transports map`);
+            console.log(
+              `Transport closed for session ${sid}, removing from transports map`,
+            );
             delete transports[sid];
           }
         };
@@ -1035,7 +1064,9 @@ const initialize = async () => {
       return c.text("Invalid or missing session ID", 400);
     }
 
-    console.log(`Received session termination request for session ${sessionId}`);
+    console.log(
+      `Received session termination request for session ${sessionId}`,
+    );
 
     try {
       const transport = transports[sessionId];
@@ -1064,7 +1095,9 @@ const initialize = async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
   console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
-  console.log(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
+  console.log(
+    `OpenAPI spec available at http://localhost:${PORT}/openapi.json`,
+  );
 };
 
 initialize();

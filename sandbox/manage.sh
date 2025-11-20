@@ -4,12 +4,16 @@ if [ -n "$CI" ] || [ -n "$BUILD_SHA" ]; then IS_BUILD="1"; else IS_BUILD=""; fi
 
 set -e
 
+install_deps() {
+  pnpm install --filter @subroutine/sandbox...
+}
+
 do_run() {
   if [ -n "$IS_BUILD" ]; then
     echo "The project has been compiled"
   else
     echo "The project is not compiled"
-    deno install
+    install_deps
   fi
 
   export IS_BUILD="$IS_BUILD"
@@ -22,7 +26,7 @@ do_run() {
 }
 
 do_build() {
-  deno install
+  install_deps
 
   if [ -n "$IS_BUILD" ]; then
     echo "Compiling the project"

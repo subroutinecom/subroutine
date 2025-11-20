@@ -1,0 +1,10 @@
+{
+  "name": "@subroutine/sandbox",
+  "private": true,
+  "dependencies": {
+    "@types/node": "24.2.0",
+    "googleapis": "134.0.0",
+    "hono": "4.10.4",
+    "typescript": "5.9.3"
+  }
+}

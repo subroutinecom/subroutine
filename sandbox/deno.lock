@@ -2,10 +2,7 @@
   "version": "5",
   "specifiers": {
     "npm:@types/node@*": "24.2.0",
-    "npm:express@4": "4.21.2",
-    "npm:googleapis@134": "134.0.0",
-    "npm:hono@^4.10.4": "4.10.4",
-    "npm:typescript@*": "5.9.3"
+    "npm:express@4": "4.21.2"
   },
   "npm": {
     "@types/node@24.2.0": {
@@ -555,10 +552,15 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:@types/node@*",
-      "npm:googleapis@134",
-      "npm:hono@^4.10.4",
-      "npm:typescript@*"
-    ]
+      "npm:@types/node@*"
+    ],
+    "packageJson": {
+      "dependencies": [
+        "npm:@types/node@24.2.0",
+        "npm:googleapis@134.0.0",
+        "npm:hono@4.10.4",
+        "npm:typescript@5.9.3"
+      ]
+    }
   }
 }
