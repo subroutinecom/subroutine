@@ -67,8 +67,7 @@ ApiKeyType.implement({
     metadata: t.field({
       type: "String",
       nullable: true,
-      resolve: (parent) =>
-        parent.metadata ? JSON.stringify(parent.metadata) : null,
+      resolve: (parent) => (parent.metadata ? JSON.stringify(parent.metadata) : null),
     }),
     createdAt: t.exposeString("createdAt"),
     updatedAt: t.exposeString("updatedAt"),
@@ -91,8 +90,7 @@ CreatedApiKeyType.implement({
     metadata: t.field({
       type: "String",
       nullable: true,
-      resolve: (parent) =>
-        parent.metadata ? JSON.stringify(parent.metadata) : null,
+      resolve: (parent) => (parent.metadata ? JSON.stringify(parent.metadata) : null),
     }),
     createdAt: t.exposeString("createdAt"),
     updatedAt: t.exposeString("updatedAt"),
@@ -110,8 +108,7 @@ IntegrationType.implement({
     name: t.exposeString("name"),
     authConfig: t.field({
       type: "String",
-      resolve: (parent) =>
-        JSON.stringify(getPublicIntegrationAuthConfig(parent.authConfig)),
+      resolve: (parent) => JSON.stringify(getPublicIntegrationAuthConfig(parent.authConfig)),
     }),
     enabled: t.exposeBoolean("enabled"),
     createdAt: t.exposeString("createdAt"),
@@ -120,8 +117,7 @@ IntegrationType.implement({
 });
 
 // Connected Account Types
-const ConnectedAccountType =
-  builder.objectRef<ConnectedAccountWithCredentials>("ConnectedAccount");
+const ConnectedAccountType = builder.objectRef<ConnectedAccountWithCredentials>("ConnectedAccount");
 
 ConnectedAccountType.implement({
   fields: (t) => ({
@@ -162,8 +158,9 @@ OAuthIntegrationConfigType.implement({
   }),
 });
 
-const IntegrationProviderDefinitionType =
-  builder.objectRef<IntegrationDefinition>("IntegrationProviderDefinition");
+const IntegrationProviderDefinitionType = builder.objectRef<IntegrationDefinition>(
+  "IntegrationProviderDefinition"
+);
 
 IntegrationProviderDefinitionType.implement({
   fields: (t) => ({
@@ -202,11 +199,7 @@ builder.queryType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        return getApiKey(
-          args.id,
-          ctx.user.id,
-          ctx.session.activeOrganizationId,
-        );
+        return getApiKey(args.id, ctx.user.id, ctx.session.activeOrganizationId);
       },
     }),
     integrations: t.field({
@@ -232,10 +225,7 @@ builder.queryType({
     connectedAccounts: t.field({
       type: [ConnectedAccountType],
       resolve: async (_parent, _args, ctx) => {
-        return listConnectedAccounts(
-          ctx.user.id,
-          ctx.session.activeOrganizationId,
-        );
+        return listConnectedAccounts(ctx.user.id, ctx.session.activeOrganizationId);
       },
     }),
     connectedAccount: t.field({
@@ -245,11 +235,7 @@ builder.queryType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        return getConnectedAccount(
-          args.id,
-          ctx.user.id,
-          ctx.session.activeOrganizationId,
-        );
+        return getConnectedAccount(args.id, ctx.user.id, ctx.session.activeOrganizationId);
       },
     }),
     connectedAccountsByIntegration: t.field({
@@ -260,7 +246,7 @@ builder.queryType({
       resolve: async (_parent, args, ctx) => {
         return listConnectedAccountsByIntegration(
           args.integrationId,
-          ctx.session.activeOrganizationId,
+          ctx.session.activeOrganizationId
         );
       },
     }),
@@ -320,11 +306,7 @@ builder.mutationType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        return deleteApiKey(
-          args.id,
-          ctx.user.id,
-          ctx.session.activeOrganizationId,
-        );
+        return deleteApiKey(args.id, ctx.user.id, ctx.session.activeOrganizationId);
       },
     }),
     createIntegration: t.field({
@@ -361,19 +343,14 @@ builder.mutationType({
         enabled: t.arg.boolean({ required: false }),
       },
       resolve: async (_parent, args, ctx) => {
-        const authConfig = args.authConfig
-          ? JSON.parse(args.authConfig)
-          : undefined;
+        const authConfig = args.authConfig ? JSON.parse(args.authConfig) : undefined;
 
         return updateIntegration({
           id: args.id,
           organizationId: ctx.session.activeOrganizationId,
           name: args.name || undefined,
           authConfig,
-          enabled:
-            args.enabled !== null && args.enabled !== undefined
-              ? args.enabled
-              : undefined,
+          enabled: args.enabled !== null && args.enabled !== undefined ? args.enabled : undefined,
         });
       },
     }),
@@ -414,11 +391,7 @@ builder.mutationType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        return deleteConnectedAccount(
-          args.id,
-          ctx.user.id,
-          ctx.session.activeOrganizationId,
-        );
+        return deleteConnectedAccount(args.id, ctx.user.id, ctx.session.activeOrganizationId);
       },
     }),
   }),

@@ -82,13 +82,12 @@ export const clientLoader = async ({ params }: { params: { integrationId: string
   const integrationId = params.integrationId;
 
   const [integrationData, accountsData] = await Promise.all([
-    graphqlClient.request<{ integration: IntegrationResponse }>(
-      GET_INTEGRATION_QUERY,
-      { id: integrationId },
-    ),
+    graphqlClient.request<{ integration: IntegrationResponse }>(GET_INTEGRATION_QUERY, {
+      id: integrationId,
+    }),
     graphqlClient.request<{ connectedAccountsByIntegration: ConnectedAccountResponse[] }>(
       GET_CONNECTED_ACCOUNTS_QUERY,
-      { integrationId },
+      { integrationId }
     ),
   ]);
 
@@ -139,7 +138,7 @@ export default function IntegrationDetailPage() {
   const handleDelete = async () => {
     if (
       !confirm(
-        "Are you sure you want to delete this integration? This will also remove all connected accounts.",
+        "Are you sure you want to delete this integration? This will also remove all connected accounts."
       )
     ) {
       return;
@@ -168,10 +167,7 @@ export default function IntegrationDetailPage() {
               <ArrowLeft size={20} />
               Back
             </Link>
-            <Link
-              to={`/integrations/${integration.id}/edit`}
-              className="btn btn-primary"
-            >
+            <Link to={`/integrations/${integration.id}/edit`} className="btn btn-primary">
               <Pencil size={20} />
               Edit
             </Link>
@@ -181,7 +177,9 @@ export default function IntegrationDetailPage() {
               disabled={deleting}
               className="btn btn-error"
             >
-              {deleting ? <span className="loading loading-spinner loading-sm"></span> : (
+              {deleting ? (
+                <span className="loading loading-spinner loading-sm"></span>
+              ) : (
                 <>
                   <Trash2 size={20} />
                   Delete
@@ -230,16 +228,12 @@ export default function IntegrationDetailPage() {
 
               <div>
                 <label className="text-sm text-base-content/70">Created</label>
-                <p className="font-medium mt-1">
-                  {format(new Date(integration.createdAt), "PPp")}
-                </p>
+                <p className="font-medium mt-1">{format(new Date(integration.createdAt), "PPp")}</p>
               </div>
 
               <div>
                 <label className="text-sm text-base-content/70">Last Updated</label>
-                <p className="font-medium mt-1">
-                  {format(new Date(integration.updatedAt), "PPp")}
-                </p>
+                <p className="font-medium mt-1">{format(new Date(integration.updatedAt), "PPp")}</p>
               </div>
             </div>
           </div>
@@ -301,53 +295,49 @@ export default function IntegrationDetailPage() {
             <span className="badge badge-neutral">{connectedAccounts.length}</span>
           </h2>
 
-          {connectedAccounts.length === 0
-            ? (
-              <div className="text-center py-8 text-base-content/70">
-                <p>No accounts connected yet</p>
-              </div>
-            )
-            : (
-              <div className="overflow-x-auto">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Account</th>
-                      <th>Status</th>
-                      <th>Last Used</th>
-                      <th>Connected</th>
+          {connectedAccounts.length === 0 ? (
+            <div className="text-center py-8 text-base-content/70">
+              <p>No accounts connected yet</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Account</th>
+                    <th>Status</th>
+                    <th>Last Used</th>
+                    <th>Connected</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {connectedAccounts.map((account) => (
+                    <tr key={account.id}>
+                      <td>
+                        {account.accountIdentifier || (
+                          <span className="text-base-content/50 italic">Not specified</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(account.status)}
+                          <span className="capitalize">{account.status}</span>
+                        </div>
+                      </td>
+                      <td>
+                        {account.lastUsedAt ? (
+                          format(new Date(account.lastUsedAt), "PPp")
+                        ) : (
+                          <span className="text-base-content/50 italic">Never</span>
+                        )}
+                      </td>
+                      <td>{format(new Date(account.createdAt), "PPp")}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {connectedAccounts.map((account) => (
-                      <tr key={account.id}>
-                        <td>
-                          {account.accountIdentifier || (
-                            <span className="text-base-content/50 italic">
-                              Not specified
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(account.status)}
-                            <span className="capitalize">{account.status}</span>
-                          </div>
-                        </td>
-                        <td>
-                          {account.lastUsedAt
-                            ? (
-                              format(new Date(account.lastUsedAt), "PPp")
-                            )
-                            : <span className="text-base-content/50 italic">Never</span>}
-                        </td>
-                        <td>{format(new Date(account.createdAt), "PPp")}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>

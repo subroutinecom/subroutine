@@ -5,8 +5,8 @@ import { migrations } from "./migrations-index";
 
 const { Pool } = pg;
 
-const DATABASE_URL = Deno.env.get("DATABASE_URL") ||
-  "postgresql://subroutine:subroutine@localhost:5432/subroutine";
+const DATABASE_URL =
+  Deno.env.get("DATABASE_URL") || "postgresql://subroutine:subroutine@localhost:5432/subroutine";
 
 const dialect = new PostgresDialect({
   pool: new Pool({
@@ -36,9 +36,7 @@ export const initializeDatabase = async () => {
 
     results?.forEach((result) => {
       if (result.status === "Success") {
-        console.log(
-          `Migration "${result.migrationName}" executed successfully`,
-        );
+        console.log(`Migration "${result.migrationName}" executed successfully`);
       } else if (result.status === "Error") {
         console.error(`Migration "${result.migrationName}" failed`);
       }

@@ -55,10 +55,12 @@ server.register("getCounter", async () => {
   return counter as unknown as object;
 });
 
-type WireMessage = { kind: "rpc"; payload: CallRequest } | {
-  kind: "rpc_result";
-  payload: CallResponse;
-};
+type WireMessage =
+  | { kind: "rpc"; payload: CallRequest }
+  | {
+      kind: "rpc_result";
+      payload: CallResponse;
+    };
 
 addEventListener("message", async (ev: Event) => {
   const msg = (ev as MessageEvent<WireMessage>).data;

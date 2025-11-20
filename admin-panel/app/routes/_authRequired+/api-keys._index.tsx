@@ -54,9 +54,7 @@ export default function ApiKeysPage() {
 
   const handleDelete = async (id: string, name?: string | null) => {
     const displayName = name || "this API key";
-    if (
-      !confirm(`Are you sure you want to delete ${displayName}? This action cannot be undone.`)
-    ) {
+    if (!confirm(`Are you sure you want to delete ${displayName}? This action cannot be undone.`)) {
       return;
     }
 
@@ -69,9 +67,7 @@ export default function ApiKeysPage() {
       setApiKeys((prev) => prev.filter((key) => key.id !== id));
     } catch (err) {
       console.error("Failed to delete API key:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to delete API key"
-      );
+      setError(err instanceof Error ? err.message : "Failed to delete API key");
     } finally {
       setDeletingId(null);
     }
@@ -161,16 +157,11 @@ export default function ApiKeysPage() {
               </thead>
               <tbody>
                 {apiKeys.map((apiKey) => (
-                  <tr
-                    key={apiKey.id}
-                    className="border-b border-base-300 hover:bg-base-200/50"
-                  >
+                  <tr key={apiKey.id} className="border-b border-base-300 hover:bg-base-200/50">
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         <Key size={16} className="text-base-content/60" />
-                        <span className="font-medium">
-                          {apiKey.name || "Unnamed Key"}
-                        </span>
+                        <span className="font-medium">{apiKey.name || "Unnamed Key"}</span>
                       </div>
                     </td>
                     <td className="py-4 px-6">
@@ -186,10 +177,7 @@ export default function ApiKeysPage() {
                             title="Copy key prefix"
                           >
                             {copiedId === apiKey.id ? (
-                              <CheckCircle2
-                                size={14}
-                                className="text-success"
-                              />
+                              <CheckCircle2 size={14} className="text-success" />
                             ) : (
                               <Copy size={14} />
                             )}
@@ -199,17 +187,11 @@ export default function ApiKeysPage() {
                     </td>
                     <td className="py-4 px-6">
                       {isExpired(apiKey.expiresAt) ? (
-                        <span className="badge badge-error badge-sm">
-                          Expired
-                        </span>
+                        <span className="badge badge-error badge-sm">Expired</span>
                       ) : apiKey.enabled === false ? (
-                        <span className="badge badge-warning badge-sm">
-                          Disabled
-                        </span>
+                        <span className="badge badge-warning badge-sm">Disabled</span>
                       ) : (
-                        <span className="badge badge-success badge-sm">
-                          Active
-                        </span>
+                        <span className="badge badge-success badge-sm">Active</span>
                       )}
                     </td>
                     <td className="py-4 px-6 text-base-content/70 text-sm">
@@ -217,11 +199,7 @@ export default function ApiKeysPage() {
                     </td>
                     <td className="py-4 px-6 text-base-content/70 text-sm">
                       {apiKey.expiresAt ? (
-                        <span
-                          className={
-                            isExpired(apiKey.expiresAt) ? "text-error" : ""
-                          }
-                        >
+                        <span className={isExpired(apiKey.expiresAt) ? "text-error" : ""}>
                           {formatDate(apiKey.expiresAt)}
                         </span>
                       ) : (
@@ -255,8 +233,8 @@ export default function ApiKeysPage() {
 
       <div className="mt-6 p-4 bg-base-200 rounded-lg">
         <p className="text-sm text-base-content/70">
-          <strong>Note:</strong> Keep your API keys secure. The full key is only shown once during creation.
-          After that, only the prefix is visible for identification purposes.
+          <strong>Note:</strong> Keep your API keys secure. The full key is only shown once during
+          creation. After that, only the prefix is visible for identification purposes.
         </p>
       </div>
     </div>

@@ -64,9 +64,7 @@ export default function NewApiKeyPage() {
       setCreatedKey(result.createApiKey);
     } catch (err) {
       console.error("Failed to create API key:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to create API key"
-      );
+      setError(err instanceof Error ? err.message : "Failed to create API key");
     }
   };
 
@@ -97,7 +95,8 @@ export default function NewApiKeyPage() {
           <div>
             <h3 className="font-bold">Success!</h3>
             <div className="text-sm">
-              Your API key has been created. Make sure to copy it now as you won't be able to see it again.
+              Your API key has been created. Make sure to copy it now as you won't be able to see it
+              again.
             </div>
           </div>
         </div>
@@ -111,9 +110,7 @@ export default function NewApiKeyPage() {
                 <label className="label">
                   <span className="label-text font-semibold">Name</span>
                 </label>
-                <div className="text-base-content/70">
-                  {createdKey.name || "Unnamed Key"}
-                </div>
+                <div className="text-base-content/70">{createdKey.name || "Unnamed Key"}</div>
               </div>
 
               <div>
@@ -183,8 +180,8 @@ export default function NewApiKeyPage() {
 
         <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
           <p className="text-sm text-base-content/70">
-            <strong>Security Note:</strong> Store this API key securely. It provides full access to your account's
-            resources. Never share it publicly or commit it to version control.
+            <strong>Security Note:</strong> Store this API key securely. It provides full access to
+            your account's resources. Never share it publicly or commit it to version control.
           </p>
         </div>
       </div>
@@ -224,9 +221,7 @@ export default function NewApiKeyPage() {
               <input
                 type="text"
                 placeholder="e.g., Production API Key"
-                className={`input input-bordered w-full ${
-                  errors.name ? "input-error" : ""
-                }`}
+                className={`input input-bordered w-full ${errors.name ? "input-error" : ""}`}
                 {...register("name", {
                   required: "Name is required",
                   minLength: {
@@ -237,9 +232,7 @@ export default function NewApiKeyPage() {
               />
               {errors.name && (
                 <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.name.message}
-                  </span>
+                  <span className="label-text-alt text-error">{errors.name.message}</span>
                 </label>
               )}
               <label className="label">
@@ -255,11 +248,7 @@ export default function NewApiKeyPage() {
               <Link to="/api-keys" className="btn btn-ghost">
                 Cancel
               </Link>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="btn btn-primary gap-2"
-              >
+              <button type="submit" disabled={isSubmitting} className="btn btn-primary gap-2">
                 {isSubmitting ? (
                   <>
                     <span className="loading loading-spinner loading-sm"></span>

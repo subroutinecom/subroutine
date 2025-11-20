@@ -5,10 +5,7 @@
 
 import { join } from "node:path";
 
-const migrationsDir = join(
-  new URL(".", import.meta.url).pathname,
-  "../migrations",
-);
+const migrationsDir = join(new URL(".", import.meta.url).pathname, "../migrations");
 
 const migrationFiles: string[] = [];
 for await (const entry of Deno.readDir(migrationsDir)) {
@@ -44,10 +41,7 @@ ${exportsObj}
 };
 `;
 
-const outputPath = join(
-  new URL(".", import.meta.url).pathname,
-  "../db/migrations-index.ts",
-);
+const outputPath = join(new URL(".", import.meta.url).pathname, "../db/migrations-index.ts");
 
 await Deno.writeTextFile(outputPath, content);
 

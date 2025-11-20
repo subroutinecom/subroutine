@@ -7,10 +7,7 @@ import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
-import type {
-  IntegrationProvider,
-  IntegrationProviderDefinition,
-} from "~/types/integration";
+import type { IntegrationProvider, IntegrationProviderDefinition } from "~/types/integration";
 
 export function meta() {
   return [
@@ -39,16 +36,8 @@ const INTEGRATION_PROVIDERS_QUERY = gql`
 `;
 
 const CREATE_INTEGRATION_MUTATION = gql`
-  mutation CreateIntegration(
-    $provider: String!
-    $name: String!
-    $authConfig: String!
-  ) {
-    createIntegration(
-      provider: $provider
-      name: $name
-      authConfig: $authConfig
-    ) {
+  mutation CreateIntegration($provider: String!, $name: String!, $authConfig: String!) {
+    createIntegration(provider: $provider, name: $name, authConfig: $authConfig) {
       id
       provider
       name
@@ -137,10 +126,7 @@ export default function NewIntegrationPage() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
     };
@@ -201,9 +187,7 @@ export default function NewIntegrationPage() {
 
       navigate("/integrations");
     } catch (err) {
-      setServerError(
-        err instanceof Error ? err.message : "Failed to create integration",
-      );
+      setServerError(err instanceof Error ? err.message : "Failed to create integration");
     }
   };
 
@@ -354,9 +338,7 @@ export default function NewIntegrationPage() {
               className="input input-bordered w-full text-base"
             />
             {errors.name && <p className="text-sm text-error">{errors.name.message}</p>}
-            <p className="text-sm text-base-content/60">
-              A descriptive name for this integration
-            </p>
+            <p className="text-sm text-base-content/60">A descriptive name for this integration</p>
           </div>
 
           <div className="space-y-3">
@@ -447,21 +429,15 @@ export default function NewIntegrationPage() {
             <Link to="/integrations" className="btn btn-ghost px-6">
               Cancel
             </Link>
-            <button
-              type="submit"
-              className="btn btn-primary px-8"
-              disabled={isSubmitting}
-            >
-              {isSubmitting
-                ? (
-                  <>
-                    <span className="loading loading-spinner loading-sm"></span>
-                    Creating...
-                  </>
-                )
-                : (
-                  "Create Integration"
-                )}
+            <button type="submit" className="btn btn-primary px-8" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Creating...
+                </>
+              ) : (
+                "Create Integration"
+              )}
             </button>
           </div>
         </form>

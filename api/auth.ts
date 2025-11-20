@@ -7,8 +7,8 @@ const { Pool } = pg;
 
 const config = await getConfig();
 
-const DATABASE_URL = Deno.env.get("DATABASE_URL") ||
-  "postgresql://subroutine:subroutine@localhost:5432/subroutine";
+const DATABASE_URL =
+  Deno.env.get("DATABASE_URL") || "postgresql://subroutine:subroutine@localhost:5432/subroutine";
 
 export const auth = betterAuth({
   database: new Pool({

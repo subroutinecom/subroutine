@@ -27,11 +27,11 @@ export type GenerateSubroutineRequest = {
 };
 
 export const generateSubroutine = async (
-  params: GenerateSubroutineRequest,
+  params: GenerateSubroutineRequest
 ): Promise<Subroutine> => {
   const resolvedIntegrationIds = await resolveIntegrationAliases(
     params.organizationId,
-    params.integrations,
+    params.integrations
   );
   const subroutineId = nanoid();
 
@@ -47,9 +47,7 @@ export const generateSubroutine = async (
   let initialInputs: Record<string, unknown> | undefined;
 
   if (params.useMock) {
-    console.log(
-      `Using mock code generation for "${params.request}" (requested via useMock flag)`,
-    );
+    console.log(`Using mock code generation for "${params.request}" (requested via useMock flag)`);
     source = generateMockCode(params.request);
     if (params.needsImmediateInputs) {
       initialInputs = {};
@@ -59,9 +57,7 @@ export const generateSubroutine = async (
     const model = await createModel();
 
     if (!model) {
-      throw new Error(
-        "No model provider configured. Check config.yaml for AI model settings.",
-      );
+      throw new Error("No model provider configured. Check config.yaml for AI model settings.");
     }
 
     const result = await generateCode(model, params.request, {
@@ -106,7 +102,7 @@ export const generateSubroutine = async (
             integration_id: integrationId,
             organization_id: params.organizationId,
             created_at: createdAt,
-          })),
+          }))
         )
         .execute();
     }
@@ -129,7 +125,7 @@ export const generateSubroutine = async (
 
 export const getSubroutine = async (
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<Subroutine | undefined> => {
   const row = await db
     .selectFrom("subroutine")
@@ -144,16 +140,10 @@ export const getSubroutine = async (
 
   const integrationMap = await fetchIntegrationIdsForSubroutines([row.id]);
 
-  return mapRowToSubroutine(
-    row,
-    integrationMap.get(row.id) ?? [],
-    organizationId,
-  );
+  return mapRowToSubroutine(row, integrationMap.get(row.id) ?? [], organizationId);
 };
 
-export const listSubroutines = async (
-  organizationId: string,
-): Promise<Subroutine[]> => {
+export const listSubroutines = async (organizationId: string): Promise<Subroutine[]> => {
   const results = await db
     .selectFrom("subroutine")
     .selectAll()
@@ -165,9 +155,7 @@ export const listSubroutines = async (
     return [];
   }
 
-  const integrationMap = await fetchIntegrationIdsForSubroutines(
-    results.map((row) => row.id),
-  );
+  const integrationMap = await fetchIntegrationIdsForSubroutines(results.map((row) => row.id));
 
   return results.map((row) =>
     mapRowToSubroutine(row, integrationMap.get(row.id) ?? [], organizationId)
@@ -176,7 +164,7 @@ export const listSubroutines = async (
 
 const resolveIntegrationAliases = async (
   organizationId: string,
-  aliases?: string[],
+  aliases?: string[]
 ): Promise<string[]> => {
   const normalizedAliases = normalizeIntegrationAliases(aliases);
   if (normalizedAliases.length === 0) {
@@ -198,9 +186,7 @@ const resolveIntegrationAliases = async (
 
   const missing = normalizedAliases.filter((alias) => !idByAlias.has(alias));
   if (missing.length > 0) {
-    throw new Error(
-      `Unknown integrations: ${missing.map((alias) => `'${alias}'`).join(", ")}`,
-    );
+    throw new Error(`Unknown integrations: ${missing.map((alias) => `'${alias}'`).join(", ")}`);
   }
 
   return normalizedAliases.map((alias) => idByAlias.get(alias)!);
@@ -230,7 +216,7 @@ const normalizeIntegrationAliases = (aliases?: string[]): string[] => {
 };
 
 const fetchIntegrationIdsForSubroutines = async (
-  subroutineIds: string[],
+  subroutineIds: string[]
 ): Promise<Map<string, string[]>> => {
   if (subroutineIds.length === 0) {
     return new Map();
@@ -263,7 +249,7 @@ const mapRowToSubroutine = (
     created_at: string;
   },
   integrationIds: string[],
-  fallbackOrganizationId: string,
+  fallbackOrganizationId: string
 ): Subroutine => ({
   id: row.id,
   organizationId: row.organization_id ?? fallbackOrganizationId,

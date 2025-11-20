@@ -12,7 +12,7 @@ export type AuthContext = {
 
 export const authMiddleware = async (
   c: Context<{ Variables: { auth: AuthContext } }>,
-  next: Next,
+  next: Next
 ) => {
   const path = new URL(c.req.url).pathname;
 
@@ -38,7 +38,7 @@ export const authMiddleware = async (
           message: "Invalid API key",
         },
       },
-      401,
+      401
     );
   }
 
@@ -68,6 +68,6 @@ export const authMiddleware = async (
         message: "Authentication required. Provide session cookie or x-api-key header.",
       },
     },
-    401,
+    401
   );
 };

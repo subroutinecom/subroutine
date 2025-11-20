@@ -70,9 +70,7 @@ export const Sidebar = () => {
       {/* Brand */}
       <div className="p-6 border-b border-base-300">
         <Link to="/" className="block text-center group">
-          <span className="text-xl font-bold text-base-content">
-            subroutine
-          </span>
+          <span className="text-xl font-bold text-base-content">subroutine</span>
         </Link>
       </div>
 
@@ -139,10 +137,10 @@ export const Sidebar = () => {
               className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all
                 ${
-                active
-                  ? "bg-primary text-primary-content font-medium"
-                  : "text-base-content/70 hover:bg-base-200 hover:text-base-content"
-              }
+                  active
+                    ? "bg-primary text-primary-content font-medium"
+                    : "text-base-content/70 hover:bg-base-200 hover:text-base-content"
+                }
               `}
             >
               <Icon size={20} className="flex-shrink-0" />
@@ -160,19 +158,17 @@ export const Sidebar = () => {
           onClick={toggleTheme}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-base-200 transition-colors text-base-content/60 hover:text-base-content"
         >
-          {theme === "light"
-            ? (
-              <>
-                <Moon size={20} />
-                <span className="text-sm">Dark mode</span>
-              </>
-            )
-            : (
-              <>
-                <Sun size={20} />
-                <span className="text-sm">Light mode</span>
-              </>
-            )}
+          {theme === "light" ? (
+            <>
+              <Moon size={20} />
+              <span className="text-sm">Dark mode</span>
+            </>
+          ) : (
+            <>
+              <Sun size={20} />
+              <span className="text-sm">Light mode</span>
+            </>
+          )}
         </button>
 
         {/* User Menu Dropdown */}
@@ -201,9 +197,7 @@ export const Sidebar = () => {
               <span className="text-xs text-base-content/50">Signed in as</span>
             </li>
             <li className="px-3 py-2 pointer-events-none">
-              <span className="text-sm text-base-content font-medium">
-                {user.email}
-              </span>
+              <span className="text-sm text-base-content font-medium">{user.email}</span>
             </li>
             <div className="divider my-1"></div>
             <li>

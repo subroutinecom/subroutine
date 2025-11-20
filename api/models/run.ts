@@ -54,13 +54,8 @@ const requiresViewerScopedAccount = (provider: IntegrationProvider): boolean => 
   return Boolean(definition.viewerScoped);
 };
 
-export const runSubroutine = async (
-  params: RunSubroutineRequest,
-): Promise<Run> => {
-  const subroutine = await getSubroutine(
-    params.subroutineId,
-    params.organizationId,
-  );
+export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> => {
+  const subroutine = await getSubroutine(params.subroutineId, params.organizationId);
   if (!subroutine) {
     throw new Error("Subroutine not found");
   }
@@ -139,7 +134,7 @@ const buildSandboxIntegrations = async (params: {
     const connectedAccount = await getConnectedAccountByAccountIdentifier(
       params.organizationId,
       integrationId,
-      params.viewerId,
+      params.viewerId
     );
 
     if (!connectedAccount) {
@@ -181,7 +176,7 @@ const executeInSandbox = async (
   runId: string,
   sourceCode: string,
   integrations: SandboxIntegrationDefinition[],
-  inputs?: Record<string, unknown>,
+  inputs?: Record<string, unknown>
 ): Promise<void> => {
   try {
     const startedAt = new Date().toISOString();
@@ -192,7 +187,8 @@ const executeInSandbox = async (
       .where("id", "=", runId)
       .execute();
 
-    const codeToExecute = sourceCode +
+    const codeToExecute =
+      sourceCode +
       "\n\n// Export a default function that executes main with the provided inputs\n" +
       "export default async function() {\n" +
       "  const ctx = {};\n" +
@@ -225,7 +221,7 @@ const executeInSandbox = async (
 
     if (!response.ok) {
       throw new Error(
-        `Sandbox returned ${response.status}: ${sandboxResult.error || response.statusText}`,
+        `Sandbox returned ${response.status}: ${sandboxResult.error || response.statusText}`
       );
     }
 
@@ -270,10 +266,7 @@ const executeInSandbox = async (
   }
 };
 
-export const getRun = async (
-  id: string,
-  organizationId: string,
-): Promise<Run | undefined> => {
+export const getRun = async (id: string, organizationId: string): Promise<Run | undefined> => {
   const row = await db
     .selectFrom("run")
     .selectAll()

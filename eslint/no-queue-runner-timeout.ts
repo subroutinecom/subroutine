@@ -34,7 +34,8 @@ const rule = createRule({
           if (optionsArg.type === "ObjectExpression") {
             for (const prop of optionsArg.properties) {
               if (
-                prop.type === "Property" && prop.key.type === "Identifier" &&
+                prop.type === "Property" &&
+                prop.key.type === "Identifier" &&
                 prop.key.name === "timeout"
               ) {
                 context.report({

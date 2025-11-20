@@ -13,9 +13,7 @@ export const gmailDefinition: IntegrationDefinition = {
       "https://www.googleapis.com/auth/gmail.readonly",
       "https://www.googleapis.com/auth/gmail.send",
     ],
-    requiredScopes: [
-      "https://www.googleapis.com/auth/gmail.readonly",
-    ],
+    requiredScopes: ["https://www.googleapis.com/auth/gmail.readonly"],
     defaultRedirectPath: "/api/oauth/callback",
   },
 };

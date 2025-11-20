@@ -13,7 +13,7 @@ export const createTestAuthClient = (): typeof _dummyClient => {
   const cookieJar = new CookieJar();
   const cookieAwareFetch = async (
     input: RequestInfo | URL,
-    init?: RequestInit,
+    init?: RequestInit
   ): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
 
@@ -61,7 +61,7 @@ export const createTestAuthClientWithJar = (): {
   const cookieJar = new CookieJar();
   const cookieAwareFetch = async (
     input: RequestInfo | URL,
-    init?: RequestInit,
+    init?: RequestInit
   ): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
 

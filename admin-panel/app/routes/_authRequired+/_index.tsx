@@ -75,9 +75,7 @@ export default function Home() {
         <h1 className="text-5xl font-bold text-base-content">
           Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
         </h1>
-        <p className="text-xl text-base-content/60">
-          {activeOrganization?.name}
-        </p>
+        <p className="text-xl text-base-content/60">{activeOrganization?.name}</p>
       </div>
 
       {/* Stats Grid */}
@@ -85,10 +83,7 @@ export default function Home() {
         {stats.map((stat, _index) => {
           const Icon = stat.icon;
           return (
-            <div
-              key={stat.label}
-              className="card bg-base-100 border border-base-300"
-            >
+            <div key={stat.label} className="card bg-base-100 border border-base-300">
               <div className="card-body p-8">
                 <div className="flex items-start justify-between mb-6">
                   <div className="text-sm font-semibold uppercase tracking-wider text-base-content/50">
@@ -116,9 +111,7 @@ export default function Home() {
 
       {/* Quick Actions */}
       <div className="space-y-8">
-        <h2 className="text-3xl font-bold text-base-content">
-          Quick Actions
-        </h2>
+        <h2 className="text-3xl font-bold text-base-content">Quick Actions</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {quickActions.map((action) => {
@@ -148,9 +141,7 @@ export default function Home() {
                       className="text-base-content/30 group-hover:translate-x-1 transition-transform"
                     />
                   </h3>
-                  <p className="text-base text-base-content/60">
-                    {action.description}
-                  </p>
+                  <p className="text-base text-base-content/60">{action.description}</p>
                 </div>
               </Link>
             );
@@ -160,17 +151,13 @@ export default function Home() {
 
       {/* Recent Activity Placeholder */}
       <div className="space-y-8">
-        <h2 className="text-3xl font-bold text-base-content">
-          Recent Activity
-        </h2>
+        <h2 className="text-3xl font-bold text-base-content">Recent Activity</h2>
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body p-16 text-center">
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
               <Activity size={32} className="text-primary" />
             </div>
-            <h3 className="text-xl font-bold text-base-content mb-3">
-              No activity yet
-            </h3>
+            <h3 className="text-xl font-bold text-base-content mb-3">No activity yet</h3>
             <p className="text-base text-base-content/60 max-w-lg mx-auto">
               Your recent workflow runs and integration activity will appear here
             </p>

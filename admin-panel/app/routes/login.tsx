@@ -49,7 +49,7 @@ export default function Login() {
           onError: (ctx) => {
             setAuthError(ctx.error.message || "Sign up failed");
           },
-        },
+        }
       );
     } else {
       await authClient.signIn.email(
@@ -62,7 +62,7 @@ export default function Login() {
           onError: (ctx) => {
             setAuthError(ctx.error.message || "Invalid credentials");
           },
-        },
+        }
       );
     }
   };
@@ -74,7 +74,7 @@ export default function Login() {
         onError: (ctx) => {
           setAuthError(ctx.error.message || `Failed to sign in with ${provider}`);
         },
-      },
+      }
     );
   };
 
@@ -87,9 +87,7 @@ export default function Login() {
       <div className="max-w-md mx-auto pt-20">
         {/* Brand */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-base-content mb-2">
-            subroutine
-          </h1>
+          <h1 className="text-4xl font-bold text-base-content mb-2">subroutine</h1>
           <p className="text-base text-base-content/60">
             {isSignUp ? "Create your account" : "Sign in to continue"}
           </p>
@@ -106,11 +104,7 @@ export default function Login() {
                     className="btn btn-outline w-full gap-2"
                     disabled={isSubmitting}
                   >
-                    <img
-                      src="/icons/github.svg"
-                      alt="GitHub"
-                      className="w-5 h-5"
-                    />
+                    <img src="/icons/github.svg" alt="GitHub" className="w-5 h-5" />
                     <span>Continue with GitHub</span>
                   </button>
                 )}
@@ -121,11 +115,7 @@ export default function Login() {
                     className="btn btn-outline w-full gap-2"
                     disabled={isSubmitting}
                   >
-                    <img
-                      src="/icons/google.svg"
-                      alt="Google"
-                      className="w-5 h-5"
-                    />
+                    <img src="/icons/google.svg" alt="Google" className="w-5 h-5" />
                     <span>Continue with Google</span>
                   </button>
                 )}
@@ -150,9 +140,7 @@ export default function Login() {
                   />
                   {errors.email && (
                     <label className="label">
-                      <span className="label-text-alt text-error">
-                        {errors.email.message}
-                      </span>
+                      <span className="label-text-alt text-error">{errors.email.message}</span>
                     </label>
                   )}
                 </div>
@@ -173,9 +161,7 @@ export default function Login() {
                   />
                   {errors.password && (
                     <label className="label">
-                      <span className="label-text-alt text-error">
-                        {errors.password.message}
-                      </span>
+                      <span className="label-text-alt text-error">{errors.password.message}</span>
                     </label>
                   )}
                 </div>
@@ -186,18 +172,14 @@ export default function Login() {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  className="btn btn-primary w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? <span className="loading loading-spinner"></span> : isSignUp
-                    ? (
-                      "Create Account"
-                    )
-                    : (
-                      "Sign In"
-                    )}
+                <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <span className="loading loading-spinner"></span>
+                  ) : isSignUp ? (
+                    "Create Account"
+                  ) : (
+                    "Sign In"
+                  )}
                 </button>
 
                 <div className="text-center">

@@ -1,13 +1,13 @@
 {
   "workspace": ["./api", "./sandbox", "./tests", "./admin-panel"],
-  "exclude": [
-    "admin-panel/build"
-  ],
+  "exclude": ["admin-panel/build"],
   "nodeModulesDir": "auto",
   "unstable": ["sloppy-imports"],
   "tasks": {
     "check": "deno check --sloppy-imports",
     "eslint": "deno run -A --sloppy-imports npm:eslint@9",
+    "prettier:check": "deno run -A npm:prettier@3 --check .",
+    "prettier:format": "deno run -A npm:prettier@3 --write .",
     "test": "docker compose run --rm tests deno test tests --allow-net --allow-env --allow-read --sloppy-imports --unstable-worker-options"
   },
   "fmt": {
@@ -29,18 +29,14 @@
     "globals": "npm:globals@^16.5.0",
     "graphql": "npm:graphql@^16.12.0",
     "graphql-request": "npm:graphql-request@^7.3.3",
+    "prettier": "npm:prettier@^3.6.2",
     "theme-change": "npm:theme-change@^2.5.0",
     "typescript-eslint": "npm:typescript-eslint@^8.46.3",
     "vite": "npm:vite@^7.2.0"
   },
   "lint": {
     "rules": {
-      "exclude": [
-        "no-sloppy-imports",
-        "no-explicit-any",
-        "no-slow-types",
-        "require-await"
-      ]
+      "exclude": ["no-sloppy-imports", "no-explicit-any", "no-slow-types", "require-await"]
     }
   }
 }

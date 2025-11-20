@@ -32,12 +32,7 @@ const GET_INTEGRATION_QUERY = gql`
 `;
 
 const UPDATE_INTEGRATION_MUTATION = gql`
-  mutation UpdateIntegration(
-    $id: String!
-    $name: String
-    $authConfig: String
-    $enabled: Boolean
-  ) {
+  mutation UpdateIntegration($id: String!, $name: String, $authConfig: String, $enabled: Boolean) {
     updateIntegration(id: $id, name: $name, authConfig: $authConfig, enabled: $enabled) {
       id
       name
@@ -102,7 +97,7 @@ export default function EditIntegrationPage() {
         setLoading(true);
         const data = await graphqlClient.request<{ integration: IntegrationResponse }>(
           GET_INTEGRATION_QUERY,
-          { id: integrationId },
+          { id: integrationId }
         );
         const parsed: ParsedIntegration = {
           ...data.integration,
@@ -239,9 +234,7 @@ export default function EditIntegrationPage() {
               />
               {errors.name && (
                 <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.name.message}
-                  </span>
+                  <span className="label-text-alt text-error">{errors.name.message}</span>
                 </label>
               )}
             </div>
@@ -258,9 +251,7 @@ export default function EditIntegrationPage() {
               />
               {errors.clientId && (
                 <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.clientId.message}
-                  </span>
+                  <span className="label-text-alt text-error">{errors.clientId.message}</span>
                 </label>
               )}
             </div>
@@ -277,14 +268,13 @@ export default function EditIntegrationPage() {
               />
               {errors.clientSecret && (
                 <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.clientSecret.message}
-                  </span>
+                  <span className="label-text-alt text-error">{errors.clientSecret.message}</span>
                 </label>
               )}
               <label className="label">
                 <span className="label-text-alt text-warning">
-                  Provide a new secret to rotate credentials. Leave blank to keep the current secret.
+                  Provide a new secret to rotate credentials. Leave blank to keep the current
+                  secret.
                 </span>
               </label>
             </div>
@@ -301,9 +291,7 @@ export default function EditIntegrationPage() {
               />
               {errors.scopes && (
                 <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.scopes.message}
-                  </span>
+                  <span className="label-text-alt text-error">{errors.scopes.message}</span>
                 </label>
               )}
               <label className="label">
@@ -327,9 +315,7 @@ export default function EditIntegrationPage() {
               />
               {errors.redirectUri && (
                 <label className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.redirectUri.message}
-                  </span>
+                  <span className="label-text-alt text-error">{errors.redirectUri.message}</span>
                 </label>
               )}
               <label className="label">
@@ -358,27 +344,18 @@ export default function EditIntegrationPage() {
             <div className="divider"></div>
 
             <div className="flex gap-3 justify-end">
-              <Link
-                to={`/integrations/${integrationId}`}
-                className="btn btn-ghost"
-              >
+              <Link to={`/integrations/${integrationId}`} className="btn btn-ghost">
                 Cancel
               </Link>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isSubmitting}
-              >
-                {isSubmitting
-                  ? (
-                    <>
-                      <span className="loading loading-spinner loading-sm"></span>
-                      Saving...
-                    </>
-                  )
-                  : (
-                    "Save Changes"
-                  )}
+              <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </button>
             </div>
           </form>

@@ -10,10 +10,10 @@ export type CallRequest = {
 export type CallResponse =
   | { readonly id: string; readonly ok: true; readonly result: unknown }
   | {
-    readonly id: string;
-    readonly ok: false;
-    readonly error: { readonly name: string; readonly message: string };
-  };
+      readonly id: string;
+      readonly ok: false;
+      readonly error: { readonly name: string; readonly message: string };
+    };
 
 export interface Transport {
   request: (req: CallRequest) => Promise<CallResponse>;
@@ -28,8 +28,9 @@ type RemoteReturn<R> = R extends object ? Remote<R> : R;
 export type Remote<T> = {
   readonly [K in keyof T]: T[K] extends (...args: infer A) => infer R
     ? (...args: A) => Promise<RemoteReturn<Awaited<R>>>
-    : T[K] extends object ? Remote<T[K]>
-    : unknown;
+    : T[K] extends object
+      ? Remote<T[K]>
+      : unknown;
 };
 
 const isFunction = (v: unknown): v is (...args: unknown[]) => unknown => typeof v === "function";
@@ -55,14 +56,14 @@ export class RemoteProxyServer<T extends object = object> {
 
   register(
     name: string,
-    provider: (...args: readonly unknown[]) => Promise<object> | object,
+    provider: (...args: readonly unknown[]) => Promise<object> | object
   ): void {
     this.#providers.set(name, { factory: provider, singleton: false });
   }
 
   registerSingleton(
     name: string,
-    provider: (...args: readonly unknown[]) => Promise<object> | object,
+    provider: (...args: readonly unknown[]) => Promise<object> | object
   ): void {
     this.#providers.set(name, { factory: provider, singleton: true });
   }
@@ -130,8 +131,8 @@ export class RemoteProxyServer<T extends object = object> {
 
       // If the result is an object with callable members, surface it as a remote instance
       const isObject = typeof awaited === "object" && awaited !== null;
-      const hasCallable = isObject &&
-        Object.values(awaited as Record<string, unknown>).some(isFunction);
+      const hasCallable =
+        isObject && Object.values(awaited as Record<string, unknown>).some(isFunction);
       if (hasCallable) {
         const newId = genId();
         this.#instances.set(newId, awaited as object);
@@ -261,17 +262,19 @@ export const createLocalBridge = <T extends object>(target: T): Remote<T> => {
 };
 
 export const createLocalClient = <T extends object>(
-  server: RemoteProxyServer<object>,
+  server: RemoteProxyServer<object>
 ): RemoteProxyClient<T> => {
   const transport = createLocalTransport(server.handle);
   return new RemoteProxyClient<T>(transport);
 };
 
 // Worker-based transport for cross-thread messaging
-type WireMessage = { kind: "rpc"; payload: CallRequest } | {
-  kind: "rpc_result";
-  payload: CallResponse;
-};
+type WireMessage =
+  | { kind: "rpc"; payload: CallRequest }
+  | {
+      kind: "rpc_result";
+      payload: CallResponse;
+    };
 
 export class WorkerTransport implements Transport {
   #worker: Worker;
@@ -307,7 +310,7 @@ export class WorkerTransport implements Transport {
 }
 
 export const createWorkerClient = <T extends object>(
-  workerScript: string | URL,
+  workerScript: string | URL
 ): RemoteProxyClient<T> => {
   const worker = new Worker(workerScript, { type: "module", name: "remote-proxy" });
   const transport = new WorkerTransport(worker);
@@ -315,7 +318,7 @@ export const createWorkerClient = <T extends object>(
 };
 
 export const createWorkerClientFromPath = <T extends object>(
-  workerPath: string | URL,
+  workerPath: string | URL
 ): RemoteProxyClient<T> => {
   let url: string;
   try {
@@ -346,7 +349,7 @@ export const createWorkerClientFromPath = <T extends object>(
 };
 
 export const createWorkerClientFromInlineSource = <T extends object>(
-  source: string,
+  source: string
 ): RemoteProxyClient<T> => {
   const blob = new Blob([source], { type: "text/javascript" });
   const url = URL.createObjectURL(blob);
