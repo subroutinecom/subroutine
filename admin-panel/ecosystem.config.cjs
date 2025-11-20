@@ -34,8 +34,13 @@ module.exports = {
             name: "codegen",
             script: "deno",
             args: "task codegen",
-            autorestart: true,
-            watch: false,
+            autorestart: false,
+            watch: [
+              "../packages/graphql-schema/schema.graphql",
+              "app/**/*.ts",
+              "app/**/*.tsx",
+              "codegen.ts",
+            ],
             env: {
               NODE_ENV: "development",
             },

@@ -1,5 +1,6 @@
 {
   "exclude": [".react-router/", ".vite/", "app/__generated__/"],
+  "nodeModulesDir": "auto",
   "imports": {
     "@cap.js/server": "npm:@cap.js/server@^4.0.3",
     "@cap.js/widget": "npm:@cap.js/widget@^0.1.31",
@@ -51,7 +52,7 @@
     "dev": "deno run --allow-all --node-modules-dir npm:@react-router/dev/react-router dev",
     "start": "deno run --allow-all --node-modules-dir npm:@react-router/serve ./build/server/index.js",
     "typecheck": "deno check --sloppy-imports",
-    "codegen": "deno run --allow-read --allow-write --allow-net --allow-env --allow-sys npm:@graphql-codegen/cli@6.0.2/graphql-codegen --config codegen.ts"
+    "codegen": "deno run --allow-read --allow-write --allow-net --allow-env --allow-sys --node-modules-dir npm:@graphql-codegen/cli@6.0.2/graphql-codegen --config codegen.ts"
   },
   "lint": {
     "exclude": ["ecosystem.config.cjs"]
