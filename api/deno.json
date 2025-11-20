@@ -36,7 +36,7 @@
     "typecheck": "deno check --sloppy-imports",
     "auth:generate": "deno run --allow-read --allow-write --allow-run --allow-env scripts/better-auth-generate.ts",
     "db:flush": "deno run --allow-read --allow-env --allow-net scripts/flush-db.ts",
-    "graphql:schema": "sleep 3 && npx --yes -p @graphql-codegen/cli@6.0.2 -p @graphql-codegen/schema-ast@5.0.0 graphql-codegen --config ./codegen.yml"
+    "graphql:schema": "bash scripts/wait-for-api.sh && npx --yes -p @graphql-codegen/cli@6.0.2 -p @graphql-codegen/schema-ast@5.0.0 graphql-codegen --config ./codegen.yml"
   },
   "lint": {
     "exclude": ["ecosystem.config.js"]
