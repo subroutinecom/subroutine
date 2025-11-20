@@ -1,0 +1,8 @@
+build/
+dist/
+.vite/
+.react-router/
+
+admin-panel/app/__generated__/
+
+deno.lock

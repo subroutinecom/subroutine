@@ -39,3 +39,6 @@ jobs:
 
       - name: Eslint
         run: deno task eslint
+
+      - name: Prettier check
+        run: deno task prettier:check
