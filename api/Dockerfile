@@ -13,6 +13,7 @@ FROM base AS build
 COPY ./api ./api
 COPY ./eslint ./eslint
 COPY ./eslint.config.ts ./eslint.config.ts
+COPY ./packages ./packages
 
 WORKDIR /app/api
 
@@ -34,6 +35,7 @@ FROM base AS prod
 WORKDIR /app/api
 
 COPY --from=build /app/api/api-server /release/build
+COPY --from=build /app/packages /app/packages
 COPY ./api/ecosystem.config.js /app/api/ecosystem.config.js
 COPY ./api/manage.sh /app/api/manage.sh
 

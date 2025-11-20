@@ -1,0 +1,123 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type ApiKey {
+  createdAt: String
+  enabled: Boolean
+  expiresAt: String
+  id: String
+  metadata: String
+  name: String
+  organizationId: String
+  permissions: String
+  prefix: String
+  start: String
+  updatedAt: String
+}
+
+type ConnectedAccount {
+  accountIdentifier: String
+  createdAt: String
+  credentials: String
+  id: String
+  integrationId: String
+  lastUsedAt: String
+  organizationId: String
+  status: String
+  updatedAt: String
+  userId: String
+}
+
+type CreatedApiKey {
+  createdAt: String
+  enabled: Boolean
+  expiresAt: String
+  id: String
+  key: String
+  metadata: String
+  name: String
+  organizationId: String
+  permissions: String
+  prefix: String
+  start: String
+  updatedAt: String
+}
+
+type Integration {
+  authConfig: String
+  createdAt: String
+  enabled: Boolean
+  id: String
+  name: String
+  organizationId: String
+  provider: String
+  updatedAt: String
+}
+
+type IntegrationProviderDefinition {
+  authType: String
+  description: String
+  id: String
+  name: String
+  oauthConfig: IntegrationProviderOAuthConfig
+  viewerScoped: Boolean
+}
+
+type IntegrationProviderOAuthConfig {
+  authUrl: String
+  defaultRedirectPath: String
+  defaultScopes: [String!]
+  requiredScopes: [String!]
+  tokenUrl: String
+}
+
+type Mutation {
+  createApiKey(
+    """JSON string of metadata"""
+    metadata: String
+    name: String
+    prefix: String
+  ): CreatedApiKey
+  createConnectedAccount(
+    accountIdentifier: String
+    """JSON string of ConnectedAccountCredentials"""
+    credentials: String!
+    integrationId: String!
+  ): ConnectedAccount
+  createIntegration(
+    """JSON string of IntegrationAuthConfig"""
+    authConfig: String!
+    name: String!
+    provider: String!
+  ): Integration
+  deleteApiKey(id: String!): Boolean
+  deleteConnectedAccount(id: String!): Boolean
+  deleteIntegration(id: String!): Boolean
+  updateApiKey(
+    id: String!
+    """JSON string of metadata"""
+    metadata: String
+    name: String
+  ): ApiKey
+  updateIntegration(
+    """JSON string of IntegrationAuthConfig"""
+    authConfig: String
+    enabled: Boolean
+    id: String!
+    name: String
+  ): Integration
+}
+
+type Query {
+  apiKey(id: String!): ApiKey
+  apiKeys: [ApiKey!]
+  connectedAccount(id: String!): ConnectedAccount
+  connectedAccounts: [ConnectedAccount!]
+  connectedAccountsByIntegration(integrationId: String!): [ConnectedAccount!]
+  integration(id: String!): Integration
+  integrationProviders: [IntegrationProviderDefinition!]
+  integrations: [Integration!]
+  ping: String
+}

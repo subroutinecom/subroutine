@@ -1,0 +1,12 @@
+schema:
+  - http://localhost/graphql:
+      headers:
+        x-graphql-introspection: "1"
+documents: []
+generates:
+  ../packages/graphql-schema/schema.graphql:
+    plugins:
+      - schema-ast
+    config:
+      includeDirectives: true
+ignoreNoDocuments: true
