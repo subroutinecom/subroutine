@@ -94,7 +94,9 @@ export default function NewIntegrationPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const getProviderDefinition = (id: IntegrationProvider) =>
-    providerDefinitions.find((provider) => provider.id === id);
+    providerDefinitions.find(
+      (provider: IntegrationProviderDefinition) => provider.id === id,
+    );
 
   const initialProviderId = useMemo<IntegrationProvider>(() => {
     return providerDefinitions[0]?.id ?? "gmail";
@@ -294,7 +296,7 @@ export default function NewIntegrationPage() {
                     {dropdownOpen && (
                       <div className="absolute z-50 w-full mt-2 bg-base-100 border border-neutral/20 rounded-lg overflow-hidden shadow-xl animate-slide-in-top">
                         <div className="py-1">
-                          {providerDefinitions.map((definition) => {
+                          {providerDefinitions.map((definition: IntegrationProviderDefinition) => {
                             const isSelected = field.value === definition.id;
                             return (
                               <button

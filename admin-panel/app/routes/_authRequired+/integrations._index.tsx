@@ -65,7 +65,7 @@ export const clientLoader = async () => {
     integrations: IntegrationResponse[];
   }>(INTEGRATIONS_QUERY);
 
-  const integrations = data.integrations.map((integration) => ({
+  const integrations = data.integrations.map((integration: IntegrationResponse) => ({
     ...integration,
     authConfig: JSON.parse(integration.authConfig) as IntegrationAuthConfig,
   }));
@@ -225,7 +225,7 @@ export default function IntegrationsPage() {
                         <div className="flex gap-1.5 flex-wrap max-w-xs">
                           {integration.authConfig.scopes
                             .slice(0, 3)
-                            .map((scope) => (
+                            .map((scope: string) => (
                               <span
                                 key={scope}
                                 className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300"

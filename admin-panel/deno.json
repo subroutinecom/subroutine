@@ -8,10 +8,13 @@
     "skipLibCheck": true,
     "verbatimModuleSyntax": true
   },
+  "imports": {
+    "~/": "./app/"
+  },
   "tasks": {
     "build": "deno run --unstable-bare-node-builtins --allow-all npm:@react-router/dev build",
     "dev": "deno run --unstable-bare-node-builtins --allow-all npm:@react-router/dev dev",
-    "start": "deno run --unstable-bare-node-builtins --allow-all --node-modules-dir npm:@react-router/serve ./build/server/index.js",
+    "start": "deno run --unstable-bare-node-builtins --allow-all npm:@react-router/serve ./build/server/index.js",
     "typecheck": "deno check --sloppy-imports",
     "codegen": "deno run --unstable-bare-node-builtins --allow-read --allow-write --allow-net --allow-env --allow-sys npm:@graphql-codegen/cli@6.0.2/graphql-codegen --config codegen.ts"
   },

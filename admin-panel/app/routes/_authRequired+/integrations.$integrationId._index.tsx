@@ -267,7 +267,7 @@ export default function IntegrationDetailPage() {
               <div>
                 <label className="text-sm text-base-content/70">Scopes</label>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {integration.authConfig.scopes.map((scope) => (
+                  {integration.authConfig.scopes.map((scope: string) => (
                     <span key={scope} className="badge badge-sm badge-ghost">
                       {scope}
                     </span>
@@ -319,7 +319,7 @@ export default function IntegrationDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {connectedAccounts.map((account) => (
+                    {connectedAccounts.map((account: ConnectedAccountResponse) => (
                       <tr key={account.id}>
                         <td>
                           {account.accountIdentifier || (
