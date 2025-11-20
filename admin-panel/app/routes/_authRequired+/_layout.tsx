@@ -22,9 +22,8 @@ export default function AuthRequired() {
       }
 
       const pathname = location.pathname;
-      const isSetupRoute = pathname === "/invitations" ||
-        pathname === "/setup-organization" ||
-        pathname === "/logout";
+      const isSetupRoute =
+        pathname === "/invitations" || pathname === "/setup-organization" || pathname === "/logout";
 
       if (isSetupRoute) {
         setIsCheckingRoute(false);

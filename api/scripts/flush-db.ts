@@ -5,8 +5,8 @@ import pg from "pg";
 
 const { Pool } = pg;
 
-const DATABASE_URL = Deno.env.get("DATABASE_URL") ||
-  "postgresql://subroutine:subroutine@localhost:5432/subroutine";
+const DATABASE_URL =
+  Deno.env.get("DATABASE_URL") || "postgresql://subroutine:subroutine@localhost:5432/subroutine";
 
 // Show warning and get confirmation
 console.log("\nWARNING: DATABASE FLUSH\n");
@@ -48,9 +48,7 @@ try {
 
     for (const row of result.rows) {
       console.log(`Dropping table: ${row.tablename}`);
-      await sql`DROP TABLE IF EXISTS ${sql.table(row.tablename)} CASCADE`.execute(
-        db,
-      );
+      await sql`DROP TABLE IF EXISTS ${sql.table(row.tablename)} CASCADE`.execute(db);
     }
 
     console.log(`\nSuccessfully dropped ${result.rows.length} tables`);

@@ -46,11 +46,7 @@ const graphqlSchemaWatcher = {
   args: ["task", "graphql:schema"],
   autorestart: false,
   watch: ["internal", "models", "integrations", "services", "codegen.yml"],
-  ignore_watch: [
-    "node_modules",
-    ".git",
-    "../packages/graphql-schema/schema.graphql",
-  ],
+  ignore_watch: ["node_modules", ".git", "../packages/graphql-schema/schema.graphql"],
   env: {
     NODE_ENV: "development",
   },
@@ -58,8 +54,5 @@ const graphqlSchemaWatcher = {
 
 module.exports = {
   exp_backoff_restart_delay: 100,
-  apps: [
-    apiServerApp,
-    ...(IS_BUILD ? [] : [linter, migrationsWatcher, graphqlSchemaWatcher]),
-  ],
+  apps: [apiServerApp, ...(IS_BUILD ? [] : [linter, migrationsWatcher, graphqlSchemaWatcher])],
 };

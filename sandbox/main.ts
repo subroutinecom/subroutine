@@ -24,7 +24,7 @@ app.post("/test/executeTypescript", async (c) => {
           success: false,
           error: "Missing or invalid 'code' field in request body",
         },
-        400,
+        400
       );
     }
 
@@ -43,7 +43,7 @@ app.post("/test/executeTypescript", async (c) => {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      500,
+      500
     );
   }
 });
@@ -59,7 +59,7 @@ app.post("/test/executeCommand", async (c) => {
           success: false,
           error: "Missing or invalid 'command' field in request body",
         },
-        400,
+        400
       );
     }
 
@@ -80,7 +80,7 @@ app.post("/test/executeCommand", async (c) => {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       },
-      500,
+      500
     );
   }
 });

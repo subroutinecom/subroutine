@@ -25,7 +25,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
         resources: {},
         tools: {},
       },
-    },
+    }
   );
 
   server.registerResource(
@@ -47,7 +47,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
           },
         ],
       };
-    },
+    }
   );
 
   server.registerResource(
@@ -100,7 +100,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
           },
         ],
       };
-    },
+    }
   );
 
   server.registerResource(
@@ -153,7 +153,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
           },
         ],
       };
-    },
+    }
   );
 
   server.registerTool(
@@ -164,9 +164,10 @@ export function createMcpServer(auth: AuthContext): McpServer {
       inputSchema: {
         request: z.string().describe("Natural language request"),
         integrations: z.array(z.string()).optional(),
-        useMock: z.boolean().optional().describe(
-          "Use mock code generation instead of AI (for testing)",
-        ),
+        useMock: z
+          .boolean()
+          .optional()
+          .describe("Use mock code generation instead of AI (for testing)"),
       },
     },
     async ({ request, useMock, integrations }) => {
@@ -188,12 +189,12 @@ export function createMcpServer(auth: AuthContext): McpServer {
                 subroutineUri: `resource://subroutine/${subroutine.id}`,
               },
               null,
-              2,
+              2
             ),
           },
         ],
       };
-    },
+    }
   );
 
   server.registerTool(
@@ -207,9 +208,10 @@ export function createMcpServer(auth: AuthContext): McpServer {
         viewerId: z.string().describe("External viewer identifier"),
         timeoutMs: z.number().optional(),
         integrations: z.array(z.string()).optional(),
-        useMock: z.boolean().optional().describe(
-          "Use mock code generation instead of AI (for testing)",
-        ),
+        useMock: z
+          .boolean()
+          .optional()
+          .describe("Use mock code generation instead of AI (for testing)"),
       },
     },
     async ({ request, viewerId, timeoutMs, useMock, integrations }) => {
@@ -257,7 +259,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
                   },
                 ],
                 null,
-                2,
+                2
               ),
             },
           ],
@@ -285,7 +287,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
         }
         throw error;
       }
-    },
+    }
   );
 
   server.registerTool(
@@ -340,7 +342,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
                   status: run.status,
                 },
                 null,
-                2,
+                2
               ),
             },
           ],
@@ -373,19 +375,21 @@ export function createMcpServer(auth: AuthContext): McpServer {
               type: "text",
               text: JSON.stringify({
                 error: {
-                  code: error instanceof Error && error.message === "Subroutine not found"
-                    ? "NOT_FOUND"
-                    : "UNKNOWN",
-                  message: error instanceof Error && error.message === "Subroutine not found"
-                    ? "subroutine not found"
-                    : "failed to run subroutine",
+                  code:
+                    error instanceof Error && error.message === "Subroutine not found"
+                      ? "NOT_FOUND"
+                      : "UNKNOWN",
+                  message:
+                    error instanceof Error && error.message === "Subroutine not found"
+                      ? "subroutine not found"
+                      : "failed to run subroutine",
                 },
               }),
             },
           ],
         };
       }
-    },
+    }
   );
 
   return server;

@@ -1,8 +1,6 @@
 {
   "workspace": ["./api", "./sandbox", "./tests", "./admin-panel"],
-  "exclude": [
-    "admin-panel/build"
-  ],
+  "exclude": ["admin-panel/build"],
   "nodeModulesDir": "auto",
   "unstable": ["sloppy-imports"],
   "tasks": {
@@ -38,12 +36,7 @@
   },
   "lint": {
     "rules": {
-      "exclude": [
-        "no-sloppy-imports",
-        "no-explicit-any",
-        "no-slow-types",
-        "require-await"
-      ]
+      "exclude": ["no-sloppy-imports", "no-explicit-any", "no-slow-types", "require-await"]
     }
   }
 }

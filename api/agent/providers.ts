@@ -5,11 +5,7 @@ import { createVertex } from "@ai-sdk/google-vertex";
 import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic";
 import { getConfig } from "../config/loader.ts";
 
-type ModelProvider =
-  | "anthropic"
-  | "openai"
-  | "vertex-anthropic"
-  | "vertex-gemini";
+type ModelProvider = "anthropic" | "openai" | "vertex-anthropic" | "vertex-gemini";
 
 type ProviderConfig = {
   provider: ModelProvider;
@@ -54,12 +50,8 @@ export const createModel = async (): Promise<LanguageModel | null> => {
       const project = Deno.env.get("GOOGLE_VERTEX_PROJECT");
       const defaultLocation = config.provider === "vertex-anthropic" ? "us-east5" : "us-central1";
       const location = Deno.env.get("GOOGLE_VERTEX_LOCATION") ?? defaultLocation;
-      const googleServiceAccountEmial = Deno.env.get(
-        "GOOGLE_SERVICE_ACCOUNT_EMAIL",
-      );
-      const googleServiceAccountPrivateKey = Deno.env.get(
-        "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
-      );
+      const googleServiceAccountEmial = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_EMAIL");
+      const googleServiceAccountPrivateKey = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY");
 
       if (!project) {
         console.error("GOOGLE_VERTEX_PROJECT not set");
@@ -79,9 +71,8 @@ export const createModel = async (): Promise<LanguageModel | null> => {
         };
       }
 
-      const providerFactory = config.provider === "vertex-anthropic"
-        ? createVertexAnthropic
-        : createVertex;
+      const providerFactory =
+        config.provider === "vertex-anthropic" ? createVertexAnthropic : createVertex;
 
       const vertexAnthropic = providerFactory({
         project,

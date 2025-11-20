@@ -42,7 +42,7 @@ const validateIntegrationAuthConfig = (config: IntegrationAuthConfig) => {
 };
 
 export const getPublicIntegrationAuthConfig = (
-  config: IntegrationAuthConfig,
+  config: IntegrationAuthConfig
 ): Omit<IntegrationAuthConfig, "clientSecret"> => {
   const { clientSecret: _clientSecret, ...rest } = config;
   return rest;
@@ -64,7 +64,7 @@ export type UpdateIntegrationRequest = {
 };
 
 export const createIntegration = async (
-  params: CreateIntegrationRequest,
+  params: CreateIntegrationRequest
 ): Promise<IntegrationWithConfig> => {
   if (!isValidProvider(params.provider)) {
     throw new Error(`Invalid provider: ${params.provider}`);
@@ -103,7 +103,7 @@ export const createIntegration = async (
 };
 
 export const listIntegrations = async (
-  organizationId: string,
+  organizationId: string
 ): Promise<IntegrationWithConfig[]> => {
   const rows = await db
     .selectFrom("integration")
@@ -126,7 +126,7 @@ export const listIntegrations = async (
 
 export const listIntegrationsByProvider = async (
   organizationId: string,
-  provider: IntegrationProvider,
+  provider: IntegrationProvider
 ): Promise<IntegrationWithConfig[]> => {
   const rows = await db
     .selectFrom("integration")
@@ -150,7 +150,7 @@ export const listIntegrationsByProvider = async (
 
 export const getIntegration = async (
   id: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<IntegrationWithConfig | null> => {
   const row = await db
     .selectFrom("integration")
@@ -176,7 +176,7 @@ export const getIntegration = async (
 };
 
 export const updateIntegration = async (
-  params: UpdateIntegrationRequest,
+  params: UpdateIntegrationRequest
 ): Promise<IntegrationWithConfig | null> => {
   const existing = await getIntegration(params.id, params.organizationId);
 
@@ -222,10 +222,7 @@ export const updateIntegration = async (
   return getIntegration(params.id, params.organizationId);
 };
 
-export const deleteIntegration = async (
-  id: string,
-  organizationId: string,
-): Promise<boolean> => {
+export const deleteIntegration = async (id: string, organizationId: string): Promise<boolean> => {
   const result = await db
     .deleteFrom("integration")
     .where("id", "=", id)
@@ -238,7 +235,7 @@ export const deleteIntegration = async (
 export const integrationExists = async (
   organizationId: string,
   provider: IntegrationProvider,
-  name: string,
+  name: string
 ): Promise<boolean> => {
   const row = await db
     .selectFrom("integration")

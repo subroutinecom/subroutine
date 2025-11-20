@@ -6,3 +6,5 @@ dist/
 admin-panel/app/__generated__/
 
 deno.lock
+
+schema.graphql

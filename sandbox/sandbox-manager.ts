@@ -4,16 +4,16 @@ import type { ExecuteMessage } from "./worker.ts";
 
 type ExecutionWorkerMessage =
   | {
-    type: "execution_ready";
-  }
+      type: "execution_ready";
+    }
   | {
-    type: "result";
-    data: unknown;
-  }
+      type: "result";
+      data: unknown;
+    }
   | {
-    type: "error";
-    error?: string;
-  };
+      type: "error";
+      error?: string;
+    };
 
 export interface ExecutionResult {
   success: boolean;
@@ -30,7 +30,7 @@ export class SandboxManager {
 
   executeCode(
     code: string,
-    options?: { integrations?: SandboxIntegrationPayload[] },
+    options?: { integrations?: SandboxIntegrationPayload[] }
   ): Promise<ExecutionResult> {
     const executionId = crypto.randomUUID();
 
@@ -61,28 +61,25 @@ export class SandboxManager {
             net: true,
           },
         },
-      },
+      }
     );
 
     // Create execution worker
-    const executionWorker = new Worker(
-      new URL(`./worker.ts`, import.meta.url).href,
-      {
-        type: "module",
-        name: "execution-worker",
-        deno: {
-          permissions: {
-            read: false,
-            write: false,
-            ffi: false,
-            sys: false,
-            run: false,
-            env: false,
-            net: false,
-          },
+    const executionWorker = new Worker(new URL(`./worker.ts`, import.meta.url).href, {
+      type: "module",
+      name: "execution-worker",
+      deno: {
+        permissions: {
+          read: false,
+          write: false,
+          ffi: false,
+          sys: false,
+          run: false,
+          env: false,
+          net: false,
         },
       },
-    );
+    });
 
     const channel = new MessageChannel();
 
@@ -120,9 +117,7 @@ export class SandboxManager {
       };
 
       // Listen for execution results from execution worker
-      executionWorker.onmessage = (
-        event: MessageEvent<ExecutionWorkerMessage>,
-      ) => {
+      executionWorker.onmessage = (event: MessageEvent<ExecutionWorkerMessage>) => {
         if (event.data.type === "execution_ready") {
           executionReady = true;
           checkAndExecute();
@@ -172,7 +167,7 @@ export class SandboxManager {
           type: "connect",
           integrations: options?.integrations ?? [],
         },
-        [channel.port2],
+        [channel.port2]
       );
       executionWorker.postMessage({ type: "connect" }, [channel.port1]);
     });
@@ -209,7 +204,7 @@ const formatDiagnostics = (diagnostics: readonly ts.Diagnostic[]): string => {
       if (diagnostic.file && typeof diagnostic.start === "number") {
         const { line, character } = ts.getLineAndCharacterOfPosition(
           diagnostic.file,
-          diagnostic.start,
+          diagnostic.start
         );
         return `${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`;
       }
@@ -218,9 +213,7 @@ const formatDiagnostics = (diagnostics: readonly ts.Diagnostic[]): string => {
     .join("\n");
 };
 
-const flattenDiagnosticMessage = (
-  message: string | ts.DiagnosticMessageChain,
-): string => {
+const flattenDiagnosticMessage = (message: string | ts.DiagnosticMessageChain): string => {
   if (typeof message === "string") {
     return message;
   }

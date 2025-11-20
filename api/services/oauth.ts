@@ -51,9 +51,7 @@ export const decodeAuthorizationState = (encoded: string): OAuthState => decodeS
 const generateNonce = (): string => {
   const array = new Uint8Array(16);
   crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join(
-    "",
-  );
+  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 };
 
 export const generateAuthorizationUrl = async (params: {
@@ -75,9 +73,7 @@ export const generateAuthorizationUrl = async (params: {
 
   const authConfig = integration.authConfig;
   if (!authConfig.clientId || !authConfig.authUrl) {
-    throw new Error(
-      "Integration authConfig missing required OAuth fields (clientId, authUrl)",
-    );
+    throw new Error("Integration authConfig missing required OAuth fields (clientId, authUrl)");
   }
 
   const provider = integration.provider as IntegrationProvider;
@@ -104,9 +100,10 @@ export const generateAuthorizationUrl = async (params: {
   authUrl.searchParams.set("redirect_uri", redirectUri);
   authUrl.searchParams.set("state", encodedState);
 
-  const scopes = authConfig.scopes && authConfig.scopes.length > 0
-    ? authConfig.scopes
-    : definition.auth.defaultScopes;
+  const scopes =
+    authConfig.scopes && authConfig.scopes.length > 0
+      ? authConfig.scopes
+      : definition.auth.defaultScopes;
   authUrl.searchParams.set("scope", scopes.join(" "));
 
   if (provider === "gmail") {
@@ -124,7 +121,7 @@ export const generateAuthorizationUrl = async (params: {
 const exchangeCodeForToken = async (
   integrationId: string,
   organizationId: string,
-  code: string,
+  code: string
 ): Promise<OAuthTokenResponse> => {
   const integration = await getIntegration(integrationId, organizationId);
   if (!integration) {
@@ -133,9 +130,7 @@ const exchangeCodeForToken = async (
 
   const authConfig = integration.authConfig;
   if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.tokenUrl) {
-    throw new Error(
-      "Integration authConfig missing required fields for token exchange",
-    );
+    throw new Error("Integration authConfig missing required fields for token exchange");
   }
 
   const tokenParams = new URLSearchParams({
@@ -167,9 +162,7 @@ const exchangeCodeForToken = async (
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(
-      `Token exchange failed: ${response.status} - ${errorText}`,
-    );
+    throw new Error(`Token exchange failed: ${response.status} - ${errorText}`);
   }
 
   const tokenData = await response.json();
@@ -178,23 +171,20 @@ const exchangeCodeForToken = async (
 
 const fetchAccountIdentifier = async (
   provider: IntegrationProvider,
-  accessToken: string,
+  accessToken: string
 ): Promise<string> => {
   if (provider === "gmail") {
-    const response = await fetch(
-      "https://www.googleapis.com/oauth2/v2/userinfo",
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+    const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
       },
-    );
+    });
 
     if (!response.ok) {
       throw new Error("Failed to fetch Google user info");
     }
 
-    const userInfo = await response.json() as GoogleUserInfo;
+    const userInfo = (await response.json()) as GoogleUserInfo;
     return userInfo.email;
   } else if (provider === "github") {
     const response = await fetch("https://api.github.com/user", {
@@ -208,7 +198,7 @@ const fetchAccountIdentifier = async (
       throw new Error("Failed to fetch GitHub user info");
     }
 
-    const userInfo = await response.json() as GitHubUserInfo;
+    const userInfo = (await response.json()) as GitHubUserInfo;
     return userInfo.email || userInfo.login;
   }
 
@@ -238,10 +228,7 @@ export const handleOAuthCallback = async (params: {
       };
     }
 
-    const integration = await getIntegration(
-      stateData.integrationId,
-      stateData.organizationId,
-    );
+    const integration = await getIntegration(stateData.integrationId, stateData.organizationId);
 
     if (!integration) {
       return {
@@ -260,12 +247,12 @@ export const handleOAuthCallback = async (params: {
     const tokenData = await exchangeCodeForToken(
       stateData.integrationId,
       stateData.organizationId,
-      code,
+      code
     );
 
     const accountIdentifier = await fetchAccountIdentifier(
       stateData.provider,
-      tokenData.access_token,
+      tokenData.access_token
     );
 
     if (!tokenData.refresh_token) {
@@ -276,9 +263,7 @@ export const handleOAuthCallback = async (params: {
     }
 
     const now = Date.now();
-    const expiresAt = tokenData.expires_in
-      ? now + (tokenData.expires_in * 1000)
-      : now + (3600 * 1000);
+    const expiresAt = tokenData.expires_in ? now + tokenData.expires_in * 1000 : now + 3600 * 1000;
 
     const credentials = {
       accessToken: tokenData.access_token,

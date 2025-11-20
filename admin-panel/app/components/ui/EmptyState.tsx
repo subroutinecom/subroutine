@@ -16,18 +16,10 @@ export const EmptyState = ({ icon, title, description, action }: EmptyStateProps
             {icon}
           </div>
           <div className="space-y-3">
-            <h3 className="text-2xl font-bold text-base-content">
-              {title}
-            </h3>
-            <p className="text-base text-base-content/60">
-              {description}
-            </p>
+            <h3 className="text-2xl font-bold text-base-content">{title}</h3>
+            <p className="text-base text-base-content/60">{description}</p>
           </div>
-          {action && (
-            <div className="pt-4">
-              {action}
-            </div>
-          )}
+          {action && <div className="pt-4">{action}</div>}
         </div>
       </div>
     </div>

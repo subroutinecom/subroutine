@@ -1,12 +1,7 @@
 import { z } from "zod";
 
 export const aiConfigSchema = z.object({
-  provider: z.enum([
-    "anthropic",
-    "openai",
-    "vertex-anthropic",
-    "vertex-gemini",
-  ]),
+  provider: z.enum(["anthropic", "openai", "vertex-anthropic", "vertex-gemini"]),
   model: z.string().min(1, "Model name cannot be empty"),
 });
 

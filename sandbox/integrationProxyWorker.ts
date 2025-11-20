@@ -7,10 +7,7 @@ import {
   type GmailTokenPayload,
 } from "./integrations/gmail/mod";
 import type { GmailAPI } from "./integrations/gmail/types";
-import type {
-  SandboxIntegrationAccountPayload,
-  SandboxIntegrationPayload,
-} from "./types.ts";
+import type { SandboxIntegrationAccountPayload, SandboxIntegrationPayload } from "./types.ts";
 
 interface S3API {
   listBuckets(): Promise<{ buckets: string[] }>;
@@ -31,7 +28,7 @@ type WireMessage =
 let messagePort: MessagePort | null = null;
 
 const resolveAccountIdentifier = (
-  account?: SandboxIntegrationAccountPayload,
+  account?: SandboxIntegrationAccountPayload
 ): string | undefined => {
   if (!account) return undefined;
   const metadataId = account.credentials.metadata?.providerAccountIdentifier;
@@ -48,10 +45,7 @@ const buildDefaultServer = async (): Promise<RemoteProxyServer<object>> => {
   const defaultServer = new RemoteProxyServer<object>();
 
   const gmailIntegration: GmailAPI = await createGmailIntegration();
-  defaultServer.registerSingleton(
-    "getGmail",
-    async () => gmailIntegration as unknown as object,
-  );
+  defaultServer.registerSingleton("getGmail", async () => gmailIntegration as unknown as object);
 
   defaultServer.registerSingleton("getS3", async () => {
     const s3: S3API = {
@@ -81,7 +75,7 @@ const buildDefaultServer = async (): Promise<RemoteProxyServer<object>> => {
 };
 
 const buildServerForIntegrations = async (
-  integrations: SandboxIntegrationPayload[],
+  integrations: SandboxIntegrationPayload[]
 ): Promise<RemoteProxyServer<object>> => {
   const server = new RemoteProxyServer<object>();
   await Promise.all(
@@ -114,10 +108,7 @@ const buildServerForIntegrations = async (
             userId: gmailUserId,
           });
 
-          server.registerSingleton(
-            "getGmail",
-            async () => gmail as unknown as object,
-          );
+          server.registerSingleton("getGmail", async () => gmail as unknown as object);
           break;
         }
         case "mock_oauth": {
@@ -133,22 +124,20 @@ const buildServerForIntegrations = async (
                   echo: message,
                   viewerId,
                 }),
-              }) as unknown as object,
+              }) as unknown as object
           );
           break;
         }
         default:
           throw new Error(`Unsupported integration provider: ${integration.provider}`);
       }
-    }),
+    })
   );
 
   return server;
 };
 
-const mapCredentialsToGmailTokens = (
-  integration: SandboxIntegrationPayload,
-): GmailTokenPayload => {
+const mapCredentialsToGmailTokens = (integration: SandboxIntegrationPayload): GmailTokenPayload => {
   const credentials = integration.account?.credentials;
   if (!credentials) {
     throw new Error("Missing Gmail credentials for integration");
@@ -175,9 +164,10 @@ addEventListener("message", async (ev: Event) => {
     const providedIntegrations = Array.isArray(msg.integrations)
       ? (msg.integrations as SandboxIntegrationPayload[])
       : [];
-    const server = providedIntegrations.length > 0
-      ? await buildServerForIntegrations(providedIntegrations)
-      : await buildDefaultServer();
+    const server =
+      providedIntegrations.length > 0
+        ? await buildServerForIntegrations(providedIntegrations)
+        : await buildDefaultServer();
 
     messagePort.onmessage = async (portEvent: MessageEvent<WireMessage>) => {
       const wireMsg = portEvent.data;

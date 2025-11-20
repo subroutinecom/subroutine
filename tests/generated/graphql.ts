@@ -113,24 +113,20 @@ export type ListApiKeysQueryVariables = Exact<{ [key: string]: never }>;
 
 export type ListApiKeysQuery = {
   __typename?: "Query";
-  apiKeys?:
-    | Array<
-      {
-        __typename?: "ApiKey";
-        id?: string | null;
-        name?: string | null;
-        start?: string | null;
-        prefix?: string | null;
-        organizationId?: string | null;
-        enabled?: boolean | null;
-        expiresAt?: string | null;
-        permissions?: string | null;
-        metadata?: string | null;
-        createdAt?: string | null;
-        updatedAt?: string | null;
-      }
-    >
-    | null;
+  apiKeys?: Array<{
+    __typename?: "ApiKey";
+    id?: string | null;
+    name?: string | null;
+    start?: string | null;
+    prefix?: string | null;
+    organizationId?: string | null;
+    enabled?: boolean | null;
+    expiresAt?: string | null;
+    permissions?: string | null;
+    metadata?: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+  }> | null;
 };
 
 export type GetApiKeyQueryVariables = Exact<{
@@ -186,223 +182,267 @@ export type DeleteApiKeyMutationVariables = Exact<{
 export type DeleteApiKeyMutation = { __typename?: "Mutation"; deleteApiKey?: boolean | null };
 
 export const CreateApiKeyDocument = {
-  "kind": "Document",
-  "definitions": [{
-    "kind": "OperationDefinition",
-    "operation": "mutation",
-    "name": { "kind": "Name", "value": "CreateApiKey" },
-    "variableDefinitions": [{
-      "kind": "VariableDefinition",
-      "variable": { "kind": "Variable", "name": { "kind": "Name", "value": "name" } },
-      "type": { "kind": "NamedType", "name": { "kind": "Name", "value": "String" } },
-    }, {
-      "kind": "VariableDefinition",
-      "variable": { "kind": "Variable", "name": { "kind": "Name", "value": "prefix" } },
-      "type": { "kind": "NamedType", "name": { "kind": "Name", "value": "String" } },
-    }, {
-      "kind": "VariableDefinition",
-      "variable": { "kind": "Variable", "name": { "kind": "Name", "value": "metadata" } },
-      "type": { "kind": "NamedType", "name": { "kind": "Name", "value": "String" } },
-    }],
-    "selectionSet": {
-      "kind": "SelectionSet",
-      "selections": [{
-        "kind": "Field",
-        "name": { "kind": "Name", "value": "createApiKey" },
-        "arguments": [{
-          "kind": "Argument",
-          "name": { "kind": "Name", "value": "name" },
-          "value": { "kind": "Variable", "name": { "kind": "Name", "value": "name" } },
-        }, {
-          "kind": "Argument",
-          "name": { "kind": "Name", "value": "prefix" },
-          "value": { "kind": "Variable", "name": { "kind": "Name", "value": "prefix" } },
-        }, {
-          "kind": "Argument",
-          "name": { "kind": "Name", "value": "metadata" },
-          "value": { "kind": "Variable", "name": { "kind": "Name", "value": "metadata" } },
-        }],
-        "selectionSet": {
-          "kind": "SelectionSet",
-          "selections": [
-            { "kind": "Field", "name": { "kind": "Name", "value": "id" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "name" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "start" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "prefix" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "key" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "organizationId" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "enabled" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "expiresAt" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "permissions" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "metadata" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "createdAt" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "updatedAt" } },
-          ],
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "CreateApiKey" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "name" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
         },
-      }],
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "prefix" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "metadata" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "createApiKey" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "name" },
+                value: { kind: "Variable", name: { kind: "Name", value: "name" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "prefix" },
+                value: { kind: "Variable", name: { kind: "Name", value: "prefix" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "metadata" },
+                value: { kind: "Variable", name: { kind: "Name", value: "metadata" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "start" } },
+                { kind: "Field", name: { kind: "Name", value: "prefix" } },
+                { kind: "Field", name: { kind: "Name", value: "key" } },
+                { kind: "Field", name: { kind: "Name", value: "organizationId" } },
+                { kind: "Field", name: { kind: "Name", value: "enabled" } },
+                { kind: "Field", name: { kind: "Name", value: "expiresAt" } },
+                { kind: "Field", name: { kind: "Name", value: "permissions" } },
+                { kind: "Field", name: { kind: "Name", value: "metadata" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
     },
-  }],
+  ],
 } as unknown as DocumentNode<CreateApiKeyMutation, CreateApiKeyMutationVariables>;
 export const ListApiKeysDocument = {
-  "kind": "Document",
-  "definitions": [{
-    "kind": "OperationDefinition",
-    "operation": "query",
-    "name": { "kind": "Name", "value": "ListApiKeys" },
-    "selectionSet": {
-      "kind": "SelectionSet",
-      "selections": [{
-        "kind": "Field",
-        "name": { "kind": "Name", "value": "apiKeys" },
-        "selectionSet": {
-          "kind": "SelectionSet",
-          "selections": [
-            { "kind": "Field", "name": { "kind": "Name", "value": "id" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "name" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "start" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "prefix" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "organizationId" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "enabled" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "expiresAt" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "permissions" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "metadata" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "createdAt" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "updatedAt" } },
-          ],
-        },
-      }],
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "ListApiKeys" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "apiKeys" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "start" } },
+                { kind: "Field", name: { kind: "Name", value: "prefix" } },
+                { kind: "Field", name: { kind: "Name", value: "organizationId" } },
+                { kind: "Field", name: { kind: "Name", value: "enabled" } },
+                { kind: "Field", name: { kind: "Name", value: "expiresAt" } },
+                { kind: "Field", name: { kind: "Name", value: "permissions" } },
+                { kind: "Field", name: { kind: "Name", value: "metadata" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
     },
-  }],
+  ],
 } as unknown as DocumentNode<ListApiKeysQuery, ListApiKeysQueryVariables>;
 export const GetApiKeyDocument = {
-  "kind": "Document",
-  "definitions": [{
-    "kind": "OperationDefinition",
-    "operation": "query",
-    "name": { "kind": "Name", "value": "GetApiKey" },
-    "variableDefinitions": [{
-      "kind": "VariableDefinition",
-      "variable": { "kind": "Variable", "name": { "kind": "Name", "value": "id" } },
-      "type": {
-        "kind": "NonNullType",
-        "type": { "kind": "NamedType", "name": { "kind": "Name", "value": "String" } },
-      },
-    }],
-    "selectionSet": {
-      "kind": "SelectionSet",
-      "selections": [{
-        "kind": "Field",
-        "name": { "kind": "Name", "value": "apiKey" },
-        "arguments": [{
-          "kind": "Argument",
-          "name": { "kind": "Name", "value": "id" },
-          "value": { "kind": "Variable", "name": { "kind": "Name", "value": "id" } },
-        }],
-        "selectionSet": {
-          "kind": "SelectionSet",
-          "selections": [
-            { "kind": "Field", "name": { "kind": "Name", "value": "id" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "name" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "start" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "prefix" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "organizationId" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "enabled" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "expiresAt" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "permissions" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "metadata" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "createdAt" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "updatedAt" } },
-          ],
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "GetApiKey" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+          },
         },
-      }],
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "apiKey" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: { kind: "Variable", name: { kind: "Name", value: "id" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "start" } },
+                { kind: "Field", name: { kind: "Name", value: "prefix" } },
+                { kind: "Field", name: { kind: "Name", value: "organizationId" } },
+                { kind: "Field", name: { kind: "Name", value: "enabled" } },
+                { kind: "Field", name: { kind: "Name", value: "expiresAt" } },
+                { kind: "Field", name: { kind: "Name", value: "permissions" } },
+                { kind: "Field", name: { kind: "Name", value: "metadata" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
     },
-  }],
+  ],
 } as unknown as DocumentNode<GetApiKeyQuery, GetApiKeyQueryVariables>;
 export const UpdateApiKeyDocument = {
-  "kind": "Document",
-  "definitions": [{
-    "kind": "OperationDefinition",
-    "operation": "mutation",
-    "name": { "kind": "Name", "value": "UpdateApiKey" },
-    "variableDefinitions": [{
-      "kind": "VariableDefinition",
-      "variable": { "kind": "Variable", "name": { "kind": "Name", "value": "id" } },
-      "type": {
-        "kind": "NonNullType",
-        "type": { "kind": "NamedType", "name": { "kind": "Name", "value": "String" } },
-      },
-    }, {
-      "kind": "VariableDefinition",
-      "variable": { "kind": "Variable", "name": { "kind": "Name", "value": "name" } },
-      "type": { "kind": "NamedType", "name": { "kind": "Name", "value": "String" } },
-    }, {
-      "kind": "VariableDefinition",
-      "variable": { "kind": "Variable", "name": { "kind": "Name", "value": "metadata" } },
-      "type": { "kind": "NamedType", "name": { "kind": "Name", "value": "String" } },
-    }],
-    "selectionSet": {
-      "kind": "SelectionSet",
-      "selections": [{
-        "kind": "Field",
-        "name": { "kind": "Name", "value": "updateApiKey" },
-        "arguments": [{
-          "kind": "Argument",
-          "name": { "kind": "Name", "value": "id" },
-          "value": { "kind": "Variable", "name": { "kind": "Name", "value": "id" } },
-        }, {
-          "kind": "Argument",
-          "name": { "kind": "Name", "value": "name" },
-          "value": { "kind": "Variable", "name": { "kind": "Name", "value": "name" } },
-        }, {
-          "kind": "Argument",
-          "name": { "kind": "Name", "value": "metadata" },
-          "value": { "kind": "Variable", "name": { "kind": "Name", "value": "metadata" } },
-        }],
-        "selectionSet": {
-          "kind": "SelectionSet",
-          "selections": [
-            { "kind": "Field", "name": { "kind": "Name", "value": "id" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "name" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "start" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "prefix" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "organizationId" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "enabled" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "expiresAt" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "permissions" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "metadata" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "createdAt" } },
-            { "kind": "Field", "name": { "kind": "Name", "value": "updatedAt" } },
-          ],
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "UpdateApiKey" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+          },
         },
-      }],
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "name" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "metadata" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "updateApiKey" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: { kind: "Variable", name: { kind: "Name", value: "id" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "name" },
+                value: { kind: "Variable", name: { kind: "Name", value: "name" } },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "metadata" },
+                value: { kind: "Variable", name: { kind: "Name", value: "metadata" } },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "start" } },
+                { kind: "Field", name: { kind: "Name", value: "prefix" } },
+                { kind: "Field", name: { kind: "Name", value: "organizationId" } },
+                { kind: "Field", name: { kind: "Name", value: "enabled" } },
+                { kind: "Field", name: { kind: "Name", value: "expiresAt" } },
+                { kind: "Field", name: { kind: "Name", value: "permissions" } },
+                { kind: "Field", name: { kind: "Name", value: "metadata" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+                { kind: "Field", name: { kind: "Name", value: "updatedAt" } },
+              ],
+            },
+          },
+        ],
+      },
     },
-  }],
+  ],
 } as unknown as DocumentNode<UpdateApiKeyMutation, UpdateApiKeyMutationVariables>;
 export const DeleteApiKeyDocument = {
-  "kind": "Document",
-  "definitions": [{
-    "kind": "OperationDefinition",
-    "operation": "mutation",
-    "name": { "kind": "Name", "value": "DeleteApiKey" },
-    "variableDefinitions": [{
-      "kind": "VariableDefinition",
-      "variable": { "kind": "Variable", "name": { "kind": "Name", "value": "id" } },
-      "type": {
-        "kind": "NonNullType",
-        "type": { "kind": "NamedType", "name": { "kind": "Name", "value": "String" } },
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "DeleteApiKey" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "deleteApiKey" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: { kind: "Variable", name: { kind: "Name", value: "id" } },
+              },
+            ],
+          },
+        ],
       },
-    }],
-    "selectionSet": {
-      "kind": "SelectionSet",
-      "selections": [{
-        "kind": "Field",
-        "name": { "kind": "Name", "value": "deleteApiKey" },
-        "arguments": [{
-          "kind": "Argument",
-          "name": { "kind": "Name", "value": "id" },
-          "value": { "kind": "Variable", "name": { "kind": "Name", "value": "id" } },
-        }],
-      }],
     },
-  }],
+  ],
 } as unknown as DocumentNode<DeleteApiKeyMutation, DeleteApiKeyMutationVariables>;

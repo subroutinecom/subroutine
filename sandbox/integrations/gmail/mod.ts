@@ -107,7 +107,7 @@ export class InMemoryTokenStore implements TokenStore {
 
 const serializeAuthErrorMessage = (
   message: string,
-  options?: { authUrl?: string; scopes?: readonly string[] },
+  options?: { authUrl?: string; scopes?: readonly string[] }
 ) =>
   JSON.stringify({
     message,
@@ -135,7 +135,7 @@ export class GmailAuthManager {
   constructor(
     config: GmailConfig,
     tokenStore: TokenStore,
-    scopes: readonly string[] = GMAIL_SCOPES,
+    scopes: readonly string[] = GMAIL_SCOPES
   ) {
     this.#config = config;
     this.#tokenStore = tokenStore;
@@ -189,7 +189,7 @@ export class GmailAuthManager {
     return new google.auth.OAuth2(
       this.#config.clientId,
       this.#config.clientSecret,
-      this.#config.redirectUri,
+      this.#config.redirectUri
     );
   }
 }
@@ -229,10 +229,10 @@ class GmailIntegrationImpl {
   async #listLabels(userId: string): Promise<{ labels: string[] }> {
     const gmailClient = await this.#auth.getGmailClient(userId);
     const response = await gmailClient.users.labels.list({ userId });
-    const labels = response.data.labels?.map((label) => label.name ?? label.id ?? "").filter((
-      label,
-    ): label is string => Boolean(label)) ??
-      [];
+    const labels =
+      response.data.labels
+        ?.map((label) => label.name ?? label.id ?? "")
+        .filter((label): label is string => Boolean(label)) ?? [];
     return { labels };
   }
 }
@@ -288,7 +288,7 @@ export const createGmailIntegration = async (): Promise<GmailAPI> => {
   const authManager = createEnvGmailAuthManager();
   if (!authManager) {
     console.warn(
-      "[sandbox] Gmail credentials are not configured. Falling back to mock Gmail integration.",
+      "[sandbox] Gmail credentials are not configured. Falling back to mock Gmail integration."
     );
     return createMockGmailIntegration();
   }

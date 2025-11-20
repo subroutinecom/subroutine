@@ -25,7 +25,7 @@ export class BubblewrapManager {
   async executeCommand(
     command: string,
     args: string[] = [],
-    options: BubblewrapOptions = {},
+    options: BubblewrapOptions = {}
   ): Promise<CommandExecutionResult> {
     const timeout = options.timeout || this.defaultTimeout;
     const workingDir = options.workingDir || "/workspace";

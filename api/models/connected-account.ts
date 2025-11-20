@@ -3,14 +3,9 @@ import { db } from "../db/index.ts";
 import type { ConnectedAccountTable } from "../db/schema.ts";
 import { decrypt, encrypt } from "../utils/encryption.ts";
 
-export const CONNECTED_ACCOUNT_STATUS = [
-  "active",
-  "expired",
-  "revoked",
-  "error",
-] as const;
+export const CONNECTED_ACCOUNT_STATUS = ["active", "expired", "revoked", "error"] as const;
 
-export type ConnectedAccountStatus = typeof CONNECTED_ACCOUNT_STATUS[number];
+export type ConnectedAccountStatus = (typeof CONNECTED_ACCOUNT_STATUS)[number];
 
 export interface ConnectedAccountMetadata {
   providerAccountIdentifier?: string;
@@ -51,7 +46,7 @@ export type UpdateConnectedAccountRequest = {
 };
 
 export const createConnectedAccount = async (
-  params: CreateConnectedAccountRequest,
+  params: CreateConnectedAccountRequest
 ): Promise<ConnectedAccountWithCredentials> => {
   const id = nanoid();
   const now = new Date().toISOString();
@@ -90,7 +85,7 @@ export const createConnectedAccount = async (
 
 export const listConnectedAccounts = async (
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<ConnectedAccountWithCredentials[]> => {
   const rows = await db
     .selectFrom("connected_account")
@@ -116,7 +111,7 @@ export const listConnectedAccounts = async (
 
 export const listConnectedAccountsByIntegration = async (
   integrationId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<ConnectedAccountWithCredentials[]> => {
   const rows = await db
     .selectFrom("connected_account")
@@ -143,7 +138,7 @@ export const listConnectedAccountsByIntegration = async (
 export const getConnectedAccount = async (
   id: string,
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<ConnectedAccountWithCredentials | null> => {
   const row = await db
     .selectFrom("connected_account")
@@ -174,7 +169,7 @@ export const getConnectedAccount = async (
 export const getConnectedAccountByIntegration = async (
   userId: string,
   integrationId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<ConnectedAccountWithCredentials | null> => {
   const row = await db
     .selectFrom("connected_account")
@@ -205,7 +200,7 @@ export const getConnectedAccountByIntegration = async (
 export const getConnectedAccountByAccountIdentifier = async (
   organizationId: string,
   integrationId: string,
-  accountIdentifier: string,
+  accountIdentifier: string
 ): Promise<ConnectedAccountWithCredentials | null> => {
   const row = await db
     .selectFrom("connected_account")
@@ -234,13 +229,9 @@ export const getConnectedAccountByAccountIdentifier = async (
 };
 
 export const updateConnectedAccount = async (
-  params: UpdateConnectedAccountRequest,
+  params: UpdateConnectedAccountRequest
 ): Promise<ConnectedAccountWithCredentials | null> => {
-  const existing = await getConnectedAccount(
-    params.id,
-    params.userId,
-    params.organizationId,
-  );
+  const existing = await getConnectedAccount(params.id, params.userId, params.organizationId);
 
   if (!existing) {
     return null;
@@ -283,7 +274,7 @@ export const updateConnectedAccount = async (
 export const updateLastUsed = async (
   id: string,
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<void> => {
   const now = new Date().toISOString();
 
@@ -302,7 +293,7 @@ export const updateLastUsed = async (
 export const deleteConnectedAccount = async (
   id: string,
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<boolean> => {
   const result = await db
     .deleteFrom("connected_account")
@@ -317,7 +308,7 @@ export const deleteConnectedAccount = async (
 export const connectedAccountExists = async (
   userId: string,
   integrationId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<boolean> => {
   const row = await db
     .selectFrom("connected_account")

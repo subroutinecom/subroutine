@@ -82,9 +82,7 @@ export default function Invitations() {
 
       setLoading(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unexpected error occurred",
-      );
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoading(null);
     }
   };
@@ -109,9 +107,7 @@ export default function Invitations() {
 
       setLoading(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unexpected error occurred",
-      );
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
       setLoading(null);
     }
   };
@@ -168,10 +164,7 @@ export default function Invitations() {
                         {invitation.organizationName || "Organization"}
                       </h3>
                       <p className="text-sm text-base-content/70">
-                        Role:{" "}
-                        <span className="badge badge-sm">
-                          {invitation.role}
-                        </span>
+                        Role: <span className="badge badge-sm">{invitation.role}</span>
                       </p>
                       {invitation.inviterEmail && (
                         <p className="text-xs text-base-content/50 mt-1">
@@ -186,11 +179,11 @@ export default function Invitations() {
                         className="btn btn-success btn-sm"
                         disabled={loading === invitation.id}
                       >
-                        {loading === invitation.id
-                          ? <span className="loading loading-spinner loading-xs"></span>
-                          : (
-                            "Accept"
-                          )}
+                        {loading === invitation.id ? (
+                          <span className="loading loading-spinner loading-xs"></span>
+                        ) : (
+                          "Accept"
+                        )}
                       </button>
                       <button
                         type="button"

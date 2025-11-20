@@ -24,7 +24,7 @@ const makeRequest = (
     method?: string;
     headers?: HeadersInit;
   },
-  data?: string,
+  data?: string
 ): Promise<TestResponse> => {
   return new Promise((resolve, reject) => {
     const url = new URL(`http://${options.hostname}`);
@@ -52,7 +52,7 @@ const makeRequest = (
 
 const executeTypescript = async (
   code: string,
-  integrations?: unknown,
+  integrations?: unknown
 ): Promise<{ status: number; result: ExecutionResult }> => {
   const wrappedCode = "\nexport default async function() {\n  " + code + "\n}\n";
 
@@ -63,7 +63,7 @@ const executeTypescript = async (
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ code: wrappedCode, integrations }),
+    JSON.stringify({ code: wrappedCode, integrations })
   );
 
   return {
@@ -101,7 +101,7 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
       expect(result.result, "Should have timestamp").toHaveProperty("timestamp");
       expect(
         typeof (result.result as { timestamp: number }).timestamp,
-        "Timestamp should be number",
+        "Timestamp should be number"
       ).toBe("number");
     });
   });
@@ -156,10 +156,9 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
       expect(status, "HTTP status is 200").toBe(200);
       expect(result.success, "Execution should succeed").toBe(true);
-      expect(
-        String(result.result),
-        "Should not allow S3 access when not provided",
-      ).toContain("Target at getS3 is not callable");
+      expect(String(result.result), "Should not allow S3 access when not provided").toContain(
+        "Target at getS3 is not callable"
+      );
     });
   });
   describe("Singleton Behavior", () => {
@@ -226,7 +225,7 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
       expect(status, "HTTP status is 200").toBe(200);
       expect(result.success, "Result should indicate success").toBe(true);
       expect((result.result as { labels: string[] }).labels, "Should access nested object").toEqual(
-        ["INBOX", "STARRED"],
+        ["INBOX", "STARRED"]
       );
     });
 

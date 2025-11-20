@@ -71,14 +71,11 @@ export const createTestApiKey = async (options?: {
 
   // Create API key via GraphQL
   const gqlClient = createGraphQLClient(cookieJar);
-  const response = await gqlClient.request<CreateApiKeyMutation>(
-    CREATE_API_KEY,
-    {
-      name: options?.name || "Test API Key",
-      prefix: options?.prefix,
-      metadata: options?.metadata ? JSON.stringify(options.metadata) : undefined,
-    },
-  );
+  const response = await gqlClient.request<CreateApiKeyMutation>(CREATE_API_KEY, {
+    name: options?.name || "Test API Key",
+    prefix: options?.prefix,
+    metadata: options?.metadata ? JSON.stringify(options.metadata) : undefined,
+  });
 
   if (!response.createApiKey?.key || !response.createApiKey?.id) {
     throw new Error("Failed to create API key");
@@ -143,12 +140,9 @@ export const createMultipleTestApiKeys = async (count: number) => {
   const apiKeys: string[] = [];
 
   for (let i = 0; i < count; i++) {
-    const response = await gqlClient.request<CreateApiKeyMutation>(
-      CREATE_API_KEY,
-      {
-        name: `Test API Key ${i + 1}`,
-      },
-    );
+    const response = await gqlClient.request<CreateApiKeyMutation>(CREATE_API_KEY, {
+      name: `Test API Key ${i + 1}`,
+    });
     if (!response.createApiKey?.key) {
       throw new Error(`Failed to create API key ${i + 1}`);
     }

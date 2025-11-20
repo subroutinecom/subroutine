@@ -206,12 +206,18 @@ body {
 }
 
 /* Smooth transitions for interactive elements */
-a, button {
+a,
+button {
   @apply transition-colors duration-150;
 }
 
 /* Typography refinements */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   @apply font-semibold;
   letter-spacing: -0.02em;
 }

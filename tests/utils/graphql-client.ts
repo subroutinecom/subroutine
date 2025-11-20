@@ -8,10 +8,7 @@ import type { CookieJar } from "tough-cookie";
  * @returns Configured GraphQL client instance with custom fetch
  */
 export const createGraphQLClient = (cookieJar: CookieJar) => {
-  const customFetch = async (
-    input: RequestInfo | URL,
-    init?: RequestInit,
-  ): Promise<Response> => {
+  const customFetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
 
     const headers = new Headers(init?.headers);

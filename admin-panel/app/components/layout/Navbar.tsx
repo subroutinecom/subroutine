@@ -36,10 +36,7 @@ export const Navbar = () => {
     <div className="navbar bg-base-100 border-b border-base-300 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto w-full">
         <div className="navbar-start">
-          <Link
-            to="/"
-            className="btn btn-ghost text-xl font-semibold normal-case"
-          >
+          <Link to="/" className="btn btn-ghost text-xl font-semibold normal-case">
             subroutine
           </Link>
         </div>
@@ -48,11 +45,7 @@ export const Navbar = () => {
           <ThemeToggle />
 
           <div className="dropdown dropdown-end">
-            <button
-              type="button"
-              tabIndex={0}
-              className="btn btn-ghost btn-sm gap-2"
-            >
+            <button type="button" tabIndex={0} className="btn btn-ghost btn-sm gap-2">
               <div className="avatar placeholder">
                 <div className="w-8 rounded-full bg-primary text-primary-content flex items-center justify-center">
                   <span className="text-sm">{userInitial}</span>
@@ -83,9 +76,7 @@ export const Navbar = () => {
                       >
                         {org.name}
                         {activeOrganization?.id === org.id && (
-                          <span className="badge badge-sm badge-primary">
-                            Active
-                          </span>
+                          <span className="badge badge-sm badge-primary">Active</span>
                         )}
                       </button>
                     </li>

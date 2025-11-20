@@ -48,7 +48,7 @@ const findConfigPath = (): string => {
   }
 
   throw new Error(
-    "config.yaml not found. Set CONFIG_PATH env var or place config.yaml in project root.",
+    "config.yaml not found. Set CONFIG_PATH env var or place config.yaml in project root."
   );
 };
 

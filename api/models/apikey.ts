@@ -151,7 +151,7 @@ export const listApiKeys = async (userId: string, organizationId: string): Promi
 export const getApiKey = async (
   id: string,
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<ApiKey | null> => {
   const row = await db
     .selectFrom("apikey")
@@ -207,8 +207,8 @@ export const updateApiKey = async (params: UpdateApiKeyRequest): Promise<ApiKey 
       metadata: params.metadata
         ? JSON.stringify(params.metadata)
         : existing.metadata
-        ? JSON.stringify(existing.metadata)
-        : null,
+          ? JSON.stringify(existing.metadata)
+          : null,
       updatedAt: now,
     })
     .where("id", "=", params.id)
@@ -222,7 +222,7 @@ export const updateApiKey = async (params: UpdateApiKeyRequest): Promise<ApiKey 
 export const deleteApiKey = async (
   id: string,
   userId: string,
-  organizationId: string,
+  organizationId: string
 ): Promise<boolean> => {
   const result = await db
     .deleteFrom("apikey")
@@ -235,7 +235,7 @@ export const deleteApiKey = async (
 };
 
 export const verifyApiKey = async (
-  apiKey: string,
+  apiKey: string
 ): Promise<{ userId: string; organizationId: string } | null> => {
   // Use the indexed "start" column (first 8 chars of the key) to
   // dramatically shrink the candidate set before bcrypt comparison.

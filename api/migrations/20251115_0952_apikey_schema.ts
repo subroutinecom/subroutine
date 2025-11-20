@@ -10,10 +10,8 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .addColumn("prefix", "text")
     .addColumn("key", "text", (col) => col.notNull())
     .addColumn("userId", "text", (col) => col.notNull().references("user.id").onDelete("cascade"))
-    .addColumn(
-      "organizationId",
-      "text",
-      (col) => col.notNull().references("organization.id").onDelete("cascade"),
+    .addColumn("organizationId", "text", (col) =>
+      col.notNull().references("organization.id").onDelete("cascade")
     )
     .addColumn("enabled", "boolean")
     .addColumn("expiresAt", "text")
@@ -49,9 +47,6 @@ export const up = async (db: Kysely<any>): Promise<void> => {
 
 export const down = async (db: Kysely<any>): Promise<void> => {
   await db.schema.dropIndex("apikey_start_idx").ifExists().execute();
-  await db.schema
-    .dropIndex("apikey_userId_organizationId_idx")
-    .ifExists()
-    .execute();
+  await db.schema.dropIndex("apikey_userId_organizationId_idx").ifExists().execute();
   await db.schema.dropTable("apikey").ifExists().execute();
 };

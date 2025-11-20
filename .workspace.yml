@@ -3,8 +3,7 @@ repo:
   branch: main
 
 bootstrap:
-  scripts:
-    workspaceScripts/setupWorkspace.sh
+  scripts: workspaceScripts/setupWorkspace.sh
 
 forwards:
   - 3100:3110

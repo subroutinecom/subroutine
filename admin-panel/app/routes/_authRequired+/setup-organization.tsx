@@ -117,9 +117,7 @@ export default function SetupOrganization() {
                 autoFocus
               />
               {errors.organizationName && (
-                <p className="text-xs text-error mt-1">
-                  {errors.organizationName.message}
-                </p>
+                <p className="text-xs text-error mt-1">{errors.organizationName.message}</p>
               )}
               {organizationName && (
                 <p className="text-xs text-base-content/50 mt-1">
@@ -134,12 +132,10 @@ export default function SetupOrganization() {
               </div>
             )}
 
-            <button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? <span className="loading loading-spinner"></span> : (
+            <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <span className="loading loading-spinner"></span>
+              ) : (
                 "Create Organization"
               )}
             </button>
