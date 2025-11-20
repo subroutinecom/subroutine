@@ -13,6 +13,7 @@ FROM base AS build
 COPY ./admin-panel ./admin-panel
 COPY ./eslint ./eslint
 COPY ./eslint.config.ts ./eslint.config.ts
+COPY ./packages ./packages
 
 WORKDIR /app/admin-panel
 
@@ -34,6 +35,7 @@ WORKDIR /app/admin-panel
 
 COPY --from=build /app/admin-panel/build /app/admin-panel/build
 COPY --from=build /app/admin-panel/node_modules /app/admin-panel/node_modules
+COPY --from=build /app/packages /app/packages
 
 COPY ./admin-panel/deno.json /app/admin-panel/deno.json
 COPY ./admin-panel/ecosystem.config.cjs /app/admin-panel/ecosystem.config.cjs

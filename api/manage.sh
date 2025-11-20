@@ -12,12 +12,21 @@ install_deps() {
   deno install --node-modules-dir
 }
 
+generate_graphql_schema() {
+  deno task graphql:schema
+}
+
 do_run() {
   if [ -n "$IS_BUILD" ] && [ -f "/release/build" ]; then
     echo "The project has been compiled"
   else
     echo "The project is not compiled"
     install_deps
+  fi
+
+  if [ -z "$IS_BUILD" ]; then
+    echo "Generating GraphQL schema package..."
+    generate_graphql_schema
   fi
 
   export IS_BUILD="$IS_BUILD"
@@ -31,6 +40,8 @@ do_run() {
 
 do_build() {
   install_deps
+  echo "Generating GraphQL schema package..."
+  generate_graphql_schema
 
   if [ -n "$IS_BUILD" ]; then
     echo "Compiling the API server"

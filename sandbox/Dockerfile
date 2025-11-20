@@ -16,6 +16,7 @@ FROM base AS build
 COPY ./sandbox ./sandbox
 COPY ./eslint  ./eslint
 COPY ./eslint.config.ts ./eslint.config.ts
+COPY ./packages ./packages
 
 WORKDIR /app/sandbox
 
@@ -36,6 +37,7 @@ FROM base AS prod
 WORKDIR /app/sandbox
 
 COPY --from=build /app/sandbox/sandbox /release/build
+COPY --from=build /app/packages /app/packages
 COPY ./sandbox/ecosystem.config.js /app/sandbox/ecosystem.config.js
 COPY ./sandbox/manage.sh /app/sandbox/manage.sh
 

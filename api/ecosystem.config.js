@@ -40,7 +40,20 @@ const migrationsWatcher = {
   ignore_watch: ["node_modules", ".git", "db/migrations-index.ts"],
 };
 
+const graphqlSchemaWatcher = {
+  name: "graphql-schema-watcher",
+  script: "deno",
+  args: ["task", "graphql:schema"],
+  autorestart: true,
+  watch: ["internal", "models", "integrations", "services"],
+  ignore_watch: ["node_modules", ".git", "../packages/graphql-schema/schema.graphql"],
+  env: {
+    NODE_ENV: "development",
+    GRAPHQL_SCHEMA_ENDPOINT: "http://localhost/graphql",
+  },
+};
+
 module.exports = {
   exp_backoff_restart_delay: 100,
-  apps: [apiServerApp, ...(IS_BUILD ? [] : [linter, migrationsWatcher])],
+  apps: [apiServerApp, ...(IS_BUILD ? [] : [linter, migrationsWatcher, graphqlSchemaWatcher])],
 };

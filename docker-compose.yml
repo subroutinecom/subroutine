@@ -26,6 +26,7 @@ services:
     volumes:
       - ./sandbox:/app/sandbox
       - ./eslint:/app/eslint
+      - ./packages:/app/packages
     cap_add:
       - SYS_ADMIN
     security_opt:
@@ -53,6 +54,7 @@ services:
       - api-node-modules:/app/api/node_modules
       - ./api:/app/api
       - ./eslint:/app/eslint
+      - ./packages:/app/packages
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/status"]
       interval: 3s
@@ -80,6 +82,7 @@ services:
       - ./admin-panel:/app/admin-panel
       - ./eslint:/app/eslint
       - ./config.yaml:/app/config.yaml:ro
+      - ./packages:/app/packages
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 3s
@@ -94,6 +97,7 @@ services:
       target: dev
     volumes:
       - ./tests:/app/tests
+      - ./packages:/app/packages
     depends_on:
       sandbox:
         condition: service_healthy

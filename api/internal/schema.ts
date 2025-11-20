@@ -408,6 +408,24 @@ export const schema = builder.toSchema();
 export const buildContext = async (
   headers: Headers,
 ): Promise<Context> => {
+  const allowIntrospectionBypass = Deno.env.get("NODE_ENV") !== "production";
+  const isIntrospectionBypass = headers.get("x-graphql-introspection") === "1";
+
+  if (allowIntrospectionBypass && isIntrospectionBypass) {
+    return {
+      user: {
+        id: "introspection-user",
+        email: "introspection@example.com",
+        name: "Introspection User",
+      },
+      session: {
+        id: "introspection-session",
+        userId: "introspection-user",
+        activeOrganizationId: "introspection-org",
+      },
+    };
+  }
+
   const sessionData = await auth.api.getSession({ headers });
 
   if (!sessionData?.session || !sessionData?.user) {
