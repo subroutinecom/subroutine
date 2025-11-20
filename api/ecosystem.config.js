@@ -53,7 +53,6 @@ const graphqlSchemaWatcher = {
   ],
   env: {
     NODE_ENV: "development",
-    GRAPHQL_SCHEMA_ENDPOINT: "http://localhost/graphql",
   },
 };
 
