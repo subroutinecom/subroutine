@@ -1,6 +1,5 @@
 {
   "imports": {
-    "@graphql-codegen/schema-ast": "npm:@graphql-codegen/schema-ast@^5.0.0",
     "@hono/hono": "jsr:@hono/hono@^4.10.5",
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.18.4",
     "@pothos/core": "npm:@pothos/core@^4.10.0",
@@ -37,7 +36,7 @@
     "typecheck": "deno check --sloppy-imports",
     "auth:generate": "deno run --allow-read --allow-write --allow-run --allow-env scripts/better-auth-generate.ts",
     "db:flush": "deno run --allow-read --allow-env --allow-net scripts/flush-db.ts",
-    "graphql:schema": "sleep 3 && deno run --allow-read --allow-write --allow-env --allow-net --allow-sys --sloppy-imports npm:@graphql-codegen/cli@6.0.2/graphql-codegen --config ./codegen.ts"
+    "graphql:schema": "sleep 3 && npx --yes -p @graphql-codegen/cli@6.0.2 -p @graphql-codegen/schema-ast@5.0.0 graphql-codegen --config ./codegen.yml"
   },
   "lint": {
     "exclude": ["ecosystem.config.js"]

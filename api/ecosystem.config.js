@@ -45,7 +45,7 @@ const graphqlSchemaWatcher = {
   script: "deno",
   args: ["task", "graphql:schema"],
   autorestart: false,
-  watch: ["internal", "models", "integrations", "services", "codegen.ts"],
+  watch: ["internal", "models", "integrations", "services", "codegen.yml"],
   ignore_watch: [
     "node_modules",
     ".git",
