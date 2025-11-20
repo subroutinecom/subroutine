@@ -18,7 +18,6 @@ const config: CodegenConfig = {
       },
     },
   },
-  watch: true,
   ignoreNoDocuments: true,
 };
 
