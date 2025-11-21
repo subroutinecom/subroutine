@@ -26,9 +26,8 @@ Interactions:
 
 Feedback Loop:
 
-- After implementing any feature, create tests inside ./tests and validate: `deno task test`
-- Validate type checking: `deno task check`
-- Validate lint: `deno task eslint` or `deno lint`
+- After code implementation, run `deno task prettier:format` to format the code properly.
+- Before handing off control to the user, run `deno task validate` and `deno task test` and ensure those are passing.
 
 Dont's
 
