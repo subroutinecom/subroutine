@@ -3,7 +3,7 @@
 import { type CallRequest, type CallResponse, RemoteProxyServer } from "./remoteProxy";
 import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
 import type { GmailAPI } from "./integrations/gmail/types";
-import type { SandboxIntegrationAccountPayload, SandboxIntegrationPayload } from "./types.ts";
+import type { SandboxIntegrationPayload } from "./types.ts";
 
 interface S3API {
   listBuckets(): Promise<{ buckets: string[] }>;
@@ -23,28 +23,22 @@ type WireMessage =
 
 let messagePort: MessagePort | null = null;
 
-const resolveAccountIdentifier = (
-  account?: SandboxIntegrationAccountPayload
-): string | undefined => {
-  if (!account) return undefined;
-  const metadataId = account.credentials.metadata?.providerAccountIdentifier;
-  if (metadataId && typeof metadataId === "string" && metadataId.length > 0) {
-    return metadataId;
-  }
-  if (account.accountIdentifier && account.accountIdentifier.length > 0) {
-    return account.accountIdentifier;
-  }
-  return account.userId;
-};
-
 const buildDefaultServer = async (): Promise<RemoteProxyServer<object>> => {
   const defaultServer = new RemoteProxyServer<object>();
 
   const mockGmail: GmailAPI = {
     users: {
       labels: {
-        list: async () => ({
-          data: { labels: [{ id: "INBOX", name: "INBOX" }, { id: "STARRED", name: "STARRED" }] },
+        list: async (opts: { userId: string }) => ({
+          data: {
+            labels:
+              opts.userId === "me"
+                ? [
+                    { id: "INBOX", name: "INBOX" },
+                    { id: "STARRED", name: "STARRED" },
+                  ]
+                : [],
+          },
         }),
       },
     },
