@@ -1,11 +1,7 @@
 /// <reference lib="deno.worker" />
 
 import { type CallRequest, type CallResponse, RemoteProxyServer } from "./remoteProxy";
-import {
-  createGmailIntegration,
-  createGmailIntegrationFromSecrets,
-  type GmailTokenPayload,
-} from "./integrations/gmail/mod";
+import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
 import type { GmailAPI } from "./integrations/gmail/types";
 import type { SandboxIntegrationAccountPayload, SandboxIntegrationPayload } from "./types.ts";
 
@@ -44,8 +40,17 @@ const resolveAccountIdentifier = (
 const buildDefaultServer = async (): Promise<RemoteProxyServer<object>> => {
   const defaultServer = new RemoteProxyServer<object>();
 
-  const gmailIntegration: GmailAPI = await createGmailIntegration();
-  defaultServer.registerSingleton("getGmail", async () => gmailIntegration as unknown as object);
+  const mockGmail: GmailAPI = {
+    users: {
+      labels: {
+        list: async () => ({
+          data: { labels: [{ id: "INBOX", name: "INBOX" }, { id: "STARRED", name: "STARRED" }] },
+        }),
+      },
+    },
+  } as unknown as GmailAPI;
+
+  defaultServer.registerSingleton("getGmail", async () => mockGmail as unknown as object);
 
   defaultServer.registerSingleton("getS3", async () => {
     const s3: S3API = {
@@ -93,20 +98,22 @@ const buildServerForIntegrations = async (
           if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.redirectUri) {
             throw new Error("Gmail integration missing OAuth client configuration");
           }
-          const gmailUserId = resolveAccountIdentifier(integration.account);
-          if (!gmailUserId) {
-            throw new Error("Unable to resolve Gmail account identifier");
-          }
-          const gmail = await createGmailIntegrationFromSecrets({
-            config: {
-              clientId: authConfig.clientId,
-              clientSecret: authConfig.clientSecret,
-              redirectUri: authConfig.redirectUri,
-              tokenFile: undefined,
-            },
-            tokens: mapCredentialsToGmailTokens(integration),
-            userId: gmailUserId,
-          });
+
+          const config: GmailConfig = {
+            clientId: authConfig.clientId,
+            clientSecret: authConfig.clientSecret,
+            redirectUri: authConfig.redirectUri,
+          };
+
+          const tokens: GmailTokens = {
+            access_token: integration.account.credentials.accessToken,
+            refresh_token: integration.account.credentials.refreshToken,
+            token_type: integration.account.credentials.tokenType,
+            expiry_date: integration.account.credentials.expiresAt,
+            scope: integration.account.credentials.scope,
+          };
+
+          const gmail = createGmailClient(tokens, config);
 
           server.registerSingleton("getGmail", async () => gmail as unknown as object);
           break;
@@ -137,20 +144,6 @@ const buildServerForIntegrations = async (
   return server;
 };
 
-const mapCredentialsToGmailTokens = (integration: SandboxIntegrationPayload): GmailTokenPayload => {
-  const credentials = integration.account?.credentials;
-  if (!credentials) {
-    throw new Error("Missing Gmail credentials for integration");
-  }
-  return {
-    access_token: credentials.accessToken,
-    refresh_token: credentials.refreshToken,
-    expiry_date: credentials.expiresAt,
-    token_type: credentials.tokenType,
-    scope: credentials.scope,
-  };
-};
-
 addEventListener("message", async (ev: Event) => {
   const msg = (ev as MessageEvent<{ type: string; integrations?: unknown }>).data;
 
@@ -164,6 +157,7 @@ addEventListener("message", async (ev: Event) => {
     const providedIntegrations = Array.isArray(msg.integrations)
       ? (msg.integrations as SandboxIntegrationPayload[])
       : [];
+
     const server =
       providedIntegrations.length > 0
         ? await buildServerForIntegrations(providedIntegrations)

@@ -503,6 +503,7 @@ const initialize = async () => {
           viewerId,
           inputs: subroutine.initialInputs,
           timeoutMs,
+          wait: true,
         });
 
         return c.json(
@@ -682,6 +683,7 @@ const initialize = async () => {
                 viewerId: z.string().describe("External viewer identifier"),
                 inputs: z.record(z.unknown()).optional(),
                 timeoutMs: z.number().optional(),
+                wait: z.boolean().optional().describe("If false, return immediately without waiting for execution. Default: true (waits for completion)"),
               }),
             },
           },
@@ -742,7 +744,7 @@ const initialize = async () => {
 
       try {
         const { id } = c.req.valid("param");
-        const { viewerId, inputs, timeoutMs } = c.req.valid("json");
+        const { viewerId, inputs, timeoutMs, wait } = c.req.valid("json");
 
         const run = await runSubroutine({
           subroutineId: id,
@@ -751,6 +753,7 @@ const initialize = async () => {
           viewerId,
           inputs,
           timeoutMs,
+          wait: wait ?? true,
         });
 
         return c.json(

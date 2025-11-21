@@ -188,6 +188,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
       JSON.stringify({
         viewerId,
         inputs: { message: "hello" },
+        wait: false,
       })
     );
 

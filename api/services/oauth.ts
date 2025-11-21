@@ -1,4 +1,5 @@
 import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
+import type { OAuthTokenResponse } from "../integrations/providers/types.ts";
 import { getIntegration } from "../models/integration.ts";
 import { createConnectedAccount } from "../models/connected-account.ts";
 
@@ -12,26 +13,6 @@ export interface OAuthState {
   viewerId: string;
 }
 
-interface OAuthTokenResponse {
-  access_token: string;
-  refresh_token?: string;
-  expires_in?: number;
-  token_type?: string;
-  scope?: string;
-}
-
-interface GitHubUserInfo {
-  login: string;
-  id: number;
-  email: string | null;
-}
-
-interface GoogleUserInfo {
-  email: string;
-  email_verified: boolean;
-  name: string;
-}
-
 const encodeState = (state: OAuthState): string => {
   const stateString = JSON.stringify(state);
   return btoa(stateString);
@@ -41,7 +22,8 @@ const decodeState = (encoded: string): OAuthState => {
   try {
     const decoded = atob(encoded);
     return JSON.parse(decoded);
-  } catch (_error) {
+  } catch (error) {
+    console.error("[OAuth] Failed to decode state:", error);
     throw new Error("Invalid state parameter");
   }
 };
@@ -106,10 +88,8 @@ export const generateAuthorizationUrl = async (params: {
       : definition.auth.defaultScopes;
   authUrl.searchParams.set("scope", scopes.join(" "));
 
-  if (provider === "gmail") {
-    authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("access_type", "offline");
-    authUrl.searchParams.set("prompt", "consent");
+  if (definition.auth.type === "oauth2" && definition.auth.handlers?.customizeAuthorizationUrl) {
+    definition.auth.handlers.customizeAuthorizationUrl(authUrl);
   }
 
   return {
@@ -141,17 +121,18 @@ const exchangeCodeForToken = async (
   });
 
   const provider = integration.provider as IntegrationProvider;
+  const definition = getProviderDefinition(provider);
 
-  if (provider === "gmail") {
-    tokenParams.set("grant_type", "authorization_code");
+  if (definition.auth.type === "oauth2" && definition.auth.handlers?.customizeTokenExchange) {
+    definition.auth.handlers.customizeTokenExchange(tokenParams);
   }
 
   const headers: Record<string, string> = {
     "Content-Type": "application/x-www-form-urlencoded",
   };
 
-  if (provider === "github") {
-    headers["Accept"] = "application/json";
+  if (definition.auth.type === "oauth2" && definition.auth.handlers?.customizeTokenHeaders) {
+    definition.auth.handlers.customizeTokenHeaders(headers);
   }
 
   const response = await fetch(authConfig.tokenUrl, {
@@ -173,36 +154,17 @@ const fetchAccountIdentifier = async (
   provider: IntegrationProvider,
   accessToken: string
 ): Promise<string> => {
-  if (provider === "gmail") {
-    const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+  const definition = getProviderDefinition(provider);
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch Google user info");
-    }
-
-    const userInfo = (await response.json()) as GoogleUserInfo;
-    return userInfo.email;
-  } else if (provider === "github") {
-    const response = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch GitHub user info");
-    }
-
-    const userInfo = (await response.json()) as GitHubUserInfo;
-    return userInfo.email || userInfo.login;
+  if (definition.auth.type !== "oauth2") {
+    throw new Error(`Provider ${provider} does not support OAuth2`);
   }
 
-  throw new Error(`Unsupported provider: ${provider}`);
+  if (!definition.auth.handlers?.fetchAccountIdentifier) {
+    throw new Error(`Provider ${provider} does not define fetchAccountIdentifier handler`);
+  }
+
+  return definition.auth.handlers.fetchAccountIdentifier(accessToken);
 };
 
 export const handleOAuthCallback = async (params: {
@@ -219,9 +181,12 @@ export const handleOAuthCallback = async (params: {
     const { code, state } = params;
 
     const stateData = decodeState(state);
+    const now = Date.now();
+    const timeDiff = now - stateData.timestamp;
 
     const TEN_MINUTES = 10 * 60 * 1000;
-    if (Date.now() - stateData.timestamp > TEN_MINUTES) {
+    if (timeDiff > TEN_MINUTES) {
+      console.error("[OAuth] State expired - time diff:", Math.floor(timeDiff / 1000), "seconds");
       return {
         success: false,
         error: "Authorization state expired. Please try again.",
@@ -231,6 +196,7 @@ export const handleOAuthCallback = async (params: {
     const integration = await getIntegration(stateData.integrationId, stateData.organizationId);
 
     if (!integration) {
+      console.error("[OAuth] Integration not found:", stateData.integrationId);
       return {
         success: false,
         error: "Integration not found",
@@ -238,6 +204,7 @@ export const handleOAuthCallback = async (params: {
     }
 
     if (!integration.enabled) {
+      console.error("[OAuth] Integration disabled:", stateData.integrationId);
       return {
         success: false,
         error: "Integration is disabled",
@@ -262,8 +229,10 @@ export const handleOAuthCallback = async (params: {
       };
     }
 
-    const now = Date.now();
-    const expiresAt = tokenData.expires_in ? now + tokenData.expires_in * 1000 : now + 3600 * 1000;
+    const currentTime = Date.now();
+    const expiresAt = tokenData.expires_in
+      ? currentTime + tokenData.expires_in * 1000
+      : currentTime + 3600 * 1000;
 
     const credentials = {
       accessToken: tokenData.access_token,
@@ -283,8 +252,10 @@ export const handleOAuthCallback = async (params: {
       userId: stateData.userId,
       organizationId: stateData.organizationId,
       credentials,
-      accountIdentifier: stateData.viewerId ?? accountIdentifier,
+      accountIdentifier: stateData.viewerId ?? accountIdentifier,  // Use viewerId for lookup
     });
+
+    console.log("[OAuth] Connected account created:", connectedAccount.id);
 
     return {
       success: true,
@@ -293,7 +264,7 @@ export const handleOAuthCallback = async (params: {
       provider: stateData.provider,
     };
   } catch (error) {
-    console.error("OAuth callback error:", error);
+    console.error("[OAuth] Callback error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

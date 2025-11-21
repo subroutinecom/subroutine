@@ -300,9 +300,10 @@ export function createMcpServer(auth: AuthContext): McpServer {
         viewerId: z.string().describe("External viewer identifier"),
         inputs: z.record(z.unknown()).optional(),
         timeoutMs: z.number().optional(),
+        wait: z.boolean().optional().describe("If false, return immediately without waiting. Default: true"),
       },
     },
-    async ({ subroutineUri, viewerId, inputs, timeoutMs }) => {
+    async ({ subroutineUri, viewerId, inputs, timeoutMs, wait }) => {
       const match = subroutineUri.match(/^resource:\/\/subroutine\/(.+)$/);
       if (!match) {
         return {
@@ -330,6 +331,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
           viewerId,
           inputs,
           timeoutMs,
+          wait: wait ?? true,
         });
 
         return {
