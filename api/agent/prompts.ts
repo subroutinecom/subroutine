@@ -1,5 +1,3 @@
-import { getProviderDefinition } from "../integrations/providers.ts";
-
 type IntegrationDocs = {
   id: string;
   functionName: string;
@@ -9,60 +7,54 @@ type IntegrationDocs = {
 };
 
 const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
-  try {
-    const definition = getProviderDefinition(integrationId);
-
-    switch (integrationId) {
-      case "gmail":
-        return {
-          id: "gmail",
-          functionName: "getGmail",
-          typeExample: `getGmail(): Promise<{
+  switch (integrationId) {
+    case "gmail":
+      return {
+        id: "gmail",
+        functionName: "getGmail",
+        typeExample: `getGmail(): Promise<{
     users: {
       labels: { list(opts: { userId: string }): Promise<{ data: { labels?: Array<{ id?: string; name?: string }> } }> };
       messages: { list(opts: { userId: string; maxResults?: number }): Promise<{ data: { messages?: Array<{ id?: string }> } }> };
     };
   }>`,
-          usageExample: `const gmail = await integrations.getGmail();
+        usageExample: `const gmail = await integrations.getGmail();
    const labels = await gmail.users.labels.list({ userId: "me" });
    const messages = await gmail.users.messages.list({ userId: "me", maxResults: 10 });
    const msg = await gmail.users.messages.get({ userId: "me", id: messageId });`,
-          docsUrl: "https://googleapis.dev/nodejs/googleapis/latest/gmail/index.html",
-        };
+        docsUrl: "https://googleapis.dev/nodejs/googleapis/latest/gmail/index.html",
+      };
 
-      case "google_calendar":
-        return {
-          id: "google_calendar",
-          functionName: "getCalendar",
-          typeExample: `getCalendar(): Promise<{
+    case "google_calendar":
+      return {
+        id: "google_calendar",
+        functionName: "getCalendar",
+        typeExample: `getCalendar(): Promise<{
     calendarList: { list(): Promise<{ data: { items?: Array<{ id?: string; summary?: string }> } }> };
     events: {
       list(opts: { calendarId: string; maxResults?: number }): Promise<{ data: { items?: Array<{ id?: string; summary?: string; start?: any; end?: any }> } }>;
       insert(opts: { calendarId: string; requestBody: any }): Promise<{ data: any }>;
     };
   }>`,
-          usageExample: `const calendar = await integrations.getCalendar();
+        usageExample: `const calendar = await integrations.getCalendar();
    const calendars = await calendar.calendarList.list();
    const events = await calendar.events.list({ calendarId: "primary", maxResults: 10 });
    const event = await calendar.events.get({ calendarId: "primary", eventId: eventId });
    const newEvent = await calendar.events.insert({ calendarId: "primary", requestBody: { summary: "Meeting", start: { dateTime: "2024-01-01T10:00:00Z" }, end: { dateTime: "2024-01-01T11:00:00Z" } } });`,
-          docsUrl: "https://googleapis.dev/nodejs/googleapis/latest/calendar/index.html",
-        };
+        docsUrl: "https://googleapis.dev/nodejs/googleapis/latest/calendar/index.html",
+      };
 
-      case "github":
-        return {
-          id: "github",
-          functionName: "getGithub",
-          typeExample: `getGithub(): Promise<{ me(): Promise<{ login: string }> }>`,
-          usageExample: `const github = await integrations.getGithub();
+    case "github":
+      return {
+        id: "github",
+        functionName: "getGithub",
+        typeExample: `getGithub(): Promise<{ me(): Promise<{ login: string }> }>`,
+        usageExample: `const github = await integrations.getGithub();
    const user = await github.me();`,
-        };
+      };
 
-      default:
-        return null;
-    }
-  } catch {
-    return null;
+    default:
+      return null;
   }
 };
 
