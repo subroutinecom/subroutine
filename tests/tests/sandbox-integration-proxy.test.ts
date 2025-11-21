@@ -224,9 +224,10 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
       expect(status, "HTTP status is 200").toBe(200);
       expect(result.success, "Result should indicate success").toBe(true);
-      expect(result.result as string[], "Should access nested object").toEqual(
-        ["INBOX", "STARRED"]
-      );
+      expect(result.result as string[], "Should access nested object").toEqual([
+        "INBOX",
+        "STARRED",
+      ]);
     });
 
     it("should handle different user IDs in Gmail labels", async () => {

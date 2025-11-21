@@ -300,7 +300,10 @@ export function createMcpServer(auth: AuthContext): McpServer {
         viewerId: z.string().describe("External viewer identifier"),
         inputs: z.record(z.unknown()).optional(),
         timeoutMs: z.number().optional(),
-        wait: z.boolean().optional().describe("If false, return immediately without waiting. Default: true"),
+        wait: z
+          .boolean()
+          .optional()
+          .describe("If false, return immediately without waiting. Default: true"),
       },
     },
     async ({ subroutineUri, viewerId, inputs, timeoutMs, wait }) => {

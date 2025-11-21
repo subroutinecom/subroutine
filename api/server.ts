@@ -683,7 +683,12 @@ const initialize = async () => {
                 viewerId: z.string().describe("External viewer identifier"),
                 inputs: z.record(z.unknown()).optional(),
                 timeoutMs: z.number().optional(),
-                wait: z.boolean().optional().describe("If false, return immediately without waiting for execution. Default: true (waits for completion)"),
+                wait: z
+                  .boolean()
+                  .optional()
+                  .describe(
+                    "If false, return immediately without waiting for execution. Default: true (waits for completion)"
+                  ),
               }),
             },
           },

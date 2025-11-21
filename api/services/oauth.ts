@@ -252,7 +252,7 @@ export const handleOAuthCallback = async (params: {
       userId: stateData.userId,
       organizationId: stateData.organizationId,
       credentials,
-      accountIdentifier: stateData.viewerId ?? accountIdentifier,  // Use viewerId for lookup
+      accountIdentifier: stateData.viewerId ?? accountIdentifier, // Use viewerId for lookup
     });
 
     console.log("[OAuth] Connected account created:", connectedAccount.id);
