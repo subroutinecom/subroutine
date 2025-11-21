@@ -27,4 +27,9 @@ export const getProviderDefinition = (provider: IntegrationProvider): Integratio
 
 export const getAllProviderDefinitions = (): IntegrationDefinition[] => [...definitions];
 
-export type { IntegrationDefinition, AuthStrategyDefinition } from "./providers/types.ts";
+export type {
+  IntegrationDefinition,
+  AuthStrategyDefinition,
+  OAuthHandlers,
+  OAuthTokenResponse,
+} from "./providers/types.ts";

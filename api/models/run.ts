@@ -27,16 +27,12 @@ export type RunSubroutineRequest = {
   viewerId: string;
   inputs?: Record<string, unknown>;
   timeoutMs?: number;
+  wait?: boolean;
 };
 
 type SandboxIntegrationAccount = {
   id: string;
   userId: string;
-  /**
-   * Provider-facing identifier (e.g., Gmail email address) captured during OAuth.
-   * We store this so we can re-select the correct credentials when a viewer runs
-   * the subroutine again, even if the caller uses an opaque viewerId.
-   */
   accountIdentifier?: string | null;
   credentials: ConnectedAccountCredentials;
 };
@@ -91,9 +87,16 @@ export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> 
     })
     .execute();
 
-  // runs it async, dont await
-  executeInSandbox(runId, subroutine.source, sandboxIntegrations, params.inputs);
+  if (params.wait) {
+    await executeInSandbox(runId, subroutine.source, sandboxIntegrations, params.inputs);
+    const completedRun = await getRun(runId, params.organizationId);
+    if (!completedRun) {
+      throw new Error("Run not found after execution");
+    }
+    return completedRun;
+  }
 
+  executeInSandbox(runId, subroutine.source, sandboxIntegrations, params.inputs);
   return run;
 };
 

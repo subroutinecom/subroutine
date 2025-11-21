@@ -1,3 +1,18 @@
+export interface OAuthTokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  token_type?: string;
+  scope?: string;
+}
+
+export interface OAuthHandlers {
+  customizeAuthorizationUrl?: (url: URL) => void;
+  customizeTokenExchange?: (params: URLSearchParams) => void;
+  customizeTokenHeaders?: (headers: Record<string, string>) => void;
+  fetchAccountIdentifier: (accessToken: string) => Promise<string>;
+}
+
 export type AuthStrategyDefinition =
   | {
       type: "oauth2";
@@ -7,6 +22,7 @@ export type AuthStrategyDefinition =
       requiredScopes?: string[];
       defaultRedirectPath?: string;
       supportsCustomConfig?: boolean;
+      handlers?: OAuthHandlers;
     }
   | {
       type: "custom";

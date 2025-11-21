@@ -167,14 +167,15 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
         const gmail1 = await integrations.getGmail();
         const gmail2 = await integrations.getGmail();
 
-        // Both should return the same data since it's a singleton
-        const labels1 = await gmail1.labels.list({ userId: "me" });
-        const labels2 = await gmail2.labels.list({ userId: "me" });
+        const result1 = await gmail1.users.labels.list({ userId: "me" });
+        const result2 = await gmail2.users.labels.list({ userId: "me" });
+        const labels1 = result1.data.labels?.map(l => l.name) || [];
+        const labels2 = result2.data.labels?.map(l => l.name) || [];
 
         return {
-          labels1: labels1.labels,
-          labels2: labels2.labels,
-          areEqual: JSON.stringify(labels1.labels) === JSON.stringify(labels2.labels)
+          labels1,
+          labels2,
+          areEqual: JSON.stringify(labels1) === JSON.stringify(labels2)
         };
       `;
       const { status, result } = await executeTypescript(code);
@@ -216,28 +217,28 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
     it("should support nested object access via integration proxy", async () => {
       const code = `
         const gmail = await integrations.getGmail();
-        // gmail.labels is a nested object with methods
-        const result = await gmail.labels.list({ userId: "me" });
-        return result;
+        const result = await gmail.users.labels.list({ userId: "me" });
+        return result.data.labels?.map(l => l.name) || [];
       `;
       const { status, result } = await executeTypescript(code);
 
       expect(status, "HTTP status is 200").toBe(200);
       expect(result.success, "Result should indicate success").toBe(true);
-      expect((result.result as { labels: string[] }).labels, "Should access nested object").toEqual(
-        ["INBOX", "STARRED"]
-      );
+      expect(result.result as string[], "Should access nested object").toEqual([
+        "INBOX",
+        "STARRED",
+      ]);
     });
 
     it("should handle different user IDs in Gmail labels", async () => {
       const code = `
         const gmail = await integrations.getGmail();
-        const meLabels = await gmail.labels.list({ userId: "me" });
-        const otherLabels = await gmail.labels.list({ userId: "other" });
+        const meLabels = await gmail.users.labels.list({ userId: "me" });
+        const otherLabels = await gmail.users.labels.list({ userId: "other" });
 
         return {
-          meLabels: meLabels.labels,
-          otherLabels: otherLabels.labels
+          meLabels: meLabels.data.labels?.map(l => l.name) || [],
+          otherLabels: otherLabels.data.labels?.map(l => l.name) || []
         };
       `;
       const { status, result } = await executeTypescript(code);
@@ -258,13 +259,13 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
         const github = await integrations.getGithub();
         const ping = await integrations.getPing();
 
-        const gmailLabels = await gmail.labels.list({ userId: "me" });
+        const gmailLabels = await gmail.users.labels.list({ userId: "me" });
         const s3Buckets = await s3.listBuckets();
         const githubUser = await github.me();
         const pingResponse = await ping.ping("multi-test");
 
         return {
-          gmail: gmailLabels.labels,
+          gmail: gmailLabels.data.labels?.map(l => l.name) || [],
           s3: s3Buckets.buckets,
           github: githubUser.login,
           ping: pingResponse.echo
@@ -322,13 +323,13 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
         ]);
 
         const [labels, buckets, user] = await Promise.all([
-          gmail.labels.list({ userId: "me" }),
+          gmail.users.labels.list({ userId: "me" }),
           s3.listBuckets(),
           github.me()
         ]);
 
         return {
-          labels: labels.labels,
+          labels: labels.data.labels?.map(l => l.name) || [],
           buckets: buckets.buckets,
           user: user.login
         };
@@ -421,13 +422,14 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
     it("should handle arrays in RPC responses", async () => {
       const code = `
         const gmail = await integrations.getGmail();
-        const result = await gmail.labels.list({ userId: "me" });
+        const result = await gmail.users.labels.list({ userId: "me" });
+        const labels = result.data.labels?.map(l => l.name) || [];
 
         return {
-          labels: result.labels,
-          isArray: Array.isArray(result.labels),
-          length: result.labels.length,
-          first: result.labels[0]
+          labels,
+          isArray: Array.isArray(labels),
+          length: labels.length,
+          first: labels[0]
         };
       `;
       const { status, result } = await executeTypescript(code);

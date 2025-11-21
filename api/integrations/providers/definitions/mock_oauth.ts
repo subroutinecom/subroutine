@@ -11,5 +11,11 @@ export const mockOAuthDefinition: IntegrationDefinition = {
     tokenUrl: "http://api/tests/mock_oauth/token",
     defaultScopes: [],
     defaultRedirectPath: "/tests/mock_oauth/callback",
+    handlers: {
+      fetchAccountIdentifier: async (_accessToken: string): Promise<string> => {
+        // For mock OAuth, just return a test identifier
+        return "mock-user@example.com";
+      },
+    },
   },
 };

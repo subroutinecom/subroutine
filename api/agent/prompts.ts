@@ -9,6 +9,57 @@ CRITICAL REQUIREMENTS:
 6. Handle edge cases with proper validation and error messages
 7. Use the actual types you define - no any types
 
+AVAILABLE INTEGRATIONS:
+Your code has access to external integrations via the global "integrations" object. These integrations allow you to interact with external services without imports.
+
+TypeScript Type Declaration:
+Since integrations is a global object not known to TypeScript, declare it at the top of your code.
+For Gmail, declare the full API structure or just the methods you need:
+declare const integrations: {
+  getGmail(): Promise<{
+    users: {
+      labels: { list(opts: { userId: string }): Promise<{ data: { labels?: Array<{ id?: string; name?: string }> } }> };
+      messages: { list(opts: { userId: string; maxResults?: number }): Promise<{ data: { messages?: Array<{ id?: string }> } }> };
+      // ... other Gmail API methods as needed
+    };
+  }>;
+  getGithub(): Promise<{ me(): Promise<{ login: string }> }>;
+};
+
+Available integrations:
+1. Gmail - Full Gmail API access (google.gmail.v1)
+   const gmail = await integrations.getGmail();
+   // Full Google Gmail API - examples:
+   const labels = await gmail.users.labels.list({ userId: "me" });
+   const messages = await gmail.users.messages.list({ userId: "me", maxResults: 10 });
+   const msg = await gmail.users.messages.get({ userId: "me", id: messageId });
+   // See: https://googleapis.dev/nodejs/googleapis/latest/gmail/index.html
+
+2. GitHub - Repository integration
+   const github = await integrations.getGithub();
+   const user = await github.me();
+   // Returns: { login: string }
+
+Example using integrations:
+declare const integrations: {
+  getGmail(): Promise<{
+    users: {
+      labels: { list(opts: { userId: string }): Promise<{ data: { labels?: Array<{ name?: string }> } }> };
+    };
+  }>;
+};
+
+type Context = Record<string, unknown>;
+type Inputs = Record<string, unknown>;
+type Outputs = { labels: string[] };
+
+export async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {
+  const gmail = await integrations.getGmail();
+  const result = await gmail.users.labels.list({ userId: "me" });
+  const labels = result.data.labels?.map(l => l.name || "Unknown") || [];
+  return { labels };
+}
+
 Use the generateSubroutine tool to submit your code. The tool will validate it and provide feedback if there are issues. You can revise and resubmit based on the feedback.
 
 EXAMPLE:

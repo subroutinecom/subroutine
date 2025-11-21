@@ -160,8 +160,6 @@ export class SandboxManager {
         });
       };
 
-      // Connect the workers via MessageChannel
-      // Send port2 to integration proxy worker, port1 to execution worker
       integrationProxyWorker.postMessage(
         {
           type: "connect",

@@ -438,8 +438,9 @@ describe("Sandbox", () => {
   it("gmail integration via RPC worker", async () => {
     const code = `
       const gmail = await integrations.getGmail();
-      const labels = await gmail.labels.list({ userId: "me" });
-      return labels;
+      const result = await gmail.users.labels.list({ userId: "me" });
+      const labels = result.data.labels?.map(l => l.name) || [];
+      return { labels };
     `;
     const { status, result } = await executeTypescript(code);
 
