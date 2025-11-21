@@ -1,7 +1,13 @@
 /// <reference lib="deno.worker" />
 
 import { type CallRequest, type CallResponse, RemoteProxyServer } from "./remoteProxy";
+import {
+  createCalendarClient,
+  type CalendarConfig,
+  type CalendarTokens,
+} from "./integrations/calendar/mod";
 import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
+import type { CalendarAPI } from "./integrations/calendar/types";
 import type { GmailAPI } from "./integrations/gmail/types";
 import type { SandboxIntegrationPayload } from "./types.ts";
 
@@ -45,6 +51,21 @@ const buildDefaultServer = async (): Promise<RemoteProxyServer<object>> => {
   } as unknown as GmailAPI;
 
   defaultServer.registerSingleton("getGmail", async () => mockGmail as unknown as object);
+
+  const mockCalendar: CalendarAPI = {
+    calendarList: {
+      list: async () => ({
+        data: {
+          items: [
+            { id: "primary", summary: "Primary Calendar" },
+            { id: "holidays@example.com", summary: "Holidays" },
+          ],
+        },
+      }),
+    },
+  } as unknown as CalendarAPI;
+
+  defaultServer.registerSingleton("getCalendar", async () => mockCalendar as unknown as object);
 
   defaultServer.registerSingleton("getS3", async () => {
     const s3: S3API = {
@@ -110,6 +131,38 @@ const buildServerForIntegrations = async (
           const gmail = createGmailClient(tokens, config);
 
           server.registerSingleton("getGmail", async () => gmail as unknown as object);
+          break;
+        }
+        case "google_calendar": {
+          if (!integration.account) {
+            throw new Error("Google Calendar integration requires account credentials");
+          }
+          const authConfig = integration.authConfig as {
+            clientId?: string;
+            clientSecret?: string;
+            redirectUri?: string;
+          };
+          if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.redirectUri) {
+            throw new Error("Google Calendar integration missing OAuth client configuration");
+          }
+
+          const config: CalendarConfig = {
+            clientId: authConfig.clientId,
+            clientSecret: authConfig.clientSecret,
+            redirectUri: authConfig.redirectUri,
+          };
+
+          const tokens: CalendarTokens = {
+            access_token: integration.account.credentials.accessToken,
+            refresh_token: integration.account.credentials.refreshToken,
+            token_type: integration.account.credentials.tokenType,
+            expiry_date: integration.account.credentials.expiresAt,
+            scope: integration.account.credentials.scope,
+          };
+
+          const calendar = createCalendarClient(tokens, config);
+
+          server.registerSingleton("getCalendar", async () => calendar as unknown as object);
           break;
         }
         case "mock_oauth": {

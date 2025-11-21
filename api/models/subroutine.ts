@@ -62,6 +62,7 @@ export const generateSubroutine = async (
 
     const result = await generateCode(model, params.request, {
       needsImmediateInputs: params.needsImmediateInputs ?? false,
+      integrations: params.integrations ?? [],
     });
 
     if (!result.success) {

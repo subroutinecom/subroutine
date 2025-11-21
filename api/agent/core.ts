@@ -6,6 +6,7 @@ import { CODE_GENERATION_USER_PROMPT, SYSTEM_PROMPT } from "./prompts";
 
 type GenerateCodeOptions = {
   needsImmediateInputs?: boolean;
+  integrations?: string[];
 };
 
 const validateCode = (code: string): { valid: boolean; errors: string[] } => {
@@ -74,7 +75,7 @@ export const generateCode = async (
 
     const result = await streamText({
       model,
-      system: SYSTEM_PROMPT,
+      system: SYSTEM_PROMPT(options?.integrations ?? []),
       prompt: CODE_GENERATION_USER_PROMPT(request, {
         needsImmediateInputs: options?.needsImmediateInputs ?? false,
       }),
