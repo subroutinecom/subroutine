@@ -1,9 +1,10 @@
+import { calendarDefinition } from "./providers/definitions/calendar.ts";
 import { githubDefinition } from "./providers/definitions/github.ts";
 import { gmailDefinition } from "./providers/definitions/gmail.ts";
 import { mockOAuthDefinition } from "./providers/definitions/mock_oauth.ts";
 import type { IntegrationDefinition } from "./providers/types.ts";
 
-const definitions = [gmailDefinition, githubDefinition, mockOAuthDefinition] as const;
+const definitions = [gmailDefinition, calendarDefinition, githubDefinition, mockOAuthDefinition] as const;
 
 export type IntegrationProvider = (typeof definitions)[number]["id"];
 export const INTEGRATION_PROVIDERS: ReadonlyArray<IntegrationProvider> = definitions.map(
