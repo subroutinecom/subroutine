@@ -1,7 +1,11 @@
 /// <reference lib="deno.worker" />
 
 import { type CallRequest, type CallResponse, RemoteProxyServer } from "./remoteProxy";
-import { createCalendarClient, type CalendarConfig, type CalendarTokens } from "./integrations/calendar/mod";
+import {
+  createCalendarClient,
+  type CalendarConfig,
+  type CalendarTokens,
+} from "./integrations/calendar/mod";
 import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
 import type { CalendarAPI } from "./integrations/calendar/types";
 import type { GmailAPI } from "./integrations/gmail/types";

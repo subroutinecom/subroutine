@@ -68,9 +68,7 @@ export const SYSTEM_PROMPT = (integrations: string[]): string => {
   let integrationsSection = "";
 
   if (hasIntegrations) {
-    const typeDeclarations = integrationDocs
-      .map((doc) => `  ${doc.typeExample};`)
-      .join("\n");
+    const typeDeclarations = integrationDocs.map((doc) => `  ${doc.typeExample};`).join("\n");
 
     const integrationsList = integrationDocs
       .map((doc, idx) => {

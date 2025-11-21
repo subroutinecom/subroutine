@@ -30,11 +30,14 @@ export const calendarDefinition: IntegrationDefinition = {
         params.set("grant_type", "authorization_code");
       },
       fetchAccountIdentifier: async (accessToken: string): Promise<string> => {
-        const response = await fetch("https://www.googleapis.com/calendar/v3/users/me/settings/timezone", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        const response = await fetch(
+          "https://www.googleapis.com/calendar/v3/users/me/settings/timezone",
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
 
         if (!response.ok) {
           const errorText = await response.text();
