@@ -78,9 +78,16 @@ export const createTransport = (
 ): SSEClientTransport | StreamableHTTPClientTransport => {
   const url = new URL(config.serverUrl);
 
+  // MCP Streamable HTTP requires Accept header with both application/json and text/event-stream
+  // The SDK expects these headers to be set on the transport
+  const mcpHeaders: Record<string, string> = {
+    ...headers,
+    Accept: "application/json, text/event-stream",
+  };
+
   // Common fetch options for both transports
   const requestInit: RequestInit = {
-    headers,
+    headers: mcpHeaders,
   };
 
   if (config.transport === "sse") {
@@ -123,10 +130,7 @@ export const createMcpClient = async (
       version: opts.clientVersion,
     },
     {
-      capabilities: {
-        // We're a client that can call tools
-        tools: {},
-      },
+      capabilities: {},
     }
   );
 

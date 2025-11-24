@@ -1,3 +1,13 @@
+// Re-export shared MCP types
+export type {
+  McpAuthStrategy,
+  McpTransport,
+  SandboxMcpConfig,
+} from "../../../packages/shared-types/mcp";
+
+// Import for local use
+import type { McpAuthStrategy, McpTransport } from "../../../packages/shared-types/mcp";
+
 export interface OAuthTokenResponse {
   access_token: string;
   refresh_token?: string;
@@ -12,28 +22,6 @@ export interface OAuthHandlers {
   customizeTokenHeaders?: (headers: Record<string, string>) => void;
   fetchAccountIdentifier: (accessToken: string) => Promise<string>;
 }
-
-/**
- * Authentication strategy for MCP server integrations.
- *
- * - `none`: No authentication required
- * - `api_key`: Static API key sent in a header (default: Authorization: Bearer)
- * - `bearer_passthrough`: Pass viewer's OAuth access token to MCP server
- * - `custom_headers`: Arbitrary custom headers for authentication
- */
-export type McpAuthStrategy =
-  | { type: "none" }
-  | { type: "api_key"; headerName?: string }
-  | { type: "bearer_passthrough" }
-  | { type: "custom_headers"; headers: Record<string, string> };
-
-/**
- * Transport protocol for MCP server communication.
- *
- * - `sse`: Server-Sent Events (most common for HTTP MCP servers)
- * - `streamable-http`: Streamable HTTP transport (newer, bidirectional)
- */
-export type McpTransport = "sse" | "streamable-http";
 
 export type AuthStrategyDefinition =
   | {

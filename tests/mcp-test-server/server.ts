@@ -210,6 +210,8 @@ export const startTestMcpServer = (
         onsessioninitialized: (newSessionId) => {
           transports[newSessionId] = transport;
         },
+        // Allow JSON responses without SSE for simpler testing
+        enableJsonResponse: true,
       });
 
       transport.onclose = () => {
@@ -235,10 +237,18 @@ export const startTestMcpServer = (
       );
     }
 
-    // Create a custom response handler
+    // Create a custom response handler with Promise-based completion
     const responseHeaders: Record<string, string> = {};
     const responseChunks: Uint8Array[] = [];
     let responseStatus = 200;
+    let resolveResponse: () => void;
+    const responseComplete = new Promise<void>((resolve) => {
+      resolveResponse = resolve;
+    });
+
+    // Create an event-emitter-like interface for Node.js HTTP response compatibility
+    type EventCallback = (...args: unknown[]) => void;
+    const eventHandlers: Record<string, EventCallback[]> = {};
 
     const mockRes = {
       writeHead: (status: number, headers?: Record<string, string>) => {
@@ -264,17 +274,50 @@ export const startTestMcpServer = (
         if (chunk) {
           mockRes.write(chunk);
         }
+        // Emit 'close' event
+        const handlers = eventHandlers["close"] ?? [];
+        for (const handler of handlers) {
+          handler();
+        }
+        // Signal that the response is complete
+        resolveResponse();
+      },
+      on: (event: string, handler: EventCallback) => {
+        if (!eventHandlers[event]) {
+          eventHandlers[event] = [];
+        }
+        eventHandlers[event].push(handler);
+        return mockRes;
+      },
+      once: (event: string, handler: EventCallback) => {
+        return mockRes.on(event, handler);
+      },
+      removeListener: (_event: string, _handler: EventCallback) => {
+        return mockRes;
+      },
+      flushHeaders: () => {
+        return mockRes;
       },
       get headersSent() {
-        return false;
+        return Object.keys(responseHeaders).length > 0;
       },
       get writableEnded() {
         return false;
       },
     };
 
+    // Create a Node.js-like request object with proper headers access
+    const nodeReq = {
+      method: c.req.method,
+      url: c.req.url,
+      headers: Object.fromEntries(c.req.raw.headers.entries()),
+    };
+
     // @ts-ignore - MCP SDK expects Node.js HTTP types
-    await transport.handleRequest(c.req.raw, mockRes, body);
+    await transport.handleRequest(nodeReq, mockRes, body);
+
+    // Wait for the response to be fully written (SDK calls end() asynchronously)
+    await responseComplete;
 
     const totalLength = responseChunks.reduce((sum, chunk) => sum + chunk.length, 0);
     const responseBody = new Uint8Array(totalLength);
@@ -388,10 +431,10 @@ export const startTestMcpServer = (
   Deno.serve(
     {
       port,
-      hostname: "127.0.0.1",
+      hostname: "0.0.0.0",
       signal: abortController.signal,
       onListen: () => {
-        console.log(`Test MCP server running on http://127.0.0.1:${port}`);
+        console.log(`Test MCP server running on http://0.0.0.0:${port}`);
       },
     },
     app.fetch
@@ -402,7 +445,7 @@ export const startTestMcpServer = (
       abortController.abort();
     },
     port,
-    url: `http://127.0.0.1:${port}/mcp`,
+    url: `http://0.0.0.0:${port}/mcp`,
   };
 };
 

@@ -8,7 +8,7 @@ import { getConnectedAccountByAccountIdentifier } from "./connected-account.ts";
 import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import { IntegrationAuthRequiredError } from "./errors.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
-import type { SandboxMcpConfig } from "../../sandbox/types.ts";
+import type { SandboxMcpConfig } from "../integrations/providers/types.ts";
 
 export type Run = {
   id: string;

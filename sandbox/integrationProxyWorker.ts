@@ -30,7 +30,7 @@ type WireMessage =
 
 let messagePort: MessagePort | null = null;
 
-const buildDefaultServer = async (): Promise<RemoteProxyServer<object>> => {
+const buildDefaultServer = (): RemoteProxyServer<object> => {
   const defaultServer = new RemoteProxyServer<object>();
 
   const mockGmail: GmailAPI = {
@@ -51,7 +51,7 @@ const buildDefaultServer = async (): Promise<RemoteProxyServer<object>> => {
     },
   } as unknown as GmailAPI;
 
-  defaultServer.registerSingleton("getGmail", async () => mockGmail as unknown as object);
+  defaultServer.registerSingleton("getGmail", () => mockGmail as unknown as object);
 
   const mockCalendar: CalendarAPI = {
     calendarList: {
@@ -66,23 +66,23 @@ const buildDefaultServer = async (): Promise<RemoteProxyServer<object>> => {
     },
   } as unknown as CalendarAPI;
 
-  defaultServer.registerSingleton("getCalendar", async () => mockCalendar as unknown as object);
+  defaultServer.registerSingleton("getCalendar", () => mockCalendar as unknown as object);
 
-  defaultServer.registerSingleton("getS3", async () => {
+  defaultServer.registerSingleton("getS3", () => {
     const s3: S3API = {
       listBuckets: async () => ({ buckets: ["photos", "backups"] }),
     };
     return s3 as unknown as object;
   });
 
-  defaultServer.registerSingleton("getGithub", async () => {
+  defaultServer.registerSingleton("getGithub", () => {
     const gh: GithubAPI = {
       me: async () => ({ login: "octocat" }),
     };
     return gh as unknown as object;
   });
 
-  defaultServer.registerSingleton("getPing", async () => {
+  defaultServer.registerSingleton("getPing", () => {
     const ping: PingAPI = {
       ping: async (message: string) => ({
         echo: message,
@@ -116,14 +116,25 @@ const buildServerForIntegrations = async (
           const mcpProxy = await buildMcpToolProxy(client);
 
           // Register as singleton with derived getter name
-          server.registerSingleton(getterName, async () => mcpProxy as unknown as object);
+          server.registerSingleton(getterName, () => mcpProxy as unknown as object);
 
           console.log(
             `MCP integration '${integration.name}' registered as ${getterName}() with ${(await mcpProxy._listTools()).length} tools`
           );
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          throw new Error(`Failed to connect to MCP server '${integration.name}': ${message}`);
+          // Register a getter that throws when called - this defers the error to user code
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const connectionError = new Error(
+            `Failed to connect to MCP server '${integration.name}': ${errorMessage}`
+          );
+
+          server.registerSingleton(getterName, () => {
+            throw connectionError;
+          });
+
+          console.error(
+            `MCP integration '${integration.name}' failed to connect: ${errorMessage}. Getter ${getterName}() will throw when called.`
+          );
         }
 
         return;
@@ -160,7 +171,7 @@ const buildServerForIntegrations = async (
 
           const gmail = createGmailClient(tokens, config);
 
-          server.registerSingleton("getGmail", async () => gmail as unknown as object);
+          server.registerSingleton("getGmail", () => gmail as unknown as object);
           break;
         }
         case "google_calendar": {
@@ -192,7 +203,7 @@ const buildServerForIntegrations = async (
 
           const calendar = createCalendarClient(tokens, config);
 
-          server.registerSingleton("getCalendar", async () => calendar as unknown as object);
+          server.registerSingleton("getCalendar", () => calendar as unknown as object);
           break;
         }
         case "mock_oauth": {
@@ -202,9 +213,9 @@ const buildServerForIntegrations = async (
           const viewerId = integration.account.accountIdentifier ?? integration.account.userId;
           server.registerSingleton(
             "getMockOAuth",
-            async () =>
+            () =>
               ({
-                ping: async (message: string) => ({
+                ping: (message: string) => ({
                   echo: message,
                   viewerId,
                 }),
