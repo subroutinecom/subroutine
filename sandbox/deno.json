@@ -2,7 +2,8 @@
   "imports": {
     "hono": "npm:hono@^4.10.4",
     "typescript": "npm:typescript",
-    "googleapis": "npm:googleapis@^134.0.0"
+    "googleapis": "npm:googleapis@^134.0.0",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0"
   },
   "compilerOptions": {
     "types": ["npm:@types/node"]

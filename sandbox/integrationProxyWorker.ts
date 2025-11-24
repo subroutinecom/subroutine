@@ -7,6 +7,7 @@ import {
   type CalendarTokens,
 } from "./integrations/calendar/mod";
 import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
+import { createMcpClient, buildMcpToolProxy, toGetterName } from "./integrations/mcp/mod";
 import type { CalendarAPI } from "./integrations/calendar/types";
 import type { GmailAPI } from "./integrations/gmail/types";
 import type { SandboxIntegrationPayload } from "./types.ts";
@@ -100,6 +101,35 @@ const buildServerForIntegrations = async (
   const server = new RemoteProxyServer<object>();
   await Promise.all(
     integrations.map(async (integration) => {
+      // Check if this is an MCP integration (identified by presence of mcpConfig)
+      if (integration.mcpConfig) {
+        const mcpConfig = integration.mcpConfig;
+        const getterName = toGetterName(integration.name);
+
+        try {
+          // Create MCP client and connect
+          const client = await createMcpClient(mcpConfig, {
+            clientName: `subroutine-${integration.name}`,
+          });
+
+          // Build tool proxy
+          const mcpProxy = await buildMcpToolProxy(client);
+
+          // Register as singleton with derived getter name
+          server.registerSingleton(getterName, async () => mcpProxy as unknown as object);
+
+          console.log(
+            `MCP integration '${integration.name}' registered as ${getterName}() with ${(await mcpProxy._listTools()).length} tools`
+          );
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          throw new Error(`Failed to connect to MCP server '${integration.name}': ${message}`);
+        }
+
+        return;
+      }
+
+      // Handle traditional OAuth-based integrations
       switch (integration.provider) {
         case "gmail": {
           if (!integration.account) {
