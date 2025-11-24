@@ -1,6 +1,12 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
-import { getTestApiKey } from "../fixtures/apikey.ts";
+import type { CookieJar } from "tough-cookie";
+import { getTestApiKey } from "../fixtures/apikey";
+import {
+  createTestAuthClientWithJar,
+  generateOrgName,
+  generateTestEmail,
+} from "../utils/auth-client";
 
 const API_BASE = "http://api:80";
 const VIEWER_ID = "viewer-123";
@@ -8,15 +14,14 @@ const VIEWER_ID = "viewer-123";
 /**
  * Helper to make REST API requests
  */
-const makeRequest = async (
-  path: string,
-  options?: {
-    method?: string;
-    apiKey?: string;
-    body?: any;
-    headers?: Record<string, string>;
-  }
-) => {
+type RequestOptions = {
+  method?: string;
+  apiKey?: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+};
+
+const makeRequest = async (path: string, options?: RequestOptions) => {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "x-use-mock": "true", // Use mock for faster tests
@@ -40,6 +45,66 @@ const makeRequest = async (
     status: response.status,
     data,
   };
+};
+
+const makeCookieRequest = async (
+  path: string,
+  cookieJar: CookieJar,
+  options?: Omit<RequestOptions, "apiKey">
+) => {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "x-use-mock": "true",
+    ...options?.headers,
+  };
+
+  const cookieHeader = await cookieJar.getCookieString(`${API_BASE}${path}`);
+  if (cookieHeader) {
+    headers["Cookie"] = cookieHeader;
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: options?.method || "GET",
+    headers,
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+
+  return {
+    status: response.status,
+    data,
+  };
+};
+
+const createSessionCookieJar = async (): Promise<CookieJar> => {
+  const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+  const email = generateTestEmail("rest-auth");
+  const password = "TestPassword123!";
+  const orgName = generateOrgName("RestAuthOrg");
+
+  await authClient.signUp.email({
+    email,
+    password,
+    name: email,
+  });
+
+  const org = await authClient.organization.create({
+    name: orgName,
+    slug: orgName.toLowerCase(),
+  });
+
+  const organizationId = org.data?.id;
+  if (!organizationId) {
+    throw new Error("Failed to create organization for session auth test");
+  }
+
+  await authClient.organization.setActive({
+    organizationId,
+  });
+
+  return cookieJar;
 };
 
 describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: false }, () => {
@@ -247,6 +312,169 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       });
 
       expect(response.status).toBe(200);
+    });
+  });
+
+  describe("Bearer Token Authentication", () => {
+    it("should allow /api/subroutine GET with Bearer token", async () => {
+      const apiKey = await getTestApiKey();
+
+      const response = await makeRequest("/api/subroutine", {
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "x-use-mock": "true",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.subroutines).toBeDefined();
+      expect(Array.isArray(response.data.subroutines)).toBe(true);
+    });
+
+    it("should allow /api/subroutine POST with Bearer token", async () => {
+      const apiKey = await getTestApiKey();
+
+      const response = await makeRequest("/api/subroutine", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "x-use-mock": "true",
+        },
+        body: { request: "Create a hello world function" },
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.data.subroutine).toBeDefined();
+      expect(response.data.subroutine.id).toBeDefined();
+    });
+
+    it("should allow /api/run GET with Bearer token", async () => {
+      const apiKey = await getTestApiKey();
+
+      const response = await makeRequest("/api/run", {
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "x-use-mock": "true",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.runs).toBeDefined();
+      expect(Array.isArray(response.data.runs)).toBe(true);
+    });
+
+    it("should allow /mcp POST with Bearer token", async () => {
+      const apiKey = await getTestApiKey();
+
+      const response = await makeRequest("/mcp", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "x-use-mock": "true",
+        },
+        body: {
+          jsonrpc: "2.0",
+          method: "initialize",
+          params: {
+            protocolVersion: "2024-11-05",
+            capabilities: {},
+            clientInfo: {
+              name: "test-client",
+              version: "1.0.0",
+            },
+          },
+          id: 1,
+        },
+      });
+
+      // Should not return 401 (unauthorized) - any other status means auth passed
+      expect(response.status).not.toBe(401);
+      expect([200, 400, 406, 500]).toContain(response.status);
+    });
+
+    it("should reject requests with invalid Bearer token", async () => {
+      const response = await makeRequest("/api/subroutine", {
+        headers: {
+          authorization: "Bearer invalid_token_12345",
+          "x-use-mock": "true",
+        },
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.data.error.code).toBe("UNAUTHORIZED");
+      expect(response.data.error.message).toBe("Invalid API key");
+    });
+
+    it("should reject Bearer token with missing prefix", async () => {
+      const apiKey = await getTestApiKey();
+
+      const response = await makeRequest("/api/subroutine", {
+        headers: {
+          authorization: apiKey, // Missing "Bearer " prefix
+          "x-use-mock": "true",
+        },
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.data.error.code).toBe("UNAUTHORIZED");
+    });
+
+    it("should work with execute_request using Bearer token", async () => {
+      const apiKey = await getTestApiKey();
+
+      const response = await makeRequest("/api/subroutine/execute_request", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "x-use-mock": "true",
+        },
+        body: {
+          request: "Create a function that multiplies two numbers",
+          timeoutMs: 5000,
+          viewerId: VIEWER_ID,
+        },
+      });
+
+      expect(response.status).toBe(201);
+      expect(response.data.subroutine).toBeDefined();
+      expect(response.data.run).toBeDefined();
+      expect(response.data.initialInputs).toBeDefined();
+    });
+  });
+
+  describe("BetterAuth Session Authentication", () => {
+    it("should allow /api/subroutine GET with BetterAuth session cookie", async () => {
+      const cookieJar = await createSessionCookieJar();
+
+      const response = await makeCookieRequest("/api/subroutine", cookieJar);
+
+      expect(response.status).toBe(200);
+      expect(response.data.subroutines).toBeDefined();
+      expect(Array.isArray(response.data.subroutines)).toBe(true);
+    });
+
+    it("should allow /mcp POST with BetterAuth session cookie", async () => {
+      const cookieJar = await createSessionCookieJar();
+
+      const response = await makeCookieRequest("/mcp", cookieJar, {
+        method: "POST",
+        body: {
+          jsonrpc: "2.0",
+          method: "initialize",
+          params: {
+            protocolVersion: "2024-11-05",
+            capabilities: {},
+            clientInfo: {
+              name: "test-client",
+              version: "1.0.0",
+            },
+          },
+          id: 1,
+        },
+      });
+
+      expect(response.status).not.toBe(401);
+      expect([200, 400, 406, 500]).toContain(response.status);
     });
   });
 });
