@@ -78,7 +78,8 @@ export const authMiddleware = async (
     {
       error: {
         code: "UNAUTHORIZED",
-        message: "Authentication required. Provide session cookie, x-api-key header, or Authorization: Bearer token.",
+        message:
+          "Authentication required. Provide session cookie, x-api-key header, or Authorization: Bearer token.",
       },
     },
     401

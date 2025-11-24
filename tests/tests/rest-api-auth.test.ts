@@ -321,7 +321,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
 
       const response = await makeRequest("/api/subroutine", {
         headers: {
-          "authorization": `Bearer ${apiKey}`,
+          authorization: `Bearer ${apiKey}`,
           "x-use-mock": "true",
         },
       });
@@ -337,7 +337,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       const response = await makeRequest("/api/subroutine", {
         method: "POST",
         headers: {
-          "authorization": `Bearer ${apiKey}`,
+          authorization: `Bearer ${apiKey}`,
           "x-use-mock": "true",
         },
         body: { request: "Create a hello world function" },
@@ -353,7 +353,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
 
       const response = await makeRequest("/api/run", {
         headers: {
-          "authorization": `Bearer ${apiKey}`,
+          authorization: `Bearer ${apiKey}`,
           "x-use-mock": "true",
         },
       });
@@ -369,7 +369,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       const response = await makeRequest("/mcp", {
         method: "POST",
         headers: {
-          "authorization": `Bearer ${apiKey}`,
+          authorization: `Bearer ${apiKey}`,
           "x-use-mock": "true",
         },
         body: {
@@ -395,7 +395,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
     it("should reject requests with invalid Bearer token", async () => {
       const response = await makeRequest("/api/subroutine", {
         headers: {
-          "authorization": "Bearer invalid_token_12345",
+          authorization: "Bearer invalid_token_12345",
           "x-use-mock": "true",
         },
       });
@@ -410,7 +410,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
 
       const response = await makeRequest("/api/subroutine", {
         headers: {
-          "authorization": apiKey, // Missing "Bearer " prefix
+          authorization: apiKey, // Missing "Bearer " prefix
           "x-use-mock": "true",
         },
       });
@@ -425,7 +425,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       const response = await makeRequest("/api/subroutine/execute_request", {
         method: "POST",
         headers: {
-          "authorization": `Bearer ${apiKey}`,
+          authorization: `Bearer ${apiKey}`,
           "x-use-mock": "true",
         },
         body: {
