@@ -2,12 +2,15 @@ import type { Context, Next } from "hono";
 import { auth } from "../auth.ts";
 import { verifyApiKey } from "../models/apikey.ts";
 
+type ApiSession = Awaited<ReturnType<typeof auth.api.getSession>>;
+type SessionData = NonNullable<ApiSession>;
+
 export type AuthContext = {
   type: "apikey" | "session";
   userId: string;
   organizationId?: string | null;
-  user?: any;
-  session?: any;
+  user?: SessionData["user"];
+  session?: SessionData["session"];
 };
 
 export const authMiddleware = async (
@@ -20,7 +23,17 @@ export const authMiddleware = async (
     return next();
   }
 
-  const apiKey = c.req.header("x-api-key");
+  // Check for API key in x-api-key header (legacy support)
+  let apiKey = c.req.header("x-api-key");
+
+  // Check for Bearer token in Authorization header (MCP standard)
+  if (!apiKey) {
+    const authHeader = c.req.header("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      apiKey = authHeader.substring(7); // Remove "Bearer " prefix
+    }
+  }
+
   if (apiKey) {
     const apiKeyAuth = await verifyApiKey(apiKey);
     if (apiKeyAuth) {
@@ -43,7 +56,7 @@ export const authMiddleware = async (
   }
 
   try {
-    const sessionData = await auth.api.getSession({
+    const sessionData: ApiSession = await auth.api.getSession({
       headers: c.req.raw.headers,
     });
 
@@ -65,7 +78,7 @@ export const authMiddleware = async (
     {
       error: {
         code: "UNAUTHORIZED",
-        message: "Authentication required. Provide session cookie or x-api-key header.",
+        message: "Authentication required. Provide session cookie, x-api-key header, or Authorization: Bearer token.",
       },
     },
     401
