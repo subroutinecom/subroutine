@@ -1,6 +1,7 @@
 import { calendarDefinition } from "./providers/definitions/calendar.ts";
 import { githubDefinition } from "./providers/definitions/github.ts";
 import { gmailDefinition } from "./providers/definitions/gmail.ts";
+import { mcpDefinition } from "./providers/definitions/mcp.ts";
 import { mockOAuthDefinition } from "./providers/definitions/mock_oauth.ts";
 import type { IntegrationDefinition } from "./providers/types.ts";
 
@@ -8,6 +9,7 @@ const definitions = [
   gmailDefinition,
   calendarDefinition,
   githubDefinition,
+  mcpDefinition,
   mockOAuthDefinition,
 ] as const;
 
@@ -38,4 +40,6 @@ export type {
   AuthStrategyDefinition,
   OAuthHandlers,
   OAuthTokenResponse,
+  McpAuthStrategy,
+  McpTransport,
 } from "./providers/types.ts";

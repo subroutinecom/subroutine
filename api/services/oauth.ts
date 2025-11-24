@@ -54,6 +54,14 @@ export const generateAuthorizationUrl = async (params: {
   }
 
   const authConfig = integration.authConfig;
+
+  // OAuth service only handles OAuth2 integrations
+  if (authConfig.type !== "oauth2") {
+    throw new Error(
+      `Integration ${integration.name} uses ${authConfig.type} auth, not OAuth2. Cannot generate authorization URL.`
+    );
+  }
+
   if (!authConfig.clientId || !authConfig.authUrl) {
     throw new Error("Integration authConfig missing required OAuth fields (clientId, authUrl)");
   }
@@ -109,6 +117,14 @@ const exchangeCodeForToken = async (
   }
 
   const authConfig = integration.authConfig;
+
+  // Token exchange only works for OAuth2 integrations
+  if (authConfig.type !== "oauth2") {
+    throw new Error(
+      `Integration uses ${authConfig.type} auth, not OAuth2. Cannot exchange code for token.`
+    );
+  }
+
   if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.tokenUrl) {
     throw new Error("Integration authConfig missing required fields for token exchange");
   }
