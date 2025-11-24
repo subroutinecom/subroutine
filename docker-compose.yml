@@ -48,6 +48,8 @@ services:
       target: dev
     ports:
       - "3002:80"
+    env_file:
+      - ./api/.env
     environment:
       DATABASE_URL: postgresql://subroutine:subroutine@postgres:5432/subroutine
       ENABLE_MOCK_OAUTH: "true"

@@ -158,6 +158,38 @@ OAuthIntegrationConfigType.implement({
   }),
 });
 
+// MCP Auth Strategy Type - serialized as JSON string for flexibility
+const McpAuthStrategyType = builder.objectRef<{ type: string; headerName?: string; headers?: Record<string, string> }>(
+  "McpAuthStrategy"
+);
+
+McpAuthStrategyType.implement({
+  fields: (t) => ({
+    type: t.exposeString("type"),
+    headerName: t.exposeString("headerName", { nullable: true }),
+    headers: t.field({
+      type: "String",
+      nullable: true,
+      resolve: (parent) => (parent.headers ? JSON.stringify(parent.headers) : null),
+    }),
+  }),
+});
+
+const McpIntegrationConfigType = builder.objectRef<
+  Extract<IntegrationDefinition["auth"], { type: "mcp" }>
+>("IntegrationProviderMcpConfig");
+
+McpIntegrationConfigType.implement({
+  fields: (t) => ({
+    serverUrl: t.exposeString("serverUrl"),
+    transport: t.exposeString("transport"),
+    authStrategy: t.field({
+      type: McpAuthStrategyType,
+      resolve: (parent) => parent.authStrategy,
+    }),
+  }),
+});
+
 const IntegrationProviderDefinitionType = builder.objectRef<IntegrationDefinition>(
   "IntegrationProviderDefinition"
 );
@@ -177,6 +209,11 @@ IntegrationProviderDefinitionType.implement({
       type: OAuthIntegrationConfigType,
       nullable: true,
       resolve: (parent) => (parent.auth.type === "oauth2" ? parent.auth : null),
+    }),
+    mcpConfig: t.field({
+      type: McpIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => (parent.auth.type === "mcp" ? parent.auth : null),
     }),
   }),
 });

@@ -86,14 +86,20 @@ const executeTypescript = async (
   };
 };
 
+type McpAuthStrategy =
+  | { type: "none" }
+  | { type: "api_key"; headerName?: string }
+  | { type: "bearer_passthrough" };
+
 /**
  * Creates an MCP integration payload for testing.
  */
 const createMcpIntegrationPayload = (options: {
   name: string;
   serverUrl: string;
-  authStrategy: { type: "none" } | { type: "api_key"; headerName?: string };
+  authStrategy: McpAuthStrategy;
   apiKey?: string;
+  accessToken?: string;
 }) => {
   return [
     {
@@ -112,6 +118,7 @@ const createMcpIntegrationPayload = (options: {
         transport: "streamable-http" as const,
         authStrategy: options.authStrategy,
         apiKey: options.apiKey,
+        accessToken: options.accessToken,
       },
     },
   ];
@@ -298,6 +305,138 @@ describe("MCP Integration Tests", () => {
       const data = result.result as { echo: string; add: { result: number } };
       expect(data.echo).toBe("authenticated!");
       expect(data.add.result).toBe(30);
+    });
+  });
+
+  describe("MCP Integration Proxy - Bearer Passthrough (Viewer-Scoped OAuth)", () => {
+    const VIEWER_ACCESS_TOKEN = "viewer-oauth-access-token-abc123xyz";
+
+    it("should pass viewer's access token in Authorization header", async () => {
+      const payload = createMcpIntegrationPayload({
+        name: "test-mcp-oauth",
+        serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
+        authStrategy: { type: "bearer_passthrough" },
+        accessToken: VIEWER_ACCESS_TOKEN,
+      });
+
+      const code = `
+        const mcp = await integrations.getTestMcpOauth();
+        const authInfo = await mcp.getAuthInfo({});
+        return authInfo;
+      `;
+
+      const { status, result } = await executeTypescript(code, payload);
+
+      expect(status).toBe(200);
+      expect(result.success).toBe(true);
+
+      const data = result.result as { hasAuth: boolean; tokenPrefix: string; tokenLength: number };
+      expect(data.hasAuth).toBe(true);
+      expect(data.tokenPrefix).toBe(VIEWER_ACCESS_TOKEN.substring(0, 20));
+      expect(data.tokenLength).toBe(VIEWER_ACCESS_TOKEN.length);
+    });
+
+    it("should work with tools when bearer passthrough auth is configured", async () => {
+      const payload = createMcpIntegrationPayload({
+        name: "test-mcp-oauth",
+        serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
+        authStrategy: { type: "bearer_passthrough" },
+        accessToken: VIEWER_ACCESS_TOKEN,
+      });
+
+      const code = `
+        const mcp = await integrations.getTestMcpOauth();
+        const echoResult = await mcp.echo({ message: "authenticated with oauth!" });
+        const addResult = await mcp.add({ a: 100, b: 200 });
+        return { echo: echoResult, add: addResult };
+      `;
+
+      const { status, result } = await executeTypescript(code, payload);
+
+      expect(status).toBe(200);
+      expect(result.success).toBe(true);
+
+      const data = result.result as { echo: string; add: { result: number } };
+      expect(data.echo).toBe("authenticated with oauth!");
+      expect(data.add.result).toBe(300);
+    });
+
+    it("should fail when bearer passthrough is configured but no access token provided", async () => {
+      const payload = createMcpIntegrationPayload({
+        name: "test-mcp-oauth-notoken",
+        serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
+        authStrategy: { type: "bearer_passthrough" },
+        // No accessToken provided - simulating a viewer without connected account
+      });
+
+      const code = `
+        try {
+          const mcp = await integrations.getTestMcpOauthNotoken();
+          return { error: false };
+        } catch (error) {
+          return { error: true, message: error.message };
+        }
+      `;
+
+      const { status, result } = await executeTypescript(code, payload);
+
+      expect(status).toBe(200);
+      expect(result.success).toBe(true);
+
+      const data = result.result as { error: boolean; message?: string };
+      expect(data.error).toBe(true);
+      // The error should mention bearer_passthrough requiring accessToken
+      expect(data.message).toContain("accessToken");
+    });
+
+    it("should use different tokens for different viewer sessions", async () => {
+      const viewer1Token = "viewer1-token-aaa111";
+      const viewer2Token = "viewer2-token-bbb222";
+
+      // Simulate two different viewers accessing the same MCP integration
+      const payload1 = createMcpIntegrationPayload({
+        name: "test-mcp-viewer1",
+        serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
+        authStrategy: { type: "bearer_passthrough" },
+        accessToken: viewer1Token,
+      });
+
+      const payload2 = createMcpIntegrationPayload({
+        name: "test-mcp-viewer2",
+        serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
+        authStrategy: { type: "bearer_passthrough" },
+        accessToken: viewer2Token,
+      });
+
+      const code1 = `
+        const mcp = await integrations.getTestMcpViewer1();
+        const authInfo = await mcp.getAuthInfo({});
+        return authInfo;
+      `;
+
+      const code2 = `
+        const mcp = await integrations.getTestMcpViewer2();
+        const authInfo = await mcp.getAuthInfo({});
+        return authInfo;
+      `;
+
+      const [result1, result2] = await Promise.all([
+        executeTypescript(code1, payload1),
+        executeTypescript(code2, payload2),
+      ]);
+
+      expect(result1.status).toBe(200);
+      expect(result1.result.success).toBe(true);
+      expect(result2.status).toBe(200);
+      expect(result2.result.success).toBe(true);
+
+      const data1 = result1.result.result as { tokenPrefix: string };
+      const data2 = result2.result.result as { tokenPrefix: string };
+
+      // Each viewer should see their own token
+      expect(data1.tokenPrefix).toBe(viewer1Token.substring(0, 20));
+      expect(data2.tokenPrefix).toBe(viewer2Token.substring(0, 20));
+      expect(data1.tokenPrefix).not.toBe(data2.tokenPrefix);
     });
   });
 

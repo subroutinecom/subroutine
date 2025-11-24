@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useLoaderData } from "react-router";
-import { Github, Mail, Pencil, Plus, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
+import { Github, Mail, Pencil, Plus, Server, ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { graphqlClient } from "~/lib/graphql-client";
-import type { IntegrationAuthConfig } from "~/types/integration";
+import type { IntegrationAuthConfig, McpAuthConfig, OAuth2AuthConfig } from "~/types/integration";
 
 export function meta() {
   return [
@@ -79,6 +79,8 @@ const getProviderIcon = (provider: string) => {
       return <Github size={20} />;
     case "gmail":
       return <Mail size={20} />;
+    case "mcp":
+      return <Server size={20} />;
     default:
       return null;
   }
@@ -174,10 +176,7 @@ export default function IntegrationsPage() {
                     Name
                   </th>
                   <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Client ID
-                  </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Scopes
+                    Configuration
                   </th>
                   <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
                     Status
@@ -208,26 +207,39 @@ export default function IntegrationsPage() {
                       <span className="text-base-content font-medium">{integration.name}</span>
                     </td>
                     <td className="py-4 px-6">
-                      <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70">
-                        {integration.authConfig.clientId}
-                      </code>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex gap-1.5 flex-wrap max-w-xs">
-                        {integration.authConfig.scopes.slice(0, 3).map((scope) => (
-                          <span
-                            key={scope}
-                            className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300"
-                          >
-                            {scope}
-                          </span>
-                        ))}
-                        {integration.authConfig.scopes.length > 3 && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/60 border border-base-300">
-                            +{integration.authConfig.scopes.length - 3} more
-                          </span>
-                        )}
-                      </div>
+                      {integration.authConfig.type === "mcp" ? (
+                        <div className="space-y-1">
+                          <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70 block max-w-xs truncate">
+                            {(integration.authConfig as McpAuthConfig).serverUrl}
+                          </code>
+                          <div className="flex gap-1.5 flex-wrap">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300 capitalize">
+                              {(integration.authConfig as McpAuthConfig).authStrategy.type.replace("_", " ")}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70 block max-w-xs truncate">
+                            {(integration.authConfig as OAuth2AuthConfig).clientId}
+                          </code>
+                          <div className="flex gap-1.5 flex-wrap max-w-xs">
+                            {(integration.authConfig as OAuth2AuthConfig).scopes.slice(0, 3).map((scope: string) => (
+                              <span
+                                key={scope}
+                                className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300"
+                              >
+                                {scope}
+                              </span>
+                            ))}
+                            {(integration.authConfig as OAuth2AuthConfig).scopes.length > 3 && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/60 border border-base-300">
+                                +{(integration.authConfig as OAuth2AuthConfig).scopes.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td className="py-4 px-6">
                       <button
