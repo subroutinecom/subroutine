@@ -30,6 +30,7 @@ import {
   type IntegrationDefinition,
   type IntegrationProvider,
 } from "../integrations/providers.ts";
+import { discoverMcpOAuth, type McpOAuthDiscoveryResult } from "../services/mcp-oauth-discovery.ts";
 
 type User = {
   id: string;
@@ -158,6 +159,40 @@ OAuthIntegrationConfigType.implement({
   }),
 });
 
+// MCP Auth Strategy Type - serialized as JSON string for flexibility
+const McpAuthStrategyType = builder.objectRef<{
+  type: string;
+  headerName?: string;
+  headers?: Record<string, string>;
+}>("McpAuthStrategy");
+
+McpAuthStrategyType.implement({
+  fields: (t) => ({
+    type: t.exposeString("type"),
+    headerName: t.exposeString("headerName", { nullable: true }),
+    headers: t.field({
+      type: "String",
+      nullable: true,
+      resolve: (parent) => (parent.headers ? JSON.stringify(parent.headers) : null),
+    }),
+  }),
+});
+
+const McpIntegrationConfigType = builder.objectRef<
+  Extract<IntegrationDefinition["auth"], { type: "mcp" }>
+>("IntegrationProviderMcpConfig");
+
+McpIntegrationConfigType.implement({
+  fields: (t) => ({
+    serverUrl: t.exposeString("serverUrl"),
+    transport: t.exposeString("transport"),
+    authStrategy: t.field({
+      type: McpAuthStrategyType,
+      resolve: (parent) => parent.authStrategy,
+    }),
+  }),
+});
+
 const IntegrationProviderDefinitionType = builder.objectRef<IntegrationDefinition>(
   "IntegrationProviderDefinition"
 );
@@ -178,6 +213,35 @@ IntegrationProviderDefinitionType.implement({
       nullable: true,
       resolve: (parent) => (parent.auth.type === "oauth2" ? parent.auth : null),
     }),
+    mcpConfig: t.field({
+      type: McpIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => (parent.auth.type === "mcp" ? parent.auth : null),
+    }),
+  }),
+});
+
+// MCP OAuth Discovery Result Type
+const McpOAuthDiscoveryResultType =
+  builder.objectRef<McpOAuthDiscoveryResult>("McpOAuthDiscoveryResult");
+
+McpOAuthDiscoveryResultType.implement({
+  fields: (t) => ({
+    success: t.exposeBoolean("success"),
+    serverName: t.exposeString("serverName", { nullable: true }),
+    authorizationServer: t.exposeString("authorizationServer", { nullable: true }),
+    authorizationEndpoint: t.exposeString("authorizationEndpoint", { nullable: true }),
+    tokenEndpoint: t.exposeString("tokenEndpoint", { nullable: true }),
+    registrationEndpoint: t.exposeString("registrationEndpoint", { nullable: true }),
+    scopesSupported: t.stringList({
+      nullable: true,
+      resolve: (parent) => parent.scopesSupported ?? null,
+    }),
+    pkceSupported: t.exposeBoolean("pkceSupported", { nullable: true }),
+    dynamicRegistrationSupported: t.exposeBoolean("dynamicRegistrationSupported", {
+      nullable: true,
+    }),
+    error: t.exposeString("error", { nullable: true }),
   }),
 });
 
@@ -248,6 +312,15 @@ builder.queryType({
           args.integrationId,
           ctx.session.activeOrganizationId
         );
+      },
+    }),
+    discoverMcpOAuth: t.field({
+      type: McpOAuthDiscoveryResultType,
+      args: {
+        serverUrl: t.arg.string({ required: true }),
+      },
+      resolve: async (_parent, args) => {
+        return discoverMcpOAuth(args.serverUrl);
       },
     }),
   }),

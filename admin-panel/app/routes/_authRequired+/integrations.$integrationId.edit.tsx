@@ -7,7 +7,13 @@ import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
-import type { IntegrationAuthConfig } from "~/types/integration";
+import type {
+  IntegrationAuthConfig,
+  McpAuthConfig,
+  McpAuthStrategy,
+  McpTransport,
+  OAuth2AuthConfig,
+} from "~/types/integration";
 
 export function meta() {
   return [
@@ -56,13 +62,23 @@ interface ParsedIntegration extends Omit<IntegrationResponse, "authConfig"> {
   authConfig: IntegrationAuthConfig;
 }
 
+type McpAuthStrategyType = "none" | "api_key" | "bearer_passthrough" | "custom_headers";
+
 type IntegrationFormData = {
   name: string;
+  enabled: boolean;
+  // OAuth2 fields
   clientId: string;
   clientSecret: string;
   scopes: string;
   redirectUri: string;
-  enabled: boolean;
+  // MCP fields
+  serverUrl: string;
+  transport: McpTransport;
+  authStrategyType: McpAuthStrategyType;
+  apiKey: string;
+  apiKeyHeaderName: string;
+  customHeaders: string;
 };
 
 export default function EditIntegrationPage() {
@@ -79,17 +95,29 @@ export default function EditIntegrationPage() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<IntegrationFormData>({
     defaultValues: {
       name: "",
+      enabled: true,
+      // OAuth2 fields
       clientId: "",
       clientSecret: "",
       scopes: "",
       redirectUri: "",
-      enabled: true,
+      // MCP fields
+      serverUrl: "",
+      transport: "streamable-http",
+      authStrategyType: "none",
+      apiKey: "",
+      apiKeyHeaderName: "",
+      customHeaders: "",
     },
   });
+
+  const watchedAuthStrategy = watch("authStrategyType");
+  const isMcpIntegration = integration?.authConfig.type === "mcp";
 
   useEffect(() => {
     const fetchIntegration = async () => {
@@ -104,14 +132,50 @@ export default function EditIntegrationPage() {
           authConfig: JSON.parse(data.integration.authConfig) as IntegrationAuthConfig,
         };
         setIntegration(parsed);
-        reset({
-          name: parsed.name,
-          clientId: parsed.authConfig.clientId,
-          clientSecret: "",
-          scopes: parsed.authConfig.scopes.join(", "),
-          redirectUri: parsed.authConfig.redirectUri,
-          enabled: parsed.enabled,
-        });
+
+        if (parsed.authConfig.type === "mcp") {
+          // MCP integration
+          const mcpConfig = parsed.authConfig as McpAuthConfig;
+          reset({
+            name: parsed.name,
+            enabled: parsed.enabled,
+            serverUrl: mcpConfig.serverUrl,
+            transport: mcpConfig.transport,
+            authStrategyType: mcpConfig.authStrategy.type as McpAuthStrategyType,
+            apiKey: "",
+            apiKeyHeaderName:
+              mcpConfig.authStrategy.type === "api_key"
+                ? mcpConfig.authStrategy.headerName || ""
+                : "",
+            customHeaders:
+              mcpConfig.authStrategy.type === "custom_headers"
+                ? JSON.stringify(mcpConfig.authStrategy.headers, null, 2)
+                : "",
+            // Clear OAuth fields
+            clientId: "",
+            clientSecret: "",
+            scopes: "",
+            redirectUri: "",
+          });
+        } else {
+          // OAuth2 integration
+          const oauthConfig = parsed.authConfig as OAuth2AuthConfig;
+          reset({
+            name: parsed.name,
+            enabled: parsed.enabled,
+            clientId: oauthConfig.clientId,
+            clientSecret: "",
+            scopes: oauthConfig.scopes.join(", "),
+            redirectUri: oauthConfig.redirectUri,
+            // Clear MCP fields
+            serverUrl: "",
+            transport: "streamable-http",
+            authStrategyType: "none",
+            apiKey: "",
+            apiKeyHeaderName: "",
+            customHeaders: "",
+          });
+        }
       } catch (err) {
         setServerError(err instanceof Error ? err.message : "Failed to load integration");
       } finally {
@@ -125,32 +189,98 @@ export default function EditIntegrationPage() {
   const onSubmit = async (data: IntegrationFormData) => {
     setServerError(null);
 
-    const scopeArray = data.scopes
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-
-    if (scopeArray.length === 0) {
-      setServerError("At least one scope is required");
-      return;
-    }
-
     if (!integration) return;
 
     try {
-      const secret = data.clientSecret.trim();
-      const authConfigPayload: Record<string, unknown> = {
-        type: "oauth2",
-        clientId: data.clientId.trim(),
-        scopes: scopeArray,
-        authUrl: integration.authConfig.authUrl,
-        tokenUrl: integration.authConfig.tokenUrl,
-        redirectUri: data.redirectUri.trim(),
-      };
-      if (secret) {
-        authConfigPayload.clientSecret = secret;
+      let authConfig: string;
+
+      if (integration.authConfig.type === "mcp") {
+        // Build MCP auth config
+        if (!data.serverUrl.trim()) {
+          setServerError("Server URL is required");
+          return;
+        }
+
+        // Validate URL
+        try {
+          new URL(data.serverUrl.trim());
+        } catch {
+          setServerError("Invalid server URL");
+          return;
+        }
+
+        // Build auth strategy based on type
+        let authStrategy: McpAuthStrategy;
+        switch (data.authStrategyType) {
+          case "none":
+            authStrategy = { type: "none" };
+            break;
+          case "api_key":
+            authStrategy = {
+              type: "api_key",
+              ...(data.apiKeyHeaderName.trim() && { headerName: data.apiKeyHeaderName.trim() }),
+            };
+            break;
+          case "bearer_passthrough":
+            authStrategy = { type: "bearer_passthrough" };
+            break;
+          case "custom_headers":
+            try {
+              const headers = data.customHeaders.trim()
+                ? JSON.parse(data.customHeaders.trim())
+                : {};
+              authStrategy = { type: "custom_headers", headers };
+            } catch {
+              setServerError("Custom headers must be valid JSON");
+              return;
+            }
+            break;
+          default:
+            authStrategy = { type: "none" };
+        }
+
+        const mcpAuthConfig: Record<string, unknown> = {
+          type: "mcp",
+          serverUrl: data.serverUrl.trim(),
+          transport: data.transport,
+          authStrategy,
+        };
+
+        // Only include apiKey if it was provided (for rotation)
+        if (data.authStrategyType === "api_key" && data.apiKey.trim()) {
+          mcpAuthConfig.apiKey = data.apiKey.trim();
+        }
+
+        authConfig = JSON.stringify(mcpAuthConfig);
+      } else {
+        // Build OAuth2 auth config
+        const scopeArray = data.scopes
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+
+        if (scopeArray.length === 0) {
+          setServerError("At least one scope is required");
+          return;
+        }
+
+        const oauthConfig = integration.authConfig as OAuth2AuthConfig;
+        const authConfigPayload: Record<string, unknown> = {
+          type: "oauth2",
+          clientId: data.clientId.trim(),
+          scopes: scopeArray,
+          authUrl: oauthConfig.authUrl,
+          tokenUrl: oauthConfig.tokenUrl,
+          redirectUri: data.redirectUri.trim(),
+        };
+
+        const secret = data.clientSecret.trim();
+        if (secret) {
+          authConfigPayload.clientSecret = secret;
+        }
+
+        authConfig = JSON.stringify(authConfigPayload);
       }
-      const authConfig = JSON.stringify(authConfigPayload);
 
       await graphqlClient.request<{
         updateIntegration: {
@@ -239,91 +369,227 @@ export default function EditIntegrationPage() {
               )}
             </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Client ID</span>
-              </label>
-              <input
-                type="text"
-                {...register("clientId", { required: "Client ID is required" })}
-                placeholder="OAuth Client ID"
-                className="input input-bordered font-mono text-sm"
-              />
-              {errors.clientId && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{errors.clientId.message}</span>
-                </label>
-              )}
-            </div>
+            {/* MCP-specific fields */}
+            {isMcpIntegration && (
+              <>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Server URL</span>
+                  </label>
+                  <input
+                    type="url"
+                    {...register("serverUrl")}
+                    placeholder="https://example.com/mcp"
+                    className="input input-bordered font-mono text-sm"
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">The URL of the MCP server endpoint</span>
+                  </label>
+                </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Client Secret</span>
-              </label>
-              <input
-                type="password"
-                {...register("clientSecret")}
-                placeholder="OAuth Client Secret"
-                className="input input-bordered font-mono text-sm"
-              />
-              {errors.clientSecret && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{errors.clientSecret.message}</span>
-                </label>
-              )}
-              <label className="label">
-                <span className="label-text-alt text-warning">
-                  Provide a new secret to rotate credentials. Leave blank to keep the current
-                  secret.
-                </span>
-              </label>
-            </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Transport</span>
+                  </label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        {...register("transport")}
+                        value="streamable-http"
+                        className="radio radio-primary"
+                      />
+                      <span>Streamable HTTP</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        {...register("transport")}
+                        value="sse"
+                        className="radio radio-primary"
+                      />
+                      <span>SSE (Server-Sent Events)</span>
+                    </label>
+                  </div>
+                </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Scopes</span>
-              </label>
-              <input
-                type="text"
-                {...register("scopes", { required: "Scopes are required" })}
-                placeholder="Comma-separated scopes"
-                className="input input-bordered font-mono text-sm"
-              />
-              {errors.scopes && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{errors.scopes.message}</span>
-                </label>
-              )}
-              <label className="label">
-                <span className="label-text-alt">
-                  OAuth scopes required for this integration (comma-separated)
-                </span>
-              </label>
-            </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Authentication</span>
+                  </label>
+                  <select
+                    {...register("authStrategyType")}
+                    className="select select-bordered w-full"
+                  >
+                    <option value="none">No Authentication</option>
+                    <option value="api_key">API Key</option>
+                    <option value="bearer_passthrough">Bearer Passthrough (OAuth)</option>
+                    <option value="custom_headers">Custom Headers</option>
+                  </select>
+                </div>
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-medium">Redirect URI</span>
-              </label>
-              <input
-                type="url"
-                {...register("redirectUri", {
-                  required: "Redirect URI is required",
-                })}
-                placeholder="OAuth Redirect URI"
-                className="input input-bordered font-mono text-sm"
-              />
-              {errors.redirectUri && (
-                <label className="label">
-                  <span className="label-text-alt text-error">{errors.redirectUri.message}</span>
-                </label>
-              )}
-              <label className="label">
-                <span className="label-text-alt">
-                  The callback URL configured in your OAuth app
-                </span>
-              </label>
-            </div>
+                {watchedAuthStrategy === "api_key" && (
+                  <>
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">API Key</span>
+                      </label>
+                      <input
+                        type="password"
+                        {...register("apiKey")}
+                        placeholder="Your API key"
+                        className="input input-bordered font-mono text-sm"
+                      />
+                      <label className="label">
+                        <span className="label-text-alt text-warning">
+                          Provide a new key to rotate credentials. Leave blank to keep the current
+                          key.
+                        </span>
+                      </label>
+                    </div>
+
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text font-medium">Header Name (Optional)</span>
+                      </label>
+                      <input
+                        type="text"
+                        {...register("apiKeyHeaderName")}
+                        placeholder="Authorization (default)"
+                        className="input input-bordered font-mono text-sm"
+                      />
+                      <label className="label">
+                        <span className="label-text-alt">
+                          Custom header name for API key. Defaults to Authorization with Bearer
+                          prefix.
+                        </span>
+                      </label>
+                    </div>
+                  </>
+                )}
+
+                {watchedAuthStrategy === "bearer_passthrough" && (
+                  <div className="alert alert-info">
+                    <span>
+                      Bearer passthrough will use the viewer&apos;s OAuth access token to
+                      authenticate with the MCP server. Users will need to connect their accounts
+                      via OAuth.
+                    </span>
+                  </div>
+                )}
+
+                {watchedAuthStrategy === "custom_headers" && (
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text font-medium">Custom Headers (JSON)</span>
+                    </label>
+                    <textarea
+                      {...register("customHeaders")}
+                      placeholder='{"X-API-Key": "your-key", "X-Custom": "value"}'
+                      className="textarea textarea-bordered font-mono text-sm h-24"
+                    />
+                    <label className="label">
+                      <span className="label-text-alt">
+                        JSON object of headers to include in MCP requests
+                      </span>
+                    </label>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* OAuth2-specific fields */}
+            {!isMcpIntegration && (
+              <>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Client ID</span>
+                  </label>
+                  <input
+                    type="text"
+                    {...register("clientId")}
+                    placeholder="OAuth Client ID"
+                    className="input input-bordered font-mono text-sm"
+                  />
+                  {errors.clientId && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">{errors.clientId.message}</span>
+                    </label>
+                  )}
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Client Secret</span>
+                  </label>
+                  <input
+                    type="password"
+                    {...register("clientSecret")}
+                    placeholder="OAuth Client Secret"
+                    className="input input-bordered font-mono text-sm"
+                  />
+                  {errors.clientSecret && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">
+                        {errors.clientSecret.message}
+                      </span>
+                    </label>
+                  )}
+                  <label className="label">
+                    <span className="label-text-alt text-warning">
+                      Provide a new secret to rotate credentials. Leave blank to keep the current
+                      secret.
+                    </span>
+                  </label>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Scopes</span>
+                  </label>
+                  <input
+                    type="text"
+                    {...register("scopes")}
+                    placeholder="Comma-separated scopes"
+                    className="input input-bordered font-mono text-sm"
+                  />
+                  {errors.scopes && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">{errors.scopes.message}</span>
+                    </label>
+                  )}
+                  <label className="label">
+                    <span className="label-text-alt">
+                      OAuth scopes required for this integration (comma-separated)
+                    </span>
+                  </label>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium">Redirect URI</span>
+                  </label>
+                  <input
+                    type="url"
+                    {...register("redirectUri")}
+                    placeholder="OAuth Redirect URI"
+                    className="input input-bordered font-mono text-sm"
+                  />
+                  {errors.redirectUri && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">
+                        {errors.redirectUri.message}
+                      </span>
+                    </label>
+                  )}
+                  <label className="label">
+                    <span className="label-text-alt">
+                      The callback URL configured in your OAuth app
+                    </span>
+                  </label>
+                </div>
+              </>
+            )}
 
             <div className="form-control">
               <label className="label cursor-pointer justify-start gap-4">

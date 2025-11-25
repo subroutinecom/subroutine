@@ -98,6 +98,12 @@ services:
     volumes:
       - ./tests:/app/tests
       - ./packages:/app/packages
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3456/health"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
     depends_on:
       sandbox:
         condition: service_healthy

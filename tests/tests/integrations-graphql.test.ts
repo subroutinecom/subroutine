@@ -702,4 +702,101 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     expect(result.connectedAccountsByIntegration.length).toBe(1);
   });
+
+  it("should create MCP integration with viewer-scoped PAT (no apiKey required)", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    // MCP config with viewer-scoped API key (PAT) - no apiKey field
+    const authConfig = {
+      type: "mcp",
+      serverUrl: "https://api.example.com/mcp",
+      transport: "streamable-http",
+      authStrategy: {
+        type: "api_key",
+        viewerScoped: true,
+        headerName: "Authorization",
+      },
+    };
+
+    const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
+      provider: "mcp",
+      name: "Viewer-Scoped PAT MCP Integration",
+      authConfig: JSON.stringify(authConfig),
+    });
+
+    expect(createResult.createIntegration).toBeDefined();
+    expect(createResult.createIntegration.id).toBeDefined();
+    expect(createResult.createIntegration.provider).toBe("mcp");
+    expect(createResult.createIntegration.name).toBe("Viewer-Scoped PAT MCP Integration");
+    expect(createResult.createIntegration.enabled).toBe(true);
+
+    // Verify authConfig is returned correctly
+    const returnedAuthConfig = JSON.parse(createResult.createIntegration.authConfig);
+    expect(returnedAuthConfig.type).toBe("mcp");
+    expect(returnedAuthConfig.serverUrl).toBe("https://api.example.com/mcp");
+    expect(returnedAuthConfig.authStrategy.type).toBe("api_key");
+    expect(returnedAuthConfig.authStrategy.viewerScoped).toBe(true);
+    // No apiKey should be present since it's viewer-scoped
+    expect(returnedAuthConfig.apiKey).toBeUndefined();
+  });
+
+  it("should require apiKey for org-level (non-viewer-scoped) MCP api_key auth", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    // MCP config with org-level API key but missing the apiKey field
+    const authConfig = {
+      type: "mcp",
+      serverUrl: "https://api.example.com/mcp",
+      transport: "streamable-http",
+      authStrategy: {
+        type: "api_key",
+        // viewerScoped is false/undefined, so apiKey is required
+      },
+    };
+
+    try {
+      await graphqlClient.request(CREATE_INTEGRATION, {
+        provider: "mcp",
+        name: "Org-Level API Key MCP Integration",
+        authConfig: JSON.stringify(authConfig),
+      });
+      throw new Error("Should have thrown error");
+    } catch (error: any) {
+      expect(error.response.errors[0].message).toContain(
+        "authConfig.apiKey is required when using org-level api_key auth strategy"
+      );
+    }
+  });
 });

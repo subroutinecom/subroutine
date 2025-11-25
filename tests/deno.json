@@ -12,11 +12,15 @@
     "fetch-cookie": "npm:fetch-cookie@^3.1.0",
     "graphql-request": "npm:graphql-request@^7.3.3",
     "graphql-tag": "npm:graphql-tag@^2.12.6",
-    "tough-cookie": "npm:tough-cookie@^6.0.0"
+    "tough-cookie": "npm:tough-cookie@^6.0.0",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
+    "@hono/hono": "jsr:@hono/hono@^4.10.5",
+    "zod": "npm:zod@^3.25.76"
   },
   "tasks": {
     "test": "deno test --allow-net --allow-env --sloppy-imports",
-    "codegen": "deno run --allow-read --allow-write --allow-net --allow-env --allow-sys npm:@graphql-codegen/cli@6.0.2/graphql-codegen --config codegen.ts"
+    "codegen": "deno run --allow-read --allow-write --allow-net --allow-env --allow-sys npm:@graphql-codegen/cli@6.0.2/graphql-codegen --config codegen.ts",
+    "mcp-test-server": "deno run --allow-net --allow-env mcp-test-server/server.ts"
   },
   "compilerOptions": {
     "strict": true

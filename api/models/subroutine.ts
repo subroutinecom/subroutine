@@ -1,7 +1,9 @@
 import { nanoid } from "nanoid";
 import { createModel, generateCode } from "../agent/index.ts";
+import type { McpIntegrationInfo } from "../agent/prompts.ts";
 import { db } from "../db/index.ts";
 import { generateMockCode } from "../mocks.ts";
+import { getIntegration } from "./integration.ts";
 
 export type Subroutine = {
   id: string;
@@ -24,6 +26,38 @@ export type GenerateSubroutineRequest = {
   integrations?: string[];
   useMock?: boolean;
   needsImmediateInputs?: boolean;
+};
+
+/**
+ * Builds MCP integration info for the code generation prompt.
+ * This fetches integration details and identifies which ones are MCP integrations.
+ */
+const buildMcpIntegrationInfo = async (
+  organizationId: string,
+  integrationIds: string[]
+): Promise<McpIntegrationInfo[]> => {
+  if (integrationIds.length === 0) {
+    return [];
+  }
+
+  const mcpIntegrations: McpIntegrationInfo[] = [];
+
+  for (const integrationId of integrationIds) {
+    const integration = await getIntegration(integrationId, organizationId);
+    if (!integration) continue;
+
+    // Check if this is an MCP integration
+    if (integration.authConfig.type === "mcp") {
+      mcpIntegrations.push({
+        name: integration.name,
+        // TODO: Fetch actual tools from MCP server or from stored metadata
+        // For now, we pass empty tools array - agent will use generic pattern
+        tools: [],
+      });
+    }
+  }
+
+  return mcpIntegrations;
 };
 
 export const generateSubroutine = async (
@@ -60,9 +94,16 @@ export const generateSubroutine = async (
       throw new Error("No model provider configured. Check config.yaml for AI model settings.");
     }
 
+    // Build MCP integration info for the prompt
+    const mcpIntegrations = await buildMcpIntegrationInfo(
+      params.organizationId,
+      resolvedIntegrationIds
+    );
+
     const result = await generateCode(model, params.request, {
       needsImmediateInputs: params.needsImmediateInputs ?? false,
       integrations: params.integrations ?? [],
+      mcpIntegrations,
     });
 
     if (!result.success) {

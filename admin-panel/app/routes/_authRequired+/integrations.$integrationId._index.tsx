@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
-import { ArrowLeft, Check, Clock, Github, Mail, Pencil, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Clock, Github, Mail, Pencil, Server, Trash2, X } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
-import type { IntegrationAuthConfig } from "~/types/integration";
+import type { IntegrationAuthConfig, McpAuthConfig, OAuth2AuthConfig } from "~/types/integration";
 import { format } from "date-fns";
 
 export function meta() {
@@ -108,6 +108,8 @@ const getProviderIcon = (provider: string) => {
       return <Github size={24} />;
     case "gmail":
       return <Mail size={24} />;
+    case "mcp":
+      return <Server size={24} />;
     default:
       return null;
   }
@@ -239,52 +241,104 @@ export default function IntegrationDetailPage() {
           </div>
         </div>
 
-        {/* OAuth Configuration */}
-        <div className="card bg-base-100 shadow-sm border border-base-300">
-          <div className="card-body">
-            <h2 className="card-title text-lg mb-4">OAuth Configuration</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-base-content/70">Client ID</label>
-                <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
-                  {integration.authConfig.clientId}
-                </code>
-              </div>
-
-              <div>
-                <label className="text-sm text-base-content/70">Redirect URI</label>
-                <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
-                  {integration.authConfig.redirectUri}
-                </code>
-              </div>
-
-              <div>
-                <label className="text-sm text-base-content/70">Scopes</label>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {integration.authConfig.scopes.map((scope) => (
-                    <span key={scope} className="badge badge-sm badge-ghost">
-                      {scope}
-                    </span>
-                  ))}
+        {/* Configuration - OAuth2 or MCP */}
+        {integration.authConfig.type === "mcp" ? (
+          <div className="card bg-base-100 shadow-sm border border-base-300">
+            <div className="card-body">
+              <h2 className="card-title text-lg mb-4">MCP Configuration</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-base-content/70">Server URL</label>
+                  <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
+                    {(integration.authConfig as McpAuthConfig).serverUrl}
+                  </code>
                 </div>
-              </div>
 
-              <div>
-                <label className="text-sm text-base-content/70">Auth URL</label>
-                <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
-                  {integration.authConfig.authUrl}
-                </code>
-              </div>
+                <div>
+                  <label className="text-sm text-base-content/70">Transport</label>
+                  <p className="font-medium mt-1 capitalize">
+                    {(integration.authConfig as McpAuthConfig).transport === "streamable-http"
+                      ? "Streamable HTTP"
+                      : "SSE (Server-Sent Events)"}
+                  </p>
+                </div>
 
-              <div>
-                <label className="text-sm text-base-content/70">Token URL</label>
-                <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
-                  {integration.authConfig.tokenUrl}
-                </code>
+                <div>
+                  <label className="text-sm text-base-content/70">Authentication</label>
+                  <div className="mt-1">
+                    <span className="badge badge-ghost capitalize">
+                      {(integration.authConfig as McpAuthConfig).authStrategy.type.replace(
+                        "_",
+                        " "
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {(integration.authConfig as McpAuthConfig).authStrategy.type === "api_key" &&
+                  (integration.authConfig as McpAuthConfig).authStrategy.type === "api_key" && (
+                    <div>
+                      <label className="text-sm text-base-content/70">Header Name</label>
+                      <p className="font-medium mt-1">
+                        {(
+                          (integration.authConfig as McpAuthConfig).authStrategy as {
+                            type: "api_key";
+                            headerName?: string;
+                          }
+                        ).headerName || "Authorization (default)"}
+                      </p>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="card bg-base-100 shadow-sm border border-base-300">
+            <div className="card-body">
+              <h2 className="card-title text-lg mb-4">OAuth Configuration</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-base-content/70">Client ID</label>
+                  <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
+                    {(integration.authConfig as OAuth2AuthConfig).clientId}
+                  </code>
+                </div>
+
+                <div>
+                  <label className="text-sm text-base-content/70">Redirect URI</label>
+                  <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
+                    {(integration.authConfig as OAuth2AuthConfig).redirectUri}
+                  </code>
+                </div>
+
+                <div>
+                  <label className="text-sm text-base-content/70">Scopes</label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {(integration.authConfig as OAuth2AuthConfig).scopes.map((scope: string) => (
+                      <span key={scope} className="badge badge-sm badge-ghost">
+                        {scope}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-base-content/70">Auth URL</label>
+                  <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
+                    {(integration.authConfig as OAuth2AuthConfig).authUrl}
+                  </code>
+                </div>
+
+                <div>
+                  <label className="text-sm text-base-content/70">Token URL</label>
+                  <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
+                    {(integration.authConfig as OAuth2AuthConfig).tokenUrl}
+                  </code>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Connected Accounts */}

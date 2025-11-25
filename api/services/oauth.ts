@@ -1,6 +1,6 @@
 import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import type { OAuthTokenResponse } from "../integrations/providers/types.ts";
-import { getIntegration } from "../models/integration.ts";
+import { getIntegration, type IntegrationAuthConfig } from "../models/integration.ts";
 import { createConnectedAccount } from "../models/connected-account.ts";
 
 export interface OAuthState {
@@ -36,6 +36,60 @@ const generateNonce = (): string => {
   return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 };
 
+/**
+ * Extracted OAuth configuration used for authorization flow.
+ */
+interface ExtractedOAuthConfig {
+  clientId: string;
+  clientSecret: string;
+  authUrl: string;
+  tokenUrl: string;
+  redirectUri: string;
+  scopes: string[];
+}
+
+/**
+ * Extracts OAuth configuration from an integration's auth config.
+ * Handles both OAuth2 integrations and MCP integrations with bearer_passthrough.
+ */
+const extractOAuthConfig = (authConfig: IntegrationAuthConfig): ExtractedOAuthConfig | null => {
+  if (authConfig.type === "oauth2") {
+    if (
+      !authConfig.clientId ||
+      !authConfig.clientSecret ||
+      !authConfig.authUrl ||
+      !authConfig.tokenUrl ||
+      !authConfig.redirectUri
+    ) {
+      return null;
+    }
+    return {
+      clientId: authConfig.clientId,
+      clientSecret: authConfig.clientSecret,
+      authUrl: authConfig.authUrl,
+      tokenUrl: authConfig.tokenUrl,
+      redirectUri: authConfig.redirectUri,
+      scopes: authConfig.scopes ?? [],
+    };
+  }
+
+  if (authConfig.type === "mcp") {
+    if (authConfig.authStrategy.type !== "bearer_passthrough" || !authConfig.oauthConfig) {
+      return null;
+    }
+    return {
+      clientId: authConfig.oauthConfig.clientId,
+      clientSecret: authConfig.oauthConfig.clientSecret,
+      authUrl: authConfig.oauthConfig.authUrl,
+      tokenUrl: authConfig.oauthConfig.tokenUrl,
+      redirectUri: authConfig.oauthConfig.redirectUri,
+      scopes: authConfig.oauthConfig.scopes,
+    };
+  }
+
+  return null;
+};
+
 export const generateAuthorizationUrl = async (params: {
   integrationId: string;
   userId: string;
@@ -54,15 +108,23 @@ export const generateAuthorizationUrl = async (params: {
   }
 
   const authConfig = integration.authConfig;
-  if (!authConfig.clientId || !authConfig.authUrl) {
-    throw new Error("Integration authConfig missing required OAuth fields (clientId, authUrl)");
+
+  // Extract OAuth config from either OAuth2 or MCP (bearer_passthrough) integrations
+  const oauthConfig = extractOAuthConfig(authConfig);
+  if (!oauthConfig) {
+    if (authConfig.type === "mcp") {
+      throw new Error(
+        `MCP integration ${integration.name} does not support OAuth authorization. ` +
+          `Only MCP integrations with bearer_passthrough auth strategy can use OAuth.`
+      );
+    }
+    throw new Error(
+      `Integration ${integration.name} uses ${authConfig.type} auth, not OAuth2. Cannot generate authorization URL.`
+    );
   }
 
   const provider = integration.provider as IntegrationProvider;
   const definition = getProviderDefinition(provider);
-  if (definition.auth.type !== "oauth2") {
-    throw new Error(`Provider ${provider} does not support OAuth2 authorization`);
-  }
 
   const state: OAuthState = {
     integrationId,
@@ -75,19 +137,20 @@ export const generateAuthorizationUrl = async (params: {
   };
 
   const encodedState = encodeState(state);
-  const redirectUri = authConfig.redirectUri;
 
-  const authUrl = new URL(authConfig.authUrl);
-  authUrl.searchParams.set("client_id", authConfig.clientId);
-  authUrl.searchParams.set("redirect_uri", redirectUri);
+  const authUrl = new URL(oauthConfig.authUrl);
+  authUrl.searchParams.set("client_id", oauthConfig.clientId);
+  authUrl.searchParams.set("redirect_uri", oauthConfig.redirectUri);
   authUrl.searchParams.set("state", encodedState);
 
-  const scopes =
-    authConfig.scopes && authConfig.scopes.length > 0
-      ? authConfig.scopes
-      : definition.auth.defaultScopes;
+  // Use scopes from the integration config, fall back to provider defaults for OAuth2 providers
+  let scopes = oauthConfig.scopes;
+  if (scopes.length === 0 && definition.auth.type === "oauth2") {
+    scopes = definition.auth.defaultScopes;
+  }
   authUrl.searchParams.set("scope", scopes.join(" "));
 
+  // Apply provider-specific customizations for OAuth2 providers
   if (definition.auth.type === "oauth2" && definition.auth.handlers?.customizeAuthorizationUrl) {
     definition.auth.handlers.customizeAuthorizationUrl(authUrl);
   }
@@ -109,33 +172,40 @@ const exchangeCodeForToken = async (
   }
 
   const authConfig = integration.authConfig;
-  if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.tokenUrl) {
-    throw new Error("Integration authConfig missing required fields for token exchange");
+
+  // Extract OAuth config from either OAuth2 or MCP (bearer_passthrough) integrations
+  const oauthConfig = extractOAuthConfig(authConfig);
+  if (!oauthConfig) {
+    throw new Error(
+      `Integration uses ${authConfig.type} auth without OAuth configuration. Cannot exchange code for token.`
+    );
   }
 
   const tokenParams = new URLSearchParams({
-    client_id: authConfig.clientId,
-    client_secret: authConfig.clientSecret,
+    client_id: oauthConfig.clientId,
+    client_secret: oauthConfig.clientSecret,
     code,
-    redirect_uri: authConfig.redirectUri,
+    redirect_uri: oauthConfig.redirectUri,
   });
 
   const provider = integration.provider as IntegrationProvider;
   const definition = getProviderDefinition(provider);
 
+  // Apply provider-specific customizations for OAuth2 providers
   if (definition.auth.type === "oauth2" && definition.auth.handlers?.customizeTokenExchange) {
     definition.auth.handlers.customizeTokenExchange(tokenParams);
   }
 
   const headers: Record<string, string> = {
     "Content-Type": "application/x-www-form-urlencoded",
+    Accept: "application/json",
   };
 
   if (definition.auth.type === "oauth2" && definition.auth.handlers?.customizeTokenHeaders) {
     definition.auth.handlers.customizeTokenHeaders(headers);
   }
 
-  const response = await fetch(authConfig.tokenUrl, {
+  const response = await fetch(oauthConfig.tokenUrl, {
     method: "POST",
     headers,
     body: tokenParams.toString(),
@@ -150,18 +220,23 @@ const exchangeCodeForToken = async (
   return tokenData as OAuthTokenResponse;
 };
 
-const fetchAccountIdentifier = async (
+/**
+ * Fetches the account identifier for OAuth2 providers with handlers.
+ * Returns null if the provider doesn't support account identifier fetching.
+ */
+const tryFetchAccountIdentifier = async (
   provider: IntegrationProvider,
   accessToken: string
-): Promise<string> => {
+): Promise<string | null> => {
   const definition = getProviderDefinition(provider);
 
   if (definition.auth.type !== "oauth2") {
-    throw new Error(`Provider ${provider} does not support OAuth2`);
+    // MCP and other non-OAuth2 providers don't have fetchAccountIdentifier
+    return null;
   }
 
   if (!definition.auth.handlers?.fetchAccountIdentifier) {
-    throw new Error(`Provider ${provider} does not define fetchAccountIdentifier handler`);
+    return null;
   }
 
   return definition.auth.handlers.fetchAccountIdentifier(accessToken);
@@ -217,12 +292,17 @@ export const handleOAuthCallback = async (params: {
       code
     );
 
-    const accountIdentifier = await fetchAccountIdentifier(
+    // Try to fetch account identifier from OAuth provider (only works for OAuth2 providers with handlers)
+    // For MCP with bearer_passthrough, we use viewerId as the identifier
+    const providerAccountIdentifier = await tryFetchAccountIdentifier(
       stateData.provider,
       tokenData.access_token
     );
 
-    if (!tokenData.refresh_token) {
+    // For MCP integrations with bearer_passthrough, refresh_token may not be required
+    // depending on the OAuth provider. Some providers (like GitHub) don't require refresh tokens.
+    const isMcpIntegration = integration.authConfig.type === "mcp";
+    if (!tokenData.refresh_token && !isMcpIntegration) {
       return {
         success: false,
         error: "No refresh token received. Please ensure offline access is granted.",
@@ -236,23 +316,25 @@ export const handleOAuthCallback = async (params: {
 
     const credentials = {
       accessToken: tokenData.access_token,
-      refreshToken: tokenData.refresh_token,
+      refreshToken: tokenData.refresh_token ?? "",
       expiresAt,
       tokenType: "Bearer" as const,
       scope: tokenData.scope,
       metadata: {
         obtainedAt: new Date().toISOString(),
-        providerAccountIdentifier: accountIdentifier,
+        providerAccountIdentifier: providerAccountIdentifier ?? stateData.viewerId,
         viewerId: stateData.viewerId,
+        isMcpBearerPassthrough: isMcpIntegration,
       },
     };
 
+    // Use viewerId as the account identifier for lookup (consistent across all integrations)
     const connectedAccount = await createConnectedAccount({
       integrationId: stateData.integrationId,
       userId: stateData.userId,
       organizationId: stateData.organizationId,
       credentials,
-      accountIdentifier: stateData.viewerId ?? accountIdentifier, // Use viewerId for lookup
+      accountIdentifier: stateData.viewerId,
     });
 
     console.log("[OAuth] Connected account created:", connectedAccount.id);

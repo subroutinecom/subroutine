@@ -1,3 +1,8 @@
+// Re-export shared MCP types
+export type { McpAuthStrategy, McpTransport, SandboxMcpConfig } from "../packages/shared-types/mcp";
+
+import type { SandboxMcpConfig } from "../packages/shared-types/mcp";
+
 export interface SandboxIntegrationCredentialsMetadata {
   providerAccountIdentifier?: string;
   viewerId?: string;
@@ -24,4 +29,6 @@ export interface SandboxIntegrationPayload {
   name: string;
   authConfig: Record<string, unknown>;
   account?: SandboxIntegrationAccountPayload;
+  /** MCP-specific configuration. Present when provider is an MCP integration. */
+  mcpConfig?: SandboxMcpConfig;
 }

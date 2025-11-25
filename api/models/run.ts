@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import { db } from "../db/index.ts";
-import type { IntegrationAuthConfig } from "./integration.ts";
+import type { McpAuthConfig } from "./integration.ts";
 import { getIntegration } from "./integration.ts";
 import { getSubroutine } from "./subroutine.ts";
 import type { ConnectedAccountCredentials } from "./connected-account.ts";
@@ -8,6 +8,7 @@ import { getConnectedAccountByAccountIdentifier } from "./connected-account.ts";
 import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import { IntegrationAuthRequiredError } from "./errors.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
+import type { SandboxMcpConfig } from "../integrations/providers/types.ts";
 
 export type Run = {
   id: string;
@@ -41,8 +42,23 @@ type SandboxIntegrationDefinition = {
   id: string;
   provider: IntegrationProvider;
   name: string;
-  authConfig: IntegrationAuthConfig;
+  authConfig: Record<string, unknown>;
   account?: SandboxIntegrationAccount;
+  /** MCP-specific configuration. Present when authConfig.type is "mcp". */
+  mcpConfig?: SandboxMcpConfig;
+};
+
+/**
+ * Converts McpAuthConfig to SandboxMcpConfig for the sandbox worker.
+ */
+const buildMcpConfig = (authConfig: McpAuthConfig): SandboxMcpConfig => {
+  return {
+    serverUrl: authConfig.serverUrl,
+    transport: authConfig.transport,
+    authStrategy: authConfig.authStrategy,
+    apiKey: authConfig.apiKey,
+    // accessToken will be populated from connected account if bearer_passthrough
+  };
 };
 
 const requiresViewerScopedAccount = (provider: IntegrationProvider): boolean => {
@@ -118,6 +134,80 @@ const buildSandboxIntegrations = async (params: {
     }
 
     const provider = integration.provider as IntegrationProvider;
+    const authConfig = integration.authConfig;
+
+    // Handle MCP integrations
+    if (authConfig.type === "mcp") {
+      const mcpConfig = buildMcpConfig(authConfig);
+
+      // For bearer_passthrough, we need the viewer's connected account
+      if (authConfig.authStrategy.type === "bearer_passthrough") {
+        if (!params.viewerId) {
+          throw new Error(`viewerId is required to access MCP integration ${integration.name}`);
+        }
+
+        const connectedAccount = await getConnectedAccountByAccountIdentifier(
+          params.organizationId,
+          integrationId,
+          params.viewerId
+        );
+
+        if (!connectedAccount) {
+          // MCP with bearer_passthrough requires OAuth config for user authentication
+          if (!authConfig.oauthConfig) {
+            throw new Error(
+              `MCP integration ${integration.name} is configured for bearer_passthrough but missing OAuth configuration`
+            );
+          }
+
+          // Generate authorization URL and throw proper error so client can redirect
+          const auth = await generateAuthorizationUrl({
+            integrationId,
+            organizationId: params.organizationId,
+            userId: params.userId,
+            viewerId: params.viewerId,
+          });
+
+          throw new IntegrationAuthRequiredError({
+            integrationId,
+            provider,
+            authorizationUrl: auth.url,
+            state: auth.state,
+            viewerId: params.viewerId,
+            message: `MCP integration ${integration.name} requires authorization`,
+          });
+        }
+
+        // Pass the access token to the MCP config
+        mcpConfig.accessToken = connectedAccount.credentials.accessToken;
+
+        integrations.push({
+          id: integration.id,
+          provider,
+          name: integration.name,
+          authConfig: authConfig as unknown as Record<string, unknown>,
+          mcpConfig,
+          account: {
+            id: connectedAccount.id,
+            userId: connectedAccount.userId,
+            accountIdentifier: connectedAccount.accountIdentifier,
+            credentials: connectedAccount.credentials,
+          },
+        });
+      } else {
+        // Non-viewer-scoped MCP (none, api_key, custom_headers)
+        integrations.push({
+          id: integration.id,
+          provider,
+          name: integration.name,
+          authConfig: authConfig as unknown as Record<string, unknown>,
+          mcpConfig,
+        });
+      }
+      continue;
+    }
+
+    // Handle OAuth2 integrations (existing logic)
     const needsViewer = requiresViewerScopedAccount(provider);
 
     if (!needsViewer) {
@@ -125,7 +215,7 @@ const buildSandboxIntegrations = async (params: {
         id: integration.id,
         provider,
         name: integration.name,
-        authConfig: integration.authConfig,
+        authConfig: authConfig as unknown as Record<string, unknown>,
       });
       continue;
     }
@@ -162,7 +252,7 @@ const buildSandboxIntegrations = async (params: {
       id: integration.id,
       provider,
       name: integration.name,
-      authConfig: integration.authConfig,
+      authConfig: authConfig as unknown as Record<string, unknown>,
       account: {
         id: connectedAccount.id,
         userId: connectedAccount.userId,

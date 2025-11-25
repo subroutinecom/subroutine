@@ -6,6 +6,11 @@ type IntegrationDocs = {
   docsUrl?: string;
 };
 
+export type McpIntegrationInfo = {
+  name: string;
+  tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>;
+};
+
 const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
   switch (integrationId) {
     case "gmail":
@@ -44,30 +49,149 @@ const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
         docsUrl: "https://googleapis.dev/nodejs/googleapis/latest/calendar/index.html",
       };
 
-    case "github":
-      return {
-        id: "github",
-        functionName: "getGithub",
-        typeExample: `getGithub(): Promise<{ me(): Promise<{ login: string }> }>`,
-        usageExample: `const github = await integrations.getGithub();
-   const user = await github.me();`,
-      };
+    // Note: GitHub integration removed - use MCP integration instead (e.g., getMcpClient("github"))
 
     default:
       return null;
   }
 };
 
-export const SYSTEM_PROMPT = (integrations: string[]): string => {
+/**
+ * Generates documentation for MCP integrations.
+ * MCP integrations use the standard MCP client interface with listTools() and callTool().
+ */
+const getMcpIntegrationDocs = (mcpIntegrations: McpIntegrationInfo[]): string => {
+  if (mcpIntegrations.length === 0) return "";
+
+  const validNames = mcpIntegrations.map((mcp) => `"${mcp.name}"`).join(", ");
+  const exampleName = mcpIntegrations[0]?.name || "my-mcp-server";
+  const exampleTool = mcpIntegrations[0]?.tools[0]?.name || "some_tool";
+
+  const mcpDocs = mcpIntegrations
+    .map((mcp) => {
+      if (mcp.tools.length === 0) {
+        return `   - "${mcp.name}": (tools available - use client.listTools() to discover)`;
+      }
+
+      const toolsList = mcp.tools
+        .map((tool) => {
+          let toolDoc = `      - ${tool.name}`;
+          if (tool.description) {
+            toolDoc += `: ${tool.description}`;
+          }
+          if (tool.inputSchema) {
+            const props = (tool.inputSchema as { properties?: Record<string, unknown> }).properties;
+            if (props) {
+              const params = Object.keys(props).join(", ");
+              if (params) {
+                toolDoc += ` (params: ${params})`;
+              }
+            }
+          }
+          return toolDoc;
+        })
+        .join("\n");
+
+      return `   - "${mcp.name}":
+${toolsList}`;
+    })
+    .join("\n\n");
+
+  return `
+MCP INTEGRATIONS (REAL EXTERNAL ACCESS):
+CRITICAL: "integrations" is a GLOBAL object - it is NOT part of ctx!
+You access MCP servers via: integrations.getMcpClient(name)
+
+These integrations connect to REAL external services - they are NOT mocked.
+MCP tools make REAL API calls to external services (GitHub, Slack, etc.)
+DO NOT mock or simulate data - actually call the MCP tools to get real results.
+The sandbox proxies these calls securely - you have real external access through MCP.
+
+IMPORTANT: Only the following MCP integration names are valid: ${validNames}
+Using any other name will result in an error at runtime.
+
+HOW TO USE MCP INTEGRATIONS:
+1. Get the MCP client: const client = await integrations.getMcpClient("${exampleName}");
+2. Call a tool using callTool(): const result = await client.callTool({ name: "toolName", arguments: { ... } });
+3. Read the result: result.content[0].text contains the response (often JSON string)
+
+WRONG - DO NOT DO THIS:
+- ctx.integrations... // WRONG! integrations is NOT in ctx. ctx is just Record<string, unknown>
+- interface Context { integrations: {...} } // WRONG! Never put integrations in Context type
+- integrations.github.list_repos() // WRONG: no direct method calls, use getMcpClient + callTool
+- integrations.getGithub().list_repos() // WRONG: no magic getters, use getMcpClient("github")
+
+CORRECT PATTERN:
+const client = await integrations.getMcpClient("${exampleName}");
+const result = await client.callTool({ name: "${exampleTool}", arguments: { /* params */ } });
+const data = JSON.parse(result.content[0].text || "{}"); // Parse if JSON response
+
+Available MCP integrations and their tools:
+${mcpDocs}
+
+COMPLETE EXAMPLE with MCP integration:
+
+declare const integrations: {
+  getMcpClient(name: string): Promise<{
+    listTools(): Promise<{ tools: Array<{ name: string; description?: string; inputSchema: object }> }>;
+    callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
+      content: Array<{ type: string; text?: string }>;
+      isError?: boolean;
+    }>;
+  }>;
+};
+
+// IMPORTANT: Context is just an empty record. Do NOT add integrations to Context!
+type Context = Record<string, unknown>;
+type Inputs = { /* your inputs */ };
+type Outputs = { /* your outputs */ };
+
+export async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {
+  // integrations is a GLOBAL variable (declared above), NOT part of ctx!
+  const client = await integrations.getMcpClient("${exampleName}");
+
+  // Call a tool using callTool() method
+  const result = await client.callTool({
+    name: "${exampleTool}",
+    arguments: { /* tool parameters */ }
+  });
+
+  // Check for errors
+  if (result.isError) {
+    throw new Error(result.content[0]?.text || "MCP tool call failed");
+  }
+
+  // Parse the response (MCP tools return content array with text)
+  const responseText = result.content[0]?.text || "{}";
+  const data = JSON.parse(responseText);
+
+  return { /* map data to your Outputs type */ };
+}
+`;
+};
+
+export type SystemPromptOptions = {
+  integrations?: string[];
+  mcpIntegrations?: McpIntegrationInfo[];
+};
+
+export const SYSTEM_PROMPT = (options: SystemPromptOptions | string[] = {}): string => {
+  // Support legacy array-only signature
+  const { integrations = [], mcpIntegrations = [] } = Array.isArray(options)
+    ? { integrations: options, mcpIntegrations: [] }
+    : options;
+
   const integrationDocs = integrations
     .map((id) => getIntegrationDocs(id))
     .filter((doc): doc is IntegrationDocs => doc !== null);
 
-  const hasIntegrations = integrationDocs.length > 0;
+  const hasStandardIntegrations = integrationDocs.length > 0;
+  const hasMcpIntegrations = mcpIntegrations.length > 0;
+  const hasAnyIntegrations = hasStandardIntegrations || hasMcpIntegrations;
 
   let integrationsSection = "";
 
-  if (hasIntegrations) {
+  if (hasStandardIntegrations) {
     const typeDeclarations = integrationDocs.map((doc) => `  ${doc.typeExample};`).join("\n");
 
     const integrationsList = integrationDocs
@@ -111,6 +235,25 @@ export async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {
 `;
   }
 
+  // Add MCP integrations section
+  if (hasMcpIntegrations) {
+    integrationsSection += getMcpIntegrationDocs(mcpIntegrations);
+  }
+
+  // Build the sandbox restrictions section
+  const sandboxRestrictions = hasAnyIntegrations
+    ? `
+SANDBOX RESTRICTIONS:
+- You CANNOT use fetch(), XMLHttpRequest, or direct HTTP calls - they will fail
+- ALL external API calls MUST go through the "integrations" object
+- The integrations below provide REAL access to external services - use them!
+- DO NOT mock or simulate external data - the integrations return real data`
+    : `
+SANDBOX RESTRICTIONS:
+- Your code runs in an isolated sandbox with NO network access
+- You CANNOT use fetch(), XMLHttpRequest, or any direct HTTP/network calls - they will fail
+- No external integrations are available for this subroutine`;
+
   return `You are an expert TypeScript code generator. Your task is to generate executable TypeScript code subroutines based on user requests.
 
 CRITICAL REQUIREMENTS:
@@ -121,6 +264,8 @@ CRITICAL REQUIREMENTS:
 5. Do not include any imports or external dependencies - code runs in an isolated sandbox
 6. Handle edge cases with proper validation and error messages
 7. Use the actual types you define - no any types
+8. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n9. Use the available integrations to interact with external services" : ""}
+${sandboxRestrictions}
 ${integrationsSection}
 Use the generateSubroutine tool to submit your code. The tool will validate it and provide feedback if there are issues. You can revise and resubmit based on the feedback.
 

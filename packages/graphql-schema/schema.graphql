@@ -60,9 +60,16 @@ type IntegrationProviderDefinition {
   authType: String
   description: String
   id: String
+  mcpConfig: IntegrationProviderMcpConfig
   name: String
   oauthConfig: IntegrationProviderOAuthConfig
   viewerScoped: Boolean
+}
+
+type IntegrationProviderMcpConfig {
+  authStrategy: McpAuthStrategy
+  serverUrl: String
+  transport: String
 }
 
 type IntegrationProviderOAuthConfig {
@@ -71,6 +78,25 @@ type IntegrationProviderOAuthConfig {
   defaultScopes: [String!]
   requiredScopes: [String!]
   tokenUrl: String
+}
+
+type McpAuthStrategy {
+  headerName: String
+  headers: String
+  type: String
+}
+
+type McpOAuthDiscoveryResult {
+  authorizationEndpoint: String
+  authorizationServer: String
+  dynamicRegistrationSupported: Boolean
+  error: String
+  pkceSupported: Boolean
+  registrationEndpoint: String
+  scopesSupported: [String!]
+  serverName: String
+  success: Boolean
+  tokenEndpoint: String
 }
 
 type Mutation {
@@ -116,6 +142,7 @@ type Query {
   connectedAccount(id: String!): ConnectedAccount
   connectedAccounts: [ConnectedAccount!]
   connectedAccountsByIntegration(integrationId: String!): [ConnectedAccount!]
+  discoverMcpOAuth(serverUrl: String!): McpOAuthDiscoveryResult
   integration(id: String!): Integration
   integrationProviders: [IntegrationProviderDefinition!]
   integrations: [Integration!]
