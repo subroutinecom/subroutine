@@ -81,6 +81,54 @@ const initialize = async () => {
     }) as any
   );
 
+  app.use(
+    "/api/subroutine/*",
+    cors({
+      origin: config.auth.allowedOrigins,
+      credentials: true,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization", "Cookie", "x-api-key", "x-use-mock"],
+      exposeHeaders: ["Set-Cookie"],
+      maxAge: 86400,
+    }) as any
+  );
+
+  app.use(
+    "/api/subroutine",
+    cors({
+      origin: config.auth.allowedOrigins,
+      credentials: true,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization", "Cookie", "x-api-key", "x-use-mock"],
+      exposeHeaders: ["Set-Cookie"],
+      maxAge: 86400,
+    }) as any
+  );
+
+  app.use(
+    "/api/run/*",
+    cors({
+      origin: config.auth.allowedOrigins,
+      credentials: true,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization", "Cookie", "x-api-key"],
+      exposeHeaders: ["Set-Cookie"],
+      maxAge: 86400,
+    }) as any
+  );
+
+  app.use(
+    "/api/run",
+    cors({
+      origin: config.auth.allowedOrigins,
+      credentials: true,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization", "Cookie", "x-api-key"],
+      exposeHeaders: ["Set-Cookie"],
+      maxAge: 86400,
+    }) as any
+  );
+
   app.get("/api/oauth/callback", async (c) => {
     try {
       const code = c.req.query("code");
@@ -499,7 +547,6 @@ const initialize = async () => {
         const run = await runSubroutine({
           subroutineId: subroutine.id,
           organizationId: auth.organizationId,
-          userId: auth.userId,
           viewerId,
           inputs: subroutine.initialInputs,
           timeoutMs,
@@ -754,7 +801,6 @@ const initialize = async () => {
         const run = await runSubroutine({
           subroutineId: id,
           organizationId: auth.organizationId,
-          userId: auth.userId,
           viewerId,
           inputs,
           timeoutMs,

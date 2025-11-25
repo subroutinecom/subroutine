@@ -1,0 +1,525 @@
+import { useState } from "react";
+import { useLoaderData } from "react-router";
+import { useForm } from "react-hook-form";
+import { gql } from "graphql-request";
+import {
+  Play,
+  Code,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  ExternalLink,
+  Copy,
+  Check,
+} from "lucide-react";
+import { PageHeader } from "~/components/ui/PageHeader";
+import { graphqlClient } from "~/lib/graphql-client";
+import {
+  executeRequest,
+  createSubroutine,
+  isIntegrationAuthRequiredError,
+  type ApiError,
+  type ExecuteRequestResult,
+} from "~/lib/api-client";
+import { useAuth } from "~/components/providers/AuthProvider";
+
+export function meta() {
+  return [
+    { title: "Playground - Subroutine" },
+    { name: "description", content: "Test integrations with subroutine generation" },
+  ];
+}
+
+const INTEGRATIONS_QUERY = gql`
+  query GetPlaygroundIntegrations {
+    integrations {
+      id
+      name
+      provider
+      enabled
+    }
+  }
+`;
+
+interface Integration {
+  id: string;
+  name: string;
+  provider: string;
+  enabled: boolean;
+}
+
+export const clientLoader = async () => {
+  const data = await graphqlClient.request<{
+    integrations: Integration[];
+  }>(INTEGRATIONS_QUERY);
+
+  return { integrations: data.integrations.filter((i) => i.enabled) };
+};
+
+interface PlaygroundFormData {
+  request: string;
+  integrations: string[];
+  executeImmediately: boolean;
+}
+
+type ExecutionPhase = "idle" | "generating" | "executing" | "completed" | "error";
+
+interface ExecutionState {
+  phase: ExecutionPhase;
+  generatedCode?: string;
+  subroutineId?: string;
+  run?: ExecuteRequestResult["run"];
+  outputs?: Record<string, unknown>;
+  error?: string;
+  authRequired?: {
+    integrationId: string;
+    provider: string;
+    authorizationUrl: string;
+  };
+}
+
+export default function PlaygroundPage() {
+  const { integrations } = useLoaderData<typeof clientLoader>();
+  const { user } = useAuth();
+  const [executionState, setExecutionState] = useState<ExecutionState>({ phase: "idle" });
+  const [copied, setCopied] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<PlaygroundFormData>({
+    defaultValues: {
+      request: "",
+      integrations: [],
+      executeImmediately: true,
+    },
+  });
+
+  const selectedIntegrations = watch("integrations");
+  const executeImmediately = watch("executeImmediately");
+
+  const handleIntegrationToggle = (integrationId: string) => {
+    const current = selectedIntegrations || [];
+    if (current.includes(integrationId)) {
+      setValue(
+        "integrations",
+        current.filter((id) => id !== integrationId)
+      );
+    } else {
+      setValue("integrations", [...current, integrationId]);
+    }
+  };
+
+  const onSubmit = async (data: PlaygroundFormData) => {
+    const viewerId = user?.id || "playground-user";
+
+    setExecutionState({ phase: "generating" });
+
+    try {
+      if (data.executeImmediately) {
+        setExecutionState({ phase: "generating" });
+
+        const result = await executeRequest(
+          data.request,
+          viewerId,
+          data.integrations.length > 0 ? data.integrations : undefined,
+          60000
+        );
+
+        setExecutionState({
+          phase: "completed",
+          generatedCode: result.subroutine.source,
+          subroutineId: result.subroutine.id,
+          run: result.run,
+          outputs: result.run.outputs || undefined,
+        });
+      } else {
+        const result = await createSubroutine(
+          data.request,
+          data.integrations.length > 0 ? data.integrations : undefined
+        );
+
+        setExecutionState({
+          phase: "completed",
+          generatedCode: result.subroutine.source,
+          subroutineId: result.subroutine.id,
+        });
+      }
+    } catch (err) {
+      const apiError = err as ApiError;
+
+      if (isIntegrationAuthRequiredError(apiError)) {
+        setExecutionState({
+          phase: "error",
+          error: apiError.error.message,
+          authRequired: {
+            integrationId: apiError.error.integrationId!,
+            provider: apiError.error.provider!,
+            authorizationUrl: apiError.error.authorizationUrl!,
+          },
+        });
+      } else {
+        setExecutionState({
+          phase: "error",
+          error: apiError.error?.message || "An unexpected error occurred",
+        });
+      }
+    }
+  };
+
+  const handleCopyCode = async () => {
+    if (executionState.generatedCode) {
+      await navigator.clipboard.writeText(executionState.generatedCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleReset = () => {
+    setExecutionState({ phase: "idle" });
+  };
+
+  const getStatusBadge = () => {
+    switch (executionState.phase) {
+      case "generating":
+        return (
+          <div className="badge badge-info gap-2">
+            <Loader2 size={14} className="animate-spin" />
+            Generating...
+          </div>
+        );
+      case "executing":
+        return (
+          <div className="badge badge-warning gap-2">
+            <Clock size={14} />
+            Executing...
+          </div>
+        );
+      case "completed":
+        return (
+          <div className="badge badge-success gap-2">
+            <CheckCircle2 size={14} />
+            {executionState.run ? `Completed (${executionState.run.status})` : "Generated"}
+          </div>
+        );
+      case "error":
+        return (
+          <div className="badge badge-error gap-2">
+            <AlertCircle size={14} />
+            Error
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title="Playground"
+        description="Test your integrations by generating and executing subroutines from natural language requests."
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Input Panel */}
+        <div className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* Request Input */}
+            <div className="card bg-base-100 border border-base-300">
+              <div className="card-body">
+                <h2 className="card-title text-lg">Request</h2>
+                <p className="text-sm text-base-content/60 mb-4">
+                  Describe what you want the subroutine to do in natural language.
+                </p>
+
+                <div className="form-control">
+                  <textarea
+                    placeholder="e.g., Get my last 5 emails from Gmail and summarize them..."
+                    className={`textarea textarea-bordered h-32 text-base ${
+                      errors.request ? "textarea-error" : ""
+                    }`}
+                    {...register("request", {
+                      required: "Please enter a request",
+                      minLength: {
+                        value: 10,
+                        message: "Request should be at least 10 characters",
+                      },
+                    })}
+                  />
+                  {errors.request && (
+                    <label className="label">
+                      <span className="label-text-alt text-error">{errors.request.message}</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Integration Selection */}
+            <div className="card bg-base-100 border border-base-300">
+              <div className="card-body">
+                <h2 className="card-title text-lg">Integrations</h2>
+                <p className="text-sm text-base-content/60 mb-4">
+                  Select which integrations this subroutine should have access to.
+                </p>
+
+                {integrations.length === 0 ? (
+                  <div className="text-center py-6 text-base-content/50">
+                    <p>No enabled integrations found.</p>
+                    <p className="text-sm mt-1">
+                      Add integrations from the Integrations page first.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {integrations.map((integration) => (
+                      <label
+                        key={integration.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                          selectedIntegrations?.includes(integration.id)
+                            ? "border-primary bg-primary/5"
+                            : "border-base-300 hover:border-base-content/20"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-primary checkbox-sm"
+                          checked={selectedIntegrations?.includes(integration.id) || false}
+                          onChange={() => handleIntegrationToggle(integration.id)}
+                        />
+                        <div className="flex-1">
+                          <span className="font-medium">{integration.name}</span>
+                          <span className="ml-2 badge badge-ghost badge-sm capitalize">
+                            {integration.provider}
+                          </span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Options */}
+            <div className="card bg-base-100 border border-base-300">
+              <div className="card-body">
+                <h2 className="card-title text-lg">Options</h2>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-primary"
+                    {...register("executeImmediately")}
+                  />
+                  <div>
+                    <span className="font-medium">Execute immediately</span>
+                    <p className="text-sm text-base-content/60">
+                      Generate and run the subroutine in one step
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={
+                executionState.phase === "generating" || executionState.phase === "executing"
+              }
+              className="btn btn-primary w-full gap-2"
+            >
+              {executionState.phase === "generating" || executionState.phase === "executing" ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  {executionState.phase === "generating" ? "Generating..." : "Executing..."}
+                </>
+              ) : (
+                <>
+                  <Play size={20} />
+                  {executeImmediately ? "Generate & Execute" : "Generate Only"}
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Output Panel */}
+        <div className="space-y-6">
+          {/* Status */}
+          {executionState.phase !== "idle" && (
+            <div className="card bg-base-100 border border-base-300">
+              <div className="card-body">
+                <div className="flex items-center justify-between">
+                  <h2 className="card-title text-lg">Status</h2>
+                  {getStatusBadge()}
+                </div>
+
+                {executionState.phase === "completed" && executionState.subroutineId && (
+                  <p className="text-sm text-base-content/60 mt-2">
+                    Subroutine ID:{" "}
+                    <code className="bg-base-200 px-2 py-0.5 rounded text-xs">
+                      {executionState.subroutineId}
+                    </code>
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="btn btn-ghost btn-sm mt-2 self-start"
+                >
+                  Clear Results
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Error Display */}
+          {executionState.phase === "error" && (
+            <div className="alert alert-error">
+              <AlertCircle size={20} />
+              <div className="flex-1">
+                <h3 className="font-bold">Error</h3>
+                <p className="text-sm">{executionState.error}</p>
+
+                {executionState.authRequired && (
+                  <div className="mt-3">
+                    <p className="text-sm mb-2">
+                      The integration "{executionState.authRequired.provider}" requires
+                      authorization.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        globalThis.open(executionState.authRequired?.authorizationUrl, "_blank")
+                      }
+                      className="btn btn-sm btn-outline gap-2"
+                    >
+                      <ExternalLink size={14} />
+                      Authorize Integration
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Generated Code */}
+          {executionState.generatedCode && (
+            <div className="card bg-base-100 border border-base-300">
+              <div className="card-body p-0">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-base-300">
+                  <h2 className="card-title text-lg gap-2">
+                    <Code size={20} />
+                    Generated Code
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={handleCopyCode}
+                    className="btn btn-ghost btn-sm gap-2"
+                  >
+                    {copied ? (
+                      <>
+                        <Check size={14} />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        Copy
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <pre className="p-4 text-sm font-mono bg-base-200/50 overflow-auto max-h-96">
+                    <code>{executionState.generatedCode}</code>
+                  </pre>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Execution Results */}
+          {executionState.run && (
+            <div className="card bg-base-100 border border-base-300">
+              <div className="card-body">
+                <h2 className="card-title text-lg">Execution Result</h2>
+
+                <div className="space-y-4 mt-2">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <span className="text-sm text-base-content/60">Status:</span>
+                      <span
+                        className={`ml-2 badge ${
+                          executionState.run.status === "succeeded"
+                            ? "badge-success"
+                            : executionState.run.status === "failed"
+                              ? "badge-error"
+                              : "badge-warning"
+                        }`}
+                      >
+                        {executionState.run.status}
+                      </span>
+                    </div>
+                    {executionState.run.startedAt && executionState.run.endedAt && (
+                      <div>
+                        <span className="text-sm text-base-content/60">Duration:</span>
+                        <span className="ml-2 text-sm">
+                          {(
+                            (new Date(executionState.run.endedAt).getTime() -
+                              new Date(executionState.run.startedAt).getTime()) /
+                            1000
+                          ).toFixed(2)}
+                          s
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {executionState.run.outputs && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2">Outputs:</h3>
+                      <pre className="p-4 bg-base-200/50 rounded-lg text-sm font-mono overflow-auto max-h-64">
+                        {JSON.stringify(executionState.run.outputs, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+
+                  {executionState.run.error && (
+                    <div>
+                      <h3 className="text-sm font-semibold mb-2 text-error">Error:</h3>
+                      <pre className="p-4 bg-error/10 rounded-lg text-sm font-mono overflow-auto max-h-64 text-error">
+                        {JSON.stringify(executionState.run.error, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {executionState.phase === "idle" && (
+            <div className="card bg-base-100 border border-base-300 border-dashed">
+              <div className="card-body items-center text-center py-12">
+                <Code size={48} className="text-base-content/30 mb-4" />
+                <h3 className="text-lg font-medium text-base-content/70">No results yet</h3>
+                <p className="text-sm text-base-content/50 max-w-sm">
+                  Enter a request and click "Generate & Execute" to see the generated code and
+                  execution results here.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

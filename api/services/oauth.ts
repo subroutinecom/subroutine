@@ -5,7 +5,6 @@ import { createConnectedAccount } from "../models/connected-account.ts";
 
 export interface OAuthState {
   integrationId: string;
-  userId: string;
   organizationId: string;
   provider: IntegrationProvider;
   timestamp: number;
@@ -92,11 +91,10 @@ const extractOAuthConfig = (authConfig: IntegrationAuthConfig): ExtractedOAuthCo
 
 export const generateAuthorizationUrl = async (params: {
   integrationId: string;
-  userId: string;
   organizationId: string;
   viewerId: string;
 }): Promise<{ url: string; state: string }> => {
-  const { integrationId, userId, organizationId, viewerId } = params;
+  const { integrationId, organizationId, viewerId } = params;
 
   const integration = await getIntegration(integrationId, organizationId);
   if (!integration) {
@@ -128,7 +126,6 @@ export const generateAuthorizationUrl = async (params: {
 
   const state: OAuthState = {
     integrationId,
-    userId,
     organizationId,
     provider,
     timestamp: Date.now(),
@@ -323,18 +320,17 @@ export const handleOAuthCallback = async (params: {
       metadata: {
         obtainedAt: new Date().toISOString(),
         providerAccountIdentifier: providerAccountIdentifier ?? stateData.viewerId,
-        viewerId: stateData.viewerId,
         isMcpBearerPassthrough: isMcpIntegration,
       },
     };
 
-    // Use viewerId as the account identifier for lookup (consistent across all integrations)
+    // Create connected account using viewerId as the primary identifier
     const connectedAccount = await createConnectedAccount({
       integrationId: stateData.integrationId,
-      userId: stateData.userId,
+      viewerId: stateData.viewerId,
       organizationId: stateData.organizationId,
       credentials,
-      accountIdentifier: stateData.viewerId,
+      accountIdentifier: providerAccountIdentifier ?? stateData.viewerId,
     });
 
     console.log("[OAuth] Connected account created:", connectedAccount.id);

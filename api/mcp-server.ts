@@ -236,7 +236,6 @@ export function createMcpServer(auth: AuthContext): McpServer {
         const run = await runSubroutine({
           subroutineId: subroutine.id,
           organizationId,
-          userId: auth.userId,
           viewerId,
           inputs: subroutine.initialInputs,
           timeoutMs,
@@ -330,7 +329,6 @@ export function createMcpServer(auth: AuthContext): McpServer {
         const run = await runSubroutine({
           subroutineId,
           organizationId,
-          userId: auth.userId,
           viewerId,
           inputs,
           timeoutMs,
