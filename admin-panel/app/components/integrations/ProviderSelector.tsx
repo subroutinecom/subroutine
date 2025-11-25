@@ -7,11 +7,15 @@ import type { IntegrationProvider, IntegrationProviderDefinition } from "~/types
 export type IntegrationFormData = {
   provider: IntegrationProvider;
   name: string;
-  // OAuth2 fields
+  // OAuth2 fields (also used for MCP bearer_passthrough)
   clientId: string;
   clientSecret: string;
   scopes: string;
   redirectUri: string;
+  // OAuth URLs (for OAuth2 providers, these come from provider definition)
+  // For MCP bearer_passthrough, user must provide these
+  oauthAuthUrl: string;
+  oauthTokenUrl: string;
   // MCP fields
   serverUrl: string;
   transport: "sse" | "streamable-http";

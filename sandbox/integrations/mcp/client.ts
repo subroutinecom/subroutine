@@ -109,7 +109,7 @@ export const createTransport = (
  * @param config - MCP configuration including server URL, transport, and auth
  * @param options - Optional client configuration
  * @returns Connected MCP client
- * @throws Error if connection fails
+ * @throws Error if connection fails or times out
  */
 export const createMcpClient = async (
   config: SandboxMcpConfig,
@@ -134,16 +134,24 @@ export const createMcpClient = async (
     }
   );
 
-  // Connect with timeout
-  const connectPromise = client.connect(transport);
+  // Connect with timeout - ensure cleanup on timeout or success
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new Error(`MCP connection timeout after ${opts.timeoutMs}ms`));
-    }, opts.timeoutMs);
-  });
+  try {
+    const connectPromise = client.connect(transport);
 
-  await Promise.race([connectPromise, timeoutPromise]);
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error(`MCP connection timeout after ${opts.timeoutMs}ms`));
+      }, opts.timeoutMs);
+    });
+
+    await Promise.race([connectPromise, timeoutPromise]);
+  } finally {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
+  }
 
   return client;
 };

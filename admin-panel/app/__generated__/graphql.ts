@@ -106,6 +106,20 @@ export type McpAuthStrategy = {
   type?: Maybe<Scalars['String']['output']>;
 };
 
+export type McpOAuthDiscoveryResult = {
+  __typename?: 'McpOAuthDiscoveryResult';
+  authorizationEndpoint?: Maybe<Scalars['String']['output']>;
+  authorizationServer?: Maybe<Scalars['String']['output']>;
+  dynamicRegistrationSupported?: Maybe<Scalars['Boolean']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  pkceSupported?: Maybe<Scalars['Boolean']['output']>;
+  registrationEndpoint?: Maybe<Scalars['String']['output']>;
+  scopesSupported?: Maybe<Array<Scalars['String']['output']>>;
+  serverName?: Maybe<Scalars['String']['output']>;
+  success?: Maybe<Scalars['Boolean']['output']>;
+  tokenEndpoint?: Maybe<Scalars['String']['output']>;
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   createApiKey?: Maybe<CreatedApiKey>;
@@ -176,6 +190,7 @@ export type Query = {
   connectedAccount?: Maybe<ConnectedAccount>;
   connectedAccounts?: Maybe<Array<ConnectedAccount>>;
   connectedAccountsByIntegration?: Maybe<Array<ConnectedAccount>>;
+  discoverMcpOAuth?: Maybe<McpOAuthDiscoveryResult>;
   integration?: Maybe<Integration>;
   integrationProviders?: Maybe<Array<IntegrationProviderDefinition>>;
   integrations?: Maybe<Array<Integration>>;
@@ -195,6 +210,11 @@ export type QueryConnectedAccountArgs = {
 
 export type QueryConnectedAccountsByIntegrationArgs = {
   integrationId: Scalars['String']['input'];
+};
+
+
+export type QueryDiscoverMcpOAuthArgs = {
+  serverUrl: Scalars['String']['input'];
 };
 
 
@@ -281,6 +301,13 @@ export type CreateIntegrationMutationVariables = Exact<{
 
 export type CreateIntegrationMutation = { __typename?: 'Mutation', createIntegration?: { __typename?: 'Integration', id?: string | null, provider?: string | null, name?: string | null } | null };
 
+export type DiscoverMcpOAuthQueryVariables = Exact<{
+  serverUrl: Scalars['String']['input'];
+}>;
+
+
+export type DiscoverMcpOAuthQuery = { __typename?: 'Query', discoverMcpOAuth?: { __typename?: 'McpOAuthDiscoveryResult', success?: boolean | null, serverName?: string | null, authorizationServer?: string | null, authorizationEndpoint?: string | null, tokenEndpoint?: string | null, registrationEndpoint?: string | null, scopesSupported?: Array<string> | null, pkceSupported?: boolean | null, dynamicRegistrationSupported?: boolean | null, error?: string | null } | null };
+
 
 export const GetApiKeysDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetApiKeys"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"apiKeys"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"start"}},{"kind":"Field","name":{"kind":"Name","value":"prefix"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"expiresAt"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<GetApiKeysQuery, GetApiKeysQueryVariables>;
 export const DeleteApiKeyDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteApiKey"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteApiKey"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}]}]}}]} as unknown as DocumentNode<DeleteApiKeyMutation, DeleteApiKeyMutationVariables>;
@@ -293,3 +320,4 @@ export const GetIntegrationsDocument = {"kind":"Document","definitions":[{"kind"
 export const ToggleIntegrationEnabledDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ToggleIntegrationEnabled"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"enabled"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateIntegration"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"enabled"},"value":{"kind":"Variable","name":{"kind":"Name","value":"enabled"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}}]}}]}}]} as unknown as DocumentNode<ToggleIntegrationEnabledMutation, ToggleIntegrationEnabledMutationVariables>;
 export const IntegrationProvidersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"IntegrationProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"integrationProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"viewerScoped"}},{"kind":"Field","name":{"kind":"Name","value":"authType"}},{"kind":"Field","name":{"kind":"Name","value":"oauthConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"authUrl"}},{"kind":"Field","name":{"kind":"Name","value":"tokenUrl"}},{"kind":"Field","name":{"kind":"Name","value":"defaultScopes"}},{"kind":"Field","name":{"kind":"Name","value":"requiredScopes"}},{"kind":"Field","name":{"kind":"Name","value":"defaultRedirectPath"}}]}},{"kind":"Field","name":{"kind":"Name","value":"mcpConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"serverUrl"}},{"kind":"Field","name":{"kind":"Name","value":"transport"}},{"kind":"Field","name":{"kind":"Name","value":"authStrategy"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"headerName"}},{"kind":"Field","name":{"kind":"Name","value":"headers"}}]}}]}}]}}]}}]} as unknown as DocumentNode<IntegrationProvidersQuery, IntegrationProvidersQueryVariables>;
 export const CreateIntegrationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateIntegration"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"provider"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"authConfig"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createIntegration"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"provider"},"value":{"kind":"Variable","name":{"kind":"Name","value":"provider"}}},{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}},{"kind":"Argument","name":{"kind":"Name","value":"authConfig"},"value":{"kind":"Variable","name":{"kind":"Name","value":"authConfig"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"provider"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<CreateIntegrationMutation, CreateIntegrationMutationVariables>;
+export const DiscoverMcpOAuthDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"DiscoverMcpOAuth"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"serverUrl"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"discoverMcpOAuth"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"serverUrl"},"value":{"kind":"Variable","name":{"kind":"Name","value":"serverUrl"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"serverName"}},{"kind":"Field","name":{"kind":"Name","value":"authorizationServer"}},{"kind":"Field","name":{"kind":"Name","value":"authorizationEndpoint"}},{"kind":"Field","name":{"kind":"Name","value":"tokenEndpoint"}},{"kind":"Field","name":{"kind":"Name","value":"registrationEndpoint"}},{"kind":"Field","name":{"kind":"Name","value":"scopesSupported"}},{"kind":"Field","name":{"kind":"Name","value":"pkceSupported"}},{"kind":"Field","name":{"kind":"Name","value":"dynamicRegistrationSupported"}},{"kind":"Field","name":{"kind":"Name","value":"error"}}]}}]}}]} as unknown as DocumentNode<DiscoverMcpOAuthQuery, DiscoverMcpOAuthQueryVariables>;

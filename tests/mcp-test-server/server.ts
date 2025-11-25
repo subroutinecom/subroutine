@@ -18,6 +18,15 @@ export interface TestMcpServerConfig {
   port: number;
   /** If set, requires this exact token in Authorization: Bearer header */
   requiredToken?: string;
+  /** If set, enables OAuth discovery endpoints */
+  oauthDiscovery?: {
+    /** The authorization server URL (defaults to same origin) */
+    authorizationServer?: string;
+    /** Supported scopes */
+    scopes?: string[];
+    /** Resource name for the server */
+    resourceName?: string;
+  };
 }
 
 /**
@@ -31,12 +40,13 @@ export const startTestMcpServer = (
   port: number;
   url: string;
 } => {
-  const { port, requiredToken } = config;
+  const { port, requiredToken, oauthDiscovery } = config;
 
-  // Track auth header from requests for getAuthInfo tool
-  let lastAuthHeader: string | null = null;
+  // Track auth header per session for getAuthInfo tool
+  // This prevents race conditions when multiple sessions run concurrently
+  const sessionAuthHeaders = new Map<string, string | null>();
 
-  const createMcpServer = (): McpServer => {
+  const createMcpServer = (sessionId: string): McpServer => {
     const server = new McpServer(
       {
         name: "test-mcp-server",
@@ -94,9 +104,11 @@ export const startTestMcpServer = (
       "Returns information about the authentication header. Useful for testing auth passthrough.",
       {},
       async () => {
-        const hasAuth = !!lastAuthHeader;
-        const tokenPrefix = lastAuthHeader?.replace("Bearer ", "").substring(0, 20) ?? null;
-        const fullToken = lastAuthHeader?.replace("Bearer ", "") ?? null;
+        // Get auth header for this session
+        const authHeader = sessionAuthHeaders.get(sessionId) ?? null;
+        const hasAuth = !!authHeader;
+        const tokenPrefix = authHeader?.replace("Bearer ", "").substring(0, 20) ?? null;
+        const fullToken = authHeader?.replace("Bearer ", "") ?? null;
 
         return {
           content: [
@@ -173,10 +185,9 @@ export const startTestMcpServer = (
   // Store transports by session ID
   const transports: Record<string, StreamableHTTPServerTransport> = {};
 
-  // Auth middleware
+  // Auth middleware - validates token but doesn't store it yet (no session ID)
   app.use("/mcp", async (c, next) => {
     const authHeader = c.req.header("authorization");
-    lastAuthHeader = authHeader ?? null;
 
     if (requiredToken) {
       if (!authHeader) {
@@ -194,6 +205,7 @@ export const startTestMcpServer = (
   // MCP endpoint - POST for requests
   app.post("/mcp", async (c) => {
     const sessionId = c.req.header("mcp-session-id");
+    const authHeader = c.req.header("authorization") ?? null;
     const body = await c.req.json();
 
     // Check if this is an initialize request
@@ -204,11 +216,18 @@ export const startTestMcpServer = (
 
     if (sessionId && transports[sessionId]) {
       transport = transports[sessionId];
+      // Update auth header for existing session (in case it changed)
+      sessionAuthHeaders.set(sessionId, authHeader);
     } else if (!sessionId && isInitialize) {
+      // Generate session ID upfront so we can pass it to createMcpServer
+      const newSessionId = crypto.randomUUID();
+
       transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => crypto.randomUUID(),
-        onsessioninitialized: (newSessionId) => {
-          transports[newSessionId] = transport;
+        sessionIdGenerator: () => newSessionId,
+        onsessioninitialized: (sid) => {
+          transports[sid] = transport;
+          // Store auth header for this session
+          sessionAuthHeaders.set(sid, authHeader);
         },
         // Allow JSON responses without SSE for simpler testing
         enableJsonResponse: true,
@@ -216,12 +235,13 @@ export const startTestMcpServer = (
 
       transport.onclose = () => {
         const sid = transport.sessionId;
-        if (sid && transports[sid]) {
+        if (sid) {
           delete transports[sid];
+          sessionAuthHeaders.delete(sid);
         }
       };
 
-      const server = createMcpServer();
+      const server = createMcpServer(newSessionId);
       await server.connect(transport);
     } else {
       return c.json(
@@ -418,11 +438,70 @@ export const startTestMcpServer = (
     return c.text("Session terminated", 200);
   });
 
+  // OAuth Discovery Endpoints (RFC 9728 & RFC 8414)
+  if (oauthDiscovery) {
+    const baseUrl = `http://0.0.0.0:${port}`;
+    const authServer = oauthDiscovery.authorizationServer ?? baseUrl;
+
+    // RFC 9728: OAuth 2.0 Protected Resource Metadata
+    app.get("/.well-known/oauth-protected-resource", (c) => {
+      return c.json({
+        resource: `${baseUrl}/mcp`,
+        authorization_servers: [authServer],
+        scopes_supported: oauthDiscovery.scopes ?? ["read", "write"],
+        bearer_methods_supported: ["header"],
+        resource_name: oauthDiscovery.resourceName ?? "Test MCP Server",
+      });
+    });
+
+    // Path-specific protected resource metadata
+    app.get("/.well-known/oauth-protected-resource/mcp", (c) => {
+      return c.json({
+        resource: `${baseUrl}/mcp`,
+        authorization_servers: [authServer],
+        scopes_supported: oauthDiscovery.scopes ?? ["read", "write"],
+        bearer_methods_supported: ["header"],
+        resource_name: oauthDiscovery.resourceName ?? "Test MCP Server",
+      });
+    });
+
+    // RFC 8414: OAuth 2.0 Authorization Server Metadata
+    app.get("/.well-known/oauth-authorization-server", (c) => {
+      return c.json({
+        issuer: authServer,
+        authorization_endpoint: `${authServer}/oauth/authorize`,
+        token_endpoint: `${authServer}/oauth/token`,
+        registration_endpoint: `${authServer}/oauth/register`,
+        scopes_supported: oauthDiscovery.scopes ?? ["read", "write"],
+        response_types_supported: ["code"],
+        grant_types_supported: ["authorization_code", "refresh_token"],
+        code_challenge_methods_supported: ["S256", "plain"],
+        token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
+      });
+    });
+
+    // OpenID Connect style discovery (alternative location)
+    app.get("/.well-known/openid-configuration", (c) => {
+      return c.json({
+        issuer: authServer,
+        authorization_endpoint: `${authServer}/oauth/authorize`,
+        token_endpoint: `${authServer}/oauth/token`,
+        registration_endpoint: `${authServer}/oauth/register`,
+        scopes_supported: oauthDiscovery.scopes ?? ["read", "write"],
+        response_types_supported: ["code"],
+        grant_types_supported: ["authorization_code", "refresh_token"],
+        code_challenge_methods_supported: ["S256", "plain"],
+        token_endpoint_auth_methods_supported: ["client_secret_post", "client_secret_basic"],
+      });
+    });
+  }
+
   // Health check
   app.get("/health", (c) => {
     return c.json({
       status: "ok",
       tools: ["echo", "add", "getAuthInfo", "throwError", "slowOperation", "concat"],
+      oauthDiscoveryEnabled: !!oauthDiscovery,
     });
   });
 
@@ -453,10 +532,21 @@ export const startTestMcpServer = (
 if (import.meta.main) {
   const port = parseInt(Deno.env.get("PORT") ?? "3456");
   const requiredToken = Deno.env.get("REQUIRED_TOKEN");
+  const enableOAuthDiscovery = Deno.env.get("ENABLE_OAUTH_DISCOVERY") === "true";
+  const oauthScopes = Deno.env
+    .get("OAUTH_SCOPES")
+    ?.split(",")
+    .map((s) => s.trim());
 
   const server = startTestMcpServer({
     port,
     requiredToken: requiredToken || undefined,
+    oauthDiscovery: enableOAuthDiscovery
+      ? {
+          scopes: oauthScopes,
+          resourceName: "Test MCP Server",
+        }
+      : undefined,
   });
 
   console.log(`MCP endpoint: ${server.url}`);
@@ -465,5 +555,8 @@ if (import.meta.main) {
     console.log(`Auth required: Bearer ${requiredToken.substring(0, 10)}...`);
   } else {
     console.log("Auth: None required");
+  }
+  if (enableOAuthDiscovery) {
+    console.log(`OAuth discovery: Enabled (scopes: ${oauthScopes?.join(", ") ?? "read, write"})`);
   }
 }

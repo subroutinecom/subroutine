@@ -153,11 +153,29 @@ const buildSandboxIntegrations = async (params: {
         );
 
         if (!connectedAccount) {
-          // TODO: For bearer_passthrough MCP, we need OAuth config in the MCP auth definition
-          // For now, throw a generic error. Phase 4 will implement proper OAuth flow.
-          throw new Error(
-            `MCP integration ${integration.name} requires bearer_passthrough but no connected account found for viewer ${params.viewerId}`
-          );
+          // MCP with bearer_passthrough requires OAuth config for user authentication
+          if (!authConfig.oauthConfig) {
+            throw new Error(
+              `MCP integration ${integration.name} is configured for bearer_passthrough but missing OAuth configuration`
+            );
+          }
+
+          // Generate authorization URL and throw proper error so client can redirect
+          const auth = await generateAuthorizationUrl({
+            integrationId,
+            organizationId: params.organizationId,
+            userId: params.userId,
+            viewerId: params.viewerId,
+          });
+
+          throw new IntegrationAuthRequiredError({
+            integrationId,
+            provider,
+            authorizationUrl: auth.url,
+            state: auth.state,
+            viewerId: params.viewerId,
+            message: `MCP integration ${integration.name} requires authorization`,
+          });
         }
 
         // Pass the access token to the MCP config

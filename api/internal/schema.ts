@@ -30,6 +30,7 @@ import {
   type IntegrationDefinition,
   type IntegrationProvider,
 } from "../integrations/providers.ts";
+import { discoverMcpOAuth, type McpOAuthDiscoveryResult } from "../services/mcp-oauth-discovery.ts";
 
 type User = {
   id: string;
@@ -220,6 +221,30 @@ IntegrationProviderDefinitionType.implement({
   }),
 });
 
+// MCP OAuth Discovery Result Type
+const McpOAuthDiscoveryResultType =
+  builder.objectRef<McpOAuthDiscoveryResult>("McpOAuthDiscoveryResult");
+
+McpOAuthDiscoveryResultType.implement({
+  fields: (t) => ({
+    success: t.exposeBoolean("success"),
+    serverName: t.exposeString("serverName", { nullable: true }),
+    authorizationServer: t.exposeString("authorizationServer", { nullable: true }),
+    authorizationEndpoint: t.exposeString("authorizationEndpoint", { nullable: true }),
+    tokenEndpoint: t.exposeString("tokenEndpoint", { nullable: true }),
+    registrationEndpoint: t.exposeString("registrationEndpoint", { nullable: true }),
+    scopesSupported: t.stringList({
+      nullable: true,
+      resolve: (parent) => parent.scopesSupported ?? null,
+    }),
+    pkceSupported: t.exposeBoolean("pkceSupported", { nullable: true }),
+    dynamicRegistrationSupported: t.exposeBoolean("dynamicRegistrationSupported", {
+      nullable: true,
+    }),
+    error: t.exposeString("error", { nullable: true }),
+  }),
+});
+
 builder.queryType({
   fields: (t) => ({
     ping: t.string({
@@ -287,6 +312,15 @@ builder.queryType({
           args.integrationId,
           ctx.session.activeOrganizationId
         );
+      },
+    }),
+    discoverMcpOAuth: t.field({
+      type: McpOAuthDiscoveryResultType,
+      args: {
+        serverUrl: t.arg.string({ required: true }),
+      },
+      resolve: async (_parent, args) => {
+        return discoverMcpOAuth(args.serverUrl);
       },
     }),
   }),

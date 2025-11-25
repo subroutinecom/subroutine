@@ -86,6 +86,19 @@ type McpAuthStrategy {
   type: String
 }
 
+type McpOAuthDiscoveryResult {
+  authorizationEndpoint: String
+  authorizationServer: String
+  dynamicRegistrationSupported: Boolean
+  error: String
+  pkceSupported: Boolean
+  registrationEndpoint: String
+  scopesSupported: [String!]
+  serverName: String
+  success: Boolean
+  tokenEndpoint: String
+}
+
 type Mutation {
   createApiKey(
     """JSON string of metadata"""
@@ -129,6 +142,7 @@ type Query {
   connectedAccount(id: String!): ConnectedAccount
   connectedAccounts: [ConnectedAccount!]
   connectedAccountsByIntegration(integrationId: String!): [ConnectedAccount!]
+  discoverMcpOAuth(serverUrl: String!): McpOAuthDiscoveryResult
   integration(id: String!): Integration
   integrationProviders: [IntegrationProviderDefinition!]
   integrations: [Integration!]

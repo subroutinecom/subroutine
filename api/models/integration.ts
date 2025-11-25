@@ -24,6 +24,19 @@ export interface OAuth2AuthConfig {
 }
 
 /**
+ * OAuth configuration for MCP integrations using bearer_passthrough.
+ * This allows users to authenticate via OAuth and pass their token to the MCP server.
+ */
+export interface McpOAuthConfig {
+  clientId: string;
+  clientSecret: string;
+  authUrl: string;
+  tokenUrl: string;
+  redirectUri: string;
+  scopes: string[];
+}
+
+/**
  * MCP integration auth configuration.
  */
 export interface McpAuthConfig {
@@ -33,6 +46,12 @@ export interface McpAuthConfig {
   authStrategy: McpAuthStrategy;
   /** API key for api_key auth strategy (encrypted in DB) */
   apiKey?: string;
+  /**
+   * OAuth configuration for bearer_passthrough auth strategy.
+   * Required when authStrategy.type is "bearer_passthrough".
+   * Users will authenticate via OAuth and their token will be passed to the MCP server.
+   */
+  oauthConfig?: McpOAuthConfig;
   metadata?: Record<string, unknown>;
 }
 
@@ -60,6 +79,48 @@ const validateOAuth2AuthConfig = (config: OAuth2AuthConfig) => {
   }
   if (!config.redirectUri) {
     throw new Error("authConfig.redirectUri is required");
+  }
+};
+
+const validateMcpOAuthConfig = (oauthConfig: McpOAuthConfig | undefined, required: boolean) => {
+  if (!oauthConfig) {
+    if (required) {
+      throw new Error(
+        "authConfig.oauthConfig is required when using bearer_passthrough auth strategy"
+      );
+    }
+    return;
+  }
+
+  if (!oauthConfig.clientId) {
+    throw new Error("authConfig.oauthConfig.clientId is required");
+  }
+  if (!oauthConfig.clientSecret) {
+    throw new Error("authConfig.oauthConfig.clientSecret is required");
+  }
+  if (!oauthConfig.authUrl) {
+    throw new Error("authConfig.oauthConfig.authUrl is required");
+  }
+  if (!oauthConfig.tokenUrl) {
+    throw new Error("authConfig.oauthConfig.tokenUrl is required");
+  }
+  if (!oauthConfig.redirectUri) {
+    throw new Error("authConfig.oauthConfig.redirectUri is required");
+  }
+  if (!oauthConfig.scopes || oauthConfig.scopes.length === 0) {
+    throw new Error("authConfig.oauthConfig.scopes must have at least one scope");
+  }
+
+  // Validate URLs
+  try {
+    new URL(oauthConfig.authUrl);
+  } catch {
+    throw new Error("authConfig.oauthConfig.authUrl must be a valid URL");
+  }
+  try {
+    new URL(oauthConfig.tokenUrl);
+  } catch {
+    throw new Error("authConfig.oauthConfig.tokenUrl must be a valid URL");
   }
 };
 
@@ -97,7 +158,8 @@ const validateMcpAuthConfig = (config: McpAuthConfig) => {
       }
       break;
     case "bearer_passthrough":
-      // No additional validation - token comes from connected account at runtime
+      // OAuth config is required for bearer_passthrough to enable user authentication
+      validateMcpOAuthConfig(config.oauthConfig, true);
       break;
     case "custom_headers":
       if (!config.authStrategy.headers || Object.keys(config.authStrategy.headers).length === 0) {
