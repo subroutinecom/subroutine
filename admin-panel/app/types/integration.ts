@@ -81,7 +81,7 @@ export interface ConnectedAccountCredentials {
 export interface ConnectedAccount {
   id: string;
   integrationId: string;
-  userId: string;
+  viewerId: string;
   organizationId: string;
   credentials: ConnectedAccountCredentials;
   accountIdentifier: string | null;

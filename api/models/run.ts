@@ -24,7 +24,6 @@ export type Run = {
 export type RunSubroutineRequest = {
   subroutineId: string;
   organizationId: string;
-  userId: string;
   viewerId: string;
   inputs?: Record<string, unknown>;
   timeoutMs?: number;
@@ -33,7 +32,7 @@ export type RunSubroutineRequest = {
 
 type SandboxIntegrationAccount = {
   id: string;
-  userId: string;
+  viewerId: string;
   accountIdentifier?: string | null;
   credentials: ConnectedAccountCredentials;
 };
@@ -76,7 +75,6 @@ export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> 
   const sandboxIntegrations = await buildSandboxIntegrations({
     integrationIds: subroutine.integrationIds,
     organizationId: params.organizationId,
-    userId: params.userId,
     viewerId: params.viewerId,
   });
 
@@ -119,8 +117,7 @@ export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> 
 const buildSandboxIntegrations = async (params: {
   integrationIds: string[];
   organizationId: string;
-  userId: string;
-  viewerId?: string;
+  viewerId: string;
 }): Promise<SandboxIntegrationDefinition[]> => {
   if (params.integrationIds.length === 0) {
     return [];
@@ -142,10 +139,6 @@ const buildSandboxIntegrations = async (params: {
 
       // For bearer_passthrough, we need the viewer's connected account
       if (authConfig.authStrategy.type === "bearer_passthrough") {
-        if (!params.viewerId) {
-          throw new Error(`viewerId is required to access MCP integration ${integration.name}`);
-        }
-
         const connectedAccount = await getConnectedAccountByAccountIdentifier(
           params.organizationId,
           integrationId,
@@ -164,7 +157,6 @@ const buildSandboxIntegrations = async (params: {
           const auth = await generateAuthorizationUrl({
             integrationId,
             organizationId: params.organizationId,
-            userId: params.userId,
             viewerId: params.viewerId,
           });
 
@@ -189,7 +181,7 @@ const buildSandboxIntegrations = async (params: {
           mcpConfig,
           account: {
             id: connectedAccount.id,
-            userId: connectedAccount.userId,
+            viewerId: connectedAccount.viewerId,
             accountIdentifier: connectedAccount.accountIdentifier,
             credentials: connectedAccount.credentials,
           },
@@ -220,10 +212,6 @@ const buildSandboxIntegrations = async (params: {
       continue;
     }
 
-    if (!params.viewerId) {
-      throw new Error(`viewerId is required to access ${integration.name}`);
-    }
-
     const connectedAccount = await getConnectedAccountByAccountIdentifier(
       params.organizationId,
       integrationId,
@@ -234,7 +222,6 @@ const buildSandboxIntegrations = async (params: {
       const auth = await generateAuthorizationUrl({
         integrationId,
         organizationId: params.organizationId,
-        userId: params.userId,
         viewerId: params.viewerId,
       });
 
@@ -255,7 +242,7 @@ const buildSandboxIntegrations = async (params: {
       authConfig: authConfig as unknown as Record<string, unknown>,
       account: {
         id: connectedAccount.id,
-        userId: connectedAccount.userId,
+        viewerId: connectedAccount.viewerId,
         accountIdentifier: connectedAccount.accountIdentifier,
         credentials: connectedAccount.credentials,
       },

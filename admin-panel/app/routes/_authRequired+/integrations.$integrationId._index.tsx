@@ -36,7 +36,7 @@ const GET_CONNECTED_ACCOUNTS_QUERY = gql`
     connectedAccountsByIntegration(integrationId: $integrationId) {
       id
       integrationId
-      userId
+      viewerId
       accountIdentifier
       status
       lastUsedAt
@@ -70,7 +70,7 @@ interface ParsedIntegration extends Omit<IntegrationResponse, "authConfig"> {
 interface ConnectedAccountResponse {
   id: string;
   integrationId: string;
-  userId: string;
+  viewerId: string;
   accountIdentifier: string | null;
   status: string;
   lastUsedAt: string | null;

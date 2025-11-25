@@ -22,7 +22,7 @@ import {
   createConnectedAccount,
   deleteConnectedAccount,
   getConnectedAccount,
-  listConnectedAccounts,
+  listConnectedAccountsByOrganization,
   listConnectedAccountsByIntegration,
 } from "../models/connected-account.ts";
 import {
@@ -124,7 +124,7 @@ ConnectedAccountType.implement({
   fields: (t) => ({
     id: t.exposeString("id"),
     integrationId: t.exposeString("integrationId"),
-    userId: t.exposeString("userId"),
+    viewerId: t.exposeString("viewerId"),
     organizationId: t.exposeString("organizationId"),
     credentials: t.field({
       type: "String",
@@ -289,7 +289,7 @@ builder.queryType({
     connectedAccounts: t.field({
       type: [ConnectedAccountType],
       resolve: async (_parent, _args, ctx) => {
-        return listConnectedAccounts(ctx.user.id, ctx.session.activeOrganizationId);
+        return listConnectedAccountsByOrganization(ctx.session.activeOrganizationId);
       },
     }),
     connectedAccount: t.field({
@@ -299,7 +299,7 @@ builder.queryType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        return getConnectedAccount(args.id, ctx.user.id, ctx.session.activeOrganizationId);
+        return getConnectedAccount(args.id, ctx.session.activeOrganizationId);
       },
     }),
     connectedAccountsByIntegration: t.field({
@@ -440,6 +440,7 @@ builder.mutationType({
       type: ConnectedAccountType,
       args: {
         integrationId: t.arg.string({ required: true }),
+        viewerId: t.arg.string({ required: true }),
         credentials: t.arg.string({
           required: true,
           description: "JSON string of ConnectedAccountCredentials",
@@ -451,7 +452,7 @@ builder.mutationType({
 
         return createConnectedAccount({
           integrationId: args.integrationId,
-          userId: ctx.user.id,
+          viewerId: args.viewerId,
           organizationId: ctx.session.activeOrganizationId,
           credentials,
           accountIdentifier: args.accountIdentifier || undefined,
@@ -464,7 +465,7 @@ builder.mutationType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
-        return deleteConnectedAccount(args.id, ctx.user.id, ctx.session.activeOrganizationId);
+        return deleteConnectedAccount(args.id, ctx.session.activeOrganizationId);
       },
     }),
   }),

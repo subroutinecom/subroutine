@@ -27,7 +27,7 @@ type ConnectedAccount {
   organizationId: String
   status: String
   updatedAt: String
-  userId: String
+  viewerId: String
 }
 
 type CreatedApiKey {
@@ -111,6 +111,7 @@ type Mutation {
     """JSON string of ConnectedAccountCredentials"""
     credentials: String!
     integrationId: String!
+    viewerId: String!
   ): ConnectedAccount
   createIntegration(
     """JSON string of IntegrationAuthConfig"""

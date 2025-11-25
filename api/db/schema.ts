@@ -87,7 +87,7 @@ export interface IntegrationTable {
 export interface ConnectedAccountTable {
   id: string;
   integrationId: string;
-  userId: string;
+  viewerId: string;
   organizationId: string;
   credentials: string;
   accountIdentifier: string | null;

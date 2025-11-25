@@ -14,14 +14,13 @@ export const completeMockAuthorization = async (encodedState: string) => {
   const connected = await createConnectedAccount({
     integrationId: state.integrationId,
     organizationId: state.organizationId,
-    userId: state.userId,
+    viewerId: state.viewerId,
     accountIdentifier: state.viewerId,
     credentials: {
       ...MOCK_CREDENTIAL,
       metadata: {
         linkedAt: new Date().toISOString(),
         providerAccountIdentifier: state.viewerId,
-        viewerId: state.viewerId,
       },
     },
   });

@@ -79,17 +79,19 @@ const DELETE_INTEGRATION = gql`
 const CREATE_CONNECTED_ACCOUNT = gql`
   mutation CreateConnectedAccount(
     $integrationId: String!
+    $viewerId: String!
     $credentials: String!
     $accountIdentifier: String
   ) {
     createConnectedAccount(
       integrationId: $integrationId
+      viewerId: $viewerId
       credentials: $credentials
       accountIdentifier: $accountIdentifier
     ) {
       id
       integrationId
-      userId
+      viewerId
       organizationId
       credentials
       accountIdentifier
@@ -106,7 +108,7 @@ const LIST_CONNECTED_ACCOUNTS = gql`
     connectedAccounts {
       id
       integrationId
-      userId
+      viewerId
       organizationId
       credentials
       accountIdentifier
@@ -123,7 +125,7 @@ const GET_CONNECTED_ACCOUNT = gql`
     connectedAccount(id: $id) {
       id
       integrationId
-      userId
+      viewerId
       organizationId
       credentials
       accountIdentifier
@@ -146,7 +148,7 @@ const LIST_CONNECTED_ACCOUNTS_BY_INTEGRATION = gql`
     connectedAccountsByIntegration(integrationId: $integrationId) {
       id
       integrationId
-      userId
+      viewerId
       organizationId
       credentials
       accountIdentifier
@@ -326,8 +328,10 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
       scope: "https://www.googleapis.com/auth/gmail.readonly",
     };
 
+    const testViewerId = "test-viewer-id-123";
     const createConnectedResult: any = await graphqlClient.request(CREATE_CONNECTED_ACCOUNT, {
       integrationId,
+      viewerId: testViewerId,
       credentials: JSON.stringify(credentials),
       accountIdentifier: "test@example.com",
     });
@@ -335,6 +339,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     expect(createConnectedResult.createConnectedAccount).toBeDefined();
     expect(createConnectedResult.createConnectedAccount.id).toBeDefined();
     expect(createConnectedResult.createConnectedAccount.integrationId).toBe(integrationId);
+    expect(createConnectedResult.createConnectedAccount.viewerId).toBe(testViewerId);
     expect(createConnectedResult.createConnectedAccount.accountIdentifier).toBe("test@example.com");
     expect(createConnectedResult.createConnectedAccount.status).toBe("active");
 
@@ -564,20 +569,20 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
       scope: "repo",
     };
 
+    const testViewerId = "test-viewer-scoping-123";
     const connectedAccount: any = await graphqlClient.request(CREATE_CONNECTED_ACCOUNT, {
       integrationId: integration.createIntegration.id,
+      viewerId: testViewerId,
       credentials: JSON.stringify(credentials),
       accountIdentifier: "user@example.com",
     });
 
-    expect(connectedAccount.createConnectedAccount.userId).toBeDefined();
+    expect(connectedAccount.createConnectedAccount.viewerId).toBe(testViewerId);
 
     const accounts: any = await graphqlClient.request(LIST_CONNECTED_ACCOUNTS);
 
     expect(accounts.connectedAccounts.length).toBe(1);
-    expect(accounts.connectedAccounts[0].userId).toBe(
-      connectedAccount.createConnectedAccount.userId
-    );
+    expect(accounts.connectedAccounts[0].viewerId).toBe(testViewerId);
   });
 
   it("should cascade delete connected accounts when integration is deleted", async () => {
@@ -623,8 +628,10 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
       scope: "repo",
     };
 
+    const testViewerId = "test-viewer-cascade-delete";
     const connectedAccount: any = await graphqlClient.request(CREATE_CONNECTED_ACCOUNT, {
       integrationId: integration.createIntegration.id,
+      viewerId: testViewerId,
       credentials: JSON.stringify(credentials),
       accountIdentifier: "test@example.com",
     });
@@ -690,8 +697,10 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
       scope: "repo",
     };
 
+    const testViewerId = "test-viewer-list-by-integration";
     await graphqlClient.request(CREATE_CONNECTED_ACCOUNT, {
       integrationId: integration.createIntegration.id,
+      viewerId: testViewerId,
       credentials: JSON.stringify(credentials),
       accountIdentifier: "account1@example.com",
     });
@@ -701,6 +710,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     });
 
     expect(result.connectedAccountsByIntegration.length).toBe(1);
+    expect(result.connectedAccountsByIntegration[0].viewerId).toBe(testViewerId);
   });
 
   it("should create MCP integration with viewer-scoped PAT (no apiKey required)", async () => {
