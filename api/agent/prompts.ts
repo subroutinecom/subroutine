@@ -6,6 +6,11 @@ type IntegrationDocs = {
   docsUrl?: string;
 };
 
+export type McpIntegrationInfo = {
+  name: string;
+  tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>;
+};
+
 const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
   switch (integrationId) {
     case "gmail":
@@ -44,30 +49,104 @@ const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
         docsUrl: "https://googleapis.dev/nodejs/googleapis/latest/calendar/index.html",
       };
 
-    case "github":
-      return {
-        id: "github",
-        functionName: "getGithub",
-        typeExample: `getGithub(): Promise<{ me(): Promise<{ login: string }> }>`,
-        usageExample: `const github = await integrations.getGithub();
-   const user = await github.me();`,
-      };
+    // Note: GitHub integration removed - use MCP integration instead (e.g., getMcpClient("github"))
 
     default:
       return null;
   }
 };
 
-export const SYSTEM_PROMPT = (integrations: string[]): string => {
+/**
+ * Generates documentation for MCP integrations.
+ * MCP integrations use the standard MCP client interface with listTools() and callTool().
+ */
+const getMcpIntegrationDocs = (mcpIntegrations: McpIntegrationInfo[]): string => {
+  if (mcpIntegrations.length === 0) return "";
+
+  const validNames = mcpIntegrations.map((mcp) => `"${mcp.name}"`).join(", ");
+
+  const mcpDocs = mcpIntegrations
+    .map((mcp) => {
+      const toolsList = mcp.tools
+        .map((tool) => {
+          let toolDoc = `      - ${tool.name}`;
+          if (tool.description) {
+            toolDoc += `: ${tool.description}`;
+          }
+          return toolDoc;
+        })
+        .join("\n");
+
+      return `   - "${mcp.name}":
+${toolsList}`;
+    })
+    .join("\n\n");
+
+  return `
+MCP INTEGRATIONS (REAL EXTERNAL ACCESS):
+You have access to MCP (Model Context Protocol) servers via integrations.getMcpClient(name).
+These integrations connect to REAL external services - they are NOT mocked.
+
+CRITICAL:
+- MCP tools make REAL API calls to external services (GitHub, Slack, etc.)
+- DO NOT mock or simulate data - actually call the MCP tools to get real results
+- The sandbox proxies these calls securely - you have real external access through MCP
+
+IMPORTANT: Only the following MCP integration names are valid: ${validNames}
+Using any other name will result in an error at runtime.
+
+Type Declaration:
+declare const integrations: {
+  getMcpClient(name: string): Promise<{
+    listTools(): Promise<{ tools: Array<{ name: string; description?: string; inputSchema: object }> }>;
+    callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
+      content: Array<{ type: string; text?: string }>;
+      isError?: boolean;
+    }>;
+  }>;
+};
+
+Available MCP integrations and their tools:
+${mcpDocs}
+
+Example using MCP integration:
+// Get the MCP client - this connects to a REAL external service
+const client = await integrations.getMcpClient("${mcpIntegrations[0]?.name || "my-mcp-server"}");
+
+// Call a tool - this makes a REAL API call, returns REAL data
+const result = await client.callTool({
+  name: "toolName",
+  arguments: { param1: "value1", param2: 123 }
+});
+
+// The result contains content blocks with REAL data from the external service
+// For text results: result.content[0].text
+// Check result.isError for error responses
+`;
+};
+
+export type SystemPromptOptions = {
+  integrations?: string[];
+  mcpIntegrations?: McpIntegrationInfo[];
+};
+
+export const SYSTEM_PROMPT = (options: SystemPromptOptions | string[] = {}): string => {
+  // Support legacy array-only signature
+  const { integrations = [], mcpIntegrations = [] } = Array.isArray(options)
+    ? { integrations: options, mcpIntegrations: [] }
+    : options;
+
   const integrationDocs = integrations
     .map((id) => getIntegrationDocs(id))
     .filter((doc): doc is IntegrationDocs => doc !== null);
 
-  const hasIntegrations = integrationDocs.length > 0;
+  const hasStandardIntegrations = integrationDocs.length > 0;
+  const hasMcpIntegrations = mcpIntegrations.length > 0;
+  const hasAnyIntegrations = hasStandardIntegrations || hasMcpIntegrations;
 
   let integrationsSection = "";
 
-  if (hasIntegrations) {
+  if (hasStandardIntegrations) {
     const typeDeclarations = integrationDocs.map((doc) => `  ${doc.typeExample};`).join("\n");
 
     const integrationsList = integrationDocs
@@ -111,6 +190,25 @@ export async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {
 `;
   }
 
+  // Add MCP integrations section
+  if (hasMcpIntegrations) {
+    integrationsSection += getMcpIntegrationDocs(mcpIntegrations);
+  }
+
+  // Build the sandbox restrictions section
+  const sandboxRestrictions = hasAnyIntegrations
+    ? `
+SANDBOX RESTRICTIONS:
+- You CANNOT use fetch(), XMLHttpRequest, or direct HTTP calls - they will fail
+- ALL external API calls MUST go through the "integrations" object
+- The integrations below provide REAL access to external services - use them!
+- DO NOT mock or simulate external data - the integrations return real data`
+    : `
+SANDBOX RESTRICTIONS:
+- Your code runs in an isolated sandbox with NO network access
+- You CANNOT use fetch(), XMLHttpRequest, or any direct HTTP/network calls - they will fail
+- No external integrations are available for this subroutine`;
+
   return `You are an expert TypeScript code generator. Your task is to generate executable TypeScript code subroutines based on user requests.
 
 CRITICAL REQUIREMENTS:
@@ -121,6 +219,8 @@ CRITICAL REQUIREMENTS:
 5. Do not include any imports or external dependencies - code runs in an isolated sandbox
 6. Handle edge cases with proper validation and error messages
 7. Use the actual types you define - no any types
+8. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n9. Use the available integrations to interact with external services" : ""}
+${sandboxRestrictions}
 ${integrationsSection}
 Use the generateSubroutine tool to submit your code. The tool will validate it and provide feedback if there are issues. You can revise and resubmit based on the feedback.
 

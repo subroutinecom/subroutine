@@ -150,8 +150,8 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcp();
-        const tools = await mcp._listTools();
+        const mcp = await integrations.getMcpClient("test-mcp");
+        const { tools } = await mcp.listTools();
         return {
           toolCount: tools.length,
           toolNames: tools.map(t => t.name).sort()
@@ -178,9 +178,10 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcp();
-        const result = await mcp.echo({ message: "Hello from sandbox!" });
-        return result;
+        const mcp = await integrations.getMcpClient("test-mcp");
+        const result = await mcp.callTool({ name: "echo", arguments: { message: "Hello from sandbox!" } });
+        // Echo returns raw text, not JSON
+        return result.content[0]?.text;
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -198,9 +199,11 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcp();
-        const result = await mcp.add({ a: 5, b: 7 });
-        return result;
+        const mcp = await integrations.getMcpClient("test-mcp");
+        const result = await mcp.callTool({ name: "add", arguments: { a: 5, b: 7 } });
+        // Parse text content from MCP response
+        const text = result.content[0]?.text;
+        return JSON.parse(text);
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -220,9 +223,10 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcp();
-        const result = await mcp.concat({ strings: ["a", "b", "c"], separator: "-" });
-        return result;
+        const mcp = await integrations.getMcpClient("test-mcp");
+        const result = await mcp.callTool({ name: "concat", arguments: { strings: ["a", "b", "c"], separator: "-" } });
+        // Concat returns raw text, not JSON
+        return result.content[0]?.text;
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -240,9 +244,11 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcp();
-        const authInfo = await mcp.getAuthInfo({});
-        return authInfo;
+        const mcp = await integrations.getMcpClient("test-mcp");
+        const result = await mcp.callTool({ name: "getAuthInfo", arguments: {} });
+        // Parse text content from MCP response
+        const text = result.content[0]?.text;
+        return JSON.parse(text);
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -266,9 +272,10 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcpAuth();
-        const authInfo = await mcp.getAuthInfo({});
-        return authInfo;
+        const mcp = await integrations.getMcpClient("test-mcp-auth");
+        const result = await mcp.callTool({ name: "getAuthInfo", arguments: {} });
+        const text = result.content[0]?.text;
+        return JSON.parse(text);
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -291,10 +298,13 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcpAuth();
-        const echoResult = await mcp.echo({ message: "authenticated!" });
-        const addResult = await mcp.add({ a: 10, b: 20 });
-        return { echo: echoResult, add: addResult };
+        const mcp = await integrations.getMcpClient("test-mcp-auth");
+        const echoResult = await mcp.callTool({ name: "echo", arguments: { message: "authenticated!" } });
+        const addResult = await mcp.callTool({ name: "add", arguments: { a: 10, b: 20 } });
+        return {
+          echo: echoResult.content[0]?.text,  // echo returns raw text
+          add: JSON.parse(addResult.content[0]?.text)  // add returns JSON
+        };
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -320,9 +330,10 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcpOauth();
-        const authInfo = await mcp.getAuthInfo({});
-        return authInfo;
+        const mcp = await integrations.getMcpClient("test-mcp-oauth");
+        const result = await mcp.callTool({ name: "getAuthInfo", arguments: {} });
+        const text = result.content[0]?.text;
+        return JSON.parse(text);
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -345,10 +356,13 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcpOauth();
-        const echoResult = await mcp.echo({ message: "authenticated with oauth!" });
-        const addResult = await mcp.add({ a: 100, b: 200 });
-        return { echo: echoResult, add: addResult };
+        const mcp = await integrations.getMcpClient("test-mcp-oauth");
+        const echoResult = await mcp.callTool({ name: "echo", arguments: { message: "authenticated with oauth!" } });
+        const addResult = await mcp.callTool({ name: "add", arguments: { a: 100, b: 200 } });
+        return {
+          echo: echoResult.content[0]?.text,  // echo returns raw text
+          add: JSON.parse(addResult.content[0]?.text)  // add returns JSON
+        };
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -371,7 +385,7 @@ describe("MCP Integration Tests", () => {
 
       const code = `
         try {
-          const mcp = await integrations.getTestMcpOauthNotoken();
+          const mcp = await integrations.getMcpClient("test-mcp-oauth-notoken");
           return { error: false };
         } catch (error) {
           return { error: true, message: error.message };
@@ -409,15 +423,17 @@ describe("MCP Integration Tests", () => {
       });
 
       const code1 = `
-        const mcp = await integrations.getTestMcpViewer1();
-        const authInfo = await mcp.getAuthInfo({});
-        return authInfo;
+        const mcp = await integrations.getMcpClient("test-mcp-viewer1");
+        const result = await mcp.callTool({ name: "getAuthInfo", arguments: {} });
+        const text = result.content[0]?.text;
+        return JSON.parse(text);
       `;
 
       const code2 = `
-        const mcp = await integrations.getTestMcpViewer2();
-        const authInfo = await mcp.getAuthInfo({});
-        return authInfo;
+        const mcp = await integrations.getMcpClient("test-mcp-viewer2");
+        const result = await mcp.callTool({ name: "getAuthInfo", arguments: {} });
+        const text = result.content[0]?.text;
+        return JSON.parse(text);
       `;
 
       const [result1, result2] = await Promise.all([
@@ -449,12 +465,13 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcp();
+        const mcp = await integrations.getMcpClient("test-mcp");
 
         const results = [];
         for (let i = 1; i <= 5; i++) {
-          const result = await mcp.add({ a: i, b: i });
-          results.push(result.result);
+          const result = await mcp.callTool({ name: "add", arguments: { a: i, b: i } });
+          const parsed = JSON.parse(result.content[0]?.text);
+          results.push(parsed.result);
         }
 
         return results;
@@ -475,15 +492,16 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcp();
+        const mcp = await integrations.getMcpClient("test-mcp");
 
         const results = await Promise.all([
-          mcp.echo({ message: "one" }),
-          mcp.echo({ message: "two" }),
-          mcp.echo({ message: "three" }),
+          mcp.callTool({ name: "echo", arguments: { message: "one" } }),
+          mcp.callTool({ name: "echo", arguments: { message: "two" } }),
+          mcp.callTool({ name: "echo", arguments: { message: "three" } }),
         ]);
 
-        return results;
+        // Echo returns raw text, not JSON
+        return results.map(r => r.content[0]?.text);
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -503,18 +521,19 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcp();
+        const mcp = await integrations.getMcpClient("test-mcp");
 
-        try {
-          await mcp.throwError({ message: "Test error from tool" });
-          return { caught: false };
-        } catch (error) {
+        const result = await mcp.callTool({ name: "throwError", arguments: { message: "Test error from tool" } });
+        // The MCP SDK returns isError: true for tool errors
+        if (result.isError) {
+          const errorText = result.content[0]?.text || "Unknown error";
           return {
             caught: true,
-            message: error.message,
-            includesToolName: error.message.includes("throwError")
+            message: errorText,
+            isError: result.isError
           };
         }
+        return { caught: false };
       `;
 
       const { status, result } = await executeTypescript(code, payload);
@@ -522,7 +541,7 @@ describe("MCP Integration Tests", () => {
       expect(status).toBe(200);
       expect(result.success).toBe(true);
 
-      const data = result.result as { caught: boolean; message: string; includesToolName: boolean };
+      const data = result.result as { caught: boolean; message: string; isError: boolean };
       expect(data.caught).toBe(true);
       expect(data.message).toContain("Test error from tool");
     });
@@ -535,13 +554,17 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        const mcp = await integrations.getTestMcp();
+        const mcp = await integrations.getMcpClient("test-mcp");
 
         try {
-          await mcp.nonExistentTool({ foo: "bar" });
-          return { caught: false };
+          const result = await mcp.callTool({ name: "nonExistentTool", arguments: { foo: "bar" } });
+          // MCP SDK may return error in result instead of throwing
+          if (result.isError) {
+            return { isError: true, errorContent: result.content };
+          }
+          return { isError: false, result };
         } catch (error) {
-          return { caught: true, message: error.message };
+          return { threw: true, message: error.message };
         }
       `;
 
@@ -550,8 +573,9 @@ describe("MCP Integration Tests", () => {
       expect(status).toBe(200);
       expect(result.success).toBe(true);
 
-      const data = result.result as { caught: boolean; message: string };
-      expect(data.caught).toBe(true);
+      const data = result.result as { isError?: boolean; threw?: boolean; message?: string };
+      // Either the SDK throws or returns isError: true
+      expect(data.isError || data.threw).toBe(true);
     });
 
     it("should fail gracefully when MCP server is unreachable", async () => {
@@ -563,7 +587,7 @@ describe("MCP Integration Tests", () => {
 
       const code = `
         try {
-          const mcp = await integrations.getUnreachableMcp();
+          const mcp = await integrations.getMcpClient("unreachable-mcp");
           return { connected: true };
         } catch (error) {
           return { connected: false, error: error.message };
@@ -582,8 +606,8 @@ describe("MCP Integration Tests", () => {
     });
   });
 
-  describe("MCP Integration - Getter Name Generation", () => {
-    it("should generate correct getter name from integration name", async () => {
+  describe("MCP Integration - Client Access by Name", () => {
+    it("should access MCP client by integration name", async () => {
       const payload = createMcpIntegrationPayload({
         name: "my-cool-mcp-server",
         serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
@@ -591,17 +615,45 @@ describe("MCP Integration Tests", () => {
       });
 
       const code = `
-        // The getter name should be getMyCoolMcpServer based on the name
-        const mcp = await integrations.getMyCoolMcpServer();
-        const result = await mcp.echo({ message: "getter test" });
-        return result;
+        // Access MCP client by the exact integration name
+        const mcp = await integrations.getMcpClient("my-cool-mcp-server");
+        const result = await mcp.callTool({ name: "echo", arguments: { message: "name test" } });
+        // Echo returns raw text, not JSON
+        return result.content[0]?.text;
       `;
 
       const { status, result } = await executeTypescript(code, payload);
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
-      expect(result.result).toBe("getter test");
+      expect(result.result).toBe("name test");
+    });
+
+    it("should throw clear error for non-existent integration name", async () => {
+      const payload = createMcpIntegrationPayload({
+        name: "test-mcp",
+        serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
+        authStrategy: { type: "none" },
+      });
+
+      const code = `
+        try {
+          const mcp = await integrations.getMcpClient("wrong-name");
+          return { error: false };
+        } catch (error) {
+          return { error: true, message: error.message };
+        }
+      `;
+
+      const { status, result } = await executeTypescript(code, payload);
+
+      expect(status).toBe(200);
+      expect(result.success).toBe(true);
+
+      const data = result.result as { error: boolean; message: string };
+      expect(data.error).toBe(true);
+      expect(data.message).toContain("not found");
+      expect(data.message).toContain("test-mcp"); // Should list available names
     });
   });
 });

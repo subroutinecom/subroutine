@@ -7,7 +7,8 @@ import {
   type CalendarTokens,
 } from "./integrations/calendar/mod";
 import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
-import { createMcpClient, buildMcpToolProxy, toGetterName } from "./integrations/mcp/mod";
+import { createMcpClient } from "./integrations/mcp/mod";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { CalendarAPI } from "./integrations/calendar/types";
 import type { GmailAPI } from "./integrations/gmail/types";
 import type { SandboxIntegrationPayload } from "./types.ts";
@@ -99,134 +100,154 @@ const buildServerForIntegrations = async (
   integrations: SandboxIntegrationPayload[]
 ): Promise<RemoteProxyServer<object>> => {
   const server = new RemoteProxyServer<object>();
-  await Promise.all(
-    integrations.map(async (integration) => {
-      // Check if this is an MCP integration (identified by presence of mcpConfig)
-      if (integration.mcpConfig) {
-        const mcpConfig = integration.mcpConfig;
-        const getterName = toGetterName(integration.name);
 
+  // Store MCP clients by integration name for the getMcpClient getter
+  const mcpClients = new Map<string, Client>();
+  const mcpErrors = new Map<string, Error>();
+
+  // First, connect all MCP integrations
+  await Promise.all(
+    integrations
+      .filter((integration) => integration.mcpConfig)
+      .map(async (integration) => {
+        const mcpConfig = integration.mcpConfig!;
         try {
-          // Create MCP client and connect
           const client = await createMcpClient(mcpConfig, {
             clientName: `subroutine-${integration.name}`,
           });
+          mcpClients.set(integration.name, client);
 
-          // Build tool proxy
-          const mcpProxy = await buildMcpToolProxy(client);
-
-          // Register as singleton with derived getter name
-          server.registerSingleton(getterName, () => mcpProxy as unknown as object);
-
+          // Log available tools for debugging
+          const { tools } = await client.listTools();
           console.log(
-            `MCP integration '${integration.name}' registered as ${getterName}() with ${(await mcpProxy._listTools()).length} tools`
+            `MCP integration '${integration.name}' connected with ${tools.length} tools: ${tools.map((t) => t.name).join(", ")}`
           );
         } catch (error) {
-          // Register a getter that throws when called - this defers the error to user code
           const errorMessage = error instanceof Error ? error.message : String(error);
-          const connectionError = new Error(
-            `Failed to connect to MCP server '${integration.name}': ${errorMessage}`
+          mcpErrors.set(
+            integration.name,
+            new Error(`Failed to connect to MCP server '${integration.name}': ${errorMessage}`)
           );
-
-          server.registerSingleton(getterName, () => {
-            throw connectionError;
-          });
-
-          console.error(
-            `MCP integration '${integration.name}' failed to connect: ${errorMessage}. Getter ${getterName}() will throw when called.`
-          );
+          console.error(`MCP integration '${integration.name}' failed to connect: ${errorMessage}`);
         }
+      })
+  );
 
-        return;
+  // Register a single getMcpClient getter that returns MCP clients by name
+  if (mcpClients.size > 0 || mcpErrors.size > 0) {
+    server.register("getMcpClient", (name: unknown) => {
+      const integrationName = String(name);
+
+      // Check if there was a connection error
+      const connectionError = mcpErrors.get(integrationName);
+      if (connectionError) {
+        throw connectionError;
       }
 
-      // Handle traditional OAuth-based integrations
-      switch (integration.provider) {
-        case "gmail": {
-          if (!integration.account) {
-            throw new Error("Gmail integration requires account credentials");
-          }
-          const authConfig = integration.authConfig as {
-            clientId?: string;
-            clientSecret?: string;
-            redirectUri?: string;
-          };
-          if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.redirectUri) {
-            throw new Error("Gmail integration missing OAuth client configuration");
-          }
-
-          const config: GmailConfig = {
-            clientId: authConfig.clientId,
-            clientSecret: authConfig.clientSecret,
-            redirectUri: authConfig.redirectUri,
-          };
-
-          const tokens: GmailTokens = {
-            access_token: integration.account.credentials.accessToken,
-            refresh_token: integration.account.credentials.refreshToken,
-            token_type: integration.account.credentials.tokenType,
-            expiry_date: integration.account.credentials.expiresAt,
-            scope: integration.account.credentials.scope,
-          };
-
-          const gmail = createGmailClient(tokens, config);
-
-          server.registerSingleton("getGmail", () => gmail as unknown as object);
-          break;
-        }
-        case "google_calendar": {
-          if (!integration.account) {
-            throw new Error("Google Calendar integration requires account credentials");
-          }
-          const authConfig = integration.authConfig as {
-            clientId?: string;
-            clientSecret?: string;
-            redirectUri?: string;
-          };
-          if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.redirectUri) {
-            throw new Error("Google Calendar integration missing OAuth client configuration");
-          }
-
-          const config: CalendarConfig = {
-            clientId: authConfig.clientId,
-            clientSecret: authConfig.clientSecret,
-            redirectUri: authConfig.redirectUri,
-          };
-
-          const tokens: CalendarTokens = {
-            access_token: integration.account.credentials.accessToken,
-            refresh_token: integration.account.credentials.refreshToken,
-            token_type: integration.account.credentials.tokenType,
-            expiry_date: integration.account.credentials.expiresAt,
-            scope: integration.account.credentials.scope,
-          };
-
-          const calendar = createCalendarClient(tokens, config);
-
-          server.registerSingleton("getCalendar", () => calendar as unknown as object);
-          break;
-        }
-        case "mock_oauth": {
-          if (!integration.account) {
-            throw new Error("Mock OAuth integration requires credentials");
-          }
-          const viewerId = integration.account.accountIdentifier ?? integration.account.userId;
-          server.registerSingleton(
-            "getMockOAuth",
-            () =>
-              ({
-                ping: (message: string) => ({
-                  echo: message,
-                  viewerId,
-                }),
-              }) as unknown as object
-          );
-          break;
-        }
-        default:
-          throw new Error(`Unsupported integration provider: ${integration.provider}`);
+      // Get the client
+      const client = mcpClients.get(integrationName);
+      if (!client) {
+        const availableNames = [...mcpClients.keys()].join(", ") || "none";
+        throw new Error(
+          `MCP integration '${integrationName}' not found. Available: ${availableNames}`
+        );
       }
-    })
+
+      return client as unknown as object;
+    });
+  }
+
+  // Handle traditional OAuth-based integrations
+  await Promise.all(
+    integrations
+      .filter((integration) => !integration.mcpConfig)
+      .map(async (integration) => {
+        switch (integration.provider) {
+          case "gmail": {
+            if (!integration.account) {
+              throw new Error("Gmail integration requires account credentials");
+            }
+            const authConfig = integration.authConfig as {
+              clientId?: string;
+              clientSecret?: string;
+              redirectUri?: string;
+            };
+            if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.redirectUri) {
+              throw new Error("Gmail integration missing OAuth client configuration");
+            }
+
+            const config: GmailConfig = {
+              clientId: authConfig.clientId,
+              clientSecret: authConfig.clientSecret,
+              redirectUri: authConfig.redirectUri,
+            };
+
+            const tokens: GmailTokens = {
+              access_token: integration.account.credentials.accessToken,
+              refresh_token: integration.account.credentials.refreshToken,
+              token_type: integration.account.credentials.tokenType,
+              expiry_date: integration.account.credentials.expiresAt,
+              scope: integration.account.credentials.scope,
+            };
+
+            const gmail = createGmailClient(tokens, config);
+
+            server.registerSingleton("getGmail", () => gmail as unknown as object);
+            break;
+          }
+          case "google_calendar": {
+            if (!integration.account) {
+              throw new Error("Google Calendar integration requires account credentials");
+            }
+            const authConfig = integration.authConfig as {
+              clientId?: string;
+              clientSecret?: string;
+              redirectUri?: string;
+            };
+            if (!authConfig.clientId || !authConfig.clientSecret || !authConfig.redirectUri) {
+              throw new Error("Google Calendar integration missing OAuth client configuration");
+            }
+
+            const config: CalendarConfig = {
+              clientId: authConfig.clientId,
+              clientSecret: authConfig.clientSecret,
+              redirectUri: authConfig.redirectUri,
+            };
+
+            const tokens: CalendarTokens = {
+              access_token: integration.account.credentials.accessToken,
+              refresh_token: integration.account.credentials.refreshToken,
+              token_type: integration.account.credentials.tokenType,
+              expiry_date: integration.account.credentials.expiresAt,
+              scope: integration.account.credentials.scope,
+            };
+
+            const calendar = createCalendarClient(tokens, config);
+
+            server.registerSingleton("getCalendar", () => calendar as unknown as object);
+            break;
+          }
+          case "mock_oauth": {
+            if (!integration.account) {
+              throw new Error("Mock OAuth integration requires credentials");
+            }
+            const viewerId = integration.account.accountIdentifier ?? integration.account.userId;
+            server.registerSingleton(
+              "getMockOAuth",
+              () =>
+                ({
+                  ping: (message: string) => ({
+                    echo: message,
+                    viewerId,
+                  }),
+                }) as unknown as object
+            );
+            break;
+          }
+          default:
+            throw new Error(`Unsupported integration provider: ${integration.provider}`);
+        }
+      })
   );
 
   return server;
