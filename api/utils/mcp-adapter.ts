@@ -9,6 +9,7 @@ export class NodeResponseAdapter {
   private chunks: Uint8Array[] = [];
   private _writableEnded = false;
   private _headersSent = false;
+  private eventHandlers: Record<string, Array<(...args: unknown[]) => void>> = {};
 
   writeHead(
     statusCode: number,
@@ -91,6 +92,12 @@ export class NodeResponseAdapter {
     if (callback) {
       callback();
     }
+
+    // Emit 'close' to signal completion to listeners
+    const handlers = this.eventHandlers["close"] ?? [];
+    for (const handler of handlers) {
+      handler();
+    }
   }
 
   toResponse(): Response {
@@ -109,6 +116,21 @@ export class NodeResponseAdapter {
     });
   }
 
+  getBodyText(): string {
+    try {
+      const totalLength = this.chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const body = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of this.chunks) {
+        body.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return new TextDecoder().decode(body);
+    } catch (_e) {
+      return "";
+    }
+  }
+
   get writableEnded(): boolean {
     return this._writableEnded;
   }
@@ -123,5 +145,31 @@ export class NodeResponseAdapter {
 
   set statusCode(code: number) {
     this._statusCode = code;
+  }
+
+  // Minimal EventEmitter-like API expected by MCP SDK
+  on(event: string, handler: (...args: unknown[]) => void): this {
+    if (!this.eventHandlers[event]) {
+      this.eventHandlers[event] = [];
+    }
+    this.eventHandlers[event].push(handler);
+    return this;
+  }
+
+  once(event: string, handler: (...args: unknown[]) => void): this {
+    // For our usage, once behaves same as on; SDK typically listens for 'close'
+    return this.on(event, handler);
+  }
+
+  removeListener(event: string, handler: (...args: unknown[]) => void): this {
+    const arr = this.eventHandlers[event];
+    if (arr) {
+      this.eventHandlers[event] = arr.filter((h) => h !== handler);
+    }
+    return this;
+  }
+
+  flushHeaders(): void {
+    // No-op in fetch Response world; present for compatibility
   }
 }

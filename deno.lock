@@ -21,7 +21,7 @@
     "npm:@ai-sdk/anthropic@^2.0.49": "2.0.49_zod@3.25.76",
     "npm:@ai-sdk/google-vertex@^3.0.58": "3.0.58_zod@3.25.76",
     "npm:@ai-sdk/openai@^2.0.64": "2.0.64_zod@3.25.76",
-    "npm:@better-auth/cli@latest": "1.3.34_@babel+core@7.28.5_prisma@5.22.0_@prisma+client@5.22.0__prisma@5.22.0_@types+better-sqlite3@7.6.13_@types+react@19.2.2_better-sqlite3@12.4.1_kysely@0.28.8_pg@8.16.3_react@19.2.0",
+    "npm:@better-auth/cli@latest": "1.3.34_@babel+core@7.28.5_prisma@5.22.0_@prisma+client@5.22.0__prisma@5.22.0_@types+better-sqlite3@7.6.13_@types+react@18.3.27_better-sqlite3@12.4.1_kysely@0.28.8_pg@8.16.3_react@18.3.1",
     "npm:@cap.js/server@^4.0.3": "4.0.3",
     "npm:@cap.js/widget@~0.1.31": "0.1.31",
     "npm:@eslint/js@^9.39.1": "9.39.1",
@@ -36,20 +36,21 @@
     "npm:@hono/zod-openapi@~0.18.4": "0.18.4_hono@4.10.4_zod@3.25.76",
     "npm:@modelcontextprotocol/sdk@^1.21.0": "1.21.0_ajv@8.17.1_express@5.1.0_zod@3.25.76",
     "npm:@pothos/core@^4.10.0": "4.10.0_graphql@16.10.0",
-    "npm:@react-router/dev@*": "7.9.5_@react-router+serve@7.9.5__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__express@4.21.2__typescript@5.9.3__react@19.2.0__react-dom@19.2.0___react@19.2.0_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_typescript@5.9.3_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_@babel+core@7.28.5_react@19.2.0_react-dom@19.2.0__react@19.2.0_@types+node@24.2.0_yaml@2.8.1",
-    "npm:@react-router/dev@^7.9.2": "7.9.5_@react-router+serve@7.9.5__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__express@4.21.2__typescript@5.9.3__react@19.2.0__react-dom@19.2.0___react@19.2.0_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_typescript@5.9.3_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_@babel+core@7.28.5_react@19.2.0_react-dom@19.2.0__react@19.2.0_@types+node@24.2.0_yaml@2.8.1",
-    "npm:@react-router/node@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
-    "npm:@react-router/remix-routes-option-adapter@^7.9.5": "7.9.5_@react-router+dev@7.9.5__@react-router+serve@7.9.5___react-router@7.9.5____react@19.2.0____react-dom@19.2.0_____react@19.2.0___express@4.21.2___typescript@5.9.3___react@19.2.0___react-dom@19.2.0____react@19.2.0__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__typescript@5.9.3__vite@7.2.0___@types+node@24.2.0___yaml@2.8.1___picomatch@4.0.3__@babel+core@7.28.5__react@19.2.0__react-dom@19.2.0___react@19.2.0__@types+node@24.2.0__yaml@2.8.1_typescript@5.9.3_@react-router+serve@7.9.5__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__express@4.21.2__typescript@5.9.3__react@19.2.0__react-dom@19.2.0___react@19.2.0_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_react@19.2.0_react-dom@19.2.0__react@19.2.0_@types+node@24.2.0_yaml@2.8.1",
-    "npm:@react-router/serve@^7.9.2": "7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_express@4.21.2_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0",
+    "npm:@react-router/dev@*": "7.9.5_@react-router+serve@7.9.5__react-router@7.9.5___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.21.2__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_@babel+core@7.28.5_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.1",
+    "npm:@react-router/dev@^7.9.2": "7.9.5_@react-router+serve@7.9.5__react-router@7.9.5___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.21.2__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_@babel+core@7.28.5_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.1",
+    "npm:@react-router/node@^7.9.2": "7.9.5_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+    "npm:@react-router/remix-routes-option-adapter@^7.9.5": "7.9.5_@react-router+dev@7.9.5__@react-router+serve@7.9.5___react-router@7.9.5____react@18.3.1____react-dom@18.3.1_____react@18.3.1___express@4.21.2___typescript@5.9.3___react@18.3.1___react-dom@18.3.1____react@18.3.1__react-router@7.9.5___react@18.3.1___react-dom@18.3.1____react@18.3.1__typescript@5.9.3__vite@7.2.0___@types+node@24.2.0___yaml@2.8.1___picomatch@4.0.3__@babel+core@7.28.5__react@18.3.1__react-dom@18.3.1___react@18.3.1__@types+node@24.2.0__yaml@2.8.1_typescript@5.9.3_@react-router+serve@7.9.5__react-router@7.9.5___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.21.2__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.1",
+    "npm:@react-router/serve@^7.9.2": "7.9.5_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_express@4.21.2_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:@tailwindcss/vite@^4.1.13": "4.1.17_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_@types+node@24.2.0_yaml@2.8.1",
     "npm:@types/node@*": "24.2.0",
     "npm:@types/node@^24.2.0": "24.2.0",
-    "npm:@types/react-dom@^19.1.9": "19.2.2_@types+react@19.2.2",
+    "npm:@types/react-dom@^18.3.1": "18.3.7_@types+react@18.3.27",
+    "npm:@types/react-dom@^19.1.9": "19.2.2_@types+react@18.3.27",
+    "npm:@types/react@^18.3.12": "18.3.27",
     "npm:@types/react@^19.1.13": "19.2.2",
     "npm:@typescript-eslint/utils@^8.46.3": "8.46.3_eslint@9.39.1_typescript@5.9.3",
-    "npm:@uidotdev/usehooks@^2.4.1": "2.4.1_react@19.2.0_react-dom@19.2.0__react@19.2.0",
-    "npm:ai@^5.0.102": "5.0.102_zod@3.25.76",
-    "npm:ai@^5.0.89": "5.0.102_zod@3.25.76",
+    "npm:@uidotdev/usehooks@^2.4.1": "2.4.1_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+    "npm:ai@^5.0.89": "5.0.89_zod@3.25.76",
     "npm:arg@5": "5.0.2",
     "npm:bcrypt@6": "6.0.0",
     "npm:better-auth@1.3.31": "1.3.31_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1",
@@ -76,14 +77,17 @@
     "npm:js-yaml@^4.1.1": "4.1.1",
     "npm:kysely-codegen@0.19": "0.19.0_kysely@0.28.8_pg@8.16.3_typescript@5.9.3",
     "npm:kysely@~0.28.8": "0.28.8",
-    "npm:lucide-react@0.554": "0.554.0_react@19.2.0",
+    "npm:lucide-react@0.554": "0.554.0_react@18.3.1",
     "npm:nanoid@^5.1.6": "5.1.6",
     "npm:pg@^8.16.3": "8.16.3",
     "npm:prettier@3": "3.6.2",
     "npm:prettier@^3.6.2": "3.6.2",
-    "npm:react-dom@^19.1.1": "19.2.0_react@19.2.0",
-    "npm:react-hook-form@^7.66.0": "7.66.0_react@19.2.0",
-    "npm:react-router@^7.9.2": "7.9.5_react@19.2.0_react-dom@19.2.0__react@19.2.0",
+    "npm:react-dom@^18.3.1": "18.3.1_react@18.3.1",
+    "npm:react-dom@^19.1.1": "19.2.0_react@18.3.1",
+    "npm:react-hook-form@^7.66.0": "7.66.0_react@18.3.1",
+    "npm:react-router-dom@^6.28.0": "6.30.2_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+    "npm:react-router@^7.9.2": "7.9.5_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+    "npm:react@^18.3.1": "18.3.1",
     "npm:react@^19.1.1": "19.2.0",
     "npm:remix-flat-routes@~0.8.5": "0.8.5",
     "npm:shadcn@latest": "3.5.0_@babel+core@7.28.5_typescript@5.9.3_zod@3.25.76_@types+node@24.2.0",
@@ -94,7 +98,7 @@
     "npm:typescript-eslint@^8.46.3": "8.46.3_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.46.3__eslint@9.39.1__typescript@5.9.3",
     "npm:typescript@*": "5.9.3",
     "npm:typescript@^5.9.2": "5.9.3",
-    "npm:use-stick-to-bottom@^1.1.1": "1.1.1_react@19.2.0",
+    "npm:use-stick-to-bottom@^1.1.1": "1.1.1_react@18.3.1",
     "npm:vite-tsconfig-paths@^5.1.4": "5.1.4_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_typescript@5.9.3_@types+node@24.2.0_yaml@2.8.1",
     "npm:vite@*": "7.2.0_@types+node@24.2.0_yaml@2.8.1_picomatch@4.0.3",
     "npm:vite@^7.1.7": "7.2.0_@types+node@24.2.0_yaml@2.8.1_picomatch@4.0.3",
@@ -540,7 +544,7 @@
         "@babel/helper-validator-identifier"
       ]
     },
-    "@better-auth/cli@1.3.34_@babel+core@7.28.5_prisma@5.22.0_@prisma+client@5.22.0__prisma@5.22.0_@types+better-sqlite3@7.6.13_@types+react@19.2.2_better-sqlite3@12.4.1_kysely@0.28.8_pg@8.16.3_react@19.2.0": {
+    "@better-auth/cli@1.3.34_@babel+core@7.28.5_prisma@5.22.0_@prisma+client@5.22.0__prisma@5.22.0_@types+better-sqlite3@7.6.13_@types+react@18.3.27_better-sqlite3@12.4.1_kysely@0.28.8_pg@8.16.3_react@18.3.1": {
       "integrity": "sha512-CpYJtWg9wnXGjeSIajDi7uhB1J7wfcWfXkFSm9RgmielFiK4ahz2wy6zuee1Rz/ID/7lAfMptxSVeMC1nM+Udg==",
       "dependencies": [
         "@babel/core",
@@ -2011,7 +2015,7 @@
         "@prisma/debug"
       ]
     },
-    "@react-router/dev@7.9.5_@react-router+serve@7.9.5__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__express@4.21.2__typescript@5.9.3__react@19.2.0__react-dom@19.2.0___react@19.2.0_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_typescript@5.9.3_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_@babel+core@7.28.5_react@19.2.0_react-dom@19.2.0__react@19.2.0_@types+node@24.2.0_yaml@2.8.1": {
+    "@react-router/dev@7.9.5_@react-router+serve@7.9.5__react-router@7.9.5___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.21.2__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_@babel+core@7.28.5_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.1": {
       "integrity": "sha512-MkWI4zN7VbQ0tteuJtX5hmDINNS26IW236a8lM8+o1344xdnT/ZsBvcUh8AkzDdCRYEz1blgzgirpj0Wc1gmXg==",
       "dependencies": [
         "@babel/core",
@@ -2039,7 +2043,7 @@
         "picocolors",
         "prettier",
         "react-refresh",
-        "react-router",
+        "react-router@7.9.5_react@18.3.1_react-dom@18.3.1__react@18.3.1",
         "semver@7.7.3",
         "tinyglobby",
         "typescript",
@@ -2053,30 +2057,30 @@
       ],
       "bin": true
     },
-    "@react-router/express@7.9.5_express@4.21.2_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0": {
+    "@react-router/express@7.9.5_express@4.21.2_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
       "integrity": "sha512-Mg94Tw9JSaRuwkvIC6PaODRzsLs6mo70ppz5qdIK/G3iotSxsH08TDNdzot7CaXXevk/pIiD/+Tbn0H/asHsYA==",
       "dependencies": [
         "@react-router/node",
         "express@4.21.2",
-        "react-router",
+        "react-router@7.9.5_react@18.3.1_react-dom@18.3.1__react@18.3.1",
         "typescript"
       ],
       "optionalPeers": [
         "typescript"
       ]
     },
-    "@react-router/node@7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0": {
+    "@react-router/node@7.9.5_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
       "integrity": "sha512-3mDd32mXh3gEkG0cLPnUaoLkY1pApsTPqn7O1j+P8aLf997uYz5lYDjt33vtMhaotlRM0x+5JziAKtz/76YBpQ==",
       "dependencies": [
         "@mjackson/node-fetch-server",
-        "react-router",
+        "react-router@7.9.5_react@18.3.1_react-dom@18.3.1__react@18.3.1",
         "typescript"
       ],
       "optionalPeers": [
         "typescript"
       ]
     },
-    "@react-router/remix-routes-option-adapter@7.9.5_@react-router+dev@7.9.5__@react-router+serve@7.9.5___react-router@7.9.5____react@19.2.0____react-dom@19.2.0_____react@19.2.0___express@4.21.2___typescript@5.9.3___react@19.2.0___react-dom@19.2.0____react@19.2.0__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__typescript@5.9.3__vite@7.2.0___@types+node@24.2.0___yaml@2.8.1___picomatch@4.0.3__@babel+core@7.28.5__react@19.2.0__react-dom@19.2.0___react@19.2.0__@types+node@24.2.0__yaml@2.8.1_typescript@5.9.3_@react-router+serve@7.9.5__react-router@7.9.5___react@19.2.0___react-dom@19.2.0____react@19.2.0__express@4.21.2__typescript@5.9.3__react@19.2.0__react-dom@19.2.0___react@19.2.0_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_react@19.2.0_react-dom@19.2.0__react@19.2.0_@types+node@24.2.0_yaml@2.8.1": {
+    "@react-router/remix-routes-option-adapter@7.9.5_@react-router+dev@7.9.5__@react-router+serve@7.9.5___react-router@7.9.5____react@18.3.1____react-dom@18.3.1_____react@18.3.1___express@4.21.2___typescript@5.9.3___react@18.3.1___react-dom@18.3.1____react@18.3.1__react-router@7.9.5___react@18.3.1___react-dom@18.3.1____react@18.3.1__typescript@5.9.3__vite@7.2.0___@types+node@24.2.0___yaml@2.8.1___picomatch@4.0.3__@babel+core@7.28.5__react@18.3.1__react-dom@18.3.1___react@18.3.1__@types+node@24.2.0__yaml@2.8.1_typescript@5.9.3_@react-router+serve@7.9.5__react-router@7.9.5___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.21.2__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_vite@7.2.0__@types+node@24.2.0__yaml@2.8.1__picomatch@4.0.3_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.1": {
       "integrity": "sha512-rBQheBwS4kSbuLNFoc47tQiVuD3Ttsb/zbgVUMROxOpTDGAmx2QY71+52pC2zGkaS7QPUkLTjvOKHgb/ihEGww==",
       "dependencies": [
         "@react-router/dev",
@@ -2086,7 +2090,7 @@
         "typescript"
       ]
     },
-    "@react-router/serve@7.9.5_react-router@7.9.5__react@19.2.0__react-dom@19.2.0___react@19.2.0_express@4.21.2_typescript@5.9.3_react@19.2.0_react-dom@19.2.0__react@19.2.0": {
+    "@react-router/serve@7.9.5_react-router@7.9.5__react@18.3.1__react-dom@18.3.1___react@18.3.1_express@4.21.2_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
       "integrity": "sha512-sww8oDNqz8SgaXEQ3maqTuMlibCMpmWvLE0s5zyEyOQb1G99clYMcXceQ2HNU2jtXJkp+P5XI1CngpGpngyTnw==",
       "dependencies": [
         "@mjackson/node-fetch-server",
@@ -2096,13 +2100,16 @@
         "express@4.21.2",
         "get-port",
         "morgan",
-        "react-router",
+        "react-router@7.9.5_react@18.3.1_react-dom@18.3.1__react@18.3.1",
         "source-map-support"
       ],
       "bin": true
     },
     "@remix-run/node-fetch-server@0.9.0": {
       "integrity": "sha512-SoLMv7dbH+njWzXnOY6fI08dFMI5+/dQ+vY3n8RnnbdG7MdJEgiP28Xj/xWlnRnED/aB6SFw56Zop+LbmaaKqA=="
+    },
+    "@remix-run/router@1.23.1": {
+      "integrity": "sha512-vDbaOzF7yT2Qs4vO6XV1MHcJv+3dgR1sT+l3B8xxOVhUC336prMvqrvsLL/9Dnw2xr6Qhz4J0dmS0llNAbnUmQ=="
     },
     "@repeaterjs/repeater@3.0.6": {
       "integrity": "sha512-Javneu5lsuhwNCryN+pXH93VPQ8g0dBX7wItHFgYiwQmzE1sVdg5tWHiOgHywzL2W21XQopa7IwIEnNbmeUJYA=="
@@ -2388,10 +2395,26 @@
         "kleur@3.0.3"
       ]
     },
-    "@types/react-dom@19.2.2_@types+react@19.2.2": {
+    "@types/prop-types@15.7.15": {
+      "integrity": "sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw=="
+    },
+    "@types/react-dom@18.3.7_@types+react@18.3.27": {
+      "integrity": "sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==",
+      "dependencies": [
+        "@types/react@18.3.27"
+      ]
+    },
+    "@types/react-dom@19.2.2_@types+react@18.3.27": {
       "integrity": "sha512-9KQPoO6mZCi7jcIStSnlOWn2nEF3mNmyr3rIAsGnAbQKYbRLyqmeSc39EVgtxXVia+LMT8j3knZLAZAh+xLmrw==",
       "dependencies": [
-        "@types/react"
+        "@types/react@18.3.27"
+      ]
+    },
+    "@types/react@18.3.27": {
+      "integrity": "sha512-cisd7gxkzjBKU2GgdYrTdtQx1SORymWyaAFhaxQPK9bYO9ot3Y5OikQRvY0VYQtvwjeQnizCINJAenh/V7MK2w==",
+      "dependencies": [
+        "@types/prop-types",
+        "csstype"
       ]
     },
     "@types/react@19.2.2": {
@@ -2509,11 +2532,11 @@
         "eslint-visitor-keys@4.2.1"
       ]
     },
-    "@uidotdev/usehooks@2.4.1_react@19.2.0_react-dom@19.2.0__react@19.2.0": {
+    "@uidotdev/usehooks@2.4.1_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
       "integrity": "sha512-1I+RwWyS+kdv3Mv0Vmc+p0dPYH0DTRAo04HLyXReYBL9AeseDWUJyi4THuksBJcu9F0Pih69Ak150VDnqbVnXg==",
       "dependencies": [
-        "react",
-        "react-dom"
+        "react@18.3.1",
+        "react-dom@18.3.1_react@18.3.1"
       ]
     },
     "@vercel/oidc@3.0.5": {
@@ -3203,8 +3226,8 @@
         "which@2.0.2"
       ]
     },
-    "csstype@3.1.3": {
-      "integrity": "sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw=="
+    "csstype@3.2.3": {
+      "integrity": "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ=="
     },
     "daisyui@5.4.7": {
       "integrity": "sha512-2wYO61vTPCXk7xEBgnzLZAYoE0xS5IRLu/GSq0vORpB+cTrtubdx69NnA0loc0exvCY1s2fYL4lGZtFHe2ohNQ=="
@@ -3316,25 +3339,25 @@
     "dotenv@17.2.3": {
       "integrity": "sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w=="
     },
-    "drizzle-orm@0.33.0_@prisma+client@5.22.0__prisma@5.22.0_@types+better-sqlite3@7.6.13_@types+react@19.2.2_better-sqlite3@12.4.1_kysely@0.28.8_pg@8.16.3_react@19.2.0_prisma@5.22.0": {
+    "drizzle-orm@0.33.0_@prisma+client@5.22.0__prisma@5.22.0_@types+better-sqlite3@7.6.13_@types+react@18.3.27_better-sqlite3@12.4.1_kysely@0.28.8_pg@8.16.3_react@18.3.1_prisma@5.22.0": {
       "integrity": "sha512-SHy72R2Rdkz0LEq0PSG/IdvnT3nGiWuRk+2tXZQ90GVq/XQhpCzu/EFT3V2rox+w8MlkBQxifF8pCStNYnERfA==",
       "dependencies": [
         "@prisma/client",
         "@types/better-sqlite3",
-        "@types/react",
+        "@types/react@18.3.27",
         "better-sqlite3",
         "kysely",
         "pg",
-        "react"
+        "react@18.3.1"
       ],
       "optionalPeers": [
         "@prisma/client",
         "@types/better-sqlite3",
-        "@types/react",
+        "@types/react@18.3.27",
         "better-sqlite3",
         "kysely",
         "pg",
-        "react"
+        "react@18.3.1"
       ]
     },
     "dset@3.1.4": {
@@ -4736,10 +4759,10 @@
     "lru-cache@7.18.3": {
       "integrity": "sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA=="
     },
-    "lucide-react@0.554.0_react@19.2.0": {
+    "lucide-react@0.554.0_react@18.3.1": {
       "integrity": "sha512-St+z29uthEJVx0Is7ellNkgTEhaeSoA42I7JjOCBCrc5X6LYMGSv0P/2uS5HDLTExP5tpiqRD2PyUEOS6s9UXA==",
       "dependencies": [
-        "react"
+        "react@18.3.1"
       ]
     },
     "magic-string@0.30.21": {
@@ -5493,32 +5516,62 @@
       ],
       "bin": true
     },
-    "react-dom@19.2.0_react@19.2.0": {
-      "integrity": "sha512-UlbRu4cAiGaIewkPyiRGJk0imDN2T3JjieT6spoL2UeSf5od4n5LB/mQ4ejmxhCFT1tYe8IvaFulzynWovsEFQ==",
+    "react-dom@18.3.1_react@18.3.1": {
+      "integrity": "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==",
       "dependencies": [
-        "react",
-        "scheduler"
+        "loose-envify",
+        "react@18.3.1",
+        "scheduler@0.23.2"
       ]
     },
-    "react-hook-form@7.66.0_react@19.2.0": {
+    "react-dom@19.2.0_react@18.3.1": {
+      "integrity": "sha512-UlbRu4cAiGaIewkPyiRGJk0imDN2T3JjieT6spoL2UeSf5od4n5LB/mQ4ejmxhCFT1tYe8IvaFulzynWovsEFQ==",
+      "dependencies": [
+        "react@18.3.1",
+        "scheduler@0.27.0"
+      ]
+    },
+    "react-hook-form@7.66.0_react@18.3.1": {
       "integrity": "sha512-xXBqsWGKrY46ZqaHDo+ZUYiMUgi8suYu5kdrS20EG8KiL7VRQitEbNjm+UcrDYrNi1YLyfpmAeGjCZYXLT9YBw==",
       "dependencies": [
-        "react"
+        "react@18.3.1"
       ]
     },
     "react-refresh@0.14.2": {
       "integrity": "sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA=="
     },
-    "react-router@7.9.5_react@19.2.0_react-dom@19.2.0__react@19.2.0": {
+    "react-router-dom@6.30.2_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
+      "integrity": "sha512-l2OwHn3UUnEVUqc6/1VMmR1cvZryZ3j3NzapC2eUXO1dB0sYp5mvwdjiXhpUbRb21eFow3qSxpP8Yv6oAU824Q==",
+      "dependencies": [
+        "@remix-run/router",
+        "react@18.3.1",
+        "react-dom@18.3.1_react@18.3.1",
+        "react-router@6.30.2_react@18.3.1"
+      ]
+    },
+    "react-router@6.30.2_react@18.3.1": {
+      "integrity": "sha512-H2Bm38Zu1bm8KUE5NVWRMzuIyAV8p/JrOaBJAwVmp37AXG72+CZJlEBw6pdn9i5TBgLMhNDgijS4ZlblpHyWTA==",
+      "dependencies": [
+        "@remix-run/router",
+        "react@18.3.1"
+      ]
+    },
+    "react-router@7.9.5_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
       "integrity": "sha512-JmxqrnBZ6E9hWmf02jzNn9Jm3UqyeimyiwzD69NjxGySG6lIz/1LVPsoTCwN7NBX2XjCEa1LIX5EMz1j2b6u6A==",
       "dependencies": [
         "cookie@1.0.2",
-        "react",
-        "react-dom",
+        "react@18.3.1",
+        "react-dom@18.3.1_react@18.3.1",
         "set-cookie-parser"
       ],
       "optionalPeers": [
-        "react-dom"
+        "react-dom@18.3.1_react@18.3.1"
+      ]
+    },
+    "react@18.3.1": {
+      "integrity": "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==",
+      "dependencies": [
+        "loose-envify"
       ]
     },
     "react@19.2.0": {
@@ -5694,6 +5747,12 @@
     },
     "safer-buffer@2.1.2": {
       "integrity": "sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg=="
+    },
+    "scheduler@0.23.2": {
+      "integrity": "sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==",
+      "dependencies": [
+        "loose-envify"
+      ]
     },
     "scheduler@0.27.0": {
       "integrity": "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q=="
@@ -6327,10 +6386,10 @@
     "urlpattern-polyfill@10.1.0": {
       "integrity": "sha512-IGjKp/o0NL3Bso1PymYURCJxMPNAf/ILOpendP9f5B6e1rTJgdgiOvgfoT8VxCAdY+Wisb9uhGaJJf3yZ2V9nw=="
     },
-    "use-stick-to-bottom@1.1.1_react@19.2.0": {
+    "use-stick-to-bottom@1.1.1_react@18.3.1": {
       "integrity": "sha512-JkDp0b0tSmv7HQOOpL1hT7t7QaoUBXkq045WWWOFDTlLGRzgIIyW7vyzOIJzY7L2XVIG7j1yUxeDj2LHm9Vwng==",
       "dependencies": [
-        "react"
+        "react@18.3.1"
       ]
     },
     "util-deprecate@1.0.2": {
@@ -6623,6 +6682,8 @@
           "npm:@modelcontextprotocol/sdk@^1.21.0",
           "npm:@pothos/core@^4.10.0",
           "npm:@types/node@*",
+          "npm:@types/react-dom@^18.3.1",
+          "npm:@types/react@^18.3.12",
           "npm:ai@^5.0.89",
           "npm:bcrypt@6",
           "npm:better-auth@1.3.31",
@@ -6634,7 +6695,9 @@
           "npm:kysely@~0.28.8",
           "npm:nanoid@^5.1.6",
           "npm:pg@^8.16.3",
-          "npm:ts-morph@26",
+          "npm:react-dom@^18.3.1",
+          "npm:react-router-dom@^6.28.0",
+          "npm:react@^18.3.1",
           "npm:yaml@^2.8.1",
           "npm:zod@^3.25.76"
         ]
