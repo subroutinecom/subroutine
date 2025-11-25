@@ -22,6 +22,7 @@ export type IntegrationFormData = {
   authStrategyType: "none" | "api_key" | "bearer_passthrough" | "custom_headers";
   apiKey: string;
   apiKeyHeaderName: string;
+  apiKeyIsViewerScoped: boolean;
   customHeaders: string;
 };
 

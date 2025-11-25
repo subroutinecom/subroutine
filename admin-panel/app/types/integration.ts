@@ -3,7 +3,7 @@ export type IntegrationProvider = "gmail" | "github" | "mock_oauth" | "mcp";
 // MCP Auth Types
 export type McpAuthStrategy =
   | { type: "none" }
-  | { type: "api_key"; headerName?: string }
+  | { type: "api_key"; headerName?: string; viewerScoped?: boolean }
   | { type: "bearer_passthrough" }
   | { type: "custom_headers"; headers: Record<string, string> };
 

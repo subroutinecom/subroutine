@@ -21,6 +21,7 @@ interface McpFormFieldsProps {
   register: UseFormRegister<IntegrationFormData>;
   errors: FieldErrors<IntegrationFormData>;
   watchedAuthStrategy: McpAuthStrategyType;
+  watchedApiKeyIsViewerScoped?: boolean;
   serverUrl?: string;
   onProbeServer?: () => void;
   isProbing?: boolean;
@@ -33,6 +34,7 @@ export const McpFormFields = ({
   register,
   errors,
   watchedAuthStrategy,
+  watchedApiKeyIsViewerScoped,
   serverUrl,
   onProbeServer,
   isProbing,
@@ -321,24 +323,65 @@ export const McpFormFields = ({
 
       {watchedAuthStrategy === "api_key" && (
         <>
+          {/* Viewer-scoped toggle */}
           <div className="space-y-3">
-            <label htmlFor="apiKey" className="block">
-              <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
-                API Key
-              </span>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                {...register("apiKeyIsViewerScoped")}
+                className="checkbox checkbox-primary mt-1"
+              />
+              <div>
+                <span className="font-medium text-base-content">
+                  Personal Access Token (viewer-scoped)
+                </span>
+                <p className="text-sm text-base-content/60 mt-1">
+                  Each user will provide their own token when connecting their account
+                </p>
+              </div>
             </label>
-            <input
-              id="apiKey"
-              type="password"
-              {...register("apiKey")}
-              placeholder="Your API key"
-              className="input input-bordered w-full font-mono text-sm"
-            />
-            <p className="text-sm text-warning flex items-center gap-2">
-              <span className="inline-block w-1 h-1 rounded-full bg-warning"></span>
-              This will be stored encrypted
-            </p>
           </div>
+
+          {/* Org-level API key explanation and field */}
+          {!watchedApiKeyIsViewerScoped && (
+            <>
+              <div className="alert bg-base-200 border-base-300">
+                <span className="text-sm">
+                  This API key will be used for all requests and is shared across all users in your
+                  organization. Use this for service accounts or application-level authentication.
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <label htmlFor="apiKey" className="block">
+                  <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
+                    API Key
+                  </span>
+                </label>
+                <input
+                  id="apiKey"
+                  type="password"
+                  {...register("apiKey")}
+                  placeholder="Your API key"
+                  className="input input-bordered w-full font-mono text-sm"
+                />
+                <p className="text-sm text-warning flex items-center gap-2">
+                  <span className="inline-block w-1 h-1 rounded-full bg-warning"></span>
+                  This will be stored encrypted
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Viewer-scoped PAT explanation */}
+          {watchedApiKeyIsViewerScoped && (
+            <div className="alert alert-info">
+              <span className="text-sm">
+                Users will be prompted to enter their Personal Access Token when they connect their
+                account to this integration. No token is stored at the integration level.
+              </span>
+            </div>
+          )}
 
           <div className="space-y-3">
             <label htmlFor="apiKeyHeaderName" className="block">
@@ -354,7 +397,7 @@ export const McpFormFields = ({
               className="input input-bordered w-full font-mono text-sm"
             />
             <p className="text-sm text-base-content/60">
-              Custom header name for API key. Defaults to Authorization with Bearer prefix.
+              Custom header name for the token. Defaults to Authorization with Bearer prefix.
             </p>
           </div>
         </>

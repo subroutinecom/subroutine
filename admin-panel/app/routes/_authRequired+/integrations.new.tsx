@@ -1,24 +1,20 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
-import { useForm } from "react-hook-form";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
-import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
-import type {
-  IntegrationProvider,
-  IntegrationProviderDefinition,
-  McpAuthStrategy,
-} from "~/types/integration";
+import type { IntegrationProviderDefinition } from "~/types/integration";
 import {
   type IntegrationFormData,
+  buildIntegrationConfig,
   McpFormFields,
   OAuthFormFields,
   ProviderSelector,
+  useIntegrationForm,
+  useMcpDiscovery,
 } from "~/components/integrations";
-import type { McpOAuthDiscoveryResult } from "~/components/integrations/McpFormFields";
 
 export function meta() {
   return [
@@ -65,23 +61,6 @@ const CREATE_INTEGRATION_MUTATION = gql`
   }
 `;
 
-const DISCOVER_MCP_OAUTH_QUERY = gql`
-  query DiscoverMcpOAuth($serverUrl: String!) {
-    discoverMcpOAuth(serverUrl: $serverUrl) {
-      success
-      serverName
-      authorizationServer
-      authorizationEndpoint
-      tokenEndpoint
-      registrationEndpoint
-      scopesSupported
-      pkceSupported
-      dynamicRegistrationSupported
-      error
-    }
-  }
-`;
-
 export const clientLoader = async () => {
   const data = await graphqlClient.request<{
     integrationProviders: IntegrationProviderDefinition[];
@@ -89,165 +68,48 @@ export const clientLoader = async () => {
   return { providerDefinitions: data.integrationProviders ?? [] };
 };
 
-const DEFAULT_REDIRECT_BASE = "http://localhost:3002";
-
 export default function NewIntegrationPage() {
   const navigate = useNavigate();
-  const { activeOrganization: _activeOrganization } = useAuth();
   const { providerDefinitions } = useLoaderData<typeof clientLoader>();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [isProbing, setIsProbing] = useState(false);
-  const [discoveryResult, setDiscoveryResult] = useState<McpOAuthDiscoveryResult | null>(null);
 
-  const getProviderDefinition = useCallback(
-    (id: IntegrationProvider) => providerDefinitions.find((provider) => provider.id === id),
-    [providerDefinitions]
-  );
+  // MCP discovery hook
+  const { isProbing, discoveryResult, probeServer, clearDiscoveryResult } = useMcpDiscovery();
 
-  const initialProviderId = useMemo<IntegrationProvider>(() => {
-    return (providerDefinitions[0]?.id as IntegrationProvider) ?? "gmail";
-  }, [providerDefinitions]);
+  // Form management hook
+  const {
+    form,
+    watchedAuthStrategy,
+    watchedServerUrl,
+    watchedRedirectUri,
+    watchedApiKeyIsViewerScoped,
+    isMcpProvider,
+    getProviderDefinition,
+    handleSelectAuthMethod,
+    applyDiscoveryResult,
+  } = useIntegrationForm({
+    providerDefinitions,
+    discoveryResult,
+    onProviderChange: clearDiscoveryResult,
+  });
 
-  const buildDefaultRedirectUri = useCallback((definition?: IntegrationProviderDefinition) => {
-    const redirectPath = definition?.oauthConfig?.defaultRedirectPath ?? "/api/oauth/callback";
-    if (redirectPath.startsWith("http://") || redirectPath.startsWith("https://")) {
-      return redirectPath;
-    }
-    return `${DEFAULT_REDIRECT_BASE}${redirectPath}`;
-  }, []);
-
-  const initialDefinition = getProviderDefinition(initialProviderId);
-  const initialScopes = initialDefinition?.oauthConfig?.defaultScopes ?? [];
-  const initialRedirectUri = buildDefaultRedirectUri(initialDefinition);
-
-  // Form setup
   const {
     register,
     handleSubmit,
     control,
-    setValue,
-    watch,
     formState: { errors, isSubmitting },
-  } = useForm<IntegrationFormData>({
-    defaultValues: {
-      provider: initialProviderId,
-      name: "",
+  } = form;
 
-      clientId: "",
-      clientSecret: "",
-      scopes: initialScopes.join(", "),
-      redirectUri: initialRedirectUri,
-      oauthAuthUrl: "",
-      oauthTokenUrl: "",
-
-      serverUrl: "",
-      transport: "streamable-http",
-      authStrategyType: "none",
-      apiKey: "",
-      apiKeyHeaderName: "",
-      customHeaders: "",
-    },
-  });
-
-  // Watch form values for conditional rendering
-  const watchedProvider = watch("provider");
-  const watchedAuthStrategy = watch("authStrategyType");
-  const watchedServerUrl = watch("serverUrl");
-  const watchedRedirectUri = watch("redirectUri");
-
-  const currentDefinition = getProviderDefinition(watchedProvider);
-  const isMcpProvider = currentDefinition?.authType === "mcp";
-
-  // Probe MCP server for OAuth discovery
-  const handleProbeServer = useCallback(async () => {
-    const serverUrl = watchedServerUrl?.trim();
-    if (!serverUrl) return;
-
-    setIsProbing(true);
-    setDiscoveryResult(null);
+  // Handle probe server
+  const handleProbeServer = async () => {
     setServerError(null);
-
-    try {
-      const data = await graphqlClient.request<{
-        discoverMcpOAuth: McpOAuthDiscoveryResult;
-      }>(DISCOVER_MCP_OAUTH_QUERY, { serverUrl });
-
-      const result = data.discoverMcpOAuth;
-      setDiscoveryResult(result);
-
-      // Only auto-fill OAuth fields if user has already selected bearer_passthrough
-      // Don't automatically switch auth strategy - let user choose
-      if (result.success && watchedAuthStrategy === "bearer_passthrough") {
-        if (result.authorizationEndpoint) {
-          setValue("oauthAuthUrl", result.authorizationEndpoint);
-        }
-        if (result.tokenEndpoint) {
-          setValue("oauthTokenUrl", result.tokenEndpoint);
-        }
-        if (result.scopesSupported && result.scopesSupported.length > 0) {
-          setValue("scopes", result.scopesSupported.join(", "));
-        }
-      }
-    } catch (err) {
-      setDiscoveryResult({
-        success: false,
-        error: err instanceof Error ? err.message : "Failed to probe server",
-      });
-    } finally {
-      setIsProbing(false);
+    const result = await probeServer(watchedServerUrl);
+    if (result) {
+      applyDiscoveryResult(result);
     }
-  }, [watchedServerUrl, watchedAuthStrategy, setValue]);
+  };
 
-  const previousProviderRef = useRef<IntegrationProvider>(initialProviderId);
-
-  useEffect(() => {
-    if (watchedProvider === previousProviderRef.current) {
-      return;
-    }
-    previousProviderRef.current = watchedProvider;
-
-    // Clear discovery result on provider change
-    setDiscoveryResult(null);
-
-    const definition = getProviderDefinition(watchedProvider);
-    if (definition?.authType === "mcp") {
-      setValue("serverUrl", "");
-      setValue("transport", "streamable-http");
-      setValue("authStrategyType", "none");
-      setValue("apiKey", "");
-      setValue("apiKeyHeaderName", "");
-      setValue("customHeaders", "");
-      setValue("oauthAuthUrl", "");
-      setValue("oauthTokenUrl", "");
-    } else {
-      setValue("scopes", (definition?.oauthConfig?.defaultScopes ?? []).join(", "));
-      setValue("redirectUri", buildDefaultRedirectUri(definition));
-    }
-  }, [watchedProvider, setValue, getProviderDefinition, buildDefaultRedirectUri]);
-
-  // Auto-fill OAuth fields when user switches to bearer_passthrough after probing
-  useEffect(() => {
-    if (watchedAuthStrategy === "bearer_passthrough" && discoveryResult?.success) {
-      if (discoveryResult.authorizationEndpoint) {
-        setValue("oauthAuthUrl", discoveryResult.authorizationEndpoint);
-      }
-      if (discoveryResult.tokenEndpoint) {
-        setValue("oauthTokenUrl", discoveryResult.tokenEndpoint);
-      }
-      if (discoveryResult.scopesSupported && discoveryResult.scopesSupported.length > 0) {
-        setValue("scopes", discoveryResult.scopesSupported.join(", "));
-      }
-    }
-  }, [watchedAuthStrategy, discoveryResult, setValue]);
-
-  // Handle auth method selection from discovery panel cards
-  const handleSelectAuthMethod = useCallback(
-    (method: "none" | "api_key" | "bearer_passthrough" | "custom_headers") => {
-      setValue("authStrategyType", method);
-    },
-    [setValue]
-  );
-
+  // Handle form submission
   const onSubmit = async (data: IntegrationFormData) => {
     setServerError(null);
 
@@ -257,169 +119,20 @@ export default function NewIntegrationPage() {
       return;
     }
 
+    // Build the config using the utility
+    const result = buildIntegrationConfig(data, definition);
+    if (!result.success) {
+      setServerError(result.error);
+      return;
+    }
+
     try {
-      let authConfig: string;
-
-      if (definition.authType === "mcp") {
-        // Validate MCP fields
-        if (!data.serverUrl.trim()) {
-          setServerError("Server URL is required");
-          return;
-        }
-
-        try {
-          new URL(data.serverUrl.trim());
-        } catch {
-          setServerError("Invalid server URL");
-          return;
-        }
-
-        // Build auth strategy
-        let authStrategy: McpAuthStrategy;
-        let oauthConfig:
-          | {
-              clientId: string;
-              clientSecret: string;
-              authUrl: string;
-              tokenUrl: string;
-              redirectUri: string;
-              scopes: string[];
-            }
-          | undefined;
-
-        switch (data.authStrategyType) {
-          case "none":
-            authStrategy = { type: "none" };
-            break;
-          case "api_key":
-            if (!data.apiKey.trim()) {
-              setServerError("API key is required for API Key authentication");
-              return;
-            }
-            authStrategy = {
-              type: "api_key",
-              ...(data.apiKeyHeaderName.trim() && { headerName: data.apiKeyHeaderName.trim() }),
-            };
-            break;
-          case "bearer_passthrough": {
-            authStrategy = { type: "bearer_passthrough" };
-
-            // Validate OAuth config for bearer_passthrough
-            if (!data.oauthAuthUrl.trim()) {
-              setServerError("OAuth Authorization URL is required for Bearer Passthrough");
-              return;
-            }
-            if (!data.oauthTokenUrl.trim()) {
-              setServerError("OAuth Token URL is required for Bearer Passthrough");
-              return;
-            }
-            if (!data.clientId.trim()) {
-              setServerError("OAuth Client ID is required for Bearer Passthrough");
-              return;
-            }
-            if (!data.clientSecret.trim()) {
-              setServerError("OAuth Client Secret is required for Bearer Passthrough");
-              return;
-            }
-            if (!data.redirectUri.trim()) {
-              setServerError("OAuth Redirect URI is required for Bearer Passthrough");
-              return;
-            }
-
-            // Validate URLs
-            try {
-              new URL(data.oauthAuthUrl.trim());
-            } catch {
-              setServerError("Invalid OAuth Authorization URL");
-              return;
-            }
-            try {
-              new URL(data.oauthTokenUrl.trim());
-            } catch {
-              setServerError("Invalid OAuth Token URL");
-              return;
-            }
-
-            const scopeArray = data.scopes
-              .split(",")
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0);
-
-            if (scopeArray.length === 0) {
-              setServerError("At least one OAuth scope is required for Bearer Passthrough");
-              return;
-            }
-
-            oauthConfig = {
-              clientId: data.clientId.trim(),
-              clientSecret: data.clientSecret.trim(),
-              authUrl: data.oauthAuthUrl.trim(),
-              tokenUrl: data.oauthTokenUrl.trim(),
-              redirectUri: data.redirectUri.trim(),
-              scopes: scopeArray,
-            };
-            break;
-          }
-          case "custom_headers":
-            try {
-              const headers = data.customHeaders.trim()
-                ? JSON.parse(data.customHeaders.trim())
-                : {};
-              if (Object.keys(headers).length === 0) {
-                setServerError("Custom headers must have at least one header");
-                return;
-              }
-              authStrategy = { type: "custom_headers", headers };
-            } catch {
-              setServerError("Custom headers must be valid JSON");
-              return;
-            }
-            break;
-          default:
-            authStrategy = { type: "none" };
-        }
-
-        authConfig = JSON.stringify({
-          type: "mcp" as const,
-          serverUrl: data.serverUrl.trim(),
-          transport: data.transport,
-          authStrategy,
-          ...(data.authStrategyType === "api_key" &&
-            data.apiKey.trim() && { apiKey: data.apiKey.trim() }),
-          ...(oauthConfig && { oauthConfig }),
-        });
-      } else if (definition.authType === "oauth2" && definition.oauthConfig) {
-        // Validate OAuth fields
-        const scopeArray = data.scopes
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
-
-        if (scopeArray.length === 0) {
-          setServerError("At least one scope is required");
-          return;
-        }
-
-        authConfig = JSON.stringify({
-          type: "oauth2" as const,
-          clientId: data.clientId.trim(),
-          clientSecret: data.clientSecret.trim(),
-          scopes: scopeArray,
-          authUrl: definition.oauthConfig.authUrl,
-          tokenUrl: definition.oauthConfig.tokenUrl,
-          redirectUri: data.redirectUri.trim(),
-        });
-      } else {
-        setServerError("Selected provider is not configured properly");
-        return;
-      }
-
       await graphqlClient.request<{
         createIntegration: { id: string; provider: string; name: string };
       }>(CREATE_INTEGRATION_MUTATION, {
         provider: data.provider,
         name: data.name.trim(),
-        authConfig,
+        authConfig: result.config,
       });
 
       navigate("/integrations");
@@ -499,6 +212,7 @@ export default function NewIntegrationPage() {
               register={register}
               errors={errors}
               watchedAuthStrategy={watchedAuthStrategy}
+              watchedApiKeyIsViewerScoped={watchedApiKeyIsViewerScoped}
               serverUrl={watchedServerUrl}
               onProbeServer={handleProbeServer}
               isProbing={isProbing}
