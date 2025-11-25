@@ -2,11 +2,12 @@ import type { LanguageModel } from "ai";
 import { streamText } from "ai";
 import { z } from "zod";
 import type { CodeGenerationResult } from "./types";
-import { CODE_GENERATION_USER_PROMPT, SYSTEM_PROMPT } from "./prompts";
+import { CODE_GENERATION_USER_PROMPT, SYSTEM_PROMPT, type McpIntegrationInfo } from "./prompts";
 
 type GenerateCodeOptions = {
   needsImmediateInputs?: boolean;
   integrations?: string[];
+  mcpIntegrations?: McpIntegrationInfo[];
 };
 
 const validateCode = (code: string): { valid: boolean; errors: string[] } => {
@@ -75,7 +76,10 @@ export const generateCode = async (
 
     const result = await streamText({
       model,
-      system: SYSTEM_PROMPT(options?.integrations ?? []),
+      system: SYSTEM_PROMPT({
+        integrations: options?.integrations ?? [],
+        mcpIntegrations: options?.mcpIntegrations ?? [],
+      }),
       prompt: CODE_GENERATION_USER_PROMPT(request, {
         needsImmediateInputs: options?.needsImmediateInputs ?? false,
       }),

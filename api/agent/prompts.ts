@@ -64,14 +64,29 @@ const getMcpIntegrationDocs = (mcpIntegrations: McpIntegrationInfo[]): string =>
   if (mcpIntegrations.length === 0) return "";
 
   const validNames = mcpIntegrations.map((mcp) => `"${mcp.name}"`).join(", ");
+  const exampleName = mcpIntegrations[0]?.name || "my-mcp-server";
+  const exampleTool = mcpIntegrations[0]?.tools[0]?.name || "some_tool";
 
   const mcpDocs = mcpIntegrations
     .map((mcp) => {
+      if (mcp.tools.length === 0) {
+        return `   - "${mcp.name}": (tools available - use client.listTools() to discover)`;
+      }
+
       const toolsList = mcp.tools
         .map((tool) => {
           let toolDoc = `      - ${tool.name}`;
           if (tool.description) {
             toolDoc += `: ${tool.description}`;
+          }
+          if (tool.inputSchema) {
+            const props = (tool.inputSchema as { properties?: Record<string, unknown> }).properties;
+            if (props) {
+              const params = Object.keys(props).join(", ");
+              if (params) {
+                toolDoc += ` (params: ${params})`;
+              }
+            }
           }
           return toolDoc;
         })
@@ -84,18 +99,38 @@ ${toolsList}`;
 
   return `
 MCP INTEGRATIONS (REAL EXTERNAL ACCESS):
-You have access to MCP (Model Context Protocol) servers via integrations.getMcpClient(name).
-These integrations connect to REAL external services - they are NOT mocked.
+CRITICAL: "integrations" is a GLOBAL object - it is NOT part of ctx!
+You access MCP servers via: integrations.getMcpClient(name)
 
-CRITICAL:
-- MCP tools make REAL API calls to external services (GitHub, Slack, etc.)
-- DO NOT mock or simulate data - actually call the MCP tools to get real results
-- The sandbox proxies these calls securely - you have real external access through MCP
+These integrations connect to REAL external services - they are NOT mocked.
+MCP tools make REAL API calls to external services (GitHub, Slack, etc.)
+DO NOT mock or simulate data - actually call the MCP tools to get real results.
+The sandbox proxies these calls securely - you have real external access through MCP.
 
 IMPORTANT: Only the following MCP integration names are valid: ${validNames}
 Using any other name will result in an error at runtime.
 
-Type Declaration:
+HOW TO USE MCP INTEGRATIONS:
+1. Get the MCP client: const client = await integrations.getMcpClient("${exampleName}");
+2. Call a tool using callTool(): const result = await client.callTool({ name: "toolName", arguments: { ... } });
+3. Read the result: result.content[0].text contains the response (often JSON string)
+
+WRONG - DO NOT DO THIS:
+- ctx.integrations... // WRONG! integrations is NOT in ctx. ctx is just Record<string, unknown>
+- interface Context { integrations: {...} } // WRONG! Never put integrations in Context type
+- integrations.github.list_repos() // WRONG: no direct method calls, use getMcpClient + callTool
+- integrations.getGithub().list_repos() // WRONG: no magic getters, use getMcpClient("github")
+
+CORRECT PATTERN:
+const client = await integrations.getMcpClient("${exampleName}");
+const result = await client.callTool({ name: "${exampleTool}", arguments: { /* params */ } });
+const data = JSON.parse(result.content[0].text || "{}"); // Parse if JSON response
+
+Available MCP integrations and their tools:
+${mcpDocs}
+
+COMPLETE EXAMPLE with MCP integration:
+
 declare const integrations: {
   getMcpClient(name: string): Promise<{
     listTools(): Promise<{ tools: Array<{ name: string; description?: string; inputSchema: object }> }>;
@@ -106,22 +141,32 @@ declare const integrations: {
   }>;
 };
 
-Available MCP integrations and their tools:
-${mcpDocs}
+// IMPORTANT: Context is just an empty record. Do NOT add integrations to Context!
+type Context = Record<string, unknown>;
+type Inputs = { /* your inputs */ };
+type Outputs = { /* your outputs */ };
 
-Example using MCP integration:
-// Get the MCP client - this connects to a REAL external service
-const client = await integrations.getMcpClient("${mcpIntegrations[0]?.name || "my-mcp-server"}");
+export async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {
+  // integrations is a GLOBAL variable (declared above), NOT part of ctx!
+  const client = await integrations.getMcpClient("${exampleName}");
 
-// Call a tool - this makes a REAL API call, returns REAL data
-const result = await client.callTool({
-  name: "toolName",
-  arguments: { param1: "value1", param2: 123 }
-});
+  // Call a tool using callTool() method
+  const result = await client.callTool({
+    name: "${exampleTool}",
+    arguments: { /* tool parameters */ }
+  });
 
-// The result contains content blocks with REAL data from the external service
-// For text results: result.content[0].text
-// Check result.isError for error responses
+  // Check for errors
+  if (result.isError) {
+    throw new Error(result.content[0]?.text || "MCP tool call failed");
+  }
+
+  // Parse the response (MCP tools return content array with text)
+  const responseText = result.content[0]?.text || "{}";
+  const data = JSON.parse(responseText);
+
+  return { /* map data to your Outputs type */ };
+}
 `;
 };
 
