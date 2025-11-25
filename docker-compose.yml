@@ -23,8 +23,6 @@ services:
       target: dev
     ports:
       - "3000:80"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     volumes:
       - ./sandbox:/app/sandbox
       - ./eslint:/app/eslint
