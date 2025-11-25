@@ -159,9 +159,11 @@ OAuthIntegrationConfigType.implement({
 });
 
 // MCP Auth Strategy Type - serialized as JSON string for flexibility
-const McpAuthStrategyType = builder.objectRef<{ type: string; headerName?: string; headers?: Record<string, string> }>(
-  "McpAuthStrategy"
-);
+const McpAuthStrategyType = builder.objectRef<{
+  type: string;
+  headerName?: string;
+  headers?: Record<string, string>;
+}>("McpAuthStrategy");
 
 McpAuthStrategyType.implement({
   fields: (t) => ({

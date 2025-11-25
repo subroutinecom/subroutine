@@ -60,9 +60,16 @@ type IntegrationProviderDefinition {
   authType: String
   description: String
   id: String
+  mcpConfig: IntegrationProviderMcpConfig
   name: String
   oauthConfig: IntegrationProviderOAuthConfig
   viewerScoped: Boolean
+}
+
+type IntegrationProviderMcpConfig {
+  authStrategy: McpAuthStrategy
+  serverUrl: String
+  transport: String
 }
 
 type IntegrationProviderOAuthConfig {
@@ -71,6 +78,12 @@ type IntegrationProviderOAuthConfig {
   defaultScopes: [String!]
   requiredScopes: [String!]
   tokenUrl: String
+}
+
+type McpAuthStrategy {
+  headerName: String
+  headers: String
+  type: String
 }
 
 type Mutation {

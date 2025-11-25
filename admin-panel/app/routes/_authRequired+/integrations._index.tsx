@@ -214,7 +214,10 @@ export default function IntegrationsPage() {
                           </code>
                           <div className="flex gap-1.5 flex-wrap">
                             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300 capitalize">
-                              {(integration.authConfig as McpAuthConfig).authStrategy.type.replace("_", " ")}
+                              {(integration.authConfig as McpAuthConfig).authStrategy.type.replace(
+                                "_",
+                                " "
+                              )}
                             </span>
                           </div>
                         </div>
@@ -224,17 +227,20 @@ export default function IntegrationsPage() {
                             {(integration.authConfig as OAuth2AuthConfig).clientId}
                           </code>
                           <div className="flex gap-1.5 flex-wrap max-w-xs">
-                            {(integration.authConfig as OAuth2AuthConfig).scopes.slice(0, 3).map((scope: string) => (
-                              <span
-                                key={scope}
-                                className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300"
-                              >
-                                {scope}
-                              </span>
-                            ))}
+                            {(integration.authConfig as OAuth2AuthConfig).scopes
+                              .slice(0, 3)
+                              .map((scope: string) => (
+                                <span
+                                  key={scope}
+                                  className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300"
+                                >
+                                  {scope}
+                                </span>
+                              ))}
                             {(integration.authConfig as OAuth2AuthConfig).scopes.length > 3 && (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/60 border border-base-300">
-                                +{(integration.authConfig as OAuth2AuthConfig).scopes.length - 3} more
+                                +{(integration.authConfig as OAuth2AuthConfig).scopes.length - 3}{" "}
+                                more
                               </span>
                             )}
                           </div>

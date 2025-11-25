@@ -267,7 +267,10 @@ export default function IntegrationDetailPage() {
                   <label className="text-sm text-base-content/70">Authentication</label>
                   <div className="mt-1">
                     <span className="badge badge-ghost capitalize">
-                      {(integration.authConfig as McpAuthConfig).authStrategy.type.replace("_", " ")}
+                      {(integration.authConfig as McpAuthConfig).authStrategy.type.replace(
+                        "_",
+                        " "
+                      )}
                     </span>
                   </div>
                 </div>
@@ -277,7 +280,12 @@ export default function IntegrationDetailPage() {
                     <div>
                       <label className="text-sm text-base-content/70">Header Name</label>
                       <p className="font-medium mt-1">
-                        {((integration.authConfig as McpAuthConfig).authStrategy as { type: "api_key"; headerName?: string }).headerName || "Authorization (default)"}
+                        {(
+                          (integration.authConfig as McpAuthConfig).authStrategy as {
+                            type: "api_key";
+                            headerName?: string;
+                          }
+                        ).headerName || "Authorization (default)"}
                       </p>
                     </div>
                   )}
