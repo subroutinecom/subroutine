@@ -198,6 +198,7 @@ const exchangeCodeForToken = async (
 
   const headers: Record<string, string> = {
     "Content-Type": "application/x-www-form-urlencoded",
+    Accept: "application/json",
   };
 
   if (definition.auth.type === "oauth2" && definition.auth.handlers?.customizeTokenHeaders) {

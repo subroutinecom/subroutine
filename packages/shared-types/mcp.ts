@@ -10,12 +10,14 @@
  *
  * - `none`: No authentication required
  * - `api_key`: Static API key sent in a header (default: Authorization: Bearer)
+ *   - `viewerScoped`: If true, users provide their own PAT (Personal Access Token) via connected accounts
+ *     instead of using a shared org-level API key
  * - `bearer_passthrough`: Pass viewer's OAuth access token to MCP server
  * - `custom_headers`: Arbitrary custom headers for authentication
  */
 export type McpAuthStrategy =
   | { type: "none" }
-  | { type: "api_key"; headerName?: string }
+  | { type: "api_key"; headerName?: string; viewerScoped?: boolean }
   | { type: "bearer_passthrough" }
   | { type: "custom_headers"; headers: Record<string, string> };
 

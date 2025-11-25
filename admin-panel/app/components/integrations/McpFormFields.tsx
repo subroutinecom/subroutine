@@ -375,7 +375,7 @@ export const McpFormFields = ({
 
           {/* Viewer-scoped PAT explanation */}
           {watchedApiKeyIsViewerScoped && (
-            <div className="alert alert-info">
+            <div className="alert bg-base-200 border-base-300">
               <span className="text-sm">
                 Users will be prompted to enter their Personal Access Token when they connect their
                 account to this integration. No token is stored at the integration level.
@@ -405,8 +405,8 @@ export const McpFormFields = ({
 
       {watchedAuthStrategy === "bearer_passthrough" && (
         <>
-          <div className="alert alert-info mb-2">
-            <span>
+          <div className="alert bg-base-200 border-base-300 mb-2">
+            <span className="text-sm">
               Bearer passthrough will use the viewer&apos;s OAuth access token to authenticate with
               the MCP server. Create an OAuth app with your provider and enter the credentials
               below.

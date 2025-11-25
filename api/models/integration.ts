@@ -153,8 +153,10 @@ const validateMcpAuthConfig = (config: McpAuthConfig) => {
       // No additional validation needed
       break;
     case "api_key":
-      if (!config.apiKey) {
-        throw new Error("authConfig.apiKey is required when using api_key auth strategy");
+      // apiKey is only required for org-level (non-viewer-scoped) API key auth
+      // For viewer-scoped PAT, each user provides their own token via connected accounts
+      if (!config.authStrategy.viewerScoped && !config.apiKey) {
+        throw new Error("authConfig.apiKey is required when using org-level api_key auth strategy");
       }
       break;
     case "bearer_passthrough":
