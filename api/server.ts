@@ -11,6 +11,7 @@ import { getConfig } from "./config/loader.ts";
 import { initializeDatabase } from "./db/index.ts";
 import { buildContext, schema } from "./internal/schema.ts";
 import { createMcpServer } from "./mcp-server.ts";
+import { createMcpServer2 } from "./mcp-server2";
 import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
@@ -1213,6 +1214,114 @@ const initialize = async () => {
     }
   });
 
+  // MCP v2 (unauthenticated) using path-based session IDs
+  const mcp2Transports: Record<string, StreamableHTTPServerTransport> = {};
+  const isValidMcp2SessionId = (sid: string): boolean => sid === "all" || sid.length === 36;
+
+  app.post("/mcp2/:sessionId", async (c) => {
+    const { sessionId } = c.req.param();
+
+    if (!isValidMcp2SessionId(sessionId)) {
+      return c.json(
+        {
+          jsonrpc: "2.0",
+          error: { code: -32000, message: "Bad Request: Invalid session ID" },
+          id: null,
+        },
+        400
+      );
+    }
+
+    try {
+      let transport: StreamableHTTPServerTransport;
+      const body = await c.req.json();
+
+      if (mcp2Transports[sessionId]) {
+        transport = mcp2Transports[sessionId];
+      } else if (isInitializeRequest(body)) {
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => sessionId,
+          onsessioninitialized: (newSessionId) => {
+            mcp2Transports[newSessionId] = transport;
+          },
+        });
+
+        transport.onclose = () => {
+          const sid = transport.sessionId;
+          if (sid && mcp2Transports[sid]) {
+            delete mcp2Transports[sid];
+          }
+        };
+
+        const server = createMcpServer2();
+        await server.connect(transport);
+        const req = c.req.raw;
+        const res = new NodeResponseAdapter();
+        // @ts-ignore - MCP SDK expects Node.js HTTP response types
+        await transport.handleRequest(req, res, body);
+        return res.toResponse();
+      } else {
+        return c.json(
+          {
+            jsonrpc: "2.0",
+            error: { code: -32000, message: "Bad Request: No valid session initialized" },
+            id: null,
+          },
+          400
+        );
+      }
+
+      const req = c.req.raw;
+      const res = new NodeResponseAdapter();
+      // @ts-ignore - MCP SDK expects Node.js HTTP response types
+      await transport.handleRequest(req, res, body);
+      return res.toResponse();
+    } catch (error) {
+      console.error("Error handling MCP2 request:", error);
+      return c.json(
+        {
+          jsonrpc: "2.0",
+          error: { code: -32603, message: "Internal server error" },
+          id: null,
+        },
+        500
+      );
+    }
+  });
+
+  app.get("/mcp2/:sessionId", async (c) => {
+    const { sessionId } = c.req.param();
+    if (!isValidMcp2SessionId(sessionId) || !mcp2Transports[sessionId]) {
+      return c.text("Invalid or missing session ID", 400);
+    }
+
+    const transport = mcp2Transports[sessionId];
+    const req = c.req.raw;
+    const res = new NodeResponseAdapter();
+    // @ts-ignore - MCP SDK expects Node.js HTTP response types
+    await transport.handleRequest(req, res);
+    return res.toResponse();
+  });
+
+  app.delete("/mcp2/:sessionId", async (c) => {
+    const { sessionId } = c.req.param();
+    if (!isValidMcp2SessionId(sessionId) || !mcp2Transports[sessionId]) {
+      return c.text("Invalid or missing session ID", 400);
+    }
+
+    try {
+      const transport = mcp2Transports[sessionId];
+      const req = c.req.raw;
+      const res = new NodeResponseAdapter();
+      // @ts-ignore - MCP SDK expects Node.js HTTP response types
+      await transport.handleRequest(req, res);
+      return res.toResponse();
+    } catch (error) {
+      console.error("Error handling MCP2 session termination:", error);
+      return c.text("Error processing session termination", 500);
+    }
+  });
+
   app.doc("/openapi.json", {
     openapi: "3.1.0",
     info: {
@@ -1227,6 +1336,7 @@ const initialize = async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
   console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
+  console.log(`MCP2 endpoint available at http://localhost:${PORT}/mcp2/{sessionId}`);
   console.log(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
 };
 
