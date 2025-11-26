@@ -75,6 +75,7 @@ export const isIntegrationAuthRequiredError = (
 
 export const createSubroutine = async (
   request: string,
+  viewerId: string,
   integrations?: string[]
 ): Promise<CreateSubroutineResult> => {
   const response = await customFetch(`${API_URL}/api/subroutine`, {
@@ -82,7 +83,7 @@ export const createSubroutine = async (
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ request, integrations }),
+    body: JSON.stringify({ request, viewerId, integrations }),
   });
 
   const data = await response.json();

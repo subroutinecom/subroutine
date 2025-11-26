@@ -68,6 +68,7 @@ it("create subroutine via REST API", async () => {
     },
     JSON.stringify({
       useMock: true,
+      viewerId: VIEWER_ID,
       request: "Create a function that adds two numbers",
       integrations: [],
     })
@@ -96,7 +97,7 @@ it("get specific subroutine by ID", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Test subroutine for retrieval" })
+    JSON.stringify({ useMock: true, viewerId: VIEWER_ID, request: "Test subroutine for retrieval" })
   );
 
   const createData = JSON.parse(createResponse.data);
@@ -127,7 +128,7 @@ it("list all subroutines", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Test subroutine for listing" })
+    JSON.stringify({ useMock: true, viewerId: VIEWER_ID, request: "Test subroutine for listing" })
   );
 
   const response = await makeRequest({
@@ -153,7 +154,7 @@ it("run a subroutine", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Test subroutine for execution" })
+    JSON.stringify({ useMock: true, viewerId: VIEWER_ID, request: "Test subroutine for execution" })
   );
 
   const createData = JSON.parse(createResponse.data);
@@ -222,6 +223,7 @@ it("get run status and wait for completion", async () => {
     },
     JSON.stringify({
       useMock: true,
+      viewerId: VIEWER_ID,
       request: "Test subroutine for run status",
     })
   );
@@ -261,6 +263,7 @@ it("list all runs", async () => {
     },
     JSON.stringify({
       useMock: true,
+      viewerId: VIEWER_ID,
       request: "Test subroutine for run listing",
     })
   );
@@ -367,7 +370,7 @@ it("create multiple subroutines have unique IDs", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "First subroutine" })
+    JSON.stringify({ useMock: true, viewerId: VIEWER_ID, request: "First subroutine" })
   );
 
   const response2 = await makeRequest(
@@ -377,7 +380,7 @@ it("create multiple subroutines have unique IDs", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Second subroutine" })
+    JSON.stringify({ useMock: true, viewerId: VIEWER_ID, request: "Second subroutine" })
   );
 
   const data1 = JSON.parse(response1.data);
@@ -398,6 +401,7 @@ it("multiple runs of same subroutine have unique IDs", async () => {
     },
     JSON.stringify({
       useMock: true,
+      viewerId: VIEWER_ID,
       request: "Test subroutine for multiple runs",
     })
   );
@@ -450,6 +454,7 @@ it("subroutine actually executes addition in sandbox", async () => {
     },
     JSON.stringify({
       useMock: true,
+      viewerId: VIEWER_ID,
       request: "Create a function that adds two numbers",
     })
   );
@@ -491,7 +496,7 @@ it("subroutine executes fibonacci in sandbox", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Generate fibonacci sequence" })
+    JSON.stringify({ useMock: true, viewerId: VIEWER_ID, request: "Generate fibonacci sequence" })
   );
 
   const createData = JSON.parse(createResponse.data);
@@ -530,7 +535,7 @@ it("subroutine with string reversal executes correctly", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Reverse a string" })
+    JSON.stringify({ useMock: true, viewerId: VIEWER_ID, request: "Reverse a string" })
   );
 
   const createData = JSON.parse(createResponse.data);
@@ -565,7 +570,7 @@ it("default hello world with custom name input", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Say hello" })
+    JSON.stringify({ useMock: true, viewerId: VIEWER_ID, request: "Say hello" })
   );
 
   const createData = JSON.parse(createResponse.data);
@@ -601,7 +606,7 @@ it("multiplication subroutine executes correctly", async () => {
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ useMock: true, request: "Multiply two numbers" })
+    JSON.stringify({ useMock: true, viewerId: VIEWER_ID, request: "Multiply two numbers" })
   );
 
   const createData = JSON.parse(createResponse.data);

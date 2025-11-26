@@ -163,6 +163,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
       description: "Create and persist a subroutine from a natural request",
       inputSchema: {
         request: z.string().describe("Natural language request"),
+        viewerId: z.string().describe("External viewer identifier"),
         integrations: z.array(z.string()).optional(),
         useMock: z
           .boolean()
@@ -170,30 +171,56 @@ export function createMcpServer(auth: AuthContext): McpServer {
           .describe("Use mock code generation instead of AI (for testing)"),
       },
     },
-    async ({ request, useMock, integrations }) => {
+    async ({ request, viewerId, useMock, integrations }) => {
       console.log(`Generating subroutine for request: ${request}, useMock: ${useMock}`);
 
-      const subroutine = await generateSubroutine({
-        request,
-        integrations,
-        organizationId,
-        useMock,
-      });
+      try {
+        const subroutine = await generateSubroutine({
+          request,
+          viewerId,
+          integrations,
+          organizationId,
+          useMock,
+        });
 
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  subroutineUri: `resource://subroutine/${subroutine.id}`,
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof IntegrationAuthRequiredError) {
+          return {
+            content: [
               {
-                subroutineUri: `resource://subroutine/${subroutine.id}`,
+                type: "text",
+                text: JSON.stringify({
+                  error: {
+                    code: "INTEGRATION_AUTH_REQUIRED",
+                    message: error.message,
+                    integrationId: error.integrationId,
+                    provider: error.provider,
+                    authorizationUrl: error.authorizationUrl,
+                    state: error.state,
+                    viewerId: error.viewerId,
+                    requirements: error.requirements,
+                  },
+                }),
               },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+            ],
+          };
+        }
+        throw error;
+      }
     }
   );
 
@@ -220,19 +247,20 @@ export function createMcpServer(auth: AuthContext): McpServer {
         timeoutMs,
       });
 
-      const subroutine = await generateSubroutine({
-        request,
-        integrations,
-        organizationId,
-        useMock,
-        needsImmediateInputs: true,
-      });
-
-      if (!subroutine.initialInputs) {
-        throw new Error("Generated subroutine is missing initial inputs");
-      }
-
       try {
+        const subroutine = await generateSubroutine({
+          request,
+          viewerId,
+          integrations,
+          organizationId,
+          useMock,
+          needsImmediateInputs: true,
+        });
+
+        if (!subroutine.initialInputs) {
+          throw new Error("Generated subroutine is missing initial inputs");
+        }
+
         const run = await runSubroutine({
           subroutineId: subroutine.id,
           organizationId,
@@ -278,6 +306,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
                     authorizationUrl: error.authorizationUrl,
                     state: error.state,
                     viewerId: error.viewerId,
+                    requirements: error.requirements,
                   },
                 }),
               },
@@ -365,6 +394,7 @@ export function createMcpServer(auth: AuthContext): McpServer {
                     authorizationUrl: error.authorizationUrl,
                     state: error.state,
                     viewerId: error.viewerId,
+                    requirements: error.requirements,
                   },
                 }),
               },

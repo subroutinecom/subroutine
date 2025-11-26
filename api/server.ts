@@ -329,6 +329,7 @@ const initialize = async () => {
                 request: z
                   .string()
                   .describe("Natural language description of the desired subroutine"),
+                viewerId: z.string().describe("External viewer identifier"),
                 integrations: z.array(z.string()).optional(),
               }),
             },
@@ -351,7 +352,7 @@ const initialize = async () => {
           },
         },
         403: {
-          description: "Organization required",
+          description: "Organization required or integration authorization needed",
           content: {
             "application/json": {
               schema: ErrorSchema,
@@ -391,7 +392,7 @@ const initialize = async () => {
       }
 
       try {
-        const { request, integrations } = c.req.valid("json");
+        const { request, viewerId, integrations } = c.req.valid("json");
 
         if (!request || typeof request !== "string") {
           return c.json(
@@ -409,6 +410,7 @@ const initialize = async () => {
 
         const subroutine = await generateSubroutine({
           request,
+          viewerId,
           integrations,
           organizationId: auth.organizationId,
           useMock,
@@ -423,6 +425,24 @@ const initialize = async () => {
         );
         return response;
       } catch (error) {
+        if (error instanceof IntegrationAuthRequiredError) {
+          return c.json(
+            {
+              error: {
+                code: "INTEGRATION_AUTH_REQUIRED",
+                message: error.message,
+                integrationId: error.integrationId,
+                provider: error.provider,
+                authorizationUrl: error.authorizationUrl,
+                state: error.state,
+                viewerId: error.viewerId,
+                requirements: error.requirements,
+              },
+            },
+            403
+          );
+        }
+
         const message = error instanceof Error ? error.message : "Failed to generate subroutine";
         return c.json(
           {
@@ -534,6 +554,7 @@ const initialize = async () => {
         const useMock = c.req.header("x-use-mock") === "true";
         const subroutine = await generateSubroutine({
           request,
+          viewerId,
           integrations,
           organizationId: auth.organizationId,
           useMock,
@@ -575,6 +596,7 @@ const initialize = async () => {
                 authorizationUrl: error.authorizationUrl,
                 state: error.state,
                 viewerId: error.viewerId,
+                requirements: error.requirements,
               },
             },
             403
@@ -838,6 +860,7 @@ const initialize = async () => {
                 authorizationUrl: error.authorizationUrl,
                 state: error.state,
                 viewerId: error.viewerId,
+                requirements: error.requirements,
               },
             },
             403

@@ -163,7 +163,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       const response = await makeRequest("/api/subroutine", {
         method: "POST",
         apiKey,
-        body: { request: "Create a hello world function" },
+        body: { request: "Create a hello world function", viewerId: VIEWER_ID },
       });
 
       expect(response.status).toBe(201);
@@ -203,7 +203,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       const createResponse = await makeRequest("/api/subroutine", {
         method: "POST",
         apiKey,
-        body: { request: "Create a function that adds two numbers" },
+        body: { request: "Create a function that adds two numbers", viewerId: VIEWER_ID },
       });
 
       expect(createResponse.status).toBe(201);
@@ -340,7 +340,7 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
           authorization: `Bearer ${apiKey}`,
           "x-use-mock": "true",
         },
-        body: { request: "Create a hello world function" },
+        body: { request: "Create a hello world function", viewerId: VIEWER_ID },
       });
 
       expect(response.status).toBe(201);
