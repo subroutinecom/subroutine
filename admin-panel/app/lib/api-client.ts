@@ -45,6 +45,14 @@ export interface ExecuteRequestResult {
   initialInputs: Record<string, unknown>;
 }
 
+export interface AuthRequirement {
+  integrationId: string;
+  integrationName: string;
+  provider: string;
+  authorizationUrl: string;
+  state: string;
+}
+
 export interface IntegrationAuthRequiredError {
   code: "INTEGRATION_AUTH_REQUIRED";
   message: string;
@@ -53,6 +61,7 @@ export interface IntegrationAuthRequiredError {
   authorizationUrl: string;
   state: string;
   viewerId: string;
+  requirements?: AuthRequirement[];
 }
 
 export interface ApiError {
@@ -64,7 +73,11 @@ export interface ApiError {
     authorizationUrl?: string;
     state?: string;
     viewerId?: string;
+    requirements?: AuthRequirement[];
   };
+  // When auth error happens during run (after generation), subroutine data is included
+  subroutine?: SubroutineResponse;
+  subroutineUri?: string;
 }
 
 export const isIntegrationAuthRequiredError = (

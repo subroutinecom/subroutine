@@ -61,6 +61,51 @@ const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
 };
 
 /**
+ * Generates documentation for when integrations ARE provided.
+ * Agent must use the provided integrations.
+ */
+const getProvidedIntegrationsDocs = (integrationNames: string[]): string => {
+  const namesList = integrationNames.map((n) => `"${n}"`).join(", ");
+
+  return `
+AVAILABLE INTEGRATIONS: ${namesList}
+
+You MUST use these integrations to fulfill the user's request.
+1. Call listMcpTools({ integrationName: "name" }) to discover what tools each integration provides
+2. Write code that uses integrations.getMcpClient("name") to access the integration
+3. Use client.callTool() to call the discovered tools
+
+DO NOT generate code that assumes tools exist - always call listMcpTools first to see what's available.
+`;
+};
+
+/**
+ * Generates documentation for discovery mode (no integrations provided).
+ * Agent must discover what's available via tools.
+ */
+const getDiscoveryModeDocs = (): string => {
+  return `
+INTEGRATION DISCOVERY MODE:
+No integrations were provided. You must discover what's available.
+
+REQUIRED STEPS when the user's request needs an external service (GitHub, Slack, database, etc.):
+1. FIRST call listAvailableIntegrations() to see what's configured
+2. If the service you need IS listed -> call listMcpTools to see its tools, then write code
+3. If the service you need is NOT listed -> call manageMcpIntegration({ need: "service-name" }) to set it up
+
+DO NOT skip step 1. DO NOT assume any integrations exist.
+DO NOT generate code with getMcpClient() until you've confirmed the integration exists.
+
+Example flow for "get my GitHub PRs":
+1. Call listAvailableIntegrations() -> returns { integrations: [] } (empty)
+2. Call manageMcpIntegration({ need: "github" }) → sets up GitHub integration
+3. If authRequired: "api_key" -> tell user they need to provide credentials
+4. If authRequired: "none" -> call listMcpTools({ integrationName: "github" }) to see tools
+5. NOW write code using the discovered tools
+`;
+};
+
+/**
  * Generates documentation for MCP integrations.
  * MCP integrations use the standard MCP client interface with listTools() and callTool().
  *
@@ -75,83 +120,82 @@ const getMcpIntegrationDocs = (mcpIntegrations: McpIntegrationInfo[]): string =>
 
   return `
 MCP INTEGRATIONS (REAL EXTERNAL ACCESS):
-CRITICAL: "integrations" is a GLOBAL object - it is NOT part of ctx!
-You access MCP servers via: integrations.getMcpClient(name)
-
 These integrations connect to REAL external services - they are NOT mocked.
-MCP tools make REAL API calls to external services (GitHub, Slack, etc.)
-DO NOT mock or simulate data - actually call the MCP tools to get real results.
-The sandbox proxies these calls securely - you have real external access through MCP.
+Available integrations: ${validNames}
 
-AVAILABLE MCP INTEGRATIONS: ${validNames}
-Using any other name will result in an error at runtime.
+CRITICAL: THE INTEGRATIONS TYPE - YOU MUST USE THIS EXACT TYPE DEFINITION
 
-CRITICAL - DISCOVERING TOOLS (REQUIRED STEP):
-You do NOT know what tools these MCP integrations provide. Tool names vary between servers.
-DO NOT GUESS tool names - you MUST call listMcpTools first to discover the actual tools.
+The Integrations type has ONLY ONE METHOD: getMcpClient(). Copy this EXACTLY:
 
-Before writing ANY code that uses an MCP integration:
-1. FIRST call: listMcpTools({ integrationName: "${exampleName}" })
-2. WAIT for the response to see the actual tool names and their input schemas
-3. ONLY THEN write code using the exact tool names returned
+type Integrations = {
+  getMcpClient(name: string): Promise<McpClient>;
+};
 
-This will return the list of available tools, their descriptions, and input schemas.
-
-HOW TO USE MCP INTEGRATIONS IN YOUR CODE:
-1. Get the MCP client: const client = await integrations.getMcpClient("${exampleName}");
-2. Call a tool using callTool(): const result = await client.callTool({ name: "toolName", arguments: { ... } });
-3. Read the result: result.content[0].text contains the response (often JSON string)
-
-WRONG - DO NOT DO THIS:
-- Guessing tool names like "list_repos", "get_user" // WRONG! Call listMcpTools first to get actual names
-- Writing code before calling listMcpTools // WRONG! Always discover tools first
-- ctx.integrations... // WRONG! integrations is NOT in ctx. ctx is just Record<string, unknown>
-- interface Context { integrations: {...} } // WRONG! Never put integrations in Context type
-- integrations.github.list_repos() // WRONG: no direct method calls, use getMcpClient + callTool
-- integrations.getGithub().list_repos() // WRONG: no magic getters, use getMcpClient("github")
-
-CORRECT PATTERN:
-const client = await integrations.getMcpClient("${exampleName}");
-const result = await client.callTool({ name: "some_tool", arguments: { /* params */ } });
-const data = JSON.parse(result.content[0].text || "{}"); // Parse if JSON response
-
-COMPLETE EXAMPLE with MCP integration:
-
-declare const integrations: {
-  getMcpClient(name: string): Promise<{
-    listTools(): Promise<{ tools: Array<{ name: string; description?: string; inputSchema: object }> }>;
-    callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
-      content: Array<{ type: string; text?: string }>;
-      isError?: boolean;
-    }>;
+type McpClient = {
+  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
+    content: Array<{ type: string; text?: string }>;
+    isError?: boolean;
   }>;
 };
 
-// IMPORTANT: Context is just an empty record. Do NOT add integrations to Context!
-type Context = Record<string, unknown>;
-type Inputs = { /* your inputs */ };
-type Outputs = { /* your outputs */ };
+DO NOT DEFINE YOUR OWN Integrations TYPE. The type above is the ONLY correct one.
 
-export async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {
-  // integrations is a GLOBAL variable (declared above), NOT part of ctx!
+WRONG VS RIGHT - CRITICAL EXAMPLES
+
+X WRONG - This will NOT work:
+  type Integrations = { ${exampleName}: { get_me(): Promise<any> } };  // WRONG TYPE!
+  const result = await integrations.${exampleName}.get_me();  // WRONG! No such property!
+  const result = await integrations.${exampleName}.search();  // WRONG! No such property!
+
+* RIGHT - This is how you MUST do it:
+  const client = await integrations.getMcpClient("${exampleName}");
+  const result = await client.callTool({ name: "get_me", arguments: {} });
+
+The integrations object does NOT have properties like "${exampleName}".
+It has ONE method: getMcpClient(name) which returns a client.
+The client has ONE method: callTool({ name, arguments }).
+
+STEP-BY-STEP USAGE
+
+1. FIRST call listMcpTools({ integrationName: "${exampleName}" }) to discover tools
+2. Get a client: const client = await integrations.getMcpClient("${exampleName}");
+3. Call a tool: const result = await client.callTool({ name: "tool_name", arguments: {...} });
+4. Parse response: const data = JSON.parse(result.content[0]?.text || "{}");
+
+COMPLETE WORKING EXAMPLE - COPY THIS PATTERN
+
+type Integrations = {
+  getMcpClient(name: string): Promise<McpClient>;
+};
+
+type McpClient = {
+  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
+    content: Array<{ type: string; text?: string }>;
+    isError?: boolean;
+  }>;
+};
+
+type Inputs = { query: string };
+type Outputs = { results: unknown[] };
+
+export async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs> {
+  // Step 1: Get the MCP client for the integration
   const client = await integrations.getMcpClient("${exampleName}");
 
-  // Call a tool using callTool() method
+  // Step 2: Call a tool using callTool() with { name, arguments }
   const result = await client.callTool({
-    name: "some_tool", // Use tool name from listMcpTools result
-    arguments: { /* tool parameters */ }
+    name: "search",  // Use EXACT tool name from listMcpTools
+    arguments: { q: inputs.query }
   });
 
-  // Check for errors
+  // Step 3: Check for errors
   if (result.isError) {
-    throw new Error(result.content[0]?.text || "MCP tool call failed");
+    throw new Error(result.content[0]?.text || "Tool call failed");
   }
 
-  // Parse the response (MCP tools return content array with text)
-  const responseText = result.content[0]?.text || "{}";
-  const data = JSON.parse(responseText);
-
-  return { /* map data to your Outputs type */ };
+  // Step 4: Parse the JSON response
+  const data = JSON.parse(result.content[0]?.text || "{}");
+  return { results: data.items || [] };
 }
 `;
 };
@@ -222,45 +266,68 @@ export async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {
 `;
   }
 
-  // Add MCP integrations section
   if (hasMcpIntegrations) {
+    // Provided mode: integrations were explicitly passed
     integrationsSection += getMcpIntegrationDocs(mcpIntegrations);
+    integrationsSection += getProvidedIntegrationsDocs(mcpIntegrations.map((mcp) => mcp.name));
+  } else {
+    // Discovery mode: no MCP integrations provided, agent must discover
+    integrationsSection += getDiscoveryModeDocs();
   }
 
   // Build the sandbox restrictions section
-  const sandboxRestrictions = hasAnyIntegrations
-    ? `
+  let sandboxRestrictions: string;
+  if (hasAnyIntegrations) {
+    sandboxRestrictions = `
 SANDBOX RESTRICTIONS:
 - You CANNOT use fetch(), XMLHttpRequest, or direct HTTP calls - they will fail
 - ALL external API calls MUST go through the "integrations" object
-- The integrations below provide REAL access to external services - use them!
-- DO NOT mock or simulate external data - the integrations return real data`
-    : `
+- The integrations provide REAL access to external services - use them!
+- DO NOT mock or simulate external data - the integrations return real data`;
+  } else if (hasMcpIntegrations === false) {
+    // Discovery mode - integrations can be set up
+    sandboxRestrictions = `
+SANDBOX RESTRICTIONS:
+- You CANNOT use fetch(), XMLHttpRequest, or direct HTTP calls - they will fail
+- ALL external API calls MUST go through MCP integrations
+- Use the discovery tools to find or set up integrations before generating code
+- DO NOT mock or simulate external data - use real integrations`;
+  } else {
+    sandboxRestrictions = `
 SANDBOX RESTRICTIONS:
 - Your code runs in an isolated sandbox with NO network access
 - You CANNOT use fetch(), XMLHttpRequest, or any direct HTTP/network calls - they will fail
 - No external integrations are available for this subroutine`;
+  }
 
-  return `You are an expert TypeScript code generator. Your task is to generate executable TypeScript code subroutines based on user requests.
+  return `You are an expert TypeScript code generator that creates FULLY WORKING subroutines.
 
-CRITICAL REQUIREMENTS:
-1. Define TypeScript interfaces for inputs and outputs based on the schemas
+YOUR RESPONSIBILITY:
+You must EXECUTE the user's intent completely. When a user asks "get my GitHub PRs", they want code that FETCHES real PRs from GitHub - not code that accepts PRs as input and transforms them.
+
+NEVER generate mock, placeholder, or pass-through code.
+NEVER generate code that expects the user to provide data they asked YOU to fetch.
+ALWAYS use tools to discover/setup integrations BEFORE generating code that uses them.
+
+TECHNICAL REQUIREMENTS:
+1. Define TypeScript interfaces for Inputs and Outputs based on the schemas
 2. Export an async function called "main" that uses these types
-3. The function signature must be: export async function main(ctx: Context, inputs: Inputs): Promise<Outputs>
-4. Code must be clean, efficient, and production-ready TypeScript
-5. Do not include any imports or external dependencies - code runs in an isolated sandbox
-6. Handle edge cases with proper validation and error messages
-7. Use the actual types you define - no any types
-8. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n9. Use the available integrations to interact with external services" : ""}
+3. The function signature must be: export async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs>
+4. Define the Integrations type at the top of your code (see examples)
+5. Code must be clean, efficient, and production-ready TypeScript
+6. Do not include any imports or external dependencies - code runs in an isolated sandbox
+7. Handle edge cases with proper validation and error messages
+8. Use the actual types you define - no any types
+9. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n10. Use the available integrations to interact with external services" : ""}
 ${sandboxRestrictions}
 ${integrationsSection}
 Use the generateSubroutine tool to submit your code. The tool will validate it and provide feedback if there are issues. You can revise and resubmit based on the feedback.
 
-EXAMPLE:
+EXAMPLE (simple, no integrations needed):
 For "add two numbers", call generateSubroutine with:
-- inputsSchema: { "type": "object", "properties": { "x": { "type": "number", "description": "First number" }, "y": { "type": "number", "description": "Second number" } }, "required": [] }
-- outputsSchema: { "type": "object", "properties": { "result": { "type": "number", "description": "Sum" }, "calculation": { "type": "string", "description": "Calculation string" } }, "required": ["result", "calculation"] }
-- code: "type Context = Record<string, unknown>;\n\ntype Inputs = {\n  x?: number;\n  y?: number;\n};\n\ntype Outputs = {\n  result: number;\n  calculation: string;\n};\n\nexport async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {\n  const x = inputs.x ?? 0;\n  const y = inputs.y ?? 0;\n  const sum = x + y;\n  return { result: sum, calculation: \`\${x} + \${y} = \${sum}\` };\n}"`;
+- inputsSchema: { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" } }, "required": [] }
+- outputsSchema: { "type": "object", "properties": { "result": { "type": "number" }, "calculation": { "type": "string" } }, "required": ["result", "calculation"] }
+- code: "type Integrations = Record<string, never>;\\ntype Inputs = { x?: number; y?: number };\\ntype Outputs = { result: number; calculation: string };\\n\\nexport async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs> {\\n  const x = inputs.x ?? 0;\\n  const y = inputs.y ?? 0;\\n  return { result: x + y, calculation: \`\${x} + \${y} = \${x + y}\` };\\n}"`;
 };
 
 type PromptOptions = {

@@ -6,4 +6,6 @@ export type CodeGenerationResult = {
   immediateInputs?: Record<string, unknown>;
   iterations: number;
   error?: string;
+
+  usedIntegrationIds?: string[];
 };

@@ -80,6 +80,7 @@ export interface IntegrationTable {
   name: string;
   authConfig: string;
   enabled: boolean;
+  status: string; // "active" = manual/normal, "dynamic" = AI-managed
   createdAt: string;
   updatedAt: string;
 }

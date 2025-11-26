@@ -536,6 +536,9 @@ const initialize = async () => {
         );
       }
 
+      // Track subroutine separately so we can include it in error responses
+      let generatedSubroutine: Awaited<ReturnType<typeof generateSubroutine>> | null = null;
+
       try {
         const { request, timeoutMs, integrations, viewerId } = c.req.valid("json");
 
@@ -552,7 +555,7 @@ const initialize = async () => {
         }
 
         const useMock = c.req.header("x-use-mock") === "true";
-        const subroutine = await generateSubroutine({
+        generatedSubroutine = await generateSubroutine({
           request,
           viewerId,
           integrations,
@@ -561,31 +564,32 @@ const initialize = async () => {
           needsImmediateInputs: true,
         });
 
-        if (!subroutine.initialInputs) {
+        if (!generatedSubroutine.initialInputs) {
           throw new Error("Generated subroutine did not include immediate inputs");
         }
 
         const run = await runSubroutine({
-          subroutineId: subroutine.id,
+          subroutineId: generatedSubroutine.id,
           organizationId: auth.organizationId,
           viewerId,
-          inputs: subroutine.initialInputs,
+          inputs: generatedSubroutine.initialInputs,
           timeoutMs,
           wait: true,
         });
 
         return c.json(
           {
-            subroutineUri: `resource://subroutine/${subroutine.id}`,
-            subroutine,
+            subroutineUri: `resource://subroutine/${generatedSubroutine.id}`,
+            subroutine: generatedSubroutine,
             runUri: `resource://run/${run.id}`,
             run,
-            initialInputs: subroutine.initialInputs,
+            initialInputs: generatedSubroutine.initialInputs,
           },
           201
         );
       } catch (error) {
         if (error instanceof IntegrationAuthRequiredError) {
+          // Include subroutine data if it was generated before the auth error
           return c.json(
             {
               error: {
@@ -598,6 +602,11 @@ const initialize = async () => {
                 viewerId: error.viewerId,
                 requirements: error.requirements,
               },
+              // If subroutine was generated before the runtime auth error, include it
+              ...(generatedSubroutine && {
+                subroutine: generatedSubroutine,
+                subroutineUri: `resource://subroutine/${generatedSubroutine.id}`,
+              }),
             },
             403
           );
