@@ -6,9 +6,13 @@ type IntegrationDocs = {
   docsUrl?: string;
 };
 
+/**
+ * Simplified MCP integration info for the agent prompt.
+ * Only contains identifying information - agent uses listMcpTools to discover tools.
+ */
 export type McpIntegrationInfo = {
+  id: string;
   name: string;
-  tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>;
 };
 
 const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
@@ -59,43 +63,15 @@ const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
 /**
  * Generates documentation for MCP integrations.
  * MCP integrations use the standard MCP client interface with listTools() and callTool().
+ *
+ * IMPORTANT: This now only lists integration names. The agent must use the listMcpTools
+ * tool to discover what tools each integration offers.
  */
 const getMcpIntegrationDocs = (mcpIntegrations: McpIntegrationInfo[]): string => {
   if (mcpIntegrations.length === 0) return "";
 
   const validNames = mcpIntegrations.map((mcp) => `"${mcp.name}"`).join(", ");
   const exampleName = mcpIntegrations[0]?.name || "my-mcp-server";
-  const exampleTool = mcpIntegrations[0]?.tools[0]?.name || "some_tool";
-
-  const mcpDocs = mcpIntegrations
-    .map((mcp) => {
-      if (mcp.tools.length === 0) {
-        return `   - "${mcp.name}": (tools available - use client.listTools() to discover)`;
-      }
-
-      const toolsList = mcp.tools
-        .map((tool) => {
-          let toolDoc = `      - ${tool.name}`;
-          if (tool.description) {
-            toolDoc += `: ${tool.description}`;
-          }
-          if (tool.inputSchema) {
-            const props = (tool.inputSchema as { properties?: Record<string, unknown> }).properties;
-            if (props) {
-              const params = Object.keys(props).join(", ");
-              if (params) {
-                toolDoc += ` (params: ${params})`;
-              }
-            }
-          }
-          return toolDoc;
-        })
-        .join("\n");
-
-      return `   - "${mcp.name}":
-${toolsList}`;
-    })
-    .join("\n\n");
 
   return `
 MCP INTEGRATIONS (REAL EXTERNAL ACCESS):
@@ -107,15 +83,28 @@ MCP tools make REAL API calls to external services (GitHub, Slack, etc.)
 DO NOT mock or simulate data - actually call the MCP tools to get real results.
 The sandbox proxies these calls securely - you have real external access through MCP.
 
-IMPORTANT: Only the following MCP integration names are valid: ${validNames}
+AVAILABLE MCP INTEGRATIONS: ${validNames}
 Using any other name will result in an error at runtime.
 
-HOW TO USE MCP INTEGRATIONS:
+CRITICAL - DISCOVERING TOOLS (REQUIRED STEP):
+You do NOT know what tools these MCP integrations provide. Tool names vary between servers.
+DO NOT GUESS tool names - you MUST call listMcpTools first to discover the actual tools.
+
+Before writing ANY code that uses an MCP integration:
+1. FIRST call: listMcpTools({ integrationName: "${exampleName}" })
+2. WAIT for the response to see the actual tool names and their input schemas
+3. ONLY THEN write code using the exact tool names returned
+
+This will return the list of available tools, their descriptions, and input schemas.
+
+HOW TO USE MCP INTEGRATIONS IN YOUR CODE:
 1. Get the MCP client: const client = await integrations.getMcpClient("${exampleName}");
 2. Call a tool using callTool(): const result = await client.callTool({ name: "toolName", arguments: { ... } });
 3. Read the result: result.content[0].text contains the response (often JSON string)
 
 WRONG - DO NOT DO THIS:
+- Guessing tool names like "list_repos", "get_user" // WRONG! Call listMcpTools first to get actual names
+- Writing code before calling listMcpTools // WRONG! Always discover tools first
 - ctx.integrations... // WRONG! integrations is NOT in ctx. ctx is just Record<string, unknown>
 - interface Context { integrations: {...} } // WRONG! Never put integrations in Context type
 - integrations.github.list_repos() // WRONG: no direct method calls, use getMcpClient + callTool
@@ -123,11 +112,8 @@ WRONG - DO NOT DO THIS:
 
 CORRECT PATTERN:
 const client = await integrations.getMcpClient("${exampleName}");
-const result = await client.callTool({ name: "${exampleTool}", arguments: { /* params */ } });
+const result = await client.callTool({ name: "some_tool", arguments: { /* params */ } });
 const data = JSON.parse(result.content[0].text || "{}"); // Parse if JSON response
-
-Available MCP integrations and their tools:
-${mcpDocs}
 
 COMPLETE EXAMPLE with MCP integration:
 
@@ -152,7 +138,7 @@ export async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {
 
   // Call a tool using callTool() method
   const result = await client.callTool({
-    name: "${exampleTool}",
+    name: "some_tool", // Use tool name from listMcpTools result
     arguments: { /* tool parameters */ }
   });
 
@@ -207,8 +193,9 @@ export const SYSTEM_PROMPT = (options: SystemPromptOptions | string[] = {}): str
     const exampleIntegration = integrationDocs[0];
 
     integrationsSection = `
-AVAILABLE INTEGRATIONS:
-Your code has access to external integrations via the global "integrations" object. These integrations allow you to interact with external services without imports.
+BUILT-IN INTEGRATIONS (NOT MCP):
+These are direct API integrations with known interfaces. Use the specific getter functions shown below.
+Do NOT use getMcpClient() or listMcpTools for these - they have dedicated methods.
 
 TypeScript Type Declaration:
 Since integrations is a global object not known to TypeScript, declare it at the top of your code:

@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { createModel, generateCode } from "../agent/index.ts";
+import { createModel, generateCode, type McpContext } from "../agent/index.ts";
 import type { McpIntegrationInfo } from "../agent/prompts.ts";
 import { db } from "../db/index.ts";
 import { generateMockCode } from "../mocks.ts";
@@ -23,6 +23,7 @@ export type Subroutine = {
 export type GenerateSubroutineRequest = {
   request: string;
   organizationId: string;
+  viewerId: string;
   integrations?: string[];
   useMock?: boolean;
   needsImmediateInputs?: boolean;
@@ -30,34 +31,37 @@ export type GenerateSubroutineRequest = {
 
 /**
  * Builds MCP integration info for the code generation prompt.
- * This fetches integration details and identifies which ones are MCP integrations.
+ * This only retrieves basic identifying info (name, id) for MCP integrations.
+ *
+ * Auth checking and tool discovery now happens lazily during code generation
+ * via the listMcpTools agent tool in core.ts.
  */
 const buildMcpIntegrationInfo = async (
   organizationId: string,
   integrationIds: string[]
-): Promise<McpIntegrationInfo[]> => {
+): Promise<{ mcpIntegrations: McpIntegrationInfo[]; nameToId: Map<string, string> }> => {
   if (integrationIds.length === 0) {
-    return [];
+    return { mcpIntegrations: [], nameToId: new Map() };
   }
 
   const mcpIntegrations: McpIntegrationInfo[] = [];
+  const nameToId = new Map<string, string>();
 
   for (const integrationId of integrationIds) {
     const integration = await getIntegration(integrationId, organizationId);
     if (!integration) continue;
 
-    // Check if this is an MCP integration
-    if (integration.authConfig.type === "mcp") {
-      mcpIntegrations.push({
-        name: integration.name,
-        // TODO: Fetch actual tools from MCP server or from stored metadata
-        // For now, we pass empty tools array - agent will use generic pattern
-        tools: [],
-      });
-    }
+    // Only include MCP integrations
+    if (integration.authConfig.type !== "mcp") continue;
+
+    mcpIntegrations.push({
+      id: integrationId,
+      name: integration.name,
+    });
+    nameToId.set(integration.name, integrationId);
   }
 
-  return mcpIntegrations;
+  return { mcpIntegrations, nameToId };
 };
 
 export const generateSubroutine = async (
@@ -94,16 +98,28 @@ export const generateSubroutine = async (
       throw new Error("No model provider configured. Check config.yaml for AI model settings.");
     }
 
-    // Build MCP integration info for the prompt
-    const mcpIntegrations = await buildMcpIntegrationInfo(
+    // Build MCP integration info for the prompt (just names and IDs)
+    // Auth checking and tool discovery now happens lazily via the listMcpTools agent tool
+    const { mcpIntegrations, nameToId } = await buildMcpIntegrationInfo(
       params.organizationId,
       resolvedIntegrationIds
     );
+
+    // Build MCP context for the agent to use when calling listMcpTools
+    const mcpContext: McpContext | undefined =
+      mcpIntegrations.length > 0
+        ? {
+            organizationId: params.organizationId,
+            viewerId: params.viewerId,
+            integrationNameToId: nameToId,
+          }
+        : undefined;
 
     const result = await generateCode(model, params.request, {
       needsImmediateInputs: params.needsImmediateInputs ?? false,
       integrations: params.integrations ?? [],
       mcpIntegrations,
+      mcpContext,
     });
 
     if (!result.success) {

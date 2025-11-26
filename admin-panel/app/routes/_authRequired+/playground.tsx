@@ -140,6 +140,7 @@ export default function PlaygroundPage() {
       } else {
         const result = await createSubroutine(
           data.request,
+          viewerId,
           data.integrations.length > 0 ? data.integrations : undefined
         );
 

@@ -79,6 +79,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
       },
       JSON.stringify({
         request: "Subroutine that uses Gmail",
+        viewerId: "viewer@example.com",
         useMock: true,
         integrations: [integrationId],
       })
@@ -137,6 +138,8 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
       throw new Error("Failed to create mock OAuth integration");
     }
 
+    const viewerId = `viewer-${crypto.randomUUID()}@example.com`;
+
     const createResponse = await makeRequest(
       {
         hostname: "api",
@@ -146,6 +149,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
       },
       JSON.stringify({
         request: "Subroutine that uses mock integration",
+        viewerId,
         useMock: true,
         integrations: [integrationId],
       })
@@ -155,8 +159,6 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
     const createData = JSON.parse(createResponse.data);
     const subroutineId = createData.subroutine?.id as string;
     expect(subroutineId).toBeDefined();
-
-    const viewerId = `viewer-${crypto.randomUUID()}@example.com`;
     const initialRun = await makeRequest(
       {
         hostname: "api",
