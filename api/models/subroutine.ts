@@ -91,8 +91,14 @@ export const generateSubroutine = async (
       initialInputs = {};
     }
   } else {
-    console.log("Using model for code generation");
     const model = await createModel();
+    console.log(
+      `[generateSubroutine] Using model: ${(model as { modelId?: string })?.modelId ?? "none"}`
+    );
+    console.log(
+      `[generateSubroutine] Integrations passed: ${params.integrations?.join(", ") || "none"}`
+    );
+    console.log(`[generateSubroutine] Viewer: ${params.viewerId}`);
 
     if (!model) {
       throw new Error("No model provider configured. Check config.yaml for AI model settings.");
@@ -106,14 +112,13 @@ export const generateSubroutine = async (
     );
 
     // Build MCP context for the agent to use when calling listMcpTools
-    const mcpContext: McpContext | undefined =
-      mcpIntegrations.length > 0
-        ? {
-            organizationId: params.organizationId,
-            viewerId: params.viewerId,
-            integrationNameToId: nameToId,
-          }
-        : undefined;
+    // ALWAYS provide mcpContext - in discovery mode (no integrations), the agent needs
+    // access to listAvailableIntegrations and manageMcpIntegration tools
+    const mcpContext: McpContext = {
+      organizationId: params.organizationId,
+      viewerId: params.viewerId,
+      integrationNameToId: nameToId,
+    };
 
     const result = await generateCode(model, params.request, {
       needsImmediateInputs: params.needsImmediateInputs ?? false,
@@ -133,6 +138,28 @@ export const generateSubroutine = async (
     if (params.needsImmediateInputs && !initialInputs) {
       throw new Error("Generator did not provide immediate inputs for execution");
     }
+
+    // In discovery mode, merge any integrations discovered during code generation
+    if (result.usedIntegrationIds && result.usedIntegrationIds.length > 0) {
+      console.log(
+        `[generateSubroutine] usedIntegrationIds from code gen: ${result.usedIntegrationIds.join(", ")}`
+      );
+      for (const id of result.usedIntegrationIds) {
+        if (!resolvedIntegrationIds.includes(id)) {
+          resolvedIntegrationIds.push(id);
+        }
+      }
+      console.log(
+        `[generateSubroutine] Merged discovered integrations. Final list: ${resolvedIntegrationIds.join(", ")}`
+      );
+    }
+
+    console.log(
+      `[generateSubroutine] Integration IDs to store with subroutine: ${resolvedIntegrationIds.join(", ") || "none"}`
+    );
+    console.log(
+      `[generateSubroutine] Generated code preview (first 200 chars): ${source.substring(0, 200)}...`
+    );
   }
 
   const createdAt = new Date().toISOString();

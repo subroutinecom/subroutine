@@ -60,8 +60,11 @@ export interface McpAuthConfig {
  */
 export type IntegrationAuthConfig = OAuth2AuthConfig | McpAuthConfig;
 
-export interface IntegrationWithConfig extends Omit<IntegrationTable, "authConfig"> {
+export type IntegrationStatus = "static" | "dynamic";
+
+export interface IntegrationWithConfig extends Omit<IntegrationTable, "authConfig" | "status"> {
   authConfig: IntegrationAuthConfig;
+  status: IntegrationStatus;
 }
 
 const validateOAuth2AuthConfig = (config: OAuth2AuthConfig) => {
@@ -244,6 +247,7 @@ export const createIntegration = async (
       name: params.name,
       authConfig: encryptedAuthConfig,
       enabled: true,
+      status: "static",
       createdAt: now,
       updatedAt: now,
     })
@@ -256,6 +260,7 @@ export const createIntegration = async (
     name: params.name,
     authConfig: params.authConfig,
     enabled: true,
+    status: "static" as IntegrationStatus,
     createdAt: now,
     updatedAt: now,
   };
@@ -278,6 +283,7 @@ export const listIntegrations = async (
     name: row.name,
     authConfig: JSON.parse(decrypt(row.authConfig)),
     enabled: row.enabled ?? true,
+    status: (row.status ?? "static") as IntegrationStatus,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }));
@@ -302,6 +308,7 @@ export const listIntegrationsByProvider = async (
     name: row.name,
     authConfig: JSON.parse(decrypt(row.authConfig)),
     enabled: row.enabled ?? true,
+    status: (row.status ?? "static") as IntegrationStatus,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }));
@@ -329,6 +336,7 @@ export const getIntegration = async (
     name: row.name,
     authConfig: JSON.parse(decrypt(row.authConfig)),
     enabled: row.enabled ?? true,
+    status: (row.status ?? "static") as IntegrationStatus,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -405,4 +413,125 @@ export const integrationExists = async (
     .executeTakeFirst();
 
   return !!row;
+};
+
+// dynamic integrations
+
+export type CreateDynamicIntegrationRequest = {
+  organizationId: string;
+  name: string;
+  authConfig: McpAuthConfig;
+};
+
+export const createDynamicIntegration = async (
+  params: CreateDynamicIntegrationRequest
+): Promise<IntegrationWithConfig> => {
+  validateMcpAuthConfig(params.authConfig);
+
+  const id = nanoid();
+  const now = new Date().toISOString();
+  const encryptedAuthConfig = encrypt(JSON.stringify(params.authConfig));
+
+  await db
+    .insertInto("integration")
+    .values({
+      id,
+      organizationId: params.organizationId,
+      provider: "mcp",
+      name: params.name,
+      authConfig: encryptedAuthConfig,
+      enabled: true,
+      status: "dynamic",
+      createdAt: now,
+      updatedAt: now,
+    })
+    .execute();
+
+  return {
+    id,
+    organizationId: params.organizationId,
+    provider: "mcp",
+    name: params.name,
+    authConfig: params.authConfig,
+    enabled: true,
+    status: "dynamic",
+    createdAt: now,
+    updatedAt: now,
+  };
+};
+
+export const updateDynamicIntegration = async (
+  id: string,
+  organizationId: string,
+  authConfig: McpAuthConfig
+): Promise<IntegrationWithConfig | null> => {
+  const existing = await getIntegration(id, organizationId);
+
+  if (!existing) {
+    return null;
+  }
+
+  if (existing.status !== "dynamic") {
+    throw new Error("Only dynamic integrations can be updated via this method");
+  }
+
+  validateMcpAuthConfig(authConfig);
+  const now = new Date().toISOString();
+  const encryptedAuthConfig = encrypt(JSON.stringify(authConfig));
+
+  await db
+    .updateTable("integration")
+    .set({
+      authConfig: encryptedAuthConfig,
+      updatedAt: now,
+    })
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .where("status", "=", "dynamic")
+    .execute();
+
+  return getIntegration(id, organizationId);
+};
+
+export const isDynamicIntegration = async (
+  id: string,
+  organizationId: string
+): Promise<boolean> => {
+  const row = await db
+    .selectFrom("integration")
+    .select("status")
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .executeTakeFirst();
+
+  return row?.status === "dynamic";
+};
+
+export const getIntegrationByName = async (
+  name: string,
+  organizationId: string
+): Promise<IntegrationWithConfig | null> => {
+  const row = await db
+    .selectFrom("integration")
+    .selectAll()
+    .where("name", "=", name)
+    .where("organizationId", "=", organizationId)
+    .where("enabled", "=", true)
+    .executeTakeFirst();
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    organizationId: row.organizationId,
+    provider: row.provider,
+    name: row.name,
+    authConfig: JSON.parse(decrypt(row.authConfig)),
+    enabled: row.enabled ?? true,
+    status: (row.status ?? "static") as IntegrationStatus,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 };

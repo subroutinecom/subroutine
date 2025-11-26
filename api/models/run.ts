@@ -4,7 +4,7 @@ import type { McpAuthConfig } from "./integration.ts";
 import { getIntegration } from "./integration.ts";
 import { getSubroutine } from "./subroutine.ts";
 import type { ConnectedAccountCredentials } from "./connected-account.ts";
-import { getConnectedAccountByAccountIdentifier } from "./connected-account.ts";
+import { getConnectedAccountByViewer } from "./connected-account.ts";
 import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import { IntegrationAuthRequiredError } from "./errors.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
@@ -66,10 +66,17 @@ const requiresViewerScopedAccount = (provider: IntegrationProvider): boolean => 
 };
 
 export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> => {
+  console.log(`[runSubroutine] Starting for subroutine: ${params.subroutineId}`);
+  console.log(`[runSubroutine] viewerId: ${params.viewerId}, orgId: ${params.organizationId}`);
+
   const subroutine = await getSubroutine(params.subroutineId, params.organizationId);
   if (!subroutine) {
     throw new Error("Subroutine not found");
   }
+
+  console.log(
+    `[runSubroutine] Subroutine found, integrationIds: ${subroutine.integrationIds.join(", ") || "none"}`
+  );
 
   const runId = nanoid();
   const sandboxIntegrations = await buildSandboxIntegrations({
@@ -119,32 +126,53 @@ const buildSandboxIntegrations = async (params: {
   organizationId: string;
   viewerId: string;
 }): Promise<SandboxIntegrationDefinition[]> => {
+  console.log(
+    `[buildSandboxIntegrations] Starting with ${params.integrationIds.length} integrations`
+  );
+  console.log(
+    `[buildSandboxIntegrations] viewerId: ${params.viewerId}, orgId: ${params.organizationId}`
+  );
+  console.log(`[buildSandboxIntegrations] integrationIds: ${params.integrationIds.join(", ")}`);
+
   if (params.integrationIds.length === 0) {
+    console.log(`[buildSandboxIntegrations] No integrations to process`);
     return [];
   }
 
   const integrations: SandboxIntegrationDefinition[] = [];
   for (const integrationId of params.integrationIds) {
+    console.log(`[buildSandboxIntegrations] Processing integration: ${integrationId}`);
     const integration = await getIntegration(integrationId, params.organizationId);
     if (!integration || !integration.enabled) {
+      console.log(`[buildSandboxIntegrations] Integration ${integrationId} not found or disabled`);
       throw new Error(`Integration ${integrationId} is not available`);
     }
 
+    console.log(
+      `[buildSandboxIntegrations] Found integration: ${integration.name}, provider: ${integration.provider}`
+    );
     const provider = integration.provider as IntegrationProvider;
     const authConfig = integration.authConfig;
 
     // Handle MCP integrations
     if (authConfig.type === "mcp") {
+      console.log(
+        `[buildSandboxIntegrations] MCP integration, authStrategy: ${authConfig.authStrategy.type}`
+      );
       const mcpConfig = buildMcpConfig(authConfig);
 
       // For bearer_passthrough, we need the viewer's connected account
       if (authConfig.authStrategy.type === "bearer_passthrough") {
-        const connectedAccount = await getConnectedAccountByAccountIdentifier(
-          params.organizationId,
+        console.log(
+          `[buildSandboxIntegrations] Looking up connected account for viewer: ${params.viewerId}`
+        );
+        const connectedAccount = await getConnectedAccountByViewer(
+          params.viewerId,
           integrationId,
-          params.viewerId
+          params.organizationId
         );
 
+        console.log(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
         if (!connectedAccount) {
           // MCP with bearer_passthrough requires OAuth config for user authentication
           if (!authConfig.oauthConfig) {
@@ -161,12 +189,16 @@ const buildSandboxIntegrations = async (params: {
           });
 
           throw new IntegrationAuthRequiredError({
-            integrationId,
-            provider,
-            authorizationUrl: auth.url,
-            state: auth.state,
             viewerId: params.viewerId,
-            message: `MCP integration ${integration.name} requires authorization`,
+            requirements: [
+              {
+                integrationId,
+                integrationName: integration.name,
+                provider,
+                authorizationUrl: auth.url,
+                state: auth.state,
+              },
+            ],
           });
         }
 
@@ -212,10 +244,10 @@ const buildSandboxIntegrations = async (params: {
       continue;
     }
 
-    const connectedAccount = await getConnectedAccountByAccountIdentifier(
-      params.organizationId,
+    const connectedAccount = await getConnectedAccountByViewer(
+      params.viewerId,
       integrationId,
-      params.viewerId
+      params.organizationId
     );
 
     if (!connectedAccount) {
@@ -226,12 +258,16 @@ const buildSandboxIntegrations = async (params: {
       });
 
       throw new IntegrationAuthRequiredError({
-        integrationId,
-        provider,
-        authorizationUrl: auth.url,
-        state: auth.state,
         viewerId: params.viewerId,
-        message: `Integration ${integration.name} requires authorization`,
+        requirements: [
+          {
+            integrationId,
+            integrationName: integration.name,
+            provider,
+            authorizationUrl: auth.url,
+            state: auth.state,
+          },
+        ],
       });
     }
 
@@ -269,13 +305,12 @@ const executeInSandbox = async (
 
     const codeToExecute =
       sourceCode +
-      "\n\n// Export a default function that executes main with the provided inputs\n" +
+      "\n\n// Export a default function that executes main with integrations and inputs\n" +
       "export default async function() {\n" +
-      "  const ctx = {};\n" +
       "  const inputs = " +
       JSON.stringify(inputs ?? {}) +
       ";\n" +
-      "  const result = await main(ctx, inputs);\n" +
+      "  const result = await main(integrations, inputs);\n" +
       "  return result;\n" +
       "}\n";
 

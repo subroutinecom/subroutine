@@ -12,6 +12,8 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Search,
+  ListChecks,
 } from "lucide-react";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
@@ -57,9 +59,12 @@ export const clientLoader = async () => {
   return { integrations: data.integrations.filter((i) => i.enabled) };
 };
 
+type IntegrationMode = "provided" | "discovery";
+
 interface PlaygroundFormData {
   request: string;
   integrations: string[];
+  integrationMode: IntegrationMode;
   executeImmediately: boolean;
 }
 
@@ -74,6 +79,7 @@ interface ExecutionState {
   error?: string;
   authRequired?: {
     integrationId: string;
+    integrationName: string;
     provider: string;
     authorizationUrl: string;
   };
@@ -95,11 +101,13 @@ export default function PlaygroundPage() {
     defaultValues: {
       request: "",
       integrations: [],
+      integrationMode: "discovery",
       executeImmediately: true,
     },
   });
 
   const selectedIntegrations = watch("integrations");
+  const integrationMode = watch("integrationMode");
   const executeImmediately = watch("executeImmediately");
 
   const handleIntegrationToggle = (integrationId: string) => {
@@ -119,16 +127,18 @@ export default function PlaygroundPage() {
 
     setExecutionState({ phase: "generating" });
 
+    // In "provided" mode, pass selected integrations
+    // In "discovery" mode, pass undefined to enable discovery tools
+    const integrationsToUse =
+      data.integrationMode === "provided" && data.integrations.length > 0
+        ? data.integrations
+        : undefined;
+
     try {
       if (data.executeImmediately) {
         setExecutionState({ phase: "generating" });
 
-        const result = await executeRequest(
-          data.request,
-          viewerId,
-          data.integrations.length > 0 ? data.integrations : undefined,
-          60000
-        );
+        const result = await executeRequest(data.request, viewerId, integrationsToUse, 60000);
 
         setExecutionState({
           phase: "completed",
@@ -138,11 +148,7 @@ export default function PlaygroundPage() {
           outputs: result.run.outputs || undefined,
         });
       } else {
-        const result = await createSubroutine(
-          data.request,
-          viewerId,
-          data.integrations.length > 0 ? data.integrations : undefined
-        );
+        const result = await createSubroutine(data.request, viewerId, integrationsToUse);
 
         setExecutionState({
           phase: "completed",
@@ -154,13 +160,21 @@ export default function PlaygroundPage() {
       const apiError = err as ApiError;
 
       if (isIntegrationAuthRequiredError(apiError)) {
+        // Use first requirement for auth info (there's usually just one)
+        const firstReq = apiError.error.requirements?.[0];
+        // Access subroutine from the original apiError (not the narrowed type)
+        const subroutineData = (err as ApiError).subroutine;
         setExecutionState({
           phase: "error",
           error: apiError.error.message,
+          // Include generated code if subroutine was created before auth error
+          generatedCode: subroutineData?.source,
+          subroutineId: subroutineData?.id,
           authRequired: {
-            integrationId: apiError.error.integrationId!,
-            provider: apiError.error.provider!,
-            authorizationUrl: apiError.error.authorizationUrl!,
+            integrationId: firstReq?.integrationId ?? apiError.error.integrationId!,
+            integrationName: firstReq?.integrationName ?? apiError.error.integrationId!,
+            provider: firstReq?.provider ?? apiError.error.provider!,
+            authorizationUrl: firstReq?.authorizationUrl ?? apiError.error.authorizationUrl!,
           },
         });
       } else {
@@ -261,46 +275,104 @@ export default function PlaygroundPage() {
               </div>
             </div>
 
-            {/* Integration Selection */}
+            {/* Integration Mode Selection */}
             <div className="card bg-base-100 border border-base-300">
               <div className="card-body">
-                <h2 className="card-title text-lg">Integrations</h2>
+                <h2 className="card-title text-lg">Integration Mode</h2>
                 <p className="text-sm text-base-content/60 mb-4">
-                  Select which integrations this subroutine should have access to.
+                  Choose how the agent should access external services.
                 </p>
 
-                {integrations.length === 0 ? (
-                  <div className="text-center py-6 text-base-content/50">
-                    <p>No enabled integrations found.</p>
-                    <p className="text-sm mt-1">
-                      Add integrations from the Integrations page first.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {integrations.map((integration) => (
-                      <label
-                        key={integration.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                          selectedIntegrations?.includes(integration.id)
-                            ? "border-primary bg-primary/5"
-                            : "border-base-300 hover:border-base-content/20"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-primary checkbox-sm"
-                          checked={selectedIntegrations?.includes(integration.id) || false}
-                          onChange={() => handleIntegrationToggle(integration.id)}
-                        />
-                        <div className="flex-1">
-                          <span className="font-medium">{integration.name}</span>
-                          <span className="ml-2 badge badge-ghost badge-sm capitalize">
-                            {integration.provider}
-                          </span>
-                        </div>
-                      </label>
-                    ))}
+                {/* Mode Selection */}
+                <div className="space-y-3 mb-4">
+                  <label
+                    className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                      integrationMode === "discovery"
+                        ? "border-primary bg-primary/5"
+                        : "border-base-300 hover:border-base-content/20"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      className="radio radio-primary mt-0.5"
+                      value="discovery"
+                      {...register("integrationMode")}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Search size={16} />
+                        <span className="font-medium">Auto-discover</span>
+                        <span className="badge badge-info badge-sm">Recommended</span>
+                      </div>
+                      <p className="text-sm text-base-content/60 mt-1">
+                        Agent discovers available integrations and sets up new ones as needed.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                      integrationMode === "provided"
+                        ? "border-primary bg-primary/5"
+                        : "border-base-300 hover:border-base-content/20"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      className="radio radio-primary mt-0.5"
+                      value="provided"
+                      {...register("integrationMode")}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <ListChecks size={16} />
+                        <span className="font-medium">Use selected integrations</span>
+                      </div>
+                      <p className="text-sm text-base-content/60 mt-1">
+                        Agent can only use the integrations you select below.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Integration List - only shown in "provided" mode */}
+                {integrationMode === "provided" && (
+                  <div className="border-t border-base-300 pt-4 mt-2">
+                    <h3 className="font-medium text-sm mb-3">Select integrations:</h3>
+                    {integrations.length === 0 ? (
+                      <div className="text-center py-6 text-base-content/50">
+                        <p>No enabled integrations found.</p>
+                        <p className="text-sm mt-1">
+                          Add integrations from the Integrations page first.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {integrations.map((integration) => (
+                          <label
+                            key={integration.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                              selectedIntegrations?.includes(integration.id)
+                                ? "border-primary bg-primary/5"
+                                : "border-base-300 hover:border-base-content/20"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-primary checkbox-sm"
+                              checked={selectedIntegrations?.includes(integration.id) || false}
+                              onChange={() => handleIntegrationToggle(integration.id)}
+                            />
+                            <div className="flex-1">
+                              <span className="font-medium">{integration.name}</span>
+                              <span className="ml-2 badge badge-ghost badge-sm capitalize">
+                                {integration.provider}
+                              </span>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -392,19 +464,22 @@ export default function PlaygroundPage() {
                 {executionState.authRequired && (
                   <div className="mt-3">
                     <p className="text-sm mb-2">
-                      The integration "{executionState.authRequired.provider}" requires
-                      authorization.
+                      The integration{" "}
+                      <strong>"{executionState.authRequired.integrationName}"</strong> (
+                      {executionState.authRequired.provider}) requires authorization.
                     </p>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        globalThis.open(executionState.authRequired?.authorizationUrl, "_blank")
-                      }
-                      className="btn btn-sm btn-outline gap-2"
-                    >
-                      <ExternalLink size={14} />
-                      Authorize Integration
-                    </button>
+                    {executionState.authRequired.authorizationUrl && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          globalThis.open(executionState.authRequired?.authorizationUrl, "_blank")
+                        }
+                        className="btn btn-sm btn-outline gap-2"
+                      >
+                        <ExternalLink size={14} />
+                        Authorize Integration
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
