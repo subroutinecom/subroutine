@@ -51,6 +51,8 @@ export interface AuthRequirement {
   provider: string;
   authorizationUrl: string;
   state: string;
+  patLinkUrl?: string;
+  authInstructions?: string;
 }
 
 export interface IntegrationAuthRequiredError {

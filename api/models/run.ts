@@ -8,6 +8,7 @@ import { getConnectedAccountByViewer } from "./connected-account.ts";
 import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import { IntegrationAuthRequiredError } from "./errors.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
+import { generatePatLinkUrl } from "./pat-link.ts";
 import type { SandboxMcpConfig } from "../integrations/providers/types.ts";
 
 export type Run = {
@@ -109,7 +110,13 @@ export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> 
     .execute();
 
   if (params.wait) {
-    await executeInSandbox(runId, subroutine.source, sandboxIntegrations, params.inputs);
+    await executeInSandbox(
+      runId,
+      subroutine.source,
+      sandboxIntegrations,
+      params.inputs,
+      params.timeoutMs
+    );
     const completedRun = await getRun(runId, params.organizationId);
     if (!completedRun) {
       throw new Error("Run not found after execution");
@@ -117,7 +124,7 @@ export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> 
     return completedRun;
   }
 
-  executeInSandbox(runId, subroutine.source, sandboxIntegrations, params.inputs);
+  executeInSandbox(runId, subroutine.source, sandboxIntegrations, params.inputs, params.timeoutMs);
   return run;
 };
 
@@ -218,8 +225,64 @@ const buildSandboxIntegrations = async (params: {
             credentials: connectedAccount.credentials,
           },
         });
+      } else if (
+        authConfig.authStrategy.type === "api_key" &&
+        authConfig.authStrategy.viewerScoped
+      ) {
+        // Viewer-scoped api_key - user provides their own PAT
+        console.log(
+          `[buildSandboxIntegrations] api_key with viewerScoped, looking up connected account for viewer: ${params.viewerId}`
+        );
+        const connectedAccount = await getConnectedAccountByViewer(
+          params.viewerId,
+          integrationId,
+          params.organizationId
+        );
+
+        console.log(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
+        if (!connectedAccount) {
+          // Generate PAT link for user to provide their API key
+          const metadata = authConfig.metadata || {};
+          const patLink = await generatePatLinkUrl({
+            integrationId,
+            viewerId: params.viewerId,
+            organizationId: params.organizationId,
+          });
+
+          throw new IntegrationAuthRequiredError({
+            viewerId: params.viewerId,
+            requirements: [
+              {
+                integrationId,
+                integrationName: integration.name,
+                provider,
+                authorizationUrl: "",
+                state: "",
+                patLinkUrl: patLink.url,
+                authInstructions: metadata.authInstructions as string | undefined,
+              },
+            ],
+          });
+        }
+
+        // Set the apiKey from the connected account's accessToken
+        mcpConfig.apiKey = connectedAccount.credentials.accessToken;
+
+        integrations.push({
+          id: integration.id,
+          provider,
+          name: integration.name,
+          authConfig: authConfig as unknown as Record<string, unknown>,
+          mcpConfig,
+          account: {
+            id: connectedAccount.id,
+            viewerId: connectedAccount.viewerId,
+            accountIdentifier: connectedAccount.accountIdentifier,
+            credentials: connectedAccount.credentials,
+          },
+        });
       } else {
-        // Non-viewer-scoped MCP (none, api_key, custom_headers)
+        // Non-viewer-scoped MCP (none, api_key without viewerScoped, custom_headers)
         integrations.push({
           id: integration.id,
           provider,
@@ -292,8 +355,14 @@ const executeInSandbox = async (
   runId: string,
   sourceCode: string,
   integrations: SandboxIntegrationDefinition[],
-  inputs?: Record<string, unknown>
+  inputs?: Record<string, unknown>,
+  timeoutMs?: number
 ): Promise<void> => {
+  const executionStart = Date.now();
+  console.log(
+    `[executeInSandbox] Starting execution for run ${runId}, timeoutMs: ${timeoutMs ?? "default"}`
+  );
+
   try {
     const startedAt = new Date().toISOString();
 
@@ -315,6 +384,9 @@ const executeInSandbox = async (
       "}\n";
 
     const sandboxUrl = "http://sandbox/test/executeTypescript";
+    console.log(
+      `[executeInSandbox] Sending request to sandbox after ${Date.now() - executionStart}ms`
+    );
     const response = await fetch(sandboxUrl, {
       method: "POST",
       headers: {
@@ -323,8 +395,12 @@ const executeInSandbox = async (
       body: JSON.stringify({
         code: codeToExecute,
         integrations,
+        timeoutMs,
       }),
     });
+    console.log(
+      `[executeInSandbox] Sandbox responded after ${Date.now() - executionStart}ms, status: ${response.status}`
+    );
 
     const sandboxResult = (await response.json()) as {
       success?: boolean;

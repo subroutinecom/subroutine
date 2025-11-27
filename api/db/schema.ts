@@ -8,6 +8,7 @@ export interface Database {
   apikey: ApiKeyTable;
   integration: IntegrationTable;
   connected_account: ConnectedAccountTable;
+  pat_link: PatLinkTable;
   user: User;
   session: Session;
   account: Account;
@@ -94,6 +95,18 @@ export interface ConnectedAccountTable {
   accountIdentifier: string | null;
   status: string;
   lastUsedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PatLinkTable {
+  id: string;
+  integrationId: string;
+  viewerId: string;
+  organizationId: string;
+  status: string;
+  expiresAt: string;
+  usedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

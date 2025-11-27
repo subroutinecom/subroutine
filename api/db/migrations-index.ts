@@ -8,6 +8,7 @@ import * as migration_3 from "../migrations/20251115_2105_integrations_schema.ts
 import * as migration_4 from "../migrations/20251116_1200_subroutine_org_integrations.ts";
 import * as migration_5 from "../migrations/20251125_connected_account_viewerid.ts";
 import * as migration_6 from "../migrations/20251126_dynamic_mcp_status.ts";
+import * as migration_7 from "../migrations/20251127_pat_link.ts";
 
 export const migrations = {
   "001_initial_schema": migration_0,
@@ -17,4 +18,5 @@ export const migrations = {
   "20251116_1200_subroutine_org_integrations": migration_4,
   "20251125_connected_account_viewerid": migration_5,
   "20251126_dynamic_mcp_status": migration_6,
+  "20251127_pat_link": migration_7,
 };

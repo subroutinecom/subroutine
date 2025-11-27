@@ -14,9 +14,14 @@ app.get("/_status", (c) => {
 });
 
 app.post("/test/executeTypescript", async (c) => {
+  const requestStart = Date.now();
   try {
     const body = await c.req.json();
-    const { code, integrations } = body;
+    const { code, integrations, timeoutMs } = body;
+
+    console.log(
+      `[Sandbox] Received executeTypescript request, timeoutMs: ${timeoutMs ?? "default"}`
+    );
 
     if (!code || typeof code !== "string") {
       return c.json(
@@ -30,7 +35,13 @@ app.post("/test/executeTypescript", async (c) => {
 
     const result = await sandboxManager.executeCode(code, {
       integrations: Array.isArray(integrations) ? integrations : undefined,
+      timeoutMs: typeof timeoutMs === "number" ? timeoutMs : undefined,
     });
+
+    const elapsed = Date.now() - requestStart;
+    console.log(
+      `[Sandbox] executeTypescript completed in ${elapsed}ms, success: ${result.success}`
+    );
 
     if (result.success) {
       return c.json(result);
