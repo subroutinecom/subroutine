@@ -16,9 +16,9 @@ import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
-import { completeMockAuthorization } from "./services/mock-oauth.ts";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
-import { generatePatLinkUrl, submitPatLink, validatePatLink } from "./models/pat-link.ts";
+import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
+import { registerTestEndpoints, registerAuthenticatedTestEndpoints } from "./testEndpoints";
 
 const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";
 
@@ -187,47 +187,7 @@ const initialize = async () => {
   });
 
   if (ENABLE_MOCK_OAUTH) {
-    app.get("/tests/mock_oauth/authorize", (c) => {
-      const state = c.req.query("state");
-      if (!state) {
-        return c.json(
-          {
-            error: {
-              code: "VALIDATION",
-              message: "state parameter is required",
-            },
-          },
-          400
-        );
-      }
-
-      const redirectParam = c.req.query("redirect_uri");
-      const origin = new URL(c.req.url);
-      const callbackUrl = redirectParam
-        ? new URL(redirectParam)
-        : new URL("/tests/mock_oauth/callback", `${origin.protocol}//${origin.host}`);
-      callbackUrl.searchParams.set("state", state);
-      callbackUrl.searchParams.set("code", randomUUID());
-      return c.redirect(callbackUrl.toString());
-    });
-
-    app.get("/tests/mock_oauth/callback", async (c) => {
-      const state = c.req.query("state");
-      if (!state) {
-        return c.json(
-          {
-            error: {
-              code: "VALIDATION",
-              message: "state parameter is required",
-            },
-          },
-          400
-        );
-      }
-
-      await completeMockAuthorization(state);
-      return c.json({ success: true });
-    });
+    registerTestEndpoints(app);
   }
 
   app.use(
@@ -369,69 +329,9 @@ const initialize = async () => {
 
   app.use("*", authMiddleware);
 
-  // POST /tests/pat-link/generate - Generate a PAT link (test only, authenticated)
+  // Register test endpoints that require authentication
   if (ENABLE_MOCK_OAUTH) {
-    app.post("/tests/pat-link/generate", async (c) => {
-      const auth = c.get("auth");
-      if (!auth?.organizationId) {
-        return c.json(
-          {
-            error: {
-              code: "ORGANIZATION_REQUIRED",
-              message: "Active organization is required",
-            },
-          },
-          403
-        );
-      }
-
-      let body: { integrationId?: string; viewerId?: string };
-      try {
-        body = await c.req.json();
-      } catch {
-        return c.json(
-          {
-            error: {
-              code: "VALIDATION",
-              message: "Invalid JSON body",
-            },
-          },
-          400
-        );
-      }
-
-      if (!body.integrationId || typeof body.integrationId !== "string") {
-        return c.json(
-          {
-            error: {
-              code: "VALIDATION",
-              message: "integrationId field is required",
-            },
-          },
-          400
-        );
-      }
-
-      if (!body.viewerId || typeof body.viewerId !== "string") {
-        return c.json(
-          {
-            error: {
-              code: "VALIDATION",
-              message: "viewerId field is required",
-            },
-          },
-          400
-        );
-      }
-
-      const result = await generatePatLinkUrl({
-        integrationId: body.integrationId,
-        viewerId: body.viewerId,
-        organizationId: auth.organizationId,
-      });
-
-      return c.json(result);
-    });
+    registerAuthenticatedTestEndpoints(app);
   }
 
   const transports: Record<string, StreamableHTTPServerTransport> = {};

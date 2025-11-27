@@ -123,56 +123,89 @@ MCP INTEGRATIONS (REAL EXTERNAL ACCESS):
 These integrations connect to REAL external services - they are NOT mocked.
 Available integrations: ${validNames}
 
-CRITICAL: THE INTEGRATIONS TYPE - YOU MUST USE THIS EXACT TYPE DEFINITION
+EXACT TYPE DECLARATIONS - COPY THESE EXACTLY (DO NOT MODIFY):
 
-The Integrations type has ONLY ONE METHOD: getMcpClient(). Copy this EXACTLY:
+/**
+ * Tool information returned by listTools()
+ */
+type McpTool = {
+  name: string;
+  description?: string;
+  inputSchema: {
+    type: "object";
+    properties?: Record<string, unknown>;
+    required?: string[];
+  };
+};
 
+/**
+ * Result from calling a tool
+ */
+type McpToolResult = {
+  content: Array<{ type: string; text?: string }>;
+  isError?: boolean;
+};
+
+/**
+ * MCP Client - returned by getMcpClient()
+ * This is the ONLY way to interact with MCP integrations.
+ */
+type McpClient = {
+  listTools(): Promise<{ tools: McpTool[] }>;
+  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<McpToolResult>;
+};
+
+/**
+ * The integrations parameter passed to main().
+ * It has ONE method: getMcpClient(name) which returns an McpClient.
+ * DO NOT add other properties - they do not exist!
+ */
 type Integrations = {
   getMcpClient(name: string): Promise<McpClient>;
 };
 
-type McpClient = {
-  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
-    content: Array<{ type: string; text?: string }>;
-    isError?: boolean;
-  }>;
-};
-
-DO NOT DEFINE YOUR OWN Integrations TYPE. The type above is the ONLY correct one.
+DO NOT DEFINE YOUR OWN TYPES. Use the declarations above EXACTLY as shown.
+The first parameter of main() must be typed as "integrations: unknown" since
+the Integrations type is defined in your code, not imported.
 
 WRONG VS RIGHT - CRITICAL EXAMPLES
 
-X WRONG - This will NOT work:
-  type Integrations = { ${exampleName}: { get_me(): Promise<any> } };  // WRONG TYPE!
+X WRONG - These will NOT work:
+  type Integrations = { ${exampleName}: { call(): Promise<any> } };  // WRONG! Don't invent types!
   const result = await integrations.${exampleName}.get_me();  // WRONG! No such property!
-  const result = await integrations.${exampleName}.search();  // WRONG! No such property!
+  const result = await integrations.linear.call("tool");  // WRONG! No such method!
 
-* RIGHT - This is how you MUST do it:
-  const client = await integrations.getMcpClient("${exampleName}");
+✓ RIGHT - This is how you MUST do it:
+  const client = await (integrations as Integrations).getMcpClient("${exampleName}");
   const result = await client.callTool({ name: "get_me", arguments: {} });
-
-The integrations object does NOT have properties like "${exampleName}".
-It has ONE method: getMcpClient(name) which returns a client.
-The client has ONE method: callTool({ name, arguments }).
 
 STEP-BY-STEP USAGE
 
-1. FIRST call listMcpTools({ integrationName: "${exampleName}" }) to discover tools
-2. Get a client: const client = await integrations.getMcpClient("${exampleName}");
+1. FIRST call listMcpTools({ integrationName: "${exampleName}" }) to discover available tools
+2. Get a client: const client = await (integrations as Integrations).getMcpClient("${exampleName}");
 3. Call a tool: const result = await client.callTool({ name: "tool_name", arguments: {...} });
 4. Parse response: const data = JSON.parse(result.content[0]?.text || "{}");
 
 COMPLETE WORKING EXAMPLE - COPY THIS PATTERN
 
-type Integrations = {
-  getMcpClient(name: string): Promise<McpClient>;
+type McpTool = {
+  name: string;
+  description?: string;
+  inputSchema: { type: "object"; properties?: Record<string, unknown>; required?: string[] };
+};
+
+type McpToolResult = {
+  content: Array<{ type: string; text?: string }>;
+  isError?: boolean;
 };
 
 type McpClient = {
-  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
-    content: Array<{ type: string; text?: string }>;
-    isError?: boolean;
-  }>;
+  listTools(): Promise<{ tools: McpTool[] }>;
+  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<McpToolResult>;
+};
+
+type Integrations = {
+  getMcpClient(name: string): Promise<McpClient>;
 };
 
 type Inputs = { query: string };
@@ -327,7 +360,7 @@ EXAMPLE (simple, no integrations needed):
 For "add two numbers", call generateSubroutine with:
 - inputsSchema: { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" } }, "required": [] }
 - outputsSchema: { "type": "object", "properties": { "result": { "type": "number" }, "calculation": { "type": "string" } }, "required": ["result", "calculation"] }
-- code: "type Integrations = Record<string, never>;\\ntype Inputs = { x?: number; y?: number };\\ntype Outputs = { result: number; calculation: string };\\n\\nexport async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs> {\\n  const x = inputs.x ?? 0;\\n  const y = inputs.y ?? 0;\\n  return { result: x + y, calculation: \`\${x} + \${y} = \${x + y}\` };\\n}"`;
+- code: "type Inputs = { x?: number; y?: number };\\ntype Outputs = { result: number; calculation: string };\\n\\nexport async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {\\n  const x = inputs.x ?? 0;\\n  const y = inputs.y ?? 0;\\n  return { result: x + y, calculation: \`\${x} + \${y} = \${x + y}\` };\\n}"`;
 };
 
 type PromptOptions = {

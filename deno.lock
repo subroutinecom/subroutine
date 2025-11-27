@@ -90,6 +90,7 @@
     "npm:tailwindcss@^4.1.13": "4.1.17",
     "npm:theme-change@^2.5.0": "2.5.0",
     "npm:tough-cookie@6": "6.0.0",
+    "npm:ts-morph@26": "26.0.0",
     "npm:typescript-eslint@^8.46.3": "8.46.3_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.46.3__eslint@9.39.1__typescript@5.9.3",
     "npm:typescript@*": "5.9.3",
     "npm:typescript@^5.9.2": "5.9.3",
@@ -6565,6 +6566,7 @@
       "npm:graphql@^16.12.0",
       "npm:prettier@^3.6.2",
       "npm:theme-change@^2.5.0",
+      "npm:ts-morph@26",
       "npm:typescript-eslint@^8.46.3",
       "npm:vite@^7.2.0"
     ],
@@ -6632,6 +6634,7 @@
           "npm:kysely@~0.28.8",
           "npm:nanoid@^5.1.6",
           "npm:pg@^8.16.3",
+          "npm:ts-morph@26",
           "npm:yaml@^2.8.1",
           "npm:zod@^3.25.76"
         ]
@@ -6662,6 +6665,7 @@
           "npm:graphql-request@^7.3.3",
           "npm:graphql-tag@^2.12.6",
           "npm:tough-cookie@6",
+          "npm:ts-morph@26",
           "npm:zod@^3.25.76"
         ]
       }

@@ -1,0 +1,163 @@
+import type { OpenAPIHono } from "@hono/zod-openapi";
+import { randomUUID } from "node:crypto";
+import type { AuthContext } from "./middlewares/auth";
+import { completeMockAuthorization } from "./services/mock-oauth";
+import { generatePatLinkUrl } from "./models/pat-link";
+import { validateCode } from "./agent/validation";
+
+/**
+ * Register test-only endpoints. These are only available when ENABLE_MOCK_OAUTH is true.
+ */
+export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: AuthContext } }>) => {
+  // Mock OAuth authorize endpoint
+  app.get("/tests/mock_oauth/authorize", (c) => {
+    const state = c.req.query("state");
+    if (!state) {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "state parameter is required",
+          },
+        },
+        400
+      );
+    }
+
+    const redirectParam = c.req.query("redirect_uri");
+    const origin = new URL(c.req.url);
+    const callbackUrl = redirectParam
+      ? new URL(redirectParam)
+      : new URL("/tests/mock_oauth/callback", `${origin.protocol}//${origin.host}`);
+    callbackUrl.searchParams.set("state", state);
+    callbackUrl.searchParams.set("code", randomUUID());
+    return c.redirect(callbackUrl.toString());
+  });
+
+  // Mock OAuth callback endpoint
+  app.get("/tests/mock_oauth/callback", async (c) => {
+    const state = c.req.query("state");
+    if (!state) {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "state parameter is required",
+          },
+        },
+        400
+      );
+    }
+
+    await completeMockAuthorization(state);
+    return c.json({ success: true });
+  });
+
+  // Code validation endpoint - validates subroutine code without generating
+  // Placed in non-authenticated endpoints for testing purposes
+  app.post("/tests/validate-code", async (c) => {
+    let body: { code?: string };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "Invalid JSON body",
+          },
+        },
+        400
+      );
+    }
+
+    if (!body.code || typeof body.code !== "string") {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "code field is required",
+          },
+        },
+        400
+      );
+    }
+
+    const result = validateCode(body.code);
+
+    return c.json({
+      valid: result.valid,
+      errors: result.errors,
+    });
+  });
+};
+
+/**
+ * Register authenticated test endpoints. These require auth middleware to be applied first.
+ */
+export const registerAuthenticatedTestEndpoints = (
+  app: OpenAPIHono<{ Variables: { auth: AuthContext } }>
+) => {
+  // PAT link generation endpoint
+  app.post("/tests/pat-link/generate", async (c) => {
+    const auth = c.get("auth");
+    if (!auth?.organizationId) {
+      return c.json(
+        {
+          error: {
+            code: "ORGANIZATION_REQUIRED",
+            message: "Active organization is required",
+          },
+        },
+        403
+      );
+    }
+
+    let body: { integrationId?: string; viewerId?: string };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "Invalid JSON body",
+          },
+        },
+        400
+      );
+    }
+
+    if (!body.integrationId || typeof body.integrationId !== "string") {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "integrationId field is required",
+          },
+        },
+        400
+      );
+    }
+
+    if (!body.viewerId || typeof body.viewerId !== "string") {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "viewerId field is required",
+          },
+        },
+        400
+      );
+    }
+
+    const result = await generatePatLinkUrl({
+      integrationId: body.integrationId,
+      viewerId: body.viewerId,
+      organizationId: auth.organizationId,
+    });
+
+    return c.json(result);
+  });
+};

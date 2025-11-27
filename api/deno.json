@@ -22,7 +22,8 @@
     "nanoid": "npm:nanoid@^5.1.6",
     "pg": "npm:pg@^8.16.3",
     "yaml": "npm:yaml@^2.8.1",
-    "zod": "npm:zod@^3.25.76"
+    "zod": "npm:zod@^3.25.76",
+    "ts-morph": "npm:ts-morph@^26.0.0"
   },
   "compilerOptions": {
     "lib": ["deno.ns", "DOM", "DOM.Iterable", "ES2022"],
@@ -33,8 +34,8 @@
   },
   "tasks": {
     "migrations:generate": "deno run --allow-read --allow-write scripts/generate-migrations-index.ts",
-    "build": "deno task migrations:generate && deno compile --allow-net --allow-read --allow-env --allow-ffi --sloppy-imports --output api-server server.ts",
-    "start": "deno run --env-file=.env --allow-net --allow-read --allow-env --allow-ffi --sloppy-imports --node-modules-dir server.ts",
+    "build": "deno task migrations:generate && deno compile --allow-net --allow-read --allow-env --allow-ffi --allow-sys --sloppy-imports --output api-server server.ts",
+    "start": "deno run --env-file=.env --allow-net --allow-read --allow-env --allow-ffi --allow-sys --sloppy-imports --node-modules-dir server.ts",
     "typecheck": "deno check --sloppy-imports",
     "auth:generate": "deno run --allow-read --allow-write --allow-run --allow-env scripts/better-auth-generate.ts",
     "db:flush": "deno run --allow-read --allow-env --allow-net scripts/flush-db.ts",
