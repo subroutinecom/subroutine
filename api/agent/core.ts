@@ -16,6 +16,7 @@ import { generateAuthorizationUrl } from "../services/oauth";
 import { generatePatLinkUrl } from "../models/pat-link";
 import type { IntegrationProvider } from "../integrations/providers";
 import { runMcpIntegrator } from "./mcp-integrator";
+import { validateCode } from "./validation";
 
 /**
  * Context for MCP tool discovery during code generation.
@@ -34,63 +35,6 @@ type GenerateCodeOptions = {
   mcpIntegrations?: McpIntegrationInfo[];
   /** Context for MCP tool discovery - required if mcpIntegrations is non-empty */
   mcpContext?: McpContext;
-};
-
-// TODO(greg) Move validation to be performed a bit smarter (eslint/ast-grep)
-const validateCode = (code: string): { valid: boolean; errors: string[] } => {
-  const errors: string[] = [];
-
-  if (!code.includes("export")) {
-    errors.push("Code must export the main function");
-  }
-
-  if (!code.includes("async function main")) {
-    errors.push("Code must define an async function named 'main'");
-  }
-
-  if (!code.includes("type Inputs") && !code.includes("interface Inputs")) {
-    errors.push("Code must define an Inputs type");
-  }
-
-  if (!code.includes("type Outputs") && !code.includes("interface Outputs")) {
-    errors.push("Code must define an Outputs type");
-  }
-
-  if (!code.includes("return")) {
-    errors.push("Function must have a return statement");
-  }
-
-  if (code.includes("ctx.") || code.includes("ctx,")) {
-    errors.push(
-      "Code should not use ctx parameter. The main function signature is: main(integrations: Integrations, inputs: Inputs)"
-    );
-  }
-
-  const integrationsTypeMatch = code.match(/type\s+Integrations\s*=\s*\{([^}]+)\}/);
-  if (integrationsTypeMatch) {
-    const typeBody = integrationsTypeMatch[1];
-    if (!typeBody.includes("getMcpClient")) {
-      errors.push(
-        "Wrong Integrations type! The Integrations type must have getMcpClient method. " +
-          "Correct type: type Integrations = { getMcpClient(name: string): Promise<McpClient>; }; " +
-          "DO NOT define integration names as properties."
-      );
-    }
-  }
-
-  const wrongUsagePattern = /integrations\.(?!getMcpClient)[a-zA-Z_][a-zA-Z0-9_]*\s*\./;
-  if (wrongUsagePattern.test(code)) {
-    errors.push(
-      "Wrong integrations usage! Do NOT access integrations like 'integrations.github.method()'. " +
-        'The ONLY way to use integrations is: const client = await integrations.getMcpClient("name"); ' +
-        'then client.callTool({ name: "tool_name", arguments: {...} });'
-    );
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
 };
 
 /**
@@ -288,10 +232,13 @@ export const generateCode = async (
           const validation = validateCode(code);
 
           if (!validation.valid) {
-            console.log(`[tool:generateSubroutine] Validation failed:`, validation.errors);
+            const errorMessages = validation.errors.map((e) =>
+              e.line ? `Line ${e.line}: ${e.message}` : e.message
+            );
+            console.log(`[tool:generateSubroutine] Validation failed:`, errorMessages);
             return {
               success: false,
-              errors: validation.errors,
+              errors: errorMessages,
             };
           }
 

@@ -119,81 +119,64 @@ const getMcpIntegrationDocs = (mcpIntegrations: McpIntegrationInfo[]): string =>
   const exampleName = mcpIntegrations[0]?.name || "my-mcp-server";
 
   return `
-MCP INTEGRATIONS (REAL EXTERNAL ACCESS):
-These integrations connect to REAL external services - they are NOT mocked.
-Available integrations: ${validNames}
+MCP INTEGRATIONS:
+Available: ${validNames}
 
-CRITICAL: THE INTEGRATIONS TYPE - YOU MUST USE THIS EXACT TYPE DEFINITION
+TYPE DECLARATIONS (copy these exactly):
 
-The Integrations type has ONLY ONE METHOD: getMcpClient(). Copy this EXACTLY:
+type McpToolResult = {
+  content: Array<{ type: string; text?: string }>;
+  isError?: boolean;
+};
+
+type McpClient = {
+  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<McpToolResult>;
+};
 
 type Integrations = {
   getMcpClient(name: string): Promise<McpClient>;
 };
 
-type McpClient = {
-  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
-    content: Array<{ type: string; text?: string }>;
-    isError?: boolean;
-  }>;
+CRITICAL - getMcpClient returns a Promise, you MUST await it:
+  ✓ const client = await integrations.getMcpClient("${exampleName}");  // Correct
+  ✗ const client = integrations.getMcpClient("${exampleName}");        // Wrong - missing await!
+
+USAGE:
+1. Call listMcpTools({ integrationName: "${exampleName}" }) to discover tools
+2. const client = await integrations.getMcpClient("${exampleName}");
+3. const result = await client.callTool({ name: "tool_name", arguments: {...} });
+4. const data = JSON.parse(result.content[0]?.text || "{}");
+
+COMPLETE EXAMPLE:
+
+type McpToolResult = {
+  content: Array<{ type: string; text?: string }>;
+  isError?: boolean;
 };
 
-DO NOT DEFINE YOUR OWN Integrations TYPE. The type above is the ONLY correct one.
-
-WRONG VS RIGHT - CRITICAL EXAMPLES
-
-X WRONG - This will NOT work:
-  type Integrations = { ${exampleName}: { get_me(): Promise<any> } };  // WRONG TYPE!
-  const result = await integrations.${exampleName}.get_me();  // WRONG! No such property!
-  const result = await integrations.${exampleName}.search();  // WRONG! No such property!
-
-* RIGHT - This is how you MUST do it:
-  const client = await integrations.getMcpClient("${exampleName}");
-  const result = await client.callTool({ name: "get_me", arguments: {} });
-
-The integrations object does NOT have properties like "${exampleName}".
-It has ONE method: getMcpClient(name) which returns a client.
-The client has ONE method: callTool({ name, arguments }).
-
-STEP-BY-STEP USAGE
-
-1. FIRST call listMcpTools({ integrationName: "${exampleName}" }) to discover tools
-2. Get a client: const client = await integrations.getMcpClient("${exampleName}");
-3. Call a tool: const result = await client.callTool({ name: "tool_name", arguments: {...} });
-4. Parse response: const data = JSON.parse(result.content[0]?.text || "{}");
-
-COMPLETE WORKING EXAMPLE - COPY THIS PATTERN
+type McpClient = {
+  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<McpToolResult>;
+};
 
 type Integrations = {
   getMcpClient(name: string): Promise<McpClient>;
-};
-
-type McpClient = {
-  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<{
-    content: Array<{ type: string; text?: string }>;
-    isError?: boolean;
-  }>;
 };
 
 type Inputs = { query: string };
 type Outputs = { results: unknown[] };
 
 export async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs> {
-  // Step 1: Get the MCP client for the integration
   const client = await integrations.getMcpClient("${exampleName}");
 
-  // Step 2: Call a tool using callTool() with { name, arguments }
   const result = await client.callTool({
-    name: "search",  // Use EXACT tool name from listMcpTools
+    name: "search",
     arguments: { q: inputs.query }
   });
 
-  // Step 3: Check for errors
   if (result.isError) {
     throw new Error(result.content[0]?.text || "Tool call failed");
   }
 
-  // Step 4: Parse the JSON response
   const data = JSON.parse(result.content[0]?.text || "{}");
   return { results: data.items || [] };
 }
@@ -327,7 +310,7 @@ EXAMPLE (simple, no integrations needed):
 For "add two numbers", call generateSubroutine with:
 - inputsSchema: { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" } }, "required": [] }
 - outputsSchema: { "type": "object", "properties": { "result": { "type": "number" }, "calculation": { "type": "string" } }, "required": ["result", "calculation"] }
-- code: "type Integrations = Record<string, never>;\\ntype Inputs = { x?: number; y?: number };\\ntype Outputs = { result: number; calculation: string };\\n\\nexport async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs> {\\n  const x = inputs.x ?? 0;\\n  const y = inputs.y ?? 0;\\n  return { result: x + y, calculation: \`\${x} + \${y} = \${x + y}\` };\\n}"`;
+- code: "type Inputs = { x?: number; y?: number };\\ntype Outputs = { result: number; calculation: string };\\n\\nexport async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {\\n  const x = inputs.x ?? 0;\\n  const y = inputs.y ?? 0;\\n  return { result: x + y, calculation: \`\${x} + \${y} = \${x + y}\` };\\n}"`;
 };
 
 type PromptOptions = {
