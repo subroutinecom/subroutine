@@ -9,6 +9,8 @@ export interface AuthRequirement {
   provider: IntegrationProvider;
   authorizationUrl: string;
   state: string;
+  patLinkUrl?: string;
+  authInstructions?: string;
 }
 
 export class IntegrationAuthRequiredError extends Error {

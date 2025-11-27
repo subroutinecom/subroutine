@@ -115,13 +115,20 @@ export const createMcpClient = async (
   config: SandboxMcpConfig,
   options?: McpClientOptions
 ): Promise<Client> => {
+  const startTime = Date.now();
   const opts = { ...DEFAULT_OPTIONS, ...options };
+
+  console.log(
+    `[MCP Client] Creating client for ${config.serverUrl}, transport: ${config.transport}, auth: ${config.authStrategy.type}`
+  );
 
   // Build auth headers
   const headers = buildAuthHeaders(config);
+  console.log(`[MCP Client] Auth headers built after ${Date.now() - startTime}ms`);
 
   // Create transport
   const transport = createTransport(config, headers);
+  console.log(`[MCP Client] Transport created after ${Date.now() - startTime}ms`);
 
   // Create client
   const client = new Client(
@@ -138,6 +145,7 @@ export const createMcpClient = async (
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
+    console.log(`[MCP Client] Connecting to ${config.serverUrl}...`);
     const connectPromise = client.connect(transport);
 
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -147,6 +155,13 @@ export const createMcpClient = async (
     });
 
     await Promise.race([connectPromise, timeoutPromise]);
+    console.log(`[MCP Client] Connected successfully after ${Date.now() - startTime}ms`);
+  } catch (error) {
+    const elapsed = Date.now() - startTime;
+    console.log(
+      `[MCP Client] Connection failed after ${elapsed}ms: ${error instanceof Error ? error.message : error}`
+    );
+    throw error;
   } finally {
     if (timeoutId !== undefined) {
       clearTimeout(timeoutId);

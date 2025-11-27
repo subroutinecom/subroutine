@@ -99,38 +99,54 @@ const buildDefaultServer = (): RemoteProxyServer<object> => {
 const buildServerForIntegrations = async (
   integrations: SandboxIntegrationPayload[]
 ): Promise<RemoteProxyServer<object>> => {
+  const buildStart = Date.now();
+  console.log(`[IntegrationProxy] Building server for ${integrations.length} integrations`);
+
   const server = new RemoteProxyServer<object>();
 
   // Store MCP clients by integration name for the getMcpClient getter
   const mcpClients = new Map<string, Client>();
   const mcpErrors = new Map<string, Error>();
 
+  const mcpIntegrations = integrations.filter((integration) => integration.mcpConfig);
+  console.log(`[IntegrationProxy] Found ${mcpIntegrations.length} MCP integrations to connect`);
+
   // First, connect all MCP integrations
   await Promise.all(
-    integrations
-      .filter((integration) => integration.mcpConfig)
-      .map(async (integration) => {
-        const mcpConfig = integration.mcpConfig!;
-        try {
-          const client = await createMcpClient(mcpConfig, {
-            clientName: `subroutine-${integration.name}`,
-          });
-          mcpClients.set(integration.name, client);
+    mcpIntegrations.map(async (integration) => {
+      const integrationStart = Date.now();
+      const mcpConfig = integration.mcpConfig!;
+      console.log(`[IntegrationProxy] Connecting to MCP integration '${integration.name}'...`);
+      try {
+        const client = await createMcpClient(mcpConfig, {
+          clientName: `subroutine-${integration.name}`,
+        });
+        mcpClients.set(integration.name, client);
+        console.log(
+          `[IntegrationProxy] MCP '${integration.name}' client created after ${Date.now() - integrationStart}ms`
+        );
 
-          // Log available tools for debugging
-          const { tools } = await client.listTools();
-          console.log(
-            `MCP integration '${integration.name}' connected with ${tools.length} tools: ${tools.map((t) => t.name).join(", ")}`
-          );
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-          mcpErrors.set(
-            integration.name,
-            new Error(`Failed to connect to MCP server '${integration.name}': ${errorMessage}`)
-          );
-          console.error(`MCP integration '${integration.name}' failed to connect: ${errorMessage}`);
-        }
-      })
+        // Log available tools for debugging
+        const toolsStart = Date.now();
+        const { tools } = await client.listTools();
+        console.log(
+          `[IntegrationProxy] MCP '${integration.name}' listTools completed in ${Date.now() - toolsStart}ms, found ${tools.length} tools: ${tools.map((t) => t.name).join(", ")}`
+        );
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        mcpErrors.set(
+          integration.name,
+          new Error(`Failed to connect to MCP server '${integration.name}': ${errorMessage}`)
+        );
+        console.error(
+          `[IntegrationProxy] MCP '${integration.name}' failed after ${Date.now() - integrationStart}ms: ${errorMessage}`
+        );
+      }
+    })
+  );
+
+  console.log(
+    `[IntegrationProxy] All MCP integrations processed after ${Date.now() - buildStart}ms`
   );
 
   // Register a single getMcpClient getter that returns MCP clients by name

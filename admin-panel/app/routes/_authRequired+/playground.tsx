@@ -14,15 +14,18 @@ import {
   Check,
   Search,
   ListChecks,
+  RotateCw,
 } from "lucide-react";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { graphqlClient } from "~/lib/graphql-client";
 import {
   executeRequest,
   createSubroutine,
+  runSubroutine,
   isIntegrationAuthRequiredError,
   type ApiError,
   type ExecuteRequestResult,
+  type AuthRequirement,
 } from "~/lib/api-client";
 import { useAuth } from "~/components/providers/AuthProvider";
 
@@ -70,6 +73,22 @@ interface PlaygroundFormData {
 
 type ExecutionPhase = "idle" | "generating" | "executing" | "completed" | "error";
 
+// Helper to extract auth requirements from API error (handles both new array format and legacy single fields)
+const extractAuthRequirements = (apiError: ApiError): AuthRequirement[] => {
+  if (apiError.error.requirements?.length) {
+    return apiError.error.requirements;
+  }
+  return [
+    {
+      integrationId: apiError.error.integrationId!,
+      integrationName: apiError.error.integrationId!,
+      provider: apiError.error.provider!,
+      authorizationUrl: apiError.error.authorizationUrl!,
+      state: apiError.error.state!,
+    },
+  ];
+};
+
 interface ExecutionState {
   phase: ExecutionPhase;
   generatedCode?: string;
@@ -77,12 +96,7 @@ interface ExecutionState {
   run?: ExecuteRequestResult["run"];
   outputs?: Record<string, unknown>;
   error?: string;
-  authRequired?: {
-    integrationId: string;
-    integrationName: string;
-    provider: string;
-    authorizationUrl: string;
-  };
+  authRequirements?: AuthRequirement[];
 }
 
 export default function PlaygroundPage() {
@@ -90,6 +104,7 @@ export default function PlaygroundPage() {
   const { user } = useAuth();
   const [executionState, setExecutionState] = useState<ExecutionState>({ phase: "idle" });
   const [copied, setCopied] = useState(false);
+  const [rerunning, setRerunning] = useState(false);
 
   const {
     register,
@@ -160,22 +175,16 @@ export default function PlaygroundPage() {
       const apiError = err as ApiError;
 
       if (isIntegrationAuthRequiredError(apiError)) {
-        // Use first requirement for auth info (there's usually just one)
-        const firstReq = apiError.error.requirements?.[0];
         // Access subroutine from the original apiError (not the narrowed type)
         const subroutineData = (err as ApiError).subroutine;
+
         setExecutionState({
           phase: "error",
           error: apiError.error.message,
           // Include generated code if subroutine was created before auth error
           generatedCode: subroutineData?.source,
           subroutineId: subroutineData?.id,
-          authRequired: {
-            integrationId: firstReq?.integrationId ?? apiError.error.integrationId!,
-            integrationName: firstReq?.integrationName ?? apiError.error.integrationId!,
-            provider: firstReq?.provider ?? apiError.error.provider!,
-            authorizationUrl: firstReq?.authorizationUrl ?? apiError.error.authorizationUrl!,
-          },
+          authRequirements: extractAuthRequirements(apiError),
         });
       } else {
         setExecutionState({
@@ -196,6 +205,45 @@ export default function PlaygroundPage() {
 
   const handleReset = () => {
     setExecutionState({ phase: "idle" });
+  };
+
+  const handleRerun = async () => {
+    if (!executionState.subroutineId) return;
+
+    const viewerId = user?.id || "playground-user";
+    setRerunning(true);
+
+    try {
+      const result = await runSubroutine(executionState.subroutineId, viewerId, {}, 60000);
+
+      setExecutionState((prev) => ({
+        ...prev,
+        phase: "completed",
+        run: result.run,
+        outputs: result.run.outputs || undefined,
+        error: undefined,
+        authRequirements: undefined,
+      }));
+    } catch (err) {
+      const apiError = err as ApiError;
+
+      if (isIntegrationAuthRequiredError(apiError)) {
+        setExecutionState((prev) => ({
+          ...prev,
+          phase: "error",
+          error: apiError.error.message,
+          authRequirements: extractAuthRequirements(apiError),
+        }));
+      } else {
+        setExecutionState((prev) => ({
+          ...prev,
+          phase: "error",
+          error: apiError.error?.message || "An unexpected error occurred",
+        }));
+      }
+    } finally {
+      setRerunning(false);
+    }
   };
 
   const getStatusBadge = () => {
@@ -461,25 +509,51 @@ export default function PlaygroundPage() {
                 <h3 className="font-bold">Error</h3>
                 <p className="text-sm">{executionState.error}</p>
 
-                {executionState.authRequired && (
-                  <div className="mt-3">
-                    <p className="text-sm mb-2">
-                      The integration{" "}
-                      <strong>"{executionState.authRequired.integrationName}"</strong> (
-                      {executionState.authRequired.provider}) requires authorization.
-                    </p>
-                    {executionState.authRequired.authorizationUrl && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          globalThis.open(executionState.authRequired?.authorizationUrl, "_blank")
-                        }
-                        className="btn btn-sm btn-outline gap-2"
+                {executionState.authRequirements && executionState.authRequirements.length > 0 && (
+                  <div className="mt-3 space-y-4">
+                    {executionState.authRequirements.map((req) => (
+                      <div
+                        key={req.integrationId}
+                        className="bg-error/10 rounded-lg p-3 border border-error/20"
                       >
-                        <ExternalLink size={14} />
-                        Authorize Integration
-                      </button>
-                    )}
+                        <p className="text-sm font-medium mb-2">
+                          <strong>"{req.integrationName}"</strong> ({req.provider}) requires
+                          authorization.
+                        </p>
+
+                        {req.authInstructions && (
+                          <p className="text-sm text-base-content/80 mb-3">
+                            {req.authInstructions}
+                          </p>
+                        )}
+
+                        <div className="flex flex-wrap gap-2">
+                          {req.patLinkUrl && (
+                            <button
+                              type="button"
+                              onClick={() => globalThis.open(req.patLinkUrl, "_blank")}
+                              className="btn btn-sm btn-primary gap-2"
+                            >
+                              <ExternalLink size={14} />
+                              Enter API Key / Token
+                            </button>
+                          )}
+                          {req.authorizationUrl && (
+                            <button
+                              type="button"
+                              onClick={() => globalThis.open(req.authorizationUrl, "_blank")}
+                              className="btn btn-sm btn-outline gap-2"
+                            >
+                              <ExternalLink size={14} />
+                              Authorize with OAuth
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <p className="text-xs text-base-content/60">
+                      After authorizing, try your request again.
+                    </p>
                   </div>
                 )}
               </div>
@@ -495,23 +569,45 @@ export default function PlaygroundPage() {
                     <Code size={20} />
                     Generated Code
                   </h2>
-                  <button
-                    type="button"
-                    onClick={handleCopyCode}
-                    className="btn btn-ghost btn-sm gap-2"
-                  >
-                    {copied ? (
-                      <>
-                        <Check size={14} />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={14} />
-                        Copy
-                      </>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCopyCode}
+                      className="btn btn-ghost btn-sm gap-2"
+                    >
+                      {copied ? (
+                        <>
+                          <Check size={14} />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} />
+                          Copy
+                        </>
+                      )}
+                    </button>
+                    {executionState.subroutineId && (
+                      <button
+                        type="button"
+                        onClick={handleRerun}
+                        disabled={rerunning}
+                        className="btn btn-primary btn-sm gap-2"
+                      >
+                        {rerunning ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Running...
+                          </>
+                        ) : (
+                          <>
+                            <RotateCw size={14} />
+                            Rerun
+                          </>
+                        )}
+                      </button>
                     )}
-                  </button>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <pre className="p-4 text-sm font-mono bg-base-200/50 overflow-auto max-h-96">

@@ -13,6 +13,7 @@ import {
 import { getConnectedAccountByViewer } from "../models/connected-account";
 import { listMcpTools as listMcpToolsUtil } from "../utils/mcp-client";
 import { generateAuthorizationUrl } from "../services/oauth";
+import { generatePatLinkUrl } from "../models/pat-link";
 import type { IntegrationProvider } from "../integrations/providers";
 import { runMcpIntegrator } from "./mcp-integrator";
 
@@ -170,15 +171,25 @@ const handleListMcpTools = async (
             state: auth.state,
           });
         }
-      } else {
-        // viewerScoped api_key without OAuth
+      } else if (mcpConfig.authStrategy.type === "api_key" && mcpConfig.authStrategy.viewerScoped) {
+        // viewerScoped api_key - generate PAT link
         if (!capturedAuthRequirements.some((r) => r.integrationId === integrationId)) {
+          const patLink = await generatePatLinkUrl({
+            integrationId,
+            viewerId: mcpContext.viewerId,
+            organizationId: mcpContext.organizationId,
+          });
+
+          const metadata = mcpConfig.metadata || {};
+
           capturedAuthRequirements.push({
             integrationId,
             integrationName: integration.name,
             provider: integration.provider as IntegrationProvider,
             authorizationUrl: "",
             state: "",
+            patLinkUrl: patLink.url,
+            authInstructions: metadata.authInstructions as string | undefined,
           });
         }
       }

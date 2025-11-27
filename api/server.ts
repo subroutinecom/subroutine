@@ -17,6 +17,7 @@ import { generateSubroutine, getSubroutine, listSubroutines } from "./models/sub
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
 import { completeMockAuthorization } from "./services/mock-oauth.ts";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
+import { generatePatLinkUrl, submitPatLink, validatePatLink } from "./models/pat-link.ts";
 
 const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";
 
@@ -256,7 +257,157 @@ const initialize = async () => {
     return response;
   });
 
+  app.use(
+    "/api/pat-link/*",
+    cors({
+      origin: "*", // Public endpoint - allow any origin
+      credentials: false,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type"],
+      maxAge: 86400,
+    }) as any
+  );
+
+  // GET /api/pat-link/:id - Get PAT link info (public)
+  app.get("/api/pat-link/:id", async (c) => {
+    const id = c.req.param("id");
+
+    const validation = await validatePatLink(id);
+
+    if (!validation.valid || !validation.patLink) {
+      return c.json(
+        {
+          error: {
+            code: "INVALID_LINK",
+            message: validation.error || "Invalid or expired link",
+          },
+        },
+        404
+      );
+    }
+
+    const patLink = validation.patLink;
+
+    return c.json({
+      id: patLink.id,
+      integration: patLink.integration,
+      expiresAt: patLink.expiresAt,
+    });
+  });
+
+  app.post("/api/pat-link/:id/submit", async (c) => {
+    const id = c.req.param("id");
+
+    let body: { pat?: string };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "Invalid JSON body",
+          },
+        },
+        400
+      );
+    }
+
+    if (!body.pat || typeof body.pat !== "string") {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "pat field is required",
+          },
+        },
+        400
+      );
+    }
+
+    const result = await submitPatLink(id, body.pat);
+
+    if (!result.success) {
+      return c.json(
+        {
+          error: {
+            code: "SUBMISSION_FAILED",
+            message: result.error || "Failed to submit token",
+          },
+        },
+        400
+      );
+    }
+
+    return c.json({ success: true });
+  });
+
   app.use("*", authMiddleware);
+
+  // POST /tests/pat-link/generate - Generate a PAT link (test only, authenticated)
+  if (ENABLE_MOCK_OAUTH) {
+    app.post("/tests/pat-link/generate", async (c) => {
+      const auth = c.get("auth");
+      if (!auth?.organizationId) {
+        return c.json(
+          {
+            error: {
+              code: "ORGANIZATION_REQUIRED",
+              message: "Active organization is required",
+            },
+          },
+          403
+        );
+      }
+
+      let body: { integrationId?: string; viewerId?: string };
+      try {
+        body = await c.req.json();
+      } catch {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION",
+              message: "Invalid JSON body",
+            },
+          },
+          400
+        );
+      }
+
+      if (!body.integrationId || typeof body.integrationId !== "string") {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION",
+              message: "integrationId field is required",
+            },
+          },
+          400
+        );
+      }
+
+      if (!body.viewerId || typeof body.viewerId !== "string") {
+        return c.json(
+          {
+            error: {
+              code: "VALIDATION",
+              message: "viewerId field is required",
+            },
+          },
+          400
+        );
+      }
+
+      const result = await generatePatLinkUrl({
+        integrationId: body.integrationId,
+        viewerId: body.viewerId,
+        organizationId: auth.organizationId,
+      });
+
+      return c.json(result);
+    });
+  }
 
   const transports: Record<string, StreamableHTTPServerTransport> = {};
 
