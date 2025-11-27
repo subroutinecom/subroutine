@@ -1,6 +1,7 @@
 {
   "imports": {
     "@graphql-codegen/schema-ast": "npm:@graphql-codegen/schema-ast@^5.0.0",
+    "@hono-rate-limiter/hono-rate-limiter": "jsr:@hono-rate-limiter/hono-rate-limiter@^0.4.2",
     "@hono/hono": "jsr:@hono/hono@^4.10.5",
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.18.4",
     "@pothos/core": "npm:@pothos/core@^4.10.0",

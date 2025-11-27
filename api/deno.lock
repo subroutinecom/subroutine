@@ -1,7 +1,9 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@hono-rate-limiter/hono-rate-limiter@~0.4.2": "0.4.2",
     "jsr:@hono/hono@^4.10.5": "4.10.5",
+    "jsr:@hono/hono@^4.6.12": "4.10.5",
     "npm:@ai-sdk/anthropic@^2.0.41": "2.0.41_zod@3.25.76",
     "npm:@ai-sdk/google-vertex@^3.0.58": "3.0.58_zod@3.25.76",
     "npm:@ai-sdk/openai@^2.0.64": "2.0.64_zod@3.25.76",
@@ -28,6 +30,12 @@
     "npm:zod@^3.25.76": "3.25.76"
   },
   "jsr": {
+    "@hono-rate-limiter/hono-rate-limiter@0.4.2": {
+      "integrity": "028c2ded3d21be30fb787044ddac3e656b24a9d3a06e42241a5a693409210217",
+      "dependencies": [
+        "jsr:@hono/hono@^4.6.12"
+      ]
+    },
     "@hono/hono@4.10.5": {
       "integrity": "13dbf2a528feb8189ad13394b213f0cf5f83b0ba4b2fadd0549993426db9ad2d"
     }
@@ -4200,6 +4208,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@hono-rate-limiter/hono-rate-limiter@~0.4.2",
       "jsr:@hono/hono@^4.10.5",
       "npm:@ai-sdk/anthropic@^2.0.41",
       "npm:@ai-sdk/google-vertex@^3.0.58",

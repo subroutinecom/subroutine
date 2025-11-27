@@ -1,4 +1,5 @@
 import { cors } from "@hono/hono/cors";
+import { rateLimiter } from "@hono-rate-limiter/hono-rate-limiter";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
@@ -268,9 +269,32 @@ const initialize = async () => {
     }) as any
   );
 
+  const getClientIp = (c: { req: { header: (name: string) => string | undefined } }) => {
+    return (
+      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+      c.req.header("x-real-ip") ??
+      "unknown"
+    );
+  };
+
+  const patLinkGetLimiter = rateLimiter({
+    windowMs: config.rateLimit?.patLinkGet?.windowMs ?? 60000,
+    limit: config.rateLimit?.patLinkGet?.limit ?? 30,
+    standardHeaders: "draft-6",
+    keyGenerator: getClientIp,
+  });
+
+  const patLinkSubmitLimiter = rateLimiter({
+    windowMs: config.rateLimit?.patLinkSubmit?.windowMs ?? 60000,
+    limit: config.rateLimit?.patLinkSubmit?.limit ?? 5,
+    standardHeaders: "draft-6",
+    keyGenerator: getClientIp,
+  });
+
   // GET /api/pat-link/:id - Get PAT link info (public)
-  app.get("/api/pat-link/:id", async (c) => {
-    const id = c.req.param("id");
+  // @ts-expect-error - hono-rate-limiter types have minor incompatibility with local Hono types
+  app.get("/api/pat-link/:id", patLinkGetLimiter, async (c) => {
+    const id = c.req.param("id") as string;
 
     const validation = await validatePatLink(id);
 
@@ -295,8 +319,9 @@ const initialize = async () => {
     });
   });
 
-  app.post("/api/pat-link/:id/submit", async (c) => {
-    const id = c.req.param("id");
+  // @ts-expect-error - hono-rate-limiter types have minor incompatibility with local Hono types
+  app.post("/api/pat-link/:id/submit", patLinkSubmitLimiter, async (c) => {
+    const id = c.req.param("id") as string;
 
     let body: { pat?: string };
     try {
