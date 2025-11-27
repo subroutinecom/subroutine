@@ -7,6 +7,7 @@ import { requireReturnInMain } from "./require-return-in-main";
 import { noCtxUsage } from "./no-ctx-usage";
 import { noFetchCalls } from "./no-fetch-calls";
 import { requireMcpClientAccess } from "./require-mcp-client-access";
+import { requireAwaitMcpClient } from "./require-await-mcp-client";
 
 export const rules: ValidationRule[] = [
   requireExportMain,
@@ -17,6 +18,7 @@ export const rules: ValidationRule[] = [
   noCtxUsage,
   noFetchCalls,
   requireMcpClientAccess,
+  requireAwaitMcpClient,
 ];
 
 export {
@@ -28,4 +30,5 @@ export {
   noCtxUsage,
   noFetchCalls,
   requireMcpClientAccess,
+  requireAwaitMcpClient,
 };

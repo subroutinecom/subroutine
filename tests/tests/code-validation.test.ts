@@ -438,72 +438,53 @@ describe("AST-based Code Validation", () => {
     });
   });
 
-  describe("no-custom-integrations-type", () => {
-    it("accepts code without custom Integrations type", async () => {
+  describe("require-await-mcp-client", () => {
+    it("accepts awaited getMcpClient call", async () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
         export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+          const client = await integrations.getMcpClient("test");
           return {};
         }
       `;
       const result = await validateCode(code);
       expect(
-        result.errors.filter((e: ValidationError) => e.rule === "no-custom-integrations-type")
+        result.errors.filter((e: ValidationError) => e.rule === "require-await-mcp-client")
       ).toHaveLength(0);
     });
 
-    it("rejects custom Integrations type alias", async () => {
+    it("rejects non-awaited getMcpClient call", async () => {
       const code = `
-        type Integrations = {
-          getMcpClient: (name: string) => { call: (op: string) => Promise<unknown> };
-        };
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs> {
+        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+          const client = integrations.getMcpClient("test");
           return {};
         }
       `;
       const result = await validateCode(code);
       expect(result.valid).toBe(false);
       expect(
-        result.errors.some((e: ValidationError) => e.rule === "no-custom-integrations-type")
+        result.errors.some((e: ValidationError) => e.rule === "require-await-mcp-client")
       ).toBe(true);
     });
 
-    it("rejects custom Integrations interface", async () => {
+    it("error message explains the fix", async () => {
       const code = `
-        interface Integrations {
-          linear: { call: (tool: string) => Promise<unknown> };
-        }
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs> {
-          return {};
-        }
-      `;
-      const result = await validateCode(code);
-      expect(result.valid).toBe(false);
-      expect(
-        result.errors.some((e: ValidationError) => e.rule === "no-custom-integrations-type")
-      ).toBe(true);
-    });
-
-    it("error message explains to use unknown type", async () => {
-      const code = `
-        type Integrations = { foo: string };
-        type Inputs = {};
-        type Outputs = {};
-        export async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs> {
+        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+          const client = integrations.getMcpClient("linear");
           return {};
         }
       `;
       const result = await validateCode(code);
       const error = result.errors.find(
-        (e: ValidationError) => e.rule === "no-custom-integrations-type"
+        (e: ValidationError) => e.rule === "require-await-mcp-client"
       );
-      expect(error?.message).toContain("unknown");
-      expect(error?.message).toContain("getMcpClient");
+      expect(error?.message).toContain("await");
+      expect(error?.message).toContain("Promise");
     });
   });
 
