@@ -128,7 +128,6 @@ export type Mutation = {
   deleteApiKey?: Maybe<Scalars['Boolean']['output']>;
   deleteConnectedAccount?: Maybe<Scalars['Boolean']['output']>;
   deleteIntegration?: Maybe<Scalars['Boolean']['output']>;
-  generatePatLink?: Maybe<PatLinkResult>;
   updateApiKey?: Maybe<ApiKey>;
   updateIntegration?: Maybe<Integration>;
 };
@@ -171,12 +170,6 @@ export type MutationDeleteIntegrationArgs = {
 };
 
 
-export type MutationGeneratePatLinkArgs = {
-  integrationId: Scalars['String']['input'];
-  viewerId: Scalars['String']['input'];
-};
-
-
 export type MutationUpdateApiKeyArgs = {
   id: Scalars['String']['input'];
   metadata?: InputMaybe<Scalars['String']['input']>;
@@ -189,13 +182,6 @@ export type MutationUpdateIntegrationArgs = {
   enabled?: InputMaybe<Scalars['Boolean']['input']>;
   id: Scalars['String']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type PatLinkResult = {
-  __typename?: 'PatLinkResult';
-  expiresAt?: Maybe<Scalars['String']['output']>;
-  id?: Maybe<Scalars['String']['output']>;
-  url?: Maybe<Scalars['String']['output']>;
 };
 
 export type Query = {

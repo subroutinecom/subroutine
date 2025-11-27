@@ -7,6 +7,7 @@ import {
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
 import { gql } from "graphql-request";
+import type { CookieJar } from "tough-cookie";
 
 const API_BASE = "http://api:80";
 
@@ -20,15 +21,31 @@ const CREATE_INTEGRATION = gql`
   }
 `;
 
-const GENERATE_PAT_LINK = gql`
-  mutation GeneratePatLink($integrationId: String!, $viewerId: String!) {
-    generatePatLink(integrationId: $integrationId, viewerId: $viewerId) {
-      id
-      url
-      expiresAt
-    }
+// Helper to generate PAT link via authenticated REST endpoint
+const generatePatLink = async (
+  cookieJar: CookieJar,
+  integrationId: string,
+  viewerId: string
+): Promise<{ id: string; url: string; expiresAt: string }> => {
+  const cookies = await cookieJar.getCookies(API_BASE);
+  const cookieHeader = cookies.map((c) => `${c.key}=${c.value}`).join("; ");
+
+  const response = await fetch(`${API_BASE}/tests/pat-link/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: cookieHeader,
+    },
+    body: JSON.stringify({ integrationId, viewerId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || "Failed to generate PAT link");
   }
-`;
+
+  return response.json();
+};
 
 describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () => {
   it("should generate PAT link and retrieve it via REST API", async () => {
@@ -88,18 +105,15 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const integrationId = createResult.createIntegration.id;
 
-    // Generate a PAT link via GraphQL
-    const patLinkResult = (await graphqlClient.request(GENERATE_PAT_LINK, {
-      integrationId,
-      viewerId: "test-viewer-123",
-    })) as { generatePatLink: { id: string; url: string; expiresAt: string } };
+    // Generate a PAT link via REST API
+    const patLinkResult = await generatePatLink(cookieJar, integrationId, "test-viewer-123");
 
-    expect(patLinkResult.generatePatLink).toBeDefined();
-    expect(patLinkResult.generatePatLink.id).toBeDefined();
-    expect(patLinkResult.generatePatLink.url).toContain("/pat/");
-    expect(patLinkResult.generatePatLink.expiresAt).toBeDefined();
+    expect(patLinkResult).toBeDefined();
+    expect(patLinkResult.id).toBeDefined();
+    expect(patLinkResult.url).toContain("/pat/");
+    expect(patLinkResult.expiresAt).toBeDefined();
 
-    const patLinkId = patLinkResult.generatePatLink.id;
+    const patLinkId = patLinkResult.id;
 
     // Test: GET the PAT link info via public REST API
     const response = await fetch(`${API_BASE}/api/pat-link/${patLinkId}`);
@@ -171,12 +185,9 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const integrationId = createResult.createIntegration.id;
 
-    const patLinkResult = (await graphqlClient.request(GENERATE_PAT_LINK, {
-      integrationId,
-      viewerId: "test-viewer-submit-456",
-    })) as { generatePatLink: { id: string; url: string; expiresAt: string } };
+    const patLinkResult = await generatePatLink(cookieJar, integrationId, "test-viewer-submit-456");
 
-    const patLinkId = patLinkResult.generatePatLink.id;
+    const patLinkId = patLinkResult.id;
 
     // Submit a PAT via REST API
     const response = await fetch(`${API_BASE}/api/pat-link/${patLinkId}/submit`, {
@@ -239,12 +250,9 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const integrationId = createResult.createIntegration.id;
 
-    const patLinkResult = (await graphqlClient.request(GENERATE_PAT_LINK, {
-      integrationId,
-      viewerId: "test-viewer-used-789",
-    })) as { generatePatLink: { id: string; url: string; expiresAt: string } };
+    const patLinkResult = await generatePatLink(cookieJar, integrationId, "test-viewer-used-789");
 
-    const patLinkId = patLinkResult.generatePatLink.id;
+    const patLinkId = patLinkResult.id;
 
     // First submission should succeed
     const firstResponse = await fetch(`${API_BASE}/api/pat-link/${patLinkId}/submit`, {
@@ -331,12 +339,13 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const integrationId = createResult.createIntegration.id;
 
-    const patLinkResult = (await graphqlClient.request(GENERATE_PAT_LINK, {
+    const patLinkResult = await generatePatLink(
+      cookieJar,
       integrationId,
-      viewerId: "test-viewer-required-000",
-    })) as { generatePatLink: { id: string; url: string; expiresAt: string } };
+      "test-viewer-required-000"
+    );
 
-    const patLinkId = patLinkResult.generatePatLink.id;
+    const patLinkId = patLinkResult.id;
 
     // Submit without pat field
     const response = await fetch(`${API_BASE}/api/pat-link/${patLinkId}/submit`, {

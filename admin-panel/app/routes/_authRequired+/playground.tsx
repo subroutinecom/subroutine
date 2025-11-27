@@ -73,6 +73,22 @@ interface PlaygroundFormData {
 
 type ExecutionPhase = "idle" | "generating" | "executing" | "completed" | "error";
 
+// Helper to extract auth requirements from API error (handles both new array format and legacy single fields)
+const extractAuthRequirements = (apiError: ApiError): AuthRequirement[] => {
+  if (apiError.error.requirements?.length) {
+    return apiError.error.requirements;
+  }
+  return [
+    {
+      integrationId: apiError.error.integrationId!,
+      integrationName: apiError.error.integrationId!,
+      provider: apiError.error.provider!,
+      authorizationUrl: apiError.error.authorizationUrl!,
+      state: apiError.error.state!,
+    },
+  ];
+};
+
 interface ExecutionState {
   phase: ExecutionPhase;
   generatedCode?: string;
@@ -161,18 +177,6 @@ export default function PlaygroundPage() {
       if (isIntegrationAuthRequiredError(apiError)) {
         // Access subroutine from the original apiError (not the narrowed type)
         const subroutineData = (err as ApiError).subroutine;
-        // Build requirements array from either requirements[] or legacy single fields
-        const requirements: AuthRequirement[] = apiError.error.requirements?.length
-          ? apiError.error.requirements
-          : [
-              {
-                integrationId: apiError.error.integrationId!,
-                integrationName: apiError.error.integrationId!,
-                provider: apiError.error.provider!,
-                authorizationUrl: apiError.error.authorizationUrl!,
-                state: apiError.error.state!,
-              },
-            ];
 
         setExecutionState({
           phase: "error",
@@ -180,7 +184,7 @@ export default function PlaygroundPage() {
           // Include generated code if subroutine was created before auth error
           generatedCode: subroutineData?.source,
           subroutineId: subroutineData?.id,
-          authRequirements: requirements,
+          authRequirements: extractAuthRequirements(apiError),
         });
       } else {
         setExecutionState({
@@ -224,23 +228,11 @@ export default function PlaygroundPage() {
       const apiError = err as ApiError;
 
       if (isIntegrationAuthRequiredError(apiError)) {
-        const requirements: AuthRequirement[] = apiError.error.requirements?.length
-          ? apiError.error.requirements
-          : [
-              {
-                integrationId: apiError.error.integrationId!,
-                integrationName: apiError.error.integrationId!,
-                provider: apiError.error.provider!,
-                authorizationUrl: apiError.error.authorizationUrl!,
-                state: apiError.error.state!,
-              },
-            ];
-
         setExecutionState((prev) => ({
           ...prev,
           phase: "error",
           error: apiError.error.message,
-          authRequirements: requirements,
+          authRequirements: extractAuthRequirements(apiError),
         }));
       } else {
         setExecutionState((prev) => ({

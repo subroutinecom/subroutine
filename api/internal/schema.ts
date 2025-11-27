@@ -31,7 +31,6 @@ import {
   type IntegrationProvider,
 } from "../integrations/providers.ts";
 import { discoverMcpOAuth, type McpOAuthDiscoveryResult } from "../services/mcp-oauth-discovery.ts";
-import { generatePatLinkUrl, type GeneratePatLinkResult } from "../models/pat-link.ts";
 
 type User = {
   id: string;
@@ -243,17 +242,6 @@ McpOAuthDiscoveryResultType.implement({
       nullable: true,
     }),
     error: t.exposeString("error", { nullable: true }),
-  }),
-});
-
-// PAT Link Result Type
-const PatLinkResultType = builder.objectRef<GeneratePatLinkResult>("PatLinkResult");
-
-PatLinkResultType.implement({
-  fields: (t) => ({
-    id: t.exposeString("id"),
-    url: t.exposeString("url"),
-    expiresAt: t.exposeString("expiresAt"),
   }),
 });
 
@@ -478,20 +466,6 @@ builder.mutationType({
       },
       resolve: async (_parent, args, ctx) => {
         return deleteConnectedAccount(args.id, ctx.session.activeOrganizationId);
-      },
-    }),
-    generatePatLink: t.field({
-      type: PatLinkResultType,
-      args: {
-        integrationId: t.arg.string({ required: true }),
-        viewerId: t.arg.string({ required: true }),
-      },
-      resolve: async (_parent, args, ctx) => {
-        return generatePatLinkUrl({
-          integrationId: args.integrationId,
-          viewerId: args.viewerId,
-          organizationId: ctx.session.activeOrganizationId,
-        });
       },
     }),
   }),

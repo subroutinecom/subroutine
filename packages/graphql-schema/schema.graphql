@@ -122,7 +122,6 @@ type Mutation {
   deleteApiKey(id: String!): Boolean
   deleteConnectedAccount(id: String!): Boolean
   deleteIntegration(id: String!): Boolean
-  generatePatLink(integrationId: String!, viewerId: String!): PatLinkResult
   updateApiKey(
     id: String!
     """JSON string of metadata"""
@@ -136,12 +135,6 @@ type Mutation {
     id: String!
     name: String
   ): Integration
-}
-
-type PatLinkResult {
-  expiresAt: String
-  id: String
-  url: String
 }
 
 type Query {
