@@ -66,6 +66,7 @@
     "npm:lucide-react@0.554": "0.554.0_react@18.3.1",
     "npm:nanoid@^5.1.6": "5.1.6",
     "npm:pg@^8.16.3": "8.16.3",
+    "npm:prettier@3": "3.7.1",
     "npm:prettier@^3.6.2": "3.7.1",
     "npm:react-dom@^18.3.1": "18.3.1_react@18.3.1",
     "npm:react-dom@^19.1.1": "19.2.0_react@18.3.1",
