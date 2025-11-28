@@ -7,7 +7,7 @@
     "check": "deno check --sloppy-imports",
     "lint": "deno lint --sloppy-imports",
     "eslint": "deno run -A --sloppy-imports npm:eslint@9",
-    "prettier:check": "deno run -A npm:prettier@3 --log-level debug --check .",
+    "prettier:check": "deno run -A npm:prettier@3 --check .",
     "prettier:format": "deno run -A npm:prettier@3 --write .",
     "test": "docker compose exec tests deno test tests --allow-net --allow-env --allow-read --sloppy-imports --unstable-worker-options",
     "validate": "deno task check && deno task lint && deno task eslint && deno task prettier:check"
