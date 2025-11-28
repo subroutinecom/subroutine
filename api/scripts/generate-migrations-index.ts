@@ -17,13 +17,6 @@ for await (const entry of Deno.readDir(migrationsDir)) {
 // Sort to ensure consistent order
 migrationFiles.sort();
 
-// // Generate the TypeScript code
-// const imports = migrationFiles
-//   .map((filename, index) => {
-//     return `import * as migration_${index} from "../migrations/${filename}";`;
-//   })
-//   .join("\n");
-
 const exportsObj = migrationFiles
   .map((filename) => {
     const migrationName = filename.replace(/\.ts$/, "");
