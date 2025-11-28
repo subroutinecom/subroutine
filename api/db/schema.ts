@@ -8,7 +8,7 @@ export interface Database {
   apikey: ApiKeyTable;
   integration: IntegrationTable;
   connected_account: ConnectedAccountTable;
-  pat_link: PatLinkTable;
+  mcp_session: McpSessionTable;
   user: User;
   session: Session;
   account: Account;
@@ -16,6 +16,12 @@ export interface Database {
   organization: Organization;
   member: Member;
   invitation: Invitation;
+}
+
+export interface McpSessionTable {
+  id: string;
+  organization_id: string | null;
+  created_at: string;
 }
 
 export interface SubroutineTable {
