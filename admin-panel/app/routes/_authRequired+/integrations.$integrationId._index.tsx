@@ -25,9 +25,11 @@ const GET_INTEGRATION_QUERY = gql`
       name
       authConfig
       enabled
+      visibility
       createdAt
       updatedAt
     }
+    isSuperadmin
   }
 `;
 
@@ -59,6 +61,7 @@ interface IntegrationResponse {
   name: string;
   authConfig: string;
   enabled: boolean;
+  visibility: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -82,9 +85,12 @@ export const clientLoader = async ({ params }: { params: { integrationId: string
   const integrationId = params.integrationId;
 
   const [integrationData, accountsData] = await Promise.all([
-    graphqlClient.request<{ integration: IntegrationResponse }>(GET_INTEGRATION_QUERY, {
-      id: integrationId,
-    }),
+    graphqlClient.request<{ integration: IntegrationResponse; isSuperadmin: boolean }>(
+      GET_INTEGRATION_QUERY,
+      {
+        id: integrationId,
+      }
+    ),
     graphqlClient.request<{ connectedAccountsByIntegration: ConnectedAccountResponse[] }>(
       GET_CONNECTED_ACCOUNTS_QUERY,
       { integrationId }
@@ -98,6 +104,7 @@ export const clientLoader = async ({ params }: { params: { integrationId: string
 
   return {
     integration,
+    isSuperadmin: integrationData.isSuperadmin,
     connectedAccounts: accountsData.connectedAccountsByIntegration,
   };
 };
@@ -132,10 +139,13 @@ const getStatusIcon = (status: string) => {
 export default function IntegrationDetailPage() {
   const navigate = useNavigate();
   const { activeOrganization } = useAuth();
-  const { integration, connectedAccounts } = useLoaderData<typeof clientLoader>();
+  const { integration, isSuperadmin, connectedAccounts } = useLoaderData<typeof clientLoader>();
 
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isGlobal = integration.visibility === "global";
+  const canManage = !isGlobal || isSuperadmin;
 
   const handleDelete = async () => {
     if (
@@ -169,25 +179,33 @@ export default function IntegrationDetailPage() {
               <ArrowLeft size={20} />
               Back
             </Link>
-            <Link to={`/integrations/${integration.id}/edit`} className="btn btn-primary">
-              <Pencil size={20} />
-              Edit
-            </Link>
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleting}
-              className="btn btn-error"
-            >
-              {deleting ? (
-                <span className="loading loading-spinner loading-sm"></span>
-              ) : (
-                <>
-                  <Trash2 size={20} />
-                  Delete
-                </>
-              )}
-            </button>
+            {canManage ? (
+              <>
+                <Link to={`/integrations/${integration.id}/edit`} className="btn btn-primary">
+                  <Pencil size={20} />
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="btn btn-error"
+                >
+                  {deleting ? (
+                    <span className="loading loading-spinner loading-sm"></span>
+                  ) : (
+                    <>
+                      <Trash2 size={20} />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </>
+            ) : (
+              <span className="badge badge-info badge-lg gap-2">
+                Global Integration (Read Only)
+              </span>
+            )}
           </div>
         }
       />

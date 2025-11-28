@@ -79,9 +79,11 @@ export interface IntegrationTable {
   organizationId: string;
   provider: string;
   name: string;
+  description: string | null; // AI-readable description for integration selection
   authConfig: string;
   enabled: boolean;
-  status: string; // "active" = manual/normal, "dynamic" = AI-managed
+  status: string; // "static" = manual/normal, "dynamic" = AI-managed
+  visibility: string; // "private" = org-specific, "global" = first-party registry
   createdAt: string;
   updatedAt: string;
 }

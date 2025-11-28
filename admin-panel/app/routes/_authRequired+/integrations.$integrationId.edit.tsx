@@ -23,7 +23,7 @@ export function meta() {
 }
 
 const GET_INTEGRATION_QUERY = gql`
-  query GetIntegration($id: String!) {
+  query GetIntegrationForEdit($id: String!) {
     integration(id: $id) {
       id
       organizationId
@@ -31,9 +31,11 @@ const GET_INTEGRATION_QUERY = gql`
       name
       authConfig
       enabled
+      visibility
       createdAt
       updatedAt
     }
+    isSuperadmin
   }
 `;
 
@@ -54,6 +56,7 @@ interface IntegrationResponse {
   name: string;
   authConfig: string;
   enabled: boolean;
+  visibility: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -90,6 +93,7 @@ export default function EditIntegrationPage() {
   const [loading, setLoading] = useState(true);
   const [serverError, setServerError] = useState<string | null>(null);
   const [integration, setIntegration] = useState<ParsedIntegration | null>(null);
+  const [canManage, setCanManage] = useState(true);
 
   const {
     register,
@@ -123,15 +127,20 @@ export default function EditIntegrationPage() {
     const fetchIntegration = async () => {
       try {
         setLoading(true);
-        const data = await graphqlClient.request<{ integration: IntegrationResponse }>(
-          GET_INTEGRATION_QUERY,
-          { id: integrationId }
-        );
+        const data = await graphqlClient.request<{
+          integration: IntegrationResponse;
+          isSuperadmin: boolean;
+        }>(GET_INTEGRATION_QUERY, { id: integrationId });
         const parsed: ParsedIntegration = {
           ...data.integration,
           authConfig: JSON.parse(data.integration.authConfig) as IntegrationAuthConfig,
         };
         setIntegration(parsed);
+
+        // Check if user can manage this integration
+        const isGlobal = parsed.visibility === "global";
+        const userCanManage = !isGlobal || data.isSuperadmin;
+        setCanManage(userCanManage);
 
         if (parsed.authConfig.type === "mcp") {
           // MCP integration
@@ -315,6 +324,29 @@ export default function EditIntegrationPage() {
         <PageHeader title="Integration Not Found" subtitle={activeOrganization?.name} />
         <div className="alert alert-error">
           <span>Integration not found</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canManage) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Access Denied"
+          subtitle={activeOrganization?.name}
+          action={
+            <Link to={`/integrations/${integrationId}`} className="btn btn-ghost">
+              <ArrowLeft size={20} />
+              Back
+            </Link>
+          }
+        />
+        <div className="alert alert-warning">
+          <span>
+            This is a global integration and can only be modified by superadmins. You can view the
+            integration details but cannot edit them.
+          </span>
         </div>
       </div>
     );
