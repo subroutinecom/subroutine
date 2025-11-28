@@ -25,7 +25,7 @@ migrationFiles.sort();
 //   .join("\n");
 
 const exportsObj = migrationFiles
-  .map((filename, index) => {
+  .map((filename) => {
     const migrationName = filename.replace(/\.ts$/, "");
     return `  "${migrationName}": import("../migrations/${filename}"),`;
   })
