@@ -1,0 +1,215 @@
+# First-Party OAuth Integration Registry
+# =========================================
+# This is just an example, but you can bulk load MCP integrations directly to
+# your own registry using this file
+
+integrations:
+  - provider: mcp
+    name: "GitHub"
+    description: |
+      Official GitHub MCP server for repository management, code search, pull
+      requests, issues, and GitHub Actions. Use when users need to interact with
+      GitHub repositories, review code, create or manage issues/PRs, search code,
+      or work with GitHub's platform features. Supports OAuth 2.1 with PKCE.
+    serverUrl: "https://api.githubcopilot.com/mcp/"
+    transport: streamable-http
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_GITHUB_CLIENT_ID"
+      clientSecret: "YOUR_GITHUB_CLIENT_SECRET"
+      authUrl: "https://github.com/login/oauth/authorize"
+      tokenUrl: "https://github.com/login/oauth/access_token"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes:
+        - repo
+        - read:user
+        - read:org
+
+  - provider: mcp
+    name: "Linear"
+    description: |
+      Official Linear MCP server for modern issue tracking and project management.
+      Use when users need to create, update, or search issues in Linear, manage
+      sprints and cycles, track project progress, or coordinate engineering
+      workflows. Ideal for software development teams using Linear.
+    serverUrl: "https://mcp.linear.app/sse"
+    transport: sse
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_LINEAR_CLIENT_ID"
+      clientSecret: "YOUR_LINEAR_CLIENT_SECRET"
+      authUrl: "https://linear.app/oauth/authorize"
+      tokenUrl: "https://api.linear.app/oauth/token"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes:
+        - read
+        - write
+        - issues:create
+        - comments:create
+
+  - provider: mcp
+    name: "Atlassian"
+    description: |
+      Official Atlassian MCP server for Jira and Confluence. Use when users need
+      to create or manage Jira issues, search Confluence documentation, track
+      sprints, or work with Atlassian Cloud products. Covers both project
+      management (Jira) and knowledge management (Confluence) in one integration.
+    serverUrl: "https://mcp.atlassian.com/v1/sse"
+    transport: sse
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_ATLASSIAN_CLIENT_ID"
+      clientSecret: "YOUR_ATLASSIAN_CLIENT_SECRET"
+      authUrl: "https://auth.atlassian.com/authorize"
+      tokenUrl: "https://auth.atlassian.com/oauth/token"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes:
+        - read:jira-work
+        - write:jira-work
+        - read:jira-user
+        - read:confluence-content.all
+        - write:confluence-content
+
+  - provider: mcp
+    name: "Notion"
+    description: |
+      Official Notion MCP server for workspace and knowledge management. Use when
+      users need to search, create, or update Notion pages and databases, manage
+      documentation, query structured data, or organize team knowledge bases.
+      Supports real-time read and write access to pages and databases.
+    serverUrl: "https://mcp.notion.com/mcp"
+    transport: streamable-http
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_NOTION_CLIENT_ID"
+      clientSecret: "YOUR_NOTION_CLIENT_SECRET"
+      authUrl: "https://api.notion.com/v1/oauth/authorize"
+      tokenUrl: "https://api.notion.com/v1/oauth/token"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes: [] # Notion uses integration capabilities instead of scopes
+
+  - provider: mcp
+    name: "Figma"
+    description: |
+      Official Figma MCP server for design collaboration and handoff. Use when
+      users need to access design files, extract design tokens, inspect components,
+      review designs, or bridge design-to-development workflows. Enables AI to
+      understand and work with Figma designs directly.
+    serverUrl: "https://mcp.figma.com/mcp"
+    transport: streamable-http
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_FIGMA_CLIENT_ID"
+      clientSecret: "YOUR_FIGMA_CLIENT_SECRET"
+      authUrl: "https://www.figma.com/oauth"
+      tokenUrl: "https://api.figma.com/v1/oauth/token"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes:
+        - files:read
+
+  - provider: mcp
+    name: "Sentry"
+    description: |
+      Official Sentry MCP server for error tracking and performance monitoring.
+      Use when users need to investigate errors, analyze stack traces, track
+      issues across releases, query error patterns, or debug production problems.
+      Essential for debugging and monitoring application health.
+    serverUrl: "https://mcp.sentry.dev/mcp"
+    transport: streamable-http
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_SENTRY_CLIENT_ID"
+      clientSecret: "YOUR_SENTRY_CLIENT_SECRET"
+      authUrl: "https://sentry.io/oauth/authorize/"
+      tokenUrl: "https://sentry.io/oauth/token/"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes:
+        - project:read
+        - event:read
+        - org:read
+
+  - provider: mcp
+    name: "Vercel"
+    description: |
+      Official Vercel MCP server for deployment and hosting management. Use when
+      users need to check deployment status, analyze build logs, manage projects,
+      search documentation, or monitor serverless functions. Currently read-only
+      for safety. Ideal for frontend and fullstack deployment workflows.
+    serverUrl: "https://mcp.vercel.com"
+    transport: streamable-http
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_VERCEL_CLIENT_ID"
+      clientSecret: "YOUR_VERCEL_CLIENT_SECRET"
+      authUrl: "https://vercel.com/oauth/authorize"
+      tokenUrl: "https://api.vercel.com/v2/oauth/access_token"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes: [] # Vercel uses integration configuration
+
+  - provider: mcp
+    name: "Cloudflare"
+    description: |
+      Official Cloudflare MCP server for edge infrastructure management. Use when
+      users need to manage DNS records, configure caching and security rules,
+      deploy Workers, analyze traffic with Radar, or work with Cloudflare's
+      platform. Covers CDN, DNS, Workers, and observability.
+    serverUrl: "https://docs.mcp.cloudflare.com/sse"
+    transport: sse
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_CLOUDFLARE_CLIENT_ID"
+      clientSecret: "YOUR_CLOUDFLARE_CLIENT_SECRET"
+      authUrl: "https://dash.cloudflare.com/oauth2/authorize"
+      tokenUrl: "https://dash.cloudflare.com/oauth2/token"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes:
+        - account:read
+        - zone:read
+        - dns:edit
+
+  - provider: mcp
+    name: "Stripe"
+    description: |
+      Official Stripe MCP server for payment processing and financial operations.
+      Use when users need to query transactions, manage subscriptions, analyze
+      revenue data, handle refunds, or work with Stripe's payment platform.
+      Supports OAuth with Dynamic Client Registration for secure access.
+    serverUrl: "https://mcp.stripe.com"
+    transport: streamable-http
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_STRIPE_CLIENT_ID"
+      clientSecret: "YOUR_STRIPE_CLIENT_SECRET"
+      authUrl: "https://connect.stripe.com/oauth/authorize"
+      tokenUrl: "https://connect.stripe.com/oauth/token"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes:
+        - read_only
+
+  - provider: mcp
+    name: "PayPal"
+    description: |
+      Official PayPal MCP server for commerce and payment management. Use when
+      users need to manage invoices, handle disputes, process refunds, manage
+      subscriptions, or work with PayPal's commerce tools. Ideal for merchants
+      and businesses using PayPal for payments.
+    serverUrl: "https://mcp.paypal.com/sse"
+    transport: sse
+    authStrategy:
+      type: bearer_passthrough
+    oauthConfig:
+      clientId: "YOUR_PAYPAL_CLIENT_ID"
+      clientSecret: "YOUR_PAYPAL_CLIENT_SECRET"
+      authUrl: "https://www.paypal.com/signin/authorize"
+      tokenUrl: "https://api.paypal.com/v1/oauth2/token"
+      redirectUri: "https://your-domain.com/oauth/callback"
+      scopes: [] # PayPal uses client credentials

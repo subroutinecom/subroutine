@@ -61,10 +61,13 @@ export interface McpAuthConfig {
 export type IntegrationAuthConfig = OAuth2AuthConfig | McpAuthConfig;
 
 export type IntegrationStatus = "static" | "dynamic";
+export type IntegrationVisibility = "private" | "global";
 
-export interface IntegrationWithConfig extends Omit<IntegrationTable, "authConfig" | "status"> {
+export interface IntegrationWithConfig
+  extends Omit<IntegrationTable, "authConfig" | "status" | "visibility"> {
   authConfig: IntegrationAuthConfig;
   status: IntegrationStatus;
+  visibility: IntegrationVisibility;
 }
 
 const validateOAuth2AuthConfig = (config: OAuth2AuthConfig) => {
@@ -214,7 +217,9 @@ export type CreateIntegrationRequest = {
   organizationId: string;
   provider: IntegrationProvider;
   name: string;
+  description?: string;
   authConfig: IntegrationAuthConfig;
+  visibility?: IntegrationVisibility;
 };
 
 export type UpdateIntegrationRequest = {
@@ -235,6 +240,7 @@ export const createIntegration = async (
   validateIntegrationAuthConfig(params.authConfig);
   const id = nanoid();
   const now = new Date().toISOString();
+  const visibility = params.visibility ?? "private";
 
   const encryptedAuthConfig = encrypt(JSON.stringify(params.authConfig));
 
@@ -245,9 +251,11 @@ export const createIntegration = async (
       organizationId: params.organizationId,
       provider: params.provider,
       name: params.name,
+      description: params.description ?? null,
       authConfig: encryptedAuthConfig,
       enabled: true,
       status: "static",
+      visibility,
       createdAt: now,
       updatedAt: now,
     })
@@ -258,13 +266,29 @@ export const createIntegration = async (
     organizationId: params.organizationId,
     provider: params.provider,
     name: params.name,
+    description: params.description ?? null,
     authConfig: params.authConfig,
     enabled: true,
     status: "static" as IntegrationStatus,
+    visibility,
     createdAt: now,
     updatedAt: now,
   };
 };
+
+const mapRowToIntegration = (row: IntegrationTable): IntegrationWithConfig => ({
+  id: row.id,
+  organizationId: row.organizationId,
+  provider: row.provider,
+  name: row.name,
+  description: row.description,
+  authConfig: JSON.parse(decrypt(row.authConfig)),
+  enabled: row.enabled ?? true,
+  status: (row.status ?? "static") as IntegrationStatus,
+  visibility: (row.visibility ?? "private") as IntegrationVisibility,
+  createdAt: row.createdAt,
+  updatedAt: row.updatedAt,
+});
 
 export const listIntegrations = async (
   organizationId: string
@@ -276,42 +300,7 @@ export const listIntegrations = async (
     .orderBy("createdAt", "desc")
     .execute();
 
-  return rows.map((row) => ({
-    id: row.id,
-    organizationId: row.organizationId,
-    provider: row.provider,
-    name: row.name,
-    authConfig: JSON.parse(decrypt(row.authConfig)),
-    enabled: row.enabled ?? true,
-    status: (row.status ?? "static") as IntegrationStatus,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  }));
-};
-
-export const listIntegrationsByProvider = async (
-  organizationId: string,
-  provider: IntegrationProvider
-): Promise<IntegrationWithConfig[]> => {
-  const rows = await db
-    .selectFrom("integration")
-    .selectAll()
-    .where("organizationId", "=", organizationId)
-    .where("provider", "=", provider)
-    .orderBy("createdAt", "desc")
-    .execute();
-
-  return rows.map((row) => ({
-    id: row.id,
-    organizationId: row.organizationId,
-    provider: row.provider,
-    name: row.name,
-    authConfig: JSON.parse(decrypt(row.authConfig)),
-    enabled: row.enabled ?? true,
-    status: (row.status ?? "static") as IntegrationStatus,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  }));
+  return rows.map(mapRowToIntegration);
 };
 
 export const getIntegration = async (
@@ -329,17 +318,7 @@ export const getIntegration = async (
     return null;
   }
 
-  return {
-    id: row.id,
-    organizationId: row.organizationId,
-    provider: row.provider,
-    name: row.name,
-    authConfig: JSON.parse(decrypt(row.authConfig)),
-    enabled: row.enabled ?? true,
-    status: (row.status ?? "static") as IntegrationStatus,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  };
+  return mapRowToIntegration(row);
 };
 
 export const updateIntegration = async (
@@ -399,22 +378,6 @@ export const deleteIntegration = async (id: string, organizationId: string): Pro
   return (result?.numDeletedRows ?? 0n) > 0n;
 };
 
-export const integrationExists = async (
-  organizationId: string,
-  provider: IntegrationProvider,
-  name: string
-): Promise<boolean> => {
-  const row = await db
-    .selectFrom("integration")
-    .select("id")
-    .where("organizationId", "=", organizationId)
-    .where("provider", "=", provider)
-    .where("name", "=", name)
-    .executeTakeFirst();
-
-  return !!row;
-};
-
 // dynamic integrations
 
 export type CreateDynamicIntegrationRequest = {
@@ -439,9 +402,11 @@ export const createDynamicIntegration = async (
       organizationId: params.organizationId,
       provider: "mcp",
       name: params.name,
+      description: null,
       authConfig: encryptedAuthConfig,
       enabled: true,
       status: "dynamic",
+      visibility: "private",
       createdAt: now,
       updatedAt: now,
     })
@@ -452,9 +417,11 @@ export const createDynamicIntegration = async (
     organizationId: params.organizationId,
     provider: "mcp",
     name: params.name,
+    description: null,
     authConfig: params.authConfig,
     enabled: true,
     status: "dynamic",
+    visibility: "private",
     createdAt: now,
     updatedAt: now,
   };
@@ -523,15 +490,159 @@ export const getIntegrationByName = async (
     return null;
   }
 
-  return {
-    id: row.id,
-    organizationId: row.organizationId,
-    provider: row.provider,
-    name: row.name,
-    authConfig: JSON.parse(decrypt(row.authConfig)),
-    enabled: row.enabled ?? true,
-    status: (row.status ?? "static") as IntegrationStatus,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  };
+  return mapRowToIntegration(row);
+};
+
+// Global integration functions (first-party registry)
+
+export type IntegrationVisibilityFilter = "private" | "global" | "all";
+
+/**
+ * Get integrations available to an organization with optional visibility filtering.
+ */
+export const getAvailableIntegrations = async (
+  organizationId: string,
+  visibilityFilter: IntegrationVisibilityFilter = "all"
+): Promise<IntegrationWithConfig[]> => {
+  let query = db.selectFrom("integration").selectAll().where("enabled", "=", true);
+
+  switch (visibilityFilter) {
+    case "private":
+      // Only org-specific integrations
+      query = query
+        .where("organizationId", "=", organizationId)
+        .where("visibility", "=", "private");
+      break;
+    case "global":
+      // Only global (first-party registry) integrations
+      query = query.where("visibility", "=", "global");
+      break;
+    case "all":
+    default:
+      // Both org-specific and global
+      query = query.where((eb) =>
+        eb.or([eb("organizationId", "=", organizationId), eb("visibility", "=", "global")])
+      );
+      break;
+  }
+
+  const rows = await query
+    .orderBy("visibility", "asc") // private (org-specific) first, then global
+    .orderBy("createdAt", "desc")
+    .execute();
+
+  return rows.map(mapRowToIntegration);
+};
+
+/**
+ * Get all global integrations (first-party registry).
+ * These are integrations with visibility: "global" that are available to all organizations.
+ */
+export const getGlobalIntegrations = async (): Promise<IntegrationWithConfig[]> => {
+  const rows = await db
+    .selectFrom("integration")
+    .selectAll()
+    .where("visibility", "=", "global")
+    .where("enabled", "=", true)
+    .orderBy("createdAt", "desc")
+    .execute();
+
+  return rows.map(mapRowToIntegration);
+};
+
+/**
+ * Get a global integration by ID.
+ * Unlike getIntegration, this doesn't require organizationId since global integrations
+ * are available to all organizations.
+ */
+export const getGlobalIntegrationById = async (
+  id: string
+): Promise<IntegrationWithConfig | null> => {
+  const row = await db
+    .selectFrom("integration")
+    .selectAll()
+    .where("id", "=", id)
+    .where("visibility", "=", "global")
+    .executeTakeFirst();
+
+  if (!row) {
+    return null;
+  }
+
+  return mapRowToIntegration(row);
+};
+
+/**
+ * Get an integration by ID, checking both org-specific and global integrations.
+ * This is useful when you have an integration ID but don't know if it's org-specific or global.
+ */
+export const getIntegrationOrGlobal = async (
+  id: string,
+  organizationId: string
+): Promise<IntegrationWithConfig | null> => {
+  // First try org-specific
+  const orgIntegration = await getIntegration(id, organizationId);
+  if (orgIntegration) {
+    return orgIntegration;
+  }
+
+  // Fall back to global
+  return getGlobalIntegrationById(id);
+};
+
+/**
+ * Set the visibility of an integration.
+ * Only superadmins should be able to set visibility to "global".
+ */
+export const setIntegrationVisibility = async (
+  id: string,
+  organizationId: string,
+  visibility: IntegrationVisibility
+): Promise<IntegrationWithConfig | null> => {
+  const existing = await getIntegration(id, organizationId);
+  if (!existing) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+
+  await db
+    .updateTable("integration")
+    .set({
+      visibility,
+      updatedAt: now,
+    })
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .execute();
+
+  return getIntegration(id, organizationId);
+};
+
+/**
+ * Update the description of an integration.
+ */
+export const updateIntegrationDescription = async (
+  id: string,
+  organizationId: string,
+  description: string | null
+): Promise<IntegrationWithConfig | null> => {
+  const existing = await getIntegration(id, organizationId);
+  if (!existing) {
+    return null;
+  }
+
+  const now = new Date().toISOString();
+
+  await db
+    .updateTable("integration")
+    .set({
+      description,
+      updatedAt: now,
+    })
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .execute();
+
+  return getIntegration(id, organizationId);
 };

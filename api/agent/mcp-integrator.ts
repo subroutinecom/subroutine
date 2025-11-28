@@ -49,10 +49,16 @@ export type McpIntegratorParams = {
   existingIntegrationId?: string;
 };
 
-const MCP_INTEGRATOR_SYSTEM_PROMPT = `You are an MCP Integration specialist. Your job is to find and configure MCP servers for users with minimal friction.
+const MCP_INTEGRATOR_SYSTEM_PROMPT = `You are an MCP Integration "spelunker" - a specialist that discovers and configures NEW MCP servers when no existing integration fits the user's needs.
+
+## Context: You Are the Last Resort
+You are called ONLY when:
+1. The user's organization has no suitable private (org-specific) integration
+2. The global first-party registry has no suitable integration
+3. A new integration must be discovered and configured from scratch
 
 ## Your Goal
-Set up a working MCP integration so users can accomplish their tasks. Minimize user friction - don't ask users to do things AIs can figure out.
+Discover and set up a working MCP integration so users can accomplish their tasks. Minimize user friction - don't ask users to do things AIs can figure out.
 
 ## Critical Constraint
 Subroutine can ONLY integrate with **remote MCP servers** that have publicly accessible HTTP or HTTPS endpoints. We cannot:

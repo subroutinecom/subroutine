@@ -34,6 +34,12 @@ export const authConfigSchema = z.object({
   }),
 });
 
+export const superadminConfigSchema = z.object({
+  // Organization IDs that have superadmin privileges
+  // Superadmins can create global integrations (first-party registry)
+  organizationIds: z.array(z.string()).default([]),
+});
+
 export const configSchema = z.object({
   baseUrl: z.string().url("Base URL must be a valid URL").optional(),
   adminPanelUrl: z.string().url("Admin panel URL must be a valid URL").optional(),
@@ -41,10 +47,12 @@ export const configSchema = z.object({
   ai: aiConfigSchema,
   auth: authConfigSchema,
   rateLimit: rateLimitConfigSchema.optional(),
+  superadmin: superadminConfigSchema.optional(),
 });
 
 export type ModelProvider = z.infer<typeof aiConfigSchema>["provider"];
 export type AIConfig = z.infer<typeof aiConfigSchema>;
 export type AuthConfig = z.infer<typeof authConfigSchema>;
 export type RateLimitConfig = z.infer<typeof rateLimitConfigSchema>;
+export type SuperadminConfig = z.infer<typeof superadminConfigSchema>;
 export type Config = z.infer<typeof configSchema>;

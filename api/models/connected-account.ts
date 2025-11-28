@@ -229,37 +229,6 @@ export const getConnectedAccountByViewer = async (
   };
 };
 
-export const getConnectedAccountByAccountIdentifier = async (
-  organizationId: string,
-  integrationId: string,
-  accountIdentifier: string
-): Promise<ConnectedAccountWithCredentials | null> => {
-  const row = await db
-    .selectFrom("connected_account")
-    .selectAll()
-    .where("organizationId", "=", organizationId)
-    .where("integrationId", "=", integrationId)
-    .where("accountIdentifier", "=", accountIdentifier)
-    .executeTakeFirst();
-
-  if (!row) {
-    return null;
-  }
-
-  return {
-    id: row.id,
-    integrationId: row.integrationId,
-    viewerId: row.viewerId,
-    organizationId: row.organizationId,
-    credentials: JSON.parse(decrypt(row.credentials)),
-    accountIdentifier: row.accountIdentifier,
-    status: row.status as ConnectedAccountStatus,
-    lastUsedAt: row.lastUsedAt,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-  };
-};
-
 export const updateConnectedAccount = async (
   params: UpdateConnectedAccountRequest
 ): Promise<ConnectedAccountWithCredentials | null> => {
@@ -307,20 +276,6 @@ export const updateConnectedAccount = async (
   return getConnectedAccount(params.id, params.organizationId);
 };
 
-export const updateLastUsed = async (id: string, organizationId: string): Promise<void> => {
-  const now = new Date().toISOString();
-
-  await db
-    .updateTable("connected_account")
-    .set({
-      lastUsedAt: now,
-      updatedAt: now,
-    })
-    .where("id", "=", id)
-    .where("organizationId", "=", organizationId)
-    .execute();
-};
-
 export const deleteConnectedAccount = async (
   id: string,
   organizationId: string
@@ -334,18 +289,50 @@ export const deleteConnectedAccount = async (
   return (result?.numDeletedRows ?? 0n) > 0n;
 };
 
-export const connectedAccountExists = async (
+export const getConnectedIntegrationIds = async (
   viewerId: string,
-  integrationId: string,
   organizationId: string
-): Promise<boolean> => {
-  const row = await db
+): Promise<Set<string>> => {
+  const rows = await db
     .selectFrom("connected_account")
-    .select("id")
+    .select("integrationId")
     .where("viewerId", "=", viewerId)
-    .where("integrationId", "=", integrationId)
     .where("organizationId", "=", organizationId)
-    .executeTakeFirst();
+    .where("status", "=", "active")
+    .execute();
 
-  return !!row;
+  return new Set(rows.map((r) => r.integrationId));
+};
+
+/**
+ * Get all connected accounts for a viewer as a Map keyed by integrationId.
+ */
+export const getConnectedAccountsByViewer = async (
+  viewerId: string,
+  organizationId: string
+): Promise<Map<string, ConnectedAccountWithCredentials>> => {
+  const rows = await db
+    .selectFrom("connected_account")
+    .selectAll()
+    .where("viewerId", "=", viewerId)
+    .where("organizationId", "=", organizationId)
+    .where("status", "=", "active")
+    .execute();
+
+  const map = new Map<string, ConnectedAccountWithCredentials>();
+  for (const row of rows) {
+    map.set(row.integrationId, {
+      id: row.id,
+      integrationId: row.integrationId,
+      viewerId: row.viewerId,
+      organizationId: row.organizationId,
+      credentials: JSON.parse(decrypt(row.credentials)),
+      accountIdentifier: row.accountIdentifier,
+      status: row.status as ConnectedAccountStatus,
+      lastUsedAt: row.lastUsedAt,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    });
+  }
+  return map;
 };

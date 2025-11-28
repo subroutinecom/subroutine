@@ -48,12 +48,25 @@ const INTEGRATION_PROVIDERS_QUERY = gql`
         }
       }
     }
+    isSuperadmin
   }
 `;
 
 const CREATE_INTEGRATION_MUTATION = gql`
-  mutation CreateIntegration($provider: String!, $name: String!, $authConfig: String!) {
-    createIntegration(provider: $provider, name: $name, authConfig: $authConfig) {
+  mutation CreateIntegration(
+    $provider: String!
+    $name: String!
+    $authConfig: String!
+    $description: String
+    $visibility: String
+  ) {
+    createIntegration(
+      provider: $provider
+      name: $name
+      authConfig: $authConfig
+      description: $description
+      visibility: $visibility
+    ) {
       id
       provider
       name
@@ -64,14 +77,20 @@ const CREATE_INTEGRATION_MUTATION = gql`
 export const clientLoader = async () => {
   const data = await graphqlClient.request<{
     integrationProviders: IntegrationProviderDefinition[];
+    isSuperadmin: boolean;
   }>(INTEGRATION_PROVIDERS_QUERY);
-  return { providerDefinitions: data.integrationProviders ?? [] };
+  return {
+    providerDefinitions: data.integrationProviders ?? [],
+    isSuperadmin: data.isSuperadmin,
+  };
 };
 
 export default function NewIntegrationPage() {
   const navigate = useNavigate();
-  const { providerDefinitions } = useLoaderData<typeof clientLoader>();
+  const { providerDefinitions, isSuperadmin } = useLoaderData<typeof clientLoader>();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [description, setDescription] = useState<string>("");
+  const [makeGlobal, setMakeGlobal] = useState<boolean>(false);
 
   // MCP discovery hook
   const { isProbing, discoveryResult, probeServer, clearDiscoveryResult } = useMcpDiscovery();
@@ -133,6 +152,8 @@ export default function NewIntegrationPage() {
         provider: data.provider,
         name: data.name.trim(),
         authConfig: result.config,
+        description: description.trim() || null,
+        visibility: makeGlobal ? "global" : "private",
       });
 
       navigate("/integrations");
@@ -205,6 +226,48 @@ export default function NewIntegrationPage() {
             {errors.name && <p className="text-sm text-error">{errors.name.message}</p>}
             <p className="text-sm text-base-content/60">A descriptive name for this integration</p>
           </div>
+
+          <div className="space-y-3">
+            <label htmlFor="description" className="block">
+              <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
+                Description
+              </span>
+              <span className="text-sm text-base-content/60 ml-2">(optional)</span>
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="e.g., GitHub integration for accessing repositories and managing pull requests"
+              className="textarea textarea-bordered w-full text-base min-h-[80px]"
+            />
+            <p className="text-sm text-base-content/60">
+              A description that helps the AI understand when to use this integration
+            </p>
+          </div>
+
+          {/* Make Global toggle - only visible to superadmins */}
+          {isSuperadmin && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <label htmlFor="makeGlobal" className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    id="makeGlobal"
+                    type="checkbox"
+                    checked={makeGlobal}
+                    onChange={(e) => setMakeGlobal(e.target.checked)}
+                    className="toggle toggle-primary"
+                  />
+                  <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
+                    Make Global
+                  </span>
+                </label>
+              </div>
+              <p className="text-sm text-base-content/60">
+                Global integrations are available to all organizations and can be used by any user.
+              </p>
+            </div>
+          )}
 
           {/* MCP-specific fields */}
           {isMcpProvider && (
