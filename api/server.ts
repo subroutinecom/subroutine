@@ -1,5 +1,5 @@
-import { cors } from "@hono/hono/cors";
 import { rateLimiter } from "@hono-rate-limiter/hono-rate-limiter";
+import { cors } from "@hono/hono/cors";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
@@ -15,13 +15,12 @@ import { createMcpServer2 } from "./mcp-server2.ts";
 import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
+import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
-import { completeMockAuthorization } from "./services/mock-oauth.ts";
+import { registerAuthenticatedTestEndpoints, registerTestEndpoints } from "./testEndpoints.ts";
 import { registerUiRoutes } from "./ui/server.tsx";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
-import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
-import { registerTestEndpoints, registerAuthenticatedTestEndpoints } from "./testEndpoints";
 
 const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";
 
@@ -219,6 +218,115 @@ const initialize = async () => {
   app.all("/graphql", async (c) => {
     const response = await yoga.fetch(c.req.raw);
     return response;
+  });
+
+  app.use(
+    "/api/pat-link/*",
+    cors({
+      origin: "*", // Public endpoint - allow any origin
+      credentials: false,
+      allowMethods: ["GET", "POST", "OPTIONS"],
+      allowHeaders: ["Content-Type"],
+      maxAge: 86400,
+    }) as any
+  );
+
+  const getClientIp = (c: { req: { header: (name: string) => string | undefined } }) => {
+    return (
+      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ??
+      c.req.header("x-real-ip") ??
+      "unknown"
+    );
+  };
+
+  const patLinkGetLimiter = rateLimiter({
+    windowMs: config.rateLimit?.patLinkGet?.windowMs ?? 60000,
+    limit: config.rateLimit?.patLinkGet?.limit ?? 30,
+    standardHeaders: "draft-6",
+    keyGenerator: getClientIp,
+  });
+
+  const patLinkSubmitLimiter = rateLimiter({
+    windowMs: config.rateLimit?.patLinkSubmit?.windowMs ?? 60000,
+    limit: config.rateLimit?.patLinkSubmit?.limit ?? 5,
+    standardHeaders: "draft-6",
+    keyGenerator: getClientIp,
+  });
+
+  // GET /api/pat-link/:id - Get PAT link info (public)
+  // @ts-expect-error - hono-rate-limiter types have minor incompatibility with local Hono types
+  app.get("/api/pat-link/:id", patLinkGetLimiter, async (c) => {
+    const id = c.req.param("id") as string;
+
+    const validation = await validatePatLink(id);
+
+    if (!validation.valid || !validation.patLink) {
+      return c.json(
+        {
+          error: {
+            code: "INVALID_LINK",
+            message: validation.error || "Invalid or expired link",
+          },
+        },
+        404
+      );
+    }
+
+    const patLink = validation.patLink;
+
+    return c.json({
+      id: patLink.id,
+      integration: patLink.integration,
+      expiresAt: patLink.expiresAt,
+    });
+  });
+
+  // @ts-expect-error - hono-rate-limiter types have minor incompatibility with local Hono types
+  app.post("/api/pat-link/:id/submit", patLinkSubmitLimiter, async (c) => {
+    const id = c.req.param("id") as string;
+
+    let body: { pat?: string };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "Invalid JSON body",
+          },
+        },
+        400
+      );
+    }
+
+    if (!body.pat || typeof body.pat !== "string") {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "pat field is required",
+          },
+        },
+        400
+      );
+    }
+
+    const result = await submitPatLink(id, body.pat);
+
+    if (!result.success) {
+      return c.json(
+        {
+          error: {
+            code: "SUBMISSION_FAILED",
+            message: result.error || "Failed to submit token",
+          },
+        },
+        400
+      );
+    }
+
+    return c.json({ success: true });
   });
 
   registerUiRoutes(app);
