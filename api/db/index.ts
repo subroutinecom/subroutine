@@ -1,7 +1,7 @@
 import { Kysely, Migrator, PostgresDialect } from "kysely";
-import type { Database as DB } from "./schema";
 import pg from "pg";
-import { migrations } from "./migrations-index";
+import { migrations } from "./migrations-index.ts";
+import type { Database as DB } from "./schema.ts";
 
 const { Pool } = pg;
 
@@ -27,7 +27,15 @@ export const initializeDatabase = async () => {
       db,
       provider: {
         async getMigrations() {
-          return migrations;
+          const keys = Object.keys(migrations);
+          const values = await Promise.all(Object.values(migrations));
+          return keys.reduce(
+            (acc, key, index) => {
+              acc[key] = values[index];
+              return acc;
+            },
+            {} as Record<string, any>
+          );
         },
       },
     });

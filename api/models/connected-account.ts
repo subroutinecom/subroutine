@@ -21,8 +21,10 @@ export interface ConnectedAccountCredentials {
   metadata?: ConnectedAccountMetadata;
 }
 
-export interface ConnectedAccountWithCredentials
-  extends Omit<ConnectedAccountTable, "credentials" | "status"> {
+export interface ConnectedAccountWithCredentials extends Omit<
+  ConnectedAccountTable,
+  "credentials" | "status"
+> {
   credentials: ConnectedAccountCredentials;
   status: ConnectedAccountStatus;
 }

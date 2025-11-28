@@ -1,5 +1,5 @@
-import { cors } from "@hono/hono/cors";
 import { rateLimiter } from "@hono-rate-limiter/hono-rate-limiter";
+import { cors } from "@hono/hono/cors";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
@@ -11,14 +11,16 @@ import { getConfig } from "./config/loader.ts";
 import { initializeDatabase } from "./db/index.ts";
 import { buildContext, schema } from "./internal/schema.ts";
 import { createMcpServer } from "./mcp-server.ts";
+import { createMcpServer2 } from "./mcp-server2.ts";
 import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
+import { IntegrationAuthRequiredError } from "./models/errors.ts";
+import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
-import { IntegrationAuthRequiredError } from "./models/errors.ts";
+import { registerAuthenticatedTestEndpoints, registerTestEndpoints } from "./testEndpoints.ts";
+import { registerUiRoutes } from "./ui/server.tsx";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
-import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
-import { registerTestEndpoints, registerAuthenticatedTestEndpoints } from "./testEndpoints";
 
 const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";
 
@@ -326,6 +328,8 @@ const initialize = async () => {
 
     return c.json({ success: true });
   });
+
+  registerUiRoutes(app);
 
   app.use("*", authMiddleware);
 
@@ -1154,10 +1158,30 @@ const initialize = async () => {
         );
       }
 
-      const req = c.req.raw;
+      // Ensure Accept header includes both when talking to streamable transport
+      const headersObj = Object.fromEntries(c.req.raw.headers.entries());
+      const currentAccept = (headersObj["accept"] ?? headersObj["Accept"] ?? "") as string;
+      const needsEventStream = !currentAccept.includes("text/event-stream");
+      if (needsEventStream) {
+        headersObj["accept"] = "application/json, text/event-stream";
+      }
+      if (!("content-type" in headersObj) && !("Content-Type" in headersObj)) {
+        headersObj["content-type"] = "application/json";
+      }
+
+      const nodeReq = {
+        method: c.req.method,
+        url: c.req.url,
+        headers: headersObj,
+      };
+
       const res = new NodeResponseAdapter();
+      // Default to JSON responses for POST when JSON fallback is enabled
+      if (!res.getHeader("content-type")) {
+        res.setHeader("content-type", "application/json; charset=utf-8");
+      }
       // @ts-ignore - MCP SDK expects Node.js HTTP response types
-      await transport.handleRequest(req, res, body);
+      await transport.handleRequest(nodeReq, res, body);
       return res.toResponse();
     } catch (error) {
       console.error("Error handling MCP request:", error);
@@ -1186,6 +1210,9 @@ const initialize = async () => {
     const transport = transports[sessionId];
     const req = c.req.raw;
     const res = new NodeResponseAdapter();
+    if (!res.getHeader("content-type")) {
+      res.setHeader("content-type", "text/event-stream; charset=utf-8");
+    }
     // @ts-ignore - MCP SDK expects Node.js HTTP response types
     await transport.handleRequest(req, res);
     return res.toResponse();
@@ -1213,6 +1240,144 @@ const initialize = async () => {
     }
   });
 
+  // MCP v2 (unauthenticated) using path-based session IDs without SSE
+  const mcp2Transports: Record<string, StreamableHTTPServerTransport> = {};
+  const isValidMcp2SessionId = (sid: string): boolean => sid === "all" || sid.length === 36;
+
+  app.post("/mcp2/:sessionId", async (c) => {
+    const { sessionId } = c.req.param();
+
+    if (!isValidMcp2SessionId(sessionId)) {
+      const payload = {
+        jsonrpc: "2.0",
+        error: { code: -32000 as const, message: "Bad Request: Invalid session ID" },
+        id: null,
+      };
+      console.log("MCP2 POST response (invalid sessionId)", JSON.stringify(payload));
+      return c.json(payload, 400);
+    }
+
+    try {
+      let transport: StreamableHTTPServerTransport;
+      const body = await c.req.json();
+      const initialize = isInitializeRequest(body);
+
+      if (!mcp2Transports[sessionId]) {
+        if (!initialize) {
+          const payload = {
+            jsonrpc: "2.0",
+            error: { code: -32000 as const, message: "Bad Request: No valid session initialized" },
+            id: null,
+          };
+          console.log("MCP2 POST response (no session yet)", JSON.stringify(payload));
+          return c.json(payload, 400);
+        }
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => sessionId,
+          onsessioninitialized: (newSessionId) => {
+            mcp2Transports[newSessionId] = transport;
+          },
+          enableJsonResponse: true,
+        });
+
+        transport.onclose = () => {
+          const sid = transport.sessionId;
+          if (sid && mcp2Transports[sid]) {
+            delete mcp2Transports[sid];
+          }
+        };
+
+        const server = createMcpServer2();
+        await server.connect(transport);
+      } else {
+        if (initialize) {
+          // Reset the existing session to allow re-initialization
+          delete mcp2Transports[sessionId];
+          transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => sessionId,
+            onsessioninitialized: (newSessionId) => {
+              mcp2Transports[newSessionId] = transport;
+            },
+            enableJsonResponse: true,
+          });
+
+          transport.onclose = () => {
+            const sid = transport.sessionId;
+            if (sid && mcp2Transports[sid]) {
+              delete mcp2Transports[sid];
+            }
+          };
+
+          const server = createMcpServer2();
+          await server.connect(transport);
+        } else {
+          transport = mcp2Transports[sessionId];
+        }
+      }
+
+      const headersObj = Object.fromEntries(c.req.raw.headers.entries());
+      // Force JSON Accept for non-streaming transport
+      const currentAccept = (headersObj["accept"] ?? headersObj["Accept"] ?? "") as string;
+      if (!currentAccept) {
+        headersObj["accept"] = "application/json";
+      }
+      if (!("content-type" in headersObj) && !("Content-Type" in headersObj)) {
+        headersObj["content-type"] = "application/json";
+      }
+      // Ensure session header is present for the transport
+      headersObj["mcp-session-id"] = sessionId;
+
+      const nodeReq = {
+        method: c.req.method,
+        url: c.req.url,
+        headers: headersObj,
+      };
+
+      const res = new NodeResponseAdapter();
+      // Explicit JSON content-type (default) before SDK writes
+      if (!res.getHeader("content-type")) {
+        res.setHeader("content-type", "application/json; charset=utf-8");
+      }
+
+      // Wait for SDK to finish writing (it calls end asynchronously)
+      const finished = new Promise<void>((resolve) => {
+        // @ts-ignore - adapter implements once
+        res.once("close", () => resolve());
+      });
+      // @ts-ignore - MCP SDK expects Node.js HTTP response types
+      await transport.handleRequest(nodeReq, res, body);
+      await finished;
+      const debugOut = {
+        status: res.statusCode,
+        headers: res.getHeaders(),
+        body: res.getBodyText(),
+      };
+      console.log("MCP2 POST response", JSON.stringify(debugOut));
+      return res.toResponse();
+    } catch (error) {
+      console.error("Error handling MCP2 request:", error);
+      const payload = {
+        jsonrpc: "2.0",
+        error: { code: -32603 as const, message: "Internal server error" },
+        id: null,
+      };
+      console.log("MCP2 POST response (500)", JSON.stringify(payload));
+      return c.json(payload, 500);
+    }
+  });
+
+  app.get("/mcp2/:sessionId", async (_c) => {
+    const text = "SSE is disabled for MCP2. Use POST for JSON-RPC.";
+    console.log("MCP2 GET response", JSON.stringify({ status: 405, body: text }));
+    return new Response(text, { status: 405 });
+  });
+
+  app.delete("/mcp2/:sessionId", async (_c) => {
+    const text = "SSE termination not supported on MCP2.";
+    console.log("MCP2 DELETE response", JSON.stringify({ status: 405, body: text }));
+    return new Response(text, { status: 405 });
+  });
+
   app.doc("/openapi.json", {
     openapi: "3.1.0",
     info: {
@@ -1227,6 +1392,7 @@ const initialize = async () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
   console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
+  console.log(`MCP2 endpoint available at http://localhost:${PORT}/mcp2/{sessionId}`);
   console.log(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
 };
 
