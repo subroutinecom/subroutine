@@ -30,6 +30,7 @@
     "npm:react-dom@^18.3.1": "18.3.1_react@18.3.1",
     "npm:react-router-dom@^6.28.0": "6.30.2_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:react@^18.3.1": "18.3.1",
+    "npm:ts-morph@26": "26.0.0",
     "npm:yaml@*": "2.8.1",
     "npm:yaml@^2.8.1": "2.8.1",
     "npm:zod@^3.25.76": "3.25.76"
@@ -4337,6 +4338,7 @@
       "npm:react-dom@^18.3.1",
       "npm:react-router-dom@^6.28.0",
       "npm:react@^18.3.1",
+      "npm:ts-morph@26",
       "npm:yaml@^2.8.1",
       "npm:zod@^3.25.76"
     ]
