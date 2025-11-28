@@ -5,12 +5,15 @@ import type { CodeGenerationResult } from "./types";
 import { CODE_GENERATION_USER_PROMPT, SYSTEM_PROMPT, type McpIntegrationInfo } from "./prompts";
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../models/errors";
 import {
-  getIntegration,
   getIntegrationByName,
-  listIntegrationsByProvider,
+  getAvailableIntegrations,
+  getIntegrationOrGlobal,
   type McpAuthConfig,
 } from "../models/integration";
-import { getConnectedAccountByViewer } from "../models/connected-account";
+import {
+  getConnectedAccountByViewer,
+  getConnectedIntegrationIds,
+} from "../models/connected-account";
 import { listMcpTools as listMcpToolsUtil } from "../utils/mcp-client";
 import { generateAuthorizationUrl } from "../services/oauth";
 import { generatePatLinkUrl } from "../models/pat-link";
@@ -71,7 +74,7 @@ const handleListMcpTools = async (
     };
   }
 
-  const integration = await getIntegration(integrationId, mcpContext.organizationId);
+  const integration = await getIntegrationOrGlobal(integrationId, mcpContext.organizationId);
   if (!integration) {
     return {
       success: false,
@@ -301,60 +304,153 @@ export const generateCode = async (
       // Discovery mode: no integrations provided, agent must discover what's available
       if (!hasProvidedIntegrations) {
         console.log(`[generateCode] Discovery mode enabled - adding discovery tools`);
-        tools.listAvailableIntegrations = {
-          description: `List all MCP integrations configured for this organization.
-Call this FIRST when the user's request requires an external service (GitHub, Slack, database, etc.).
-This tells you what integrations already exist that you can use.`,
+
+        const connectedIntegrationIds = await getConnectedIntegrationIds(
+          mcpContext.viewerId,
+          mcpContext.organizationId
+        );
+
+        const fetchIntegrationsWithStatus = async (
+          visibilityFilter: "private" | "global" | "all"
+        ) => {
+          const integrations = await getAvailableIntegrations(
+            mcpContext.organizationId,
+            visibilityFilter
+          );
+          const mcpIntegrations = integrations.filter(
+            (i) => i.enabled && i.authConfig.type === "mcp"
+          );
+
+          return mcpIntegrations.map((i) => ({
+            id: i.id,
+            name: i.name,
+            description: i.description,
+            visibility: i.visibility,
+            status: i.status,
+            hasConnection: connectedIntegrationIds.has(i.id),
+          }));
+        };
+
+        tools.getOrganizationIntegrations = {
+          description: `STEP 1 (CALL THIS FIRST): List organization-specific MCP integrations.
+
+These are custom integrations configured by the organization - ALWAYS check these first.
+If a matching integration exists here, USE IT. Do not check global integrations unless needed.
+
+Only proceed to getGlobalIntegrations if no suitable org-specific integration is found.`,
           inputSchema: z.object({}),
           execute: async () => {
-            console.log(`[tool:listAvailableIntegrations] Called`);
-            const integrations = await listIntegrationsByProvider(mcpContext.organizationId, "mcp");
-            const enabled = integrations.filter((i) => i.enabled);
+            console.log(`[tool:getOrganizationIntegrations] Called`);
+            const integrations = await fetchIntegrationsWithStatus("private");
             console.log(
-              `[tool:listAvailableIntegrations] Found ${enabled.length} enabled integrations`
+              `[tool:getOrganizationIntegrations] Found ${integrations.length} org-specific MCP integrations`
             );
 
-            if (enabled.length === 0) {
+            if (integrations.length === 0) {
               return {
                 integrations: [],
-                message: "No MCP integrations configured. Use manageMcpIntegration to set one up.",
+                count: 0,
+                message:
+                  "No organization-specific integrations found. Call getGlobalIntegrations to check the first-party registry.",
               };
             }
 
             return {
-              integrations: enabled.map((i) => ({
-                name: i.name,
-                status: i.status,
-              })),
-              message: `Found ${enabled.length} integration(s). Use listMcpTools to see what tools each provides.`,
+              integrations,
+              count: integrations.length,
+              message: `Found ${integrations.length} organization-specific integration(s). Use one of these if it matches your need. Only call getGlobalIntegrations if none of these work.`,
             };
           },
         };
 
-        // Also provide listMcpTools in discovery mode (for after they find integrations)
-        // TODO(greg) This can probably folded and simplified with the above - I just wanna
-        // take a pause and figure out registry path first.
+        tools.getGlobalIntegrations = {
+          description: `STEP 2: List global (first-party registry) MCP integrations.
+
+Only call this AFTER checking getOrganizationIntegrations first!
+
+These are pre-configured integrations from the first-party registry with OAuth already set up.
+Use one of these if no organization-specific integration exists for your need.
+
+Only use manageMcpIntegration if neither org nor global integrations have what you need.`,
+          inputSchema: z.object({}),
+          execute: async () => {
+            console.log(`[tool:getGlobalIntegrations] Called`);
+            const integrations = await fetchIntegrationsWithStatus("global");
+            console.log(
+              `[tool:getGlobalIntegrations] Found ${integrations.length} global MCP integrations`
+            );
+
+            if (integrations.length === 0) {
+              return {
+                integrations: [],
+                count: 0,
+                message:
+                  "No global integrations available. Use manageMcpIntegration as a LAST RESORT to discover and set one up.",
+              };
+            }
+
+            return {
+              integrations,
+              count: integrations.length,
+              message: `Found ${integrations.length} global integration(s) from the first-party registry. Use one of these if it matches your need. Only use manageMcpIntegration if none of these work.`,
+            };
+          },
+        };
+
         tools.listMcpTools = {
           description:
-            "Discover the available tools from an MCP integration. Call this after listAvailableIntegrations to see what tools an integration provides.",
+            "Discover the available tools from an MCP integration. Call this after getOrganizationIntegrations or getGlobalIntegrations to see what tools an integration provides. Works with both org-specific and global integrations.",
           inputSchema: z.object({
             integrationName: z
               .string()
-              .describe("The name of the MCP integration to list tools from"),
+              .describe(
+                "The name of the MCP integration to list tools from (from listAvailableIntegrations)"
+              ),
+            integrationId: z
+              .string()
+              .optional()
+              .describe(
+                "The ID of the integration (recommended for global integrations to avoid name collisions)"
+              ),
           }),
-          execute: async (params: { integrationName: string }) => {
+          execute: async (params: { integrationName: string; integrationId?: string }) => {
             console.log(
-              `[tool:listMcpTools:discovery] Called for integration: "${params.integrationName}"`
+              `[tool:listMcpTools:discovery] Called for integration: "${params.integrationName}" (id: ${params.integrationId ?? "not provided"})`
             );
-            const integration = await getIntegrationByName(
-              params.integrationName,
-              mcpContext.organizationId
-            );
+
+            // If integrationId provided, use it directly; otherwise look up by name
+            let integration;
+            if (params.integrationId) {
+              integration = await getIntegrationOrGlobal(
+                params.integrationId,
+                mcpContext.organizationId
+              );
+            } else {
+              // Try org-specific first, then fall back to searching all available
+              integration = await getIntegrationByName(
+                params.integrationName,
+                mcpContext.organizationId
+              );
+              if (!integration) {
+                // Check global integrations by name
+                const allAvailable = await getAvailableIntegrations(mcpContext.organizationId);
+                integration = allAvailable.find(
+                  (i) => i.name.toLowerCase() === params.integrationName.toLowerCase()
+                );
+              }
+            }
+
             if (integration) {
               mcpContext.integrationNameToId.set(integration.name, integration.id);
+            } else {
+              return {
+                success: false,
+                error: `Integration "${params.integrationName}" not found. Call getOrganizationIntegrations or getGlobalIntegrations first to see available integrations.`,
+              };
             }
+
             const result = await handleListMcpTools(
-              params.integrationName,
+              integration.name,
               mcpContext,
               capturedAuthRequirements
             );
@@ -362,7 +458,7 @@ This tells you what integrations already exist that you can use.`,
               `[tool:listMcpTools:discovery] Result: success=${result.success}, tools=${result.tools?.length ?? 0}`
             );
             // Track successful integration usage
-            if (result.success && integration) {
+            if (result.success) {
               usedIntegrationIds.add(integration.id);
               console.log(
                 `[tool:listMcpTools:discovery] Tracked integration ID: ${integration.id}`
@@ -373,17 +469,29 @@ This tells you what integrations already exist that you can use.`,
         };
 
         tools.manageMcpIntegration = {
-          description: `Set up a NEW MCP integration when none exists for the service you need.
-Call this ONLY after listAvailableIntegrations shows the service you need is not configured.
+          description: `STEP 3 (LAST RESORT): Discover and set up a NEW MCP integration when no suitable one exists.
+
+CRITICAL: Only use this tool AFTER calling BOTH:
+1. getOrganizationIntegrations - checked org-specific integrations FIRST
+2. getGlobalIntegrations - checked global registry SECOND
+...and confirmed NEITHER has what you need.
+
+This tool "spelunks" the web to find and configure MCP servers. It's expensive and slow.
+Always prefer existing integrations over creating new ones.
+
+Only call this tool when:
+1. getOrganizationIntegrations shows NO matching org-specific integration
+2. getGlobalIntegrations shows NO matching global integration
+3. You need a capability not covered by any existing integration
 
 This spawns a specialist agent that will:
-1. Search for MCP servers that provide the needed capability
+1. Search the web for remote MCP servers that provide the needed capability
 2. Select the best option with simplest authentication
 3. Test the connection works
-4. Create the integration
+4. Create a new dynamic integration for this organization
 
 The result tells you what authentication the user needs to provide:
-- authRequired: "none" → integration ready to use
+- authRequired: "none" → integration ready to use immediately
 - authRequired: "api_key" → tell user what credentials they need (see authInstructions)`,
           inputSchema: z.object({
             need: z

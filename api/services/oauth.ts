@@ -1,7 +1,8 @@
 import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import type { OAuthTokenResponse } from "../integrations/providers/types.ts";
-import { getIntegration, type IntegrationAuthConfig } from "../models/integration.ts";
+import { getIntegrationOrGlobal, type IntegrationAuthConfig } from "../models/integration.ts";
 import { createConnectedAccount } from "../models/connected-account.ts";
+import { discoverMcpOAuth } from "./mcp-oauth-discovery.ts";
 
 export interface OAuthState {
   integrationId: string;
@@ -89,14 +90,21 @@ const extractOAuthConfig = (authConfig: IntegrationAuthConfig): ExtractedOAuthCo
   return null;
 };
 
+const mergeScopes = (base: string[], additional: string[]): string[] => {
+  return [...new Set([...base, ...additional])];
+};
+
+// This will merge scopes with MCP requested scopes as per RFC 9728
 export const generateAuthorizationUrl = async (params: {
   integrationId: string;
   organizationId: string;
   viewerId: string;
+  additionalScopes?: string[];
+  mcpServerUrl?: string;
 }): Promise<{ url: string; state: string }> => {
-  const { integrationId, organizationId, viewerId } = params;
+  const { integrationId, organizationId, viewerId, additionalScopes, mcpServerUrl } = params;
 
-  const integration = await getIntegration(integrationId, organizationId);
+  const integration = await getIntegrationOrGlobal(integrationId, organizationId);
   if (!integration) {
     throw new Error("Integration not found");
   }
@@ -107,7 +115,6 @@ export const generateAuthorizationUrl = async (params: {
 
   const authConfig = integration.authConfig;
 
-  // Extract OAuth config from either OAuth2 or MCP (bearer_passthrough) integrations
   const oauthConfig = extractOAuthConfig(authConfig);
   if (!oauthConfig) {
     if (authConfig.type === "mcp") {
@@ -140,14 +147,29 @@ export const generateAuthorizationUrl = async (params: {
   authUrl.searchParams.set("redirect_uri", oauthConfig.redirectUri);
   authUrl.searchParams.set("state", encodedState);
 
-  // Use scopes from the integration config, fall back to provider defaults for OAuth2 providers
   let scopes = oauthConfig.scopes;
   if (scopes.length === 0 && definition.auth.type === "oauth2") {
     scopes = definition.auth.defaultScopes;
   }
+
+  if (mcpServerUrl) {
+    try {
+      const discovered = await discoverMcpOAuth(mcpServerUrl);
+      if (discovered.success && discovered.scopesSupported) {
+        scopes = mergeScopes(scopes, discovered.scopesSupported);
+      }
+    } catch (e) {
+      console.warn("[OAuth] MCP scope discovery failed:", e);
+      // Continue with original scopes
+    }
+  }
+
+  if (additionalScopes && additionalScopes.length > 0) {
+    scopes = mergeScopes(scopes, additionalScopes);
+  }
+
   authUrl.searchParams.set("scope", scopes.join(" "));
 
-  // Apply provider-specific customizations for OAuth2 providers
   if (definition.auth.type === "oauth2" && definition.auth.handlers?.customizeAuthorizationUrl) {
     definition.auth.handlers.customizeAuthorizationUrl(authUrl);
   }
@@ -163,7 +185,8 @@ const exchangeCodeForToken = async (
   organizationId: string,
   code: string
 ): Promise<OAuthTokenResponse> => {
-  const integration = await getIntegration(integrationId, organizationId);
+  // Support both org-specific and global integrations
+  const integration = await getIntegrationOrGlobal(integrationId, organizationId);
   if (!integration) {
     throw new Error("Integration not found");
   }
@@ -265,7 +288,11 @@ export const handleOAuthCallback = async (params: {
       };
     }
 
-    const integration = await getIntegration(stateData.integrationId, stateData.organizationId);
+    // Support both org-specific and global integrations
+    const integration = await getIntegrationOrGlobal(
+      stateData.integrationId,
+      stateData.organizationId
+    );
 
     if (!integration) {
       console.error("[OAuth] Integration not found:", stateData.integrationId);

@@ -48,12 +48,14 @@ type CreatedApiKey {
 type Integration {
   authConfig: String
   createdAt: String
+  description: String
   enabled: Boolean
   id: String
   name: String
   organizationId: String
   provider: String
   updatedAt: String
+  visibility: String
 }
 
 type IntegrationProviderDefinition {
@@ -116,12 +118,23 @@ type Mutation {
   createIntegration(
     """JSON string of IntegrationAuthConfig"""
     authConfig: String!
+    description: String
     name: String!
     provider: String!
+    """
+    Integration visibility: 'private' (default) or 'global' (superadmin only)
+    """
+    visibility: String
   ): Integration
   deleteApiKey(id: String!): Boolean
   deleteConnectedAccount(id: String!): Boolean
   deleteIntegration(id: String!): Boolean
+  """Set integration visibility (superadmin only for 'global')"""
+  setIntegrationVisibility(
+    id: String!
+    """'private' or 'global'"""
+    visibility: String!
+  ): Integration
   updateApiKey(
     id: String!
     """JSON string of metadata"""
@@ -135,6 +148,8 @@ type Mutation {
     id: String!
     name: String
   ): Integration
+  """Update integration description"""
+  updateIntegrationDescription(description: String, id: String!): Integration
 }
 
 type Query {
@@ -146,6 +161,14 @@ type Query {
   discoverMcpOAuth(serverUrl: String!): McpOAuthDiscoveryResult
   integration(id: String!): Integration
   integrationProviders: [IntegrationProviderDefinition!]
-  integrations: [Integration!]
+  """
+  Get integrations with optional visibility filter. Filter: 'private' (org-specific only), 'global' (registry only), 'all' or omit for both.
+  """
+  integrations(
+    """Filter by visibility: 'private', 'global', or 'all' (default)"""
+    visibility: String
+  ): [Integration!]
+  """Check if the current organization has superadmin privileges"""
+  isSuperadmin: Boolean
   ping: String
 }

@@ -14,9 +14,13 @@ import {
   getIntegration,
   getPublicIntegrationAuthConfig,
   type IntegrationWithConfig,
-  listIntegrations,
+  type IntegrationVisibility,
   updateIntegration,
+  getAvailableIntegrations,
+  setIntegrationVisibility,
+  updateIntegrationDescription,
 } from "../models/integration.ts";
+import { isSuperadminOrg } from "../utils/superadmin.ts";
 import {
   type ConnectedAccountWithCredentials,
   createConnectedAccount,
@@ -107,11 +111,13 @@ IntegrationType.implement({
     organizationId: t.exposeString("organizationId"),
     provider: t.exposeString("provider"),
     name: t.exposeString("name"),
+    description: t.exposeString("description", { nullable: true }),
     authConfig: t.field({
       type: "String",
       resolve: (parent) => JSON.stringify(getPublicIntegrationAuthConfig(parent.authConfig)),
     }),
     enabled: t.exposeBoolean("enabled"),
+    visibility: t.exposeString("visibility"),
     createdAt: t.exposeString("createdAt"),
     updatedAt: t.exposeString("updatedAt"),
   }),
@@ -268,8 +274,18 @@ builder.queryType({
     }),
     integrations: t.field({
       type: [IntegrationType],
-      resolve: async (_parent, _args, ctx) => {
-        return listIntegrations(ctx.session.activeOrganizationId);
+      description:
+        "Get integrations with optional visibility filter. " +
+        "Filter: 'private' (org-specific only), 'global' (registry only), 'all' or omit for both.",
+      args: {
+        visibility: t.arg.string({
+          required: false,
+          description: "Filter by visibility: 'private', 'global', or 'all' (default)",
+        }),
+      },
+      resolve: async (_parent, args, ctx) => {
+        const visibilityFilter = (args.visibility ?? "all") as "private" | "global" | "all";
+        return getAvailableIntegrations(ctx.session.activeOrganizationId, visibilityFilter);
       },
     }),
     integration: t.field({
@@ -280,6 +296,13 @@ builder.queryType({
       },
       resolve: async (_parent, args, ctx) => {
         return getIntegration(args.id, ctx.session.activeOrganizationId);
+      },
+    }),
+    isSuperadmin: t.field({
+      type: "Boolean",
+      description: "Check if the current organization has superadmin privileges",
+      resolve: async (_parent, _args, ctx) => {
+        return isSuperadminOrg(ctx.session.activeOrganizationId);
       },
     }),
     integrationProviders: t.field({
@@ -387,19 +410,35 @@ builder.mutationType({
       args: {
         provider: t.arg.string({ required: true }),
         name: t.arg.string({ required: true }),
+        description: t.arg.string({ required: false }),
         authConfig: t.arg.string({
           required: true,
           description: "JSON string of IntegrationAuthConfig",
         }),
+        visibility: t.arg.string({
+          required: false,
+          description: "Integration visibility: 'private' (default) or 'global' (superadmin only)",
+        }),
       },
       resolve: async (_parent, args, ctx) => {
         const authConfig = JSON.parse(args.authConfig);
+        const visibility = (args.visibility ?? "private") as IntegrationVisibility;
+
+        // Only superadmins can create global integrations
+        if (visibility === "global") {
+          const isSuperadmin = await isSuperadminOrg(ctx.session.activeOrganizationId);
+          if (!isSuperadmin) {
+            throw new Error("Only superadmins can create global integrations");
+          }
+        }
 
         return createIntegration({
           organizationId: ctx.session.activeOrganizationId,
           provider: args.provider as IntegrationProvider,
           name: args.name,
+          description: args.description ?? undefined,
           authConfig,
+          visibility,
         });
       },
     }),
@@ -416,6 +455,15 @@ builder.mutationType({
         enabled: t.arg.boolean({ required: false }),
       },
       resolve: async (_parent, args, ctx) => {
+        // Check if integration is global - only superadmins can modify global integrations
+        const existing = await getIntegration(args.id, ctx.session.activeOrganizationId);
+        if (existing?.visibility === "global") {
+          const isSuperadmin = await isSuperadminOrg(ctx.session.activeOrganizationId);
+          if (!isSuperadmin) {
+            throw new Error("Only superadmins can modify global integrations");
+          }
+        }
+
         const authConfig = args.authConfig ? JSON.parse(args.authConfig) : undefined;
 
         return updateIntegration({
@@ -433,7 +481,66 @@ builder.mutationType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
+        // Check if integration is global - only superadmins can delete global integrations
+        const existing = await getIntegration(args.id, ctx.session.activeOrganizationId);
+        if (existing?.visibility === "global") {
+          const isSuperadmin = await isSuperadminOrg(ctx.session.activeOrganizationId);
+          if (!isSuperadmin) {
+            throw new Error("Only superadmins can delete global integrations");
+          }
+        }
+
         return deleteIntegration(args.id, ctx.session.activeOrganizationId);
+      },
+    }),
+    setIntegrationVisibility: t.field({
+      type: IntegrationType,
+      nullable: true,
+      description: "Set integration visibility (superadmin only for 'global')",
+      args: {
+        id: t.arg.string({ required: true }),
+        visibility: t.arg.string({
+          required: true,
+          description: "'private' or 'global'",
+        }),
+      },
+      resolve: async (_parent, args, ctx) => {
+        const visibility = args.visibility as IntegrationVisibility;
+
+        // Only superadmins can set visibility to global
+        if (visibility === "global") {
+          const isSuperadmin = await isSuperadminOrg(ctx.session.activeOrganizationId);
+          if (!isSuperadmin) {
+            throw new Error("Only superadmins can make integrations global");
+          }
+        }
+
+        return setIntegrationVisibility(args.id, ctx.session.activeOrganizationId, visibility);
+      },
+    }),
+    updateIntegrationDescription: t.field({
+      type: IntegrationType,
+      nullable: true,
+      description: "Update integration description",
+      args: {
+        id: t.arg.string({ required: true }),
+        description: t.arg.string({ required: false }),
+      },
+      resolve: async (_parent, args, ctx) => {
+        // Check if integration is global - only superadmins can modify global integrations
+        const existing = await getIntegration(args.id, ctx.session.activeOrganizationId);
+        if (existing?.visibility === "global") {
+          const isSuperadmin = await isSuperadminOrg(ctx.session.activeOrganizationId);
+          if (!isSuperadmin) {
+            throw new Error("Only superadmins can modify global integrations");
+          }
+        }
+
+        return updateIntegrationDescription(
+          args.id,
+          ctx.session.activeOrganizationId,
+          args.description ?? null
+        );
       },
     }),
     createConnectedAccount: t.field({

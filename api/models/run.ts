@@ -4,7 +4,7 @@ import type { McpAuthConfig } from "./integration.ts";
 import { getIntegration } from "./integration.ts";
 import { getSubroutine } from "./subroutine.ts";
 import type { ConnectedAccountCredentials } from "./connected-account.ts";
-import { getConnectedAccountByViewer } from "./connected-account.ts";
+import { getConnectedAccountsByViewer } from "./connected-account.ts";
 import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import { IntegrationAuthRequiredError } from "./errors.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
@@ -146,6 +146,11 @@ const buildSandboxIntegrations = async (params: {
     return [];
   }
 
+  const connectedAccountsMap = await getConnectedAccountsByViewer(
+    params.viewerId,
+    params.organizationId
+  );
+
   const integrations: SandboxIntegrationDefinition[] = [];
   for (const integrationId of params.integrationIds) {
     console.log(`[buildSandboxIntegrations] Processing integration: ${integrationId}`);
@@ -170,15 +175,7 @@ const buildSandboxIntegrations = async (params: {
 
       // For bearer_passthrough, we need the viewer's connected account
       if (authConfig.authStrategy.type === "bearer_passthrough") {
-        console.log(
-          `[buildSandboxIntegrations] Looking up connected account for viewer: ${params.viewerId}`
-        );
-        const connectedAccount = await getConnectedAccountByViewer(
-          params.viewerId,
-          integrationId,
-          params.organizationId
-        );
-
+        const connectedAccount = connectedAccountsMap.get(integrationId);
         console.log(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
         if (!connectedAccount) {
           // MCP with bearer_passthrough requires OAuth config for user authentication
@@ -230,15 +227,7 @@ const buildSandboxIntegrations = async (params: {
         authConfig.authStrategy.viewerScoped
       ) {
         // Viewer-scoped api_key - user provides their own PAT
-        console.log(
-          `[buildSandboxIntegrations] api_key with viewerScoped, looking up connected account for viewer: ${params.viewerId}`
-        );
-        const connectedAccount = await getConnectedAccountByViewer(
-          params.viewerId,
-          integrationId,
-          params.organizationId
-        );
-
+        const connectedAccount = connectedAccountsMap.get(integrationId);
         console.log(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
         if (!connectedAccount) {
           // Generate PAT link for user to provide their API key
@@ -307,12 +296,7 @@ const buildSandboxIntegrations = async (params: {
       continue;
     }
 
-    const connectedAccount = await getConnectedAccountByViewer(
-      params.viewerId,
-      integrationId,
-      params.organizationId
-    );
-
+    const connectedAccount = connectedAccountsMap.get(integrationId);
     if (!connectedAccount) {
       const auth = await generateAuthorizationUrl({
         integrationId,
