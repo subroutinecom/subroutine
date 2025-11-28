@@ -1,13 +1,13 @@
 import { nanoid } from "nanoid";
 import { db } from "../db/index.ts";
 import type { IntegrationTable } from "../db/schema.ts";
-import { decrypt, encrypt } from "../utils/encryption.ts";
 import type {
   IntegrationProvider,
   McpAuthStrategy,
   McpTransport,
 } from "../integrations/providers.ts";
 import { isValidProvider } from "../integrations/providers.ts";
+import { decrypt, encrypt } from "../utils/encryption.ts";
 
 /**
  * OAuth2 integration auth configuration.
