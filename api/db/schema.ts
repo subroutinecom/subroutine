@@ -8,6 +8,7 @@ export interface Database {
   apikey: ApiKeyTable;
   integration: IntegrationTable;
   connected_account: ConnectedAccountTable;
+  pat_link: PatLinkTable;
   mcp_session: McpSessionTable;
   user: User;
   session: Session;
