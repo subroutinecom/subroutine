@@ -1,5 +1,5 @@
 {
-  "workspace": ["./api", "./sandbox", "./tests", "./admin-panel"],
+  "workspace": ["./api", "./sandbox", "./tests", "./admin-panel", "./packages/integration-types"],
   "exclude": ["admin-panel/build"],
   "nodeModulesDir": "auto",
   "unstable": ["sloppy-imports"],

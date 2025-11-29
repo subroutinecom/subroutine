@@ -5,6 +5,7 @@
     "@hono/hono": "jsr:@hono/hono@^4.10.5",
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.18.4",
     "@pothos/core": "npm:@pothos/core@^4.10.0",
+    "@subroutine/integration-types": "../packages/integration-types/mod.ts",
     "@subroutinecom/config": "../packages/config/mod.ts",
     "@ai-sdk/anthropic": "npm:@ai-sdk/anthropic@^2.0.41",
     "@ai-sdk/google-vertex": "npm:@ai-sdk/google-vertex@^3.0.58",

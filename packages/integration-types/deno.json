@@ -1,0 +1,8 @@
+{
+  "name": "@subroutine/integration-types",
+  "exports": "./mod.ts",
+  "imports": {
+    "googleapis": "npm:googleapis@^134.0.0",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0"
+  }
+}
