@@ -49,6 +49,7 @@
     "npm:daisyui@^5.4.7": "5.5.5",
     "npm:date-fns@^4.1.0": "4.1.0",
     "npm:debug@^4.4.3": "4.4.3",
+    "npm:eslint@9": "9.39.1",
     "npm:eslint@^9.39.1": "9.39.1",
     "npm:fetch-cookie@^3.1.0": "3.1.0",
     "npm:globals@^16.5.0": "16.5.0",
@@ -5677,6 +5678,12 @@
           "npm:ts-morph@26",
           "npm:yaml@^2.8.1",
           "npm:zod@^3.25.76"
+        ]
+      },
+      "packages/integration-types": {
+        "dependencies": [
+          "npm:@modelcontextprotocol/sdk@^1.21.0",
+          "npm:googleapis@134"
         ]
       },
       "sandbox": {

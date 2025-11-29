@@ -1,7 +1,7 @@
 /// <reference lib="deno.worker" />
 
 import { createMessagePortClient, type Remote } from "./remoteProxy";
-import type { GmailAPI } from "./integrations/gmail/types";
+import type { Integrations } from "@subroutine/integration-types";
 
 // Additional message types for worker communication
 interface ConnectMessage {
@@ -16,26 +16,6 @@ export interface ExecuteMessage {
 }
 
 type WorkerMessage = ExecuteMessage | ConnectMessage;
-
-// Integration interfaces for type safety
-interface S3API {
-  listBuckets(): Promise<{ buckets: string[] }>;
-}
-
-interface GithubAPI {
-  me(): Promise<{ login: string }>;
-}
-
-interface PingAPI {
-  ping(message: string): Promise<{ echo: string; timestamp: number }>;
-}
-
-interface Integrations {
-  getGmail(): Promise<GmailAPI>;
-  getS3(): Promise<S3API>;
-  getGithub(): Promise<GithubAPI>;
-  getPing(): Promise<PingAPI>;
-}
 
 // Store the integrations client (it's a Remote proxy)
 let integrations: Remote<Integrations> | undefined = undefined;

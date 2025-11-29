@@ -1,5 +1,6 @@
 {
   "imports": {
+    "@subroutine/integration-types": "../packages/integration-types/mod.ts",
     "hono": "npm:hono@^4.10.4",
     "typescript": "npm:typescript",
     "googleapis": "npm:googleapis@^134.0.0",

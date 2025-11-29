@@ -63,8 +63,10 @@ export type IntegrationAuthConfig = OAuth2AuthConfig | McpAuthConfig;
 export type IntegrationStatus = "static" | "dynamic";
 export type IntegrationVisibility = "private" | "global";
 
-export interface IntegrationWithConfig
-  extends Omit<IntegrationTable, "authConfig" | "status" | "visibility"> {
+export interface IntegrationWithConfig extends Omit<
+  IntegrationTable,
+  "authConfig" | "status" | "visibility"
+> {
   authConfig: IntegrationAuthConfig;
   status: IntegrationStatus;
   visibility: IntegrationVisibility;
