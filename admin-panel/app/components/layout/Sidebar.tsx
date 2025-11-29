@@ -1,13 +1,16 @@
 import { Link, useLocation } from "react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Building, ChevronDown, Home, Key, LogOut, Moon, Play, Plug, Sun } from "lucide-react";
 import { useAuth } from "~/components/providers/AuthProvider";
-import { authClient } from "~/lib/auth-client";
+import { getAuthClient } from "~/lib/auth-client";
 import { useEffect } from "react";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export const Sidebar = () => {
   const { user, organizations, activeOrganization } = useAuth();
   const location = useLocation();
+  const config = useAdminConfig();
+  const authClient = useMemo(() => getAuthClient(config), [config]);
   const [switchingOrg, setSwitchingOrg] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);

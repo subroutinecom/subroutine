@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
-import { authClient } from "../lib/auth-client";
+import { getAuthClient } from "../lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 type LoginFormData = {
   email: string;
@@ -11,6 +12,8 @@ type LoginFormData = {
 
 export default function Login() {
   const navigate = useNavigate();
+  const config = useAdminConfig();
+  const authClient = useMemo(() => getAuthClient(config), [config]);
   const { isAuthenticated, isLoading: authLoading, refetch } = useAuth();
   const [authError, setAuthError] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);

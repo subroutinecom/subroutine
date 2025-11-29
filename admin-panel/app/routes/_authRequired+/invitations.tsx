@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { authClient } from "~/lib/auth-client";
+import { getAuthClient } from "~/lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 interface Invitation {
   id: string;
@@ -16,6 +17,8 @@ interface Invitation {
 
 export default function Invitations() {
   const navigate = useNavigate();
+  const config = useAdminConfig();
+  const authClient = useMemo(() => getAuthClient(config), [config]);
   const { isAuthenticated, organizations, isLoading: authLoading, refetch } = useAuth();
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState<string | null>(null);
@@ -48,7 +51,7 @@ export default function Invitations() {
     };
 
     fetchInvitations();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authClient]);
 
   const handleAccept = async (invitationId: string) => {
     setError("");

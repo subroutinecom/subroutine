@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
-import { authClient } from "~/lib/auth-client";
+import { getAuthClient } from "~/lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { Sidebar } from "~/components/layout/Sidebar";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export const handle = { id: "auth-required" };
 
 export default function AuthRequired() {
   const navigate = useNavigate();
   const location = useLocation();
+  const config = useAdminConfig();
+  const authClient = useMemo(() => getAuthClient(config), [config]);
   const { isAuthenticated, organizations, activeOrganizationId, isLoading, refetch } = useAuth();
   const [isCheckingRoute, setIsCheckingRoute] = useState(true);
 
@@ -65,6 +68,7 @@ export default function AuthRequired() {
     location.pathname,
     navigate,
     refetch,
+    authClient,
   ]);
 
   if (isLoading || isCheckingRoute) {

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
 import { gql } from "graphql-request";
-import { graphqlClient } from "~/lib/graphql-client";
+import { createGraphqlClient } from "~/lib/graphql-client";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { Key, ArrowLeft, Copy, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 const CREATE_API_KEY_MUTATION = gql`
   mutation CreateApiKey($name: String, $prefix: String, $metadata: String) {
@@ -34,6 +35,8 @@ interface ApiKeyFormData {
 
 export default function NewApiKeyPage() {
   const navigate = useNavigate();
+  const config = useAdminConfig();
+  const client = useMemo(() => createGraphqlClient(config), [config]);
   const [error, setError] = useState<string | null>(null);
   const [createdKey, setCreatedKey] = useState<CreatedApiKey | null>(null);
   const [showKey, setShowKey] = useState(true);
@@ -53,7 +56,7 @@ export default function NewApiKeyPage() {
     try {
       setError(null);
 
-      const result = await graphqlClient.request<{
+      const result = await client.request<{
         createApiKey: CreatedApiKey;
       }>(CREATE_API_KEY_MUTATION, {
         name: data.name || null,

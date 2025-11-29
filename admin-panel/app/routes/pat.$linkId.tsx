@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router";
 import { useForm } from "react-hook-form";
 import { CheckCircle, XCircle, Key, Loader2, ExternalLink } from "lucide-react";
-
-const API_URL = "http://localhost:3002";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 interface PatLinkInfo {
   id: string;
@@ -25,6 +24,7 @@ type PageState = "loading" | "ready" | "submitting" | "success" | "error";
 
 export default function PatSubmissionPage() {
   const { linkId } = useParams();
+  const { apiUrl } = useAdminConfig();
   const [state, setState] = useState<PageState>("loading");
   const [linkInfo, setLinkInfo] = useState<PatLinkInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export default function PatSubmissionPage() {
   useEffect(() => {
     const fetchLinkInfo = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/pat-link/${linkId}`);
+        const response = await fetch(`${apiUrl}/api/pat-link/${linkId}`);
         const data = await response.json();
 
         if (!response.ok) {
@@ -64,7 +64,7 @@ export default function PatSubmissionPage() {
     setState("submitting");
 
     try {
-      const response = await fetch(`${API_URL}/api/pat-link/${linkId}/submit`, {
+      const response = await fetch(`${apiUrl}/api/pat-link/${linkId}/submit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

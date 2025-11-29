@@ -1,5 +1,7 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
-import { authClient } from "~/lib/auth-client";
+import { useMemo } from "react";
+import { getAuthClient } from "~/lib/auth-client";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export interface User {
   id: string;
@@ -37,6 +39,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const config = useAdminConfig();
+  const authClient = useMemo(() => getAuthClient(config), [config]);
   const [user, setUser] = useState<User | undefined>();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [activeOrganizationId, setActiveOrganizationId] = useState<string | undefined>();
@@ -48,7 +52,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (session?.user) {
         setUser(session.user);
-        setActiveOrganizationId(session.session?.activeOrganizationId || undefined);
+        const activeOrgId =
+          session.session && "activeOrganizationId" in session.session
+            ? (session.session.activeOrganizationId as string | undefined)
+            : undefined;
+        setActiveOrganizationId(activeOrgId);
 
         const { data: orgs } = await authClient.organization.list();
         setOrganizations(orgs || []);
@@ -65,7 +73,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [authClient]);
 
   useEffect(() => {
     fetchAuthData();

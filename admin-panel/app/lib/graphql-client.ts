@@ -1,15 +1,22 @@
 import { GraphQLClient } from "graphql-request";
+import type { AdminClientConfig } from "./admin-config";
 
-const GRAPHQL_URL = "http://localhost:3002/graphql";
-
-const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
+const customFetch: typeof fetch = (input, init) => {
   return fetch(input, {
     ...init,
     credentials: "include", // Include cookies for session auth
   });
 };
 
-export const graphqlClient = new GraphQLClient(GRAPHQL_URL, {
-  // deno-lint-ignore no-explicit-any
-  fetch: customFetch as any,
-});
+const clientCache = new Map<string, GraphQLClient>();
+
+export const createGraphqlClient = (config: AdminClientConfig): GraphQLClient => {
+  const existing = clientCache.get(config.graphqlUrl);
+  if (existing) return existing;
+
+  const client = new GraphQLClient(config.graphqlUrl, {
+    fetch: customFetch,
+  });
+  clientCache.set(config.graphqlUrl, client);
+  return client;
+};

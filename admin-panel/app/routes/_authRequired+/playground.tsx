@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLoaderData } from "react-router";
 import { useForm } from "react-hook-form";
 import { gql } from "graphql-request";
@@ -17,17 +17,17 @@ import {
   RotateCw,
 } from "lucide-react";
 import { PageHeader } from "~/components/ui/PageHeader";
-import { graphqlClient } from "~/lib/graphql-client";
+import { createGraphqlClient } from "~/lib/graphql-client";
 import {
-  executeRequest,
-  createSubroutine,
-  runSubroutine,
+  createApiClient,
   isIntegrationAuthRequiredError,
   type ApiError,
   type ExecuteRequestResult,
   type AuthRequirement,
 } from "~/lib/api-client";
 import { useAuth } from "~/components/providers/AuthProvider";
+import { fetchAdminConfig } from "~/lib/admin-config";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export function meta() {
   return [
@@ -55,7 +55,9 @@ interface Integration {
 }
 
 export const clientLoader = async () => {
-  const data = await graphqlClient.request<{
+  const config = await fetchAdminConfig();
+  const client = createGraphqlClient(config);
+  const data = await client.request<{
     integrations: Integration[];
   }>(INTEGRATIONS_QUERY);
 
@@ -100,6 +102,8 @@ interface ExecutionState {
 }
 
 export default function PlaygroundPage() {
+  const config = useAdminConfig();
+  const apiClient = useMemo(() => createApiClient(config), [config]);
   const { integrations } = useLoaderData<typeof clientLoader>();
   const { user } = useAuth();
   const [executionState, setExecutionState] = useState<ExecutionState>({ phase: "idle" });
@@ -153,7 +157,12 @@ export default function PlaygroundPage() {
       if (data.executeImmediately) {
         setExecutionState({ phase: "generating" });
 
-        const result = await executeRequest(data.request, viewerId, integrationsToUse, 60000);
+        const result = await apiClient.executeRequest(
+          data.request,
+          viewerId,
+          integrationsToUse,
+          60000
+        );
 
         setExecutionState({
           phase: "completed",
@@ -163,7 +172,7 @@ export default function PlaygroundPage() {
           outputs: result.run.outputs || undefined,
         });
       } else {
-        const result = await createSubroutine(data.request, viewerId, integrationsToUse);
+        const result = await apiClient.createSubroutine(data.request, viewerId, integrationsToUse);
 
         setExecutionState({
           phase: "completed",
@@ -214,7 +223,12 @@ export default function PlaygroundPage() {
     setRerunning(true);
 
     try {
-      const result = await runSubroutine(executionState.subroutineId, viewerId, {}, 60000);
+      const result = await apiClient.runSubroutine(
+        executionState.subroutineId,
+        viewerId,
+        {},
+        60000
+      );
 
       setExecutionState((prev) => ({
         ...prev,

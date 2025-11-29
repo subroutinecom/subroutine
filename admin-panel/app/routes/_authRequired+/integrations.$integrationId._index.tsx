@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 import { ArrowLeft, Check, Clock, Github, Mail, Pencil, Server, Trash2, X } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
-import { graphqlClient } from "~/lib/graphql-client";
+import { createGraphqlClient } from "~/lib/graphql-client";
 import type { IntegrationAuthConfig, McpAuthConfig, OAuth2AuthConfig } from "~/types/integration";
 import { format } from "date-fns";
+import { fetchAdminConfig } from "~/lib/admin-config";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export function meta() {
   return [
@@ -83,15 +85,17 @@ interface ConnectedAccountResponse {
 
 export const clientLoader = async ({ params }: { params: { integrationId: string } }) => {
   const integrationId = params.integrationId;
+  const config = await fetchAdminConfig();
+  const client = createGraphqlClient(config);
 
   const [integrationData, accountsData] = await Promise.all([
-    graphqlClient.request<{ integration: IntegrationResponse; isSuperadmin: boolean }>(
+    client.request<{ integration: IntegrationResponse; isSuperadmin: boolean }>(
       GET_INTEGRATION_QUERY,
       {
         id: integrationId,
       }
     ),
-    graphqlClient.request<{ connectedAccountsByIntegration: ConnectedAccountResponse[] }>(
+    client.request<{ connectedAccountsByIntegration: ConnectedAccountResponse[] }>(
       GET_CONNECTED_ACCOUNTS_QUERY,
       { integrationId }
     ),
@@ -137,6 +141,8 @@ const getStatusIcon = (status: string) => {
 };
 
 export default function IntegrationDetailPage() {
+  const config = useAdminConfig();
+  const client = useMemo(() => createGraphqlClient(config), [config]);
   const navigate = useNavigate();
   const { activeOrganization } = useAuth();
   const { integration, isSuperadmin, connectedAccounts } = useLoaderData<typeof clientLoader>();
@@ -158,7 +164,7 @@ export default function IntegrationDetailPage() {
 
     try {
       setDeleting(true);
-      await graphqlClient.request<{ deleteIntegration: boolean }>(DELETE_INTEGRATION_MUTATION, {
+      await client.request<{ deleteIntegration: boolean }>(DELETE_INTEGRATION_MUTATION, {
         id: integration.id,
       });
       navigate("/integrations");
