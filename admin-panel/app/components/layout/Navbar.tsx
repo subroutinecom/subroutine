@@ -1,12 +1,15 @@
 import { Link } from "react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LogOut } from "lucide-react";
 import { useAuth } from "~/components/providers/AuthProvider";
-import { authClient } from "~/lib/auth-client";
+import { getAuthClient } from "~/lib/auth-client";
 import { ThemeToggle } from "~/components/ThemeToggle";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export const Navbar = () => {
   const { user, organizations, activeOrganization } = useAuth();
+  const config = useAdminConfig();
+  const authClient = useMemo(() => getAuthClient(config), [config]);
   const [switchingOrg, setSwitchingOrg] = useState(false);
 
   if (!user) {

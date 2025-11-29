@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useForm } from "react-hook-form";
 import { ArrowLeft } from "lucide-react";
@@ -6,7 +6,7 @@ import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
-import { graphqlClient } from "~/lib/graphql-client";
+import { createGraphqlClient } from "~/lib/graphql-client";
 import type {
   IntegrationAuthConfig,
   McpAuthConfig,
@@ -14,6 +14,7 @@ import type {
   McpTransport,
   OAuth2AuthConfig,
 } from "~/types/integration";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export function meta() {
   return [
@@ -86,6 +87,8 @@ type IntegrationFormData = {
 
 export default function EditIntegrationPage() {
   const navigate = useNavigate();
+  const config = useAdminConfig();
+  const client = useMemo(() => createGraphqlClient(config), [config]);
   const params = useParams();
   const { activeOrganization } = useAuth();
   const integrationId = params.integrationId!;
@@ -127,7 +130,7 @@ export default function EditIntegrationPage() {
     const fetchIntegration = async () => {
       try {
         setLoading(true);
-        const data = await graphqlClient.request<{
+        const data = await client.request<{
           integration: IntegrationResponse;
           isSuperadmin: boolean;
         }>(GET_INTEGRATION_QUERY, { id: integrationId });
@@ -291,7 +294,7 @@ export default function EditIntegrationPage() {
         authConfig = JSON.stringify(authConfigPayload);
       }
 
-      await graphqlClient.request<{
+      await client.request<{
         updateIntegration: {
           id: string;
           name: string;

@@ -16,8 +16,11 @@ import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
-import { graphqlClient } from "~/lib/graphql-client";
+import { createGraphqlClient } from "~/lib/graphql-client";
 import type { IntegrationAuthConfig, McpAuthConfig, OAuth2AuthConfig } from "~/types/integration";
+import { useAdminConfig } from "~/hooks/use-admin-config";
+import { useMemo } from "react";
+import { fetchAdminConfig } from "~/lib/admin-config";
 
 export function meta() {
   return [
@@ -90,7 +93,9 @@ interface ParsedIntegration extends Omit<IntegrationResponse, "authConfig"> {
 }
 
 export const clientLoader = async () => {
-  const data = await graphqlClient.request<{
+  const config = await fetchAdminConfig();
+  const client = createGraphqlClient(config);
+  const data = await client.request<{
     orgIntegrations: IntegrationResponse[];
     globalIntegrations: IntegrationResponse[];
     isSuperadmin: boolean;
@@ -127,6 +132,8 @@ const getProviderIcon = (provider: string) => {
 };
 
 export default function IntegrationsPage() {
+  const config = useAdminConfig();
+  const client = useMemo(() => createGraphqlClient(config), [config]);
   const { activeOrganization: _activeOrganization } = useAuth();
   const {
     integrations: initialIntegrations,
@@ -151,7 +158,7 @@ export default function IntegrationsPage() {
 
     try {
       setDeletingId(id);
-      await graphqlClient.request<{ deleteIntegration: boolean }>(DELETE_INTEGRATION_MUTATION, {
+      await client.request<{ deleteIntegration: boolean }>(DELETE_INTEGRATION_MUTATION, {
         id,
       });
       if (isGlobal) {
@@ -169,7 +176,7 @@ export default function IntegrationsPage() {
   const handleToggleEnabled = async (id: string, currentEnabled: boolean, isGlobal: boolean) => {
     try {
       setTogglingId(id);
-      const data = await graphqlClient.request<{
+      const data = await client.request<{
         updateIntegration: IntegrationResponse;
       }>(UPDATE_INTEGRATION_MUTATION, { id, enabled: !currentEnabled });
       if (isGlobal) {

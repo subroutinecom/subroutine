@@ -1,6 +1,6 @@
-const API_URL = "http://localhost:3002";
+import type { AdminClientConfig } from "./admin-config";
 
-const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
+const customFetch: typeof fetch = (input, init) => {
   return fetch(input, {
     ...init,
     credentials: "include",
@@ -88,104 +88,116 @@ export const isIntegrationAuthRequiredError = (
   return error.error?.code === "INTEGRATION_AUTH_REQUIRED";
 };
 
-export const createSubroutine = async (
-  request: string,
-  viewerId: string,
-  integrations?: string[]
-): Promise<CreateSubroutineResult> => {
-  const response = await customFetch(`${API_URL}/api/subroutine`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ request, viewerId, integrations }),
-  });
+export const createApiClient = (config: AdminClientConfig) => {
+  const apiUrl = config.apiUrl;
 
-  const data = await response.json();
+  const createSubroutine = async (
+    request: string,
+    viewerId: string,
+    integrations?: string[]
+  ): Promise<CreateSubroutineResult> => {
+    const response = await customFetch(`${apiUrl}/api/subroutine`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ request, viewerId, integrations }),
+    });
 
-  if (!response.ok) {
-    throw data as ApiError;
-  }
+    const data = await response.json();
 
-  return data as CreateSubroutineResult;
-};
+    if (!response.ok) {
+      throw data as ApiError;
+    }
 
-export const executeRequest = async (
-  request: string,
-  viewerId: string,
-  integrations?: string[],
-  timeoutMs?: number
-): Promise<ExecuteRequestResult> => {
-  const response = await customFetch(`${API_URL}/api/subroutine/execute_request`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ request, viewerId, integrations, timeoutMs }),
-  });
+    return data as CreateSubroutineResult;
+  };
 
-  const data = await response.json();
+  const executeRequest = async (
+    request: string,
+    viewerId: string,
+    integrations?: string[],
+    timeoutMs?: number
+  ): Promise<ExecuteRequestResult> => {
+    const response = await customFetch(`${apiUrl}/api/subroutine/execute_request`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ request, viewerId, integrations, timeoutMs }),
+    });
 
-  if (!response.ok) {
-    throw data as ApiError;
-  }
+    const data = await response.json();
 
-  return data as ExecuteRequestResult;
-};
+    if (!response.ok) {
+      throw data as ApiError;
+    }
 
-export const runSubroutine = async (
-  subroutineId: string,
-  viewerId: string,
-  inputs?: Record<string, unknown>,
-  timeoutMs?: number
-): Promise<{ runUri: string; run: RunResponse }> => {
-  const response = await customFetch(`${API_URL}/api/subroutine/${subroutineId}/run`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ viewerId, inputs, timeoutMs }),
-  });
+    return data as ExecuteRequestResult;
+  };
 
-  const data = await response.json();
+  const runSubroutine = async (
+    subroutineId: string,
+    viewerId: string,
+    inputs?: Record<string, unknown>,
+    timeoutMs?: number
+  ): Promise<{ runUri: string; run: RunResponse }> => {
+    const response = await customFetch(`${apiUrl}/api/subroutine/${subroutineId}/run`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ viewerId, inputs, timeoutMs }),
+    });
 
-  if (!response.ok) {
-    throw data as ApiError;
-  }
+    const data = await response.json();
 
-  return data as { runUri: string; run: RunResponse };
-};
+    if (!response.ok) {
+      throw data as ApiError;
+    }
 
-export const getSubroutine = async (id: string): Promise<{ subroutine: SubroutineResponse }> => {
-  const response = await customFetch(`${API_URL}/api/subroutine/${id}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+    return data as { runUri: string; run: RunResponse };
+  };
 
-  const data = await response.json();
+  const getSubroutine = async (id: string): Promise<{ subroutine: SubroutineResponse }> => {
+    const response = await customFetch(`${apiUrl}/api/subroutine/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    throw data as ApiError;
-  }
+    const data = await response.json();
 
-  return data as { subroutine: SubroutineResponse };
-};
+    if (!response.ok) {
+      throw data as ApiError;
+    }
 
-export const getRun = async (id: string): Promise<{ run: RunResponse }> => {
-  const response = await customFetch(`${API_URL}/api/run/${id}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
+    return data as { subroutine: SubroutineResponse };
+  };
 
-  const data = await response.json();
+  const getRun = async (id: string): Promise<{ run: RunResponse }> => {
+    const response = await customFetch(`${apiUrl}/api/run/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    throw data as ApiError;
-  }
+    const data = await response.json();
 
-  return data as { run: RunResponse };
+    if (!response.ok) {
+      throw data as ApiError;
+    }
+
+    return data as { run: RunResponse };
+  };
+
+  return {
+    createSubroutine,
+    executeRequest,
+    runSubroutine,
+    getSubroutine,
+    getRun,
+  };
 };

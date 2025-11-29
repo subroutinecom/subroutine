@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
-import { authClient } from "~/lib/auth-client";
+import { getAuthClient } from "~/lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 type OrganizationFormData = {
   organizationName: string;
@@ -10,6 +11,8 @@ type OrganizationFormData = {
 
 export default function SetupOrganization() {
   const navigate = useNavigate();
+  const config = useAdminConfig();
+  const authClient = useMemo(() => getAuthClient(config), [config]);
   const { isAuthenticated, organizations, isLoading: authLoading, refetch } = useAuth();
   const [serverError, setServerError] = useState("");
 

@@ -1,10 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router";
-import { authClient } from "~/lib/auth-client";
+import { getAuthClient } from "~/lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export default function Logout() {
   const navigate = useNavigate();
+  const config = useAdminConfig();
+  const authClient = useMemo(() => getAuthClient(config), [config]);
   const { refetch } = useAuth();
 
   useEffect(() => {
@@ -14,7 +17,7 @@ export default function Logout() {
       navigate("/login");
     };
     signOut();
-  }, [navigate, refetch]);
+  }, [navigate, refetch, authClient]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-base-200">

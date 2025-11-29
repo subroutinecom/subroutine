@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useLoaderData } from "react-router";
 import { gql } from "graphql-request";
-import { graphqlClient } from "~/lib/graphql-client";
+import { createGraphqlClient } from "~/lib/graphql-client";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { Key, Plus, Copy, Trash2, CheckCircle2 } from "lucide-react";
+import { useAdminConfig } from "~/hooks/use-admin-config";
+import { fetchAdminConfig } from "~/lib/admin-config";
 
 const API_KEYS_QUERY = gql`
   query GetApiKeys {
@@ -39,13 +41,17 @@ interface ApiKey {
 }
 
 export const clientLoader = async () => {
-  const data = await graphqlClient.request<{
+  const config = await fetchAdminConfig();
+  const client = createGraphqlClient(config);
+  const data = await client.request<{
     apiKeys: ApiKey[];
   }>(API_KEYS_QUERY);
   return { apiKeys: data.apiKeys || [] };
 };
 
 export default function ApiKeysPage() {
+  const config = useAdminConfig();
+  const client = useMemo(() => createGraphqlClient(config), [config]);
   const { apiKeys: initialApiKeys } = useLoaderData<typeof clientLoader>();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +68,7 @@ export default function ApiKeysPage() {
       setDeletingId(id);
       setError(null);
 
-      await graphqlClient.request(DELETE_API_KEY_MUTATION, { id });
+      await client.request(DELETE_API_KEY_MUTATION, { id });
 
       setApiKeys((prev) => prev.filter((key) => key.id !== id));
     } catch (err) {

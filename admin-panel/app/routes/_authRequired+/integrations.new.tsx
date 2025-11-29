@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { PageHeader } from "~/components/ui/PageHeader";
-import { graphqlClient } from "~/lib/graphql-client";
+import { createGraphqlClient } from "~/lib/graphql-client";
 import type { IntegrationProviderDefinition } from "~/types/integration";
 import {
   type IntegrationFormData,
@@ -15,6 +15,8 @@ import {
   useIntegrationForm,
   useMcpDiscovery,
 } from "~/components/integrations";
+import { fetchAdminConfig } from "~/lib/admin-config";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export function meta() {
   return [
@@ -75,7 +77,9 @@ const CREATE_INTEGRATION_MUTATION = gql`
 `;
 
 export const clientLoader = async () => {
-  const data = await graphqlClient.request<{
+  const config = await fetchAdminConfig();
+  const client = createGraphqlClient(config);
+  const data = await client.request<{
     integrationProviders: IntegrationProviderDefinition[];
     isSuperadmin: boolean;
   }>(INTEGRATION_PROVIDERS_QUERY);
@@ -87,6 +91,8 @@ export const clientLoader = async () => {
 
 export default function NewIntegrationPage() {
   const navigate = useNavigate();
+  const config = useAdminConfig();
+  const client = useMemo(() => createGraphqlClient(config), [config]);
   const { providerDefinitions, isSuperadmin } = useLoaderData<typeof clientLoader>();
   const [serverError, setServerError] = useState<string | null>(null);
   const [description, setDescription] = useState<string>("");
@@ -146,7 +152,7 @@ export default function NewIntegrationPage() {
     }
 
     try {
-      await graphqlClient.request<{
+      await client.request<{
         createIntegration: { id: string; provider: string; name: string };
       }>(CREATE_INTEGRATION_MUTATION, {
         provider: data.provider,

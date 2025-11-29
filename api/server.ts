@@ -51,6 +51,30 @@ const initialize = async () => {
   const config = await getConfig();
 
   app.use(
+    "/admin-config.json",
+    cors({
+      origin: config.auth.allowedOrigins,
+      credentials: true,
+      allowMethods: ["GET", "OPTIONS"],
+      allowHeaders: ["Content-Type"],
+      maxAge: 86400,
+    }) as any
+  );
+
+  app.get("/admin-config.json", (c) => {
+    const apiUrl = config.apiUrl ?? config.baseUrl;
+    const graphqlUrl = `${apiUrl}/graphql`;
+    const authBaseUrl = config.auth.baseUrl ?? apiUrl;
+    const redirectBase = apiUrl;
+    return c.json({
+      apiUrl,
+      graphqlUrl,
+      authBaseUrl,
+      redirectBase,
+    });
+  });
+
+  app.use(
     "/api/auth/*",
     cors({
       origin: config.auth.allowedOrigins,

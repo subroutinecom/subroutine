@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -13,7 +13,9 @@ import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { parse as parseYaml } from "yaml";
 import { PageHeader } from "~/components/ui/PageHeader";
-import { graphqlClient } from "~/lib/graphql-client";
+import { createGraphqlClient } from "~/lib/graphql-client";
+import { fetchAdminConfig } from "~/lib/admin-config";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 export function meta() {
   return [
@@ -51,7 +53,9 @@ const CREATE_INTEGRATION_MUTATION = gql`
 `;
 
 export const clientLoader = async () => {
-  const data = await graphqlClient.request<{ isSuperadmin: boolean }>(CHECK_SUPERADMIN_QUERY);
+  const config = await fetchAdminConfig();
+  const client = createGraphqlClient(config);
+  const data = await client.request<{ isSuperadmin: boolean }>(CHECK_SUPERADMIN_QUERY);
   return { isSuperadmin: data.isSuperadmin };
 };
 
@@ -268,6 +272,8 @@ const buildAuthConfig = (config: IntegrationConfig): string => {
 
 export default function SuperadminImportPage() {
   const navigate = useNavigate();
+  const config = useAdminConfig();
+  const client = useMemo(() => createGraphqlClient(config), [config]);
   const { isSuperadmin } = useLoaderData<typeof clientLoader>();
   const [inputMode, setInputMode] = useState<"file" | "paste">("file");
   const [isDragging, setIsDragging] = useState(false);
@@ -412,7 +418,7 @@ export default function SuperadminImportPage() {
 
     for (const config of parsedData.integrations) {
       try {
-        const response = await graphqlClient.request<{
+        const response = await client.request<{
           createIntegration: { id: string; name: string };
         }>(CREATE_INTEGRATION_MUTATION, {
           provider: config.provider,

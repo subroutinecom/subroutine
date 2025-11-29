@@ -7,6 +7,8 @@ import {
   ScrollRestoration,
 } from "react-router";
 import { AuthProvider } from "~/components/providers/AuthProvider";
+import { fetchAdminConfig, handle as rootHandle } from "~/lib/admin-config";
+import { useLoaderData } from "react-router";
 
 import "./app.css";
 
@@ -22,6 +24,13 @@ export const links = () => [
     href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500;600&display=swap",
   },
 ];
+
+export const clientLoader = async () => {
+  const config = await fetchAdminConfig();
+  return config;
+};
+
+export const handle = rootHandle;
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -42,6 +51,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  // Ensure loader data is read so React Router provides it to descendants
+  useLoaderData<typeof clientLoader>();
   return (
     <AuthProvider>
       <Outlet />

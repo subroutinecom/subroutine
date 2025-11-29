@@ -3,8 +3,7 @@ import { useForm } from "react-hook-form";
 import type { IntegrationFormData } from "../ProviderSelector";
 import type { IntegrationProvider, IntegrationProviderDefinition } from "~/types/integration";
 import type { McpOAuthDiscoveryResult } from "../McpFormFields";
-
-const DEFAULT_REDIRECT_BASE = "http://localhost:3002";
+import { useAdminConfig } from "~/hooks/use-admin-config";
 
 interface UseIntegrationFormOptions {
   providerDefinitions: IntegrationProviderDefinition[];
@@ -17,6 +16,8 @@ export const useIntegrationForm = ({
   discoveryResult,
   onProviderChange,
 }: UseIntegrationFormOptions) => {
+  const { redirectBase } = useAdminConfig();
+
   // Helper to get provider definition
   const getProviderDefinition = useCallback(
     (id: IntegrationProvider) => providerDefinitions.find((provider) => provider.id === id),
@@ -24,13 +25,16 @@ export const useIntegrationForm = ({
   );
 
   // Helper to build redirect URI
-  const buildDefaultRedirectUri = useCallback((definition?: IntegrationProviderDefinition) => {
-    const redirectPath = definition?.oauthConfig?.defaultRedirectPath ?? "/api/oauth/callback";
-    if (redirectPath.startsWith("http://") || redirectPath.startsWith("https://")) {
-      return redirectPath;
-    }
-    return `${DEFAULT_REDIRECT_BASE}${redirectPath}`;
-  }, []);
+  const buildDefaultRedirectUri = useCallback(
+    (definition?: IntegrationProviderDefinition) => {
+      const redirectPath = definition?.oauthConfig?.defaultRedirectPath ?? "/api/oauth/callback";
+      if (redirectPath.startsWith("http://") || redirectPath.startsWith("https://")) {
+        return redirectPath;
+      }
+      return `${redirectBase}${redirectPath}`;
+    },
+    [redirectBase]
+  );
 
   // Initial values
   const initialProviderId = useMemo<IntegrationProvider>(() => {
