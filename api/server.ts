@@ -1268,6 +1268,14 @@ const initialize = async () => {
   const mcp2Transports: Record<string, StreamableHTTPServerTransport> = {};
   const isValidMcp2SessionId = (sid: string): boolean => sid === "all" || sid.length === 36;
 
+  // Handle GET /mcp2 - check auth and redirect or show login
+  // Note: This route is registered via registerUiRoutes() in ui/server.tsx
+  // But we need to handle the redirect logic here after auth check
+
+  // Handle GET /mcp2/:sessionId - check auth before allowing access
+  // Note: The UI rendering is handled in ui/server.tsx
+  // But we don't need special handling here since the UI routes are registered first
+
   app.post("/mcp2/:sessionId", async (c) => {
     const { sessionId } = c.req.param();
 
