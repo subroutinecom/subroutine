@@ -22,7 +22,7 @@ export const noCtxUsage = (sourceFile: SourceFile): ValidationError[] => {
         errors.push({
           rule: "no-ctx-usage",
           message:
-            "Code should not use ctx parameter. The main function signature is: main(integrations: Integrations, inputs: Inputs)",
+            "Code should not use ctx parameter. The main function signature is: main(inputs: Inputs, integrations: Integrations)",
           line: id.getStartLineNumber(),
         });
         return errors; // One error is enough
@@ -33,7 +33,7 @@ export const noCtxUsage = (sourceFile: SourceFile): ValidationError[] => {
       errors.push({
         rule: "no-ctx-usage",
         message:
-          "Code should not use ctx parameter. The main function signature is: main(integrations: Integrations, inputs: Inputs)",
+          "Code should not use ctx parameter. The main function signature is: main(inputs: Inputs, integrations: Integrations)",
         line: id.getStartLineNumber(),
       });
       return errors;
@@ -46,7 +46,7 @@ export const noCtxUsage = (sourceFile: SourceFile): ValidationError[] => {
         errors.push({
           rule: "no-ctx-usage",
           message:
-            "Code should not use ctx parameter. The main function signature is: main(integrations: Integrations, inputs: Inputs)",
+            "Code should not use ctx parameter. The main function signature is: main(inputs: Inputs, integrations: Integrations)",
           line: id.getStartLineNumber(),
         });
         return errors;

@@ -33,10 +33,12 @@ const validateCode = async (code: string): Promise<ValidationResult> => {
 
 describe("AST-based Code Validation", () => {
   const validCode = `
+    import type { Integrations } from "@subroutine/integration-types";
+
     type Inputs = { value: number };
     type Outputs = { result: number };
 
-    export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+    export async function main(inputs: Inputs, integrations: Integrations): Promise<Outputs> {
       return { result: inputs.value * 2 };
     }
   `;
@@ -54,7 +56,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return {};
         }
       `;
@@ -68,7 +70,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return {};
         }
         export { main };
@@ -97,7 +99,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return {};
         }
       `;
@@ -113,7 +115,7 @@ describe("AST-based Code Validation", () => {
         // export is mentioned here but shouldn't count
         type Inputs = {};
         type Outputs = {};
-        async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return {};
         }
       `;
@@ -129,7 +131,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return {};
         }
       `;
@@ -157,7 +159,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export function main(integrations: unknown, inputs: Inputs): Outputs {
+        export function main(inputs: Inputs, integrations: unknown): Outputs {
           return {};
         }
       `;
@@ -189,7 +191,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = { value: string };
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return {};
         }
       `;
@@ -203,7 +205,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         interface Inputs { value: string }
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return {};
         }
       `;
@@ -216,7 +218,7 @@ describe("AST-based Code Validation", () => {
     it("rejects missing Inputs type", async () => {
       const code = `
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: unknown): Promise<Outputs> {
+        export async function main(inputs: unknown, integrations: unknown): Promise<Outputs> {
           return {};
         }
       `;
@@ -233,7 +235,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = { result: string };
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return { result: "ok" };
         }
       `;
@@ -247,7 +249,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         interface Outputs { result: string }
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return { result: "ok" };
         }
       `;
@@ -260,7 +262,7 @@ describe("AST-based Code Validation", () => {
     it("rejects missing Outputs type", async () => {
       const code = `
         type Inputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<unknown> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<unknown> {
           return {};
         }
       `;
@@ -277,7 +279,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return {};
         }
       `;
@@ -303,7 +305,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           console.log("no return");
         }
       `;
@@ -318,7 +320,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const helper = () => { return 42; };
           helper();
         }
@@ -334,7 +336,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = { flag: boolean };
         type Outputs = { result: string };
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           if (inputs.flag) {
             return { result: "yes" };
           }
@@ -360,7 +362,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(ctx: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, ctx: unknown): Promise<Outputs> {
           const x = ctx.value;
           return {};
         }
@@ -374,7 +376,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(ctx: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, ctx: unknown): Promise<Outputs> {
           return {};
         }
       `;
@@ -396,7 +398,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = { url: string };
         type Outputs = { data: unknown };
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const response = await fetch(inputs.url);
           const data = await response.json();
           return { data };
@@ -411,7 +413,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = { url: string };
         type Outputs = { data: unknown };
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const response = await globalThis.fetch(inputs.url);
           const data = await response.json();
           return { data };
@@ -426,7 +428,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           await fetch("http://example.com");
           return {};
         }
@@ -443,7 +445,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const client = await integrations.getMcpClient("test");
           return {};
         }
@@ -458,7 +460,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const client = integrations.getMcpClient("test");
           return {};
         }
@@ -474,7 +476,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const client = integrations.getMcpClient("linear");
           return {};
         }
@@ -493,7 +495,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = { result: unknown };
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const client = await integrations.getMcpClient("linear");
           return { result: client };
         }
@@ -508,7 +510,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = { result: unknown };
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const result = await integrations.linear.call({ tool: "test", arguments: {} });
           return { result };
         }
@@ -524,7 +526,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const x = integrations.someService;
           return {};
         }
@@ -541,7 +543,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           const client = integrations.github;
           const result = await client.call({ tool: "test" });
           return {};
@@ -560,7 +562,7 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         type Outputs = {};
-        export function main(integrations: unknown, inputs: Inputs): Outputs {
+        export function main(inputs: Inputs, integrations: unknown): Outputs {
           console.log("no return, not async");
         }
       `;
