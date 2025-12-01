@@ -9,6 +9,7 @@
     "jsr:@std/assert@^1.0.15": "1.0.15",
     "jsr:@std/async@^1.0.15": "1.0.15",
     "jsr:@std/data-structures@^1.0.9": "1.0.9",
+    "jsr:@std/dotenv@*": "0.225.5",
     "jsr:@std/expect@^1.0.17": "1.0.17",
     "jsr:@std/fs@^1.0.19": "1.0.19",
     "jsr:@std/internal@^1.0.10": "1.0.12",
@@ -18,6 +19,7 @@
     "jsr:@std/testing@^1.0.16": "1.0.16",
     "npm:@ai-sdk/anthropic@^2.0.41": "2.0.50_zod@3.25.76",
     "npm:@ai-sdk/anthropic@^2.0.49": "2.0.50_zod@3.25.76",
+    "npm:@ai-sdk/google-vertex@*": "3.0.81_zod@3.25.76",
     "npm:@ai-sdk/google-vertex@^3.0.58": "3.0.81_zod@3.25.76",
     "npm:@ai-sdk/openai@^2.0.64": "2.0.74_zod@3.25.76",
     "npm:@cap.js/server@^4.0.3": "4.0.4",
@@ -45,6 +47,7 @@
     "npm:@types/react@^19.1.13": "19.2.7",
     "npm:@typescript-eslint/utils@^8.46.3": "8.48.0_eslint@9.39.1_typescript@5.9.3",
     "npm:@uidotdev/usehooks@^2.4.1": "2.4.1_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+    "npm:ai@*": "5.0.104_zod@3.25.76",
     "npm:ai@^5.0.102": "5.0.104_zod@3.25.76",
     "npm:ai@^5.0.89": "5.0.104_zod@3.25.76",
     "npm:arg@5": "5.0.2",
@@ -118,6 +121,9 @@
     },
     "@std/data-structures@1.0.9": {
       "integrity": "033d6e17e64bf1f84a614e647c1b015fa2576ae3312305821e1a4cb20674bb4d"
+    },
+    "@std/dotenv@0.225.5": {
+      "integrity": "9ce6f9d0ec3311f74a32535aa1b8c62ed88b1ab91b7f0815797d77a6f60c922f"
     },
     "@std/expect@1.0.17": {
       "integrity": "316b47dd65c33e3151344eb3267bf42efba17d1415425f07ed96185d67fc04d9",

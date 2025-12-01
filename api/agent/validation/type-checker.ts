@@ -1,20 +1,26 @@
 import { Project, ts } from "ts-morph";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import type { ValidationError } from "./types";
 
 let typeCheckProject: Project | null = null;
 
-const getApiDir = (): string => {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  return resolve(currentDir, "../..");
-};
-
 const getProject = (): Project => {
   if (!typeCheckProject) {
-    const apiDir = getApiDir();
-    const nodeModulesPath = resolve(apiDir, "node_modules");
-    const integrationTypesPath = resolve(apiDir, "../packages/integration-types/mod.ts");
+    // In Docker (both dev and prod), packages are at /app/packages
+    // Outside Docker, use path relative to this file
+    const dockerPackagesPath = "/app/packages/integration-types/mod.ts";
+    const currentDir = dirname(fileURLToPath(import.meta.url));
+    const localPackagesPath = resolve(currentDir, "../../../packages/integration-types/mod.ts");
+
+    const integrationTypesPath = existsSync(dockerPackagesPath)
+      ? dockerPackagesPath
+      : localPackagesPath;
+
+    // For baseUrl, use a path that exists
+    const baseUrl = existsSync("/app/api") ? "/app/api" : resolve(currentDir, "../..");
+    const nodeModulesPath = resolve(baseUrl, "node_modules");
 
     typeCheckProject = new Project({
       skipAddingFilesFromTsConfig: true,
@@ -25,7 +31,7 @@ const getProject = (): Project => {
         target: ts.ScriptTarget.ES2022,
         module: ts.ModuleKind.NodeNext,
         moduleResolution: ts.ModuleResolutionKind.NodeNext,
-        baseUrl: apiDir,
+        baseUrl,
         paths: {
           "@subroutine/integration-types": [integrationTypesPath],
           googleapis: [resolve(nodeModulesPath, "googleapis")],
