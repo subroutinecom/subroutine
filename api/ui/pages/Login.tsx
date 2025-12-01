@@ -85,11 +85,14 @@ export const Login = ({ authProviders, authBaseUrl, isSignUp = false }: LoginPro
 
           {hasEmailPassword && (
             <form
-              action={isSignUp ? "/api/auth/sign-up/email" : "/api/auth/sign-in/email"}
+              action={
+                isSignUp
+                  ? "/api/auth/sign-up/email?callbackURL=/mcp2"
+                  : "/api/auth/sign-in/email?callbackURL=/mcp2"
+              }
               method="POST"
               className={showSocialLogins ? "mt-6 space-y-4" : "space-y-4"}
             >
-              <input type="hidden" name="callbackURL" value="/mcp2" />
               {isSignUp && <input type="hidden" name="name" value="" id="name-hidden" />}
 
               <div>

@@ -6,7 +6,13 @@ import { Mcp2Session } from "./pages/Mcp2Session.tsx";
 
 export const renderUi = (
   path: string,
-  props?: { sessionId?: string; authProviders?: any; authBaseUrl?: string }
+  props?: {
+    sessionId?: string;
+    authProviders?: any;
+    authBaseUrl?: string;
+    baseUrl?: string;
+    isSignUp?: boolean;
+  }
 ) => {
   // Parse the route params from the path for /mcp2/:sessionId
   const sessionIdMatch = path.match(/^\/mcp2\/([^/]+)$/);
@@ -17,7 +23,7 @@ export const renderUi = (
       <Layout>
         {path === "/login" && <Login {...props} />}
         {path === "/mcp2" && <Login {...props} />}
-        {sessionId && <Mcp2Session sessionId={sessionId} />}
+        {sessionId && <Mcp2Session sessionId={sessionId} baseUrl={props?.baseUrl} />}
         {!path.startsWith("/login") && !path.startsWith("/mcp2") && <div>Not Found</div>}
       </Layout>
     </StaticRouter>

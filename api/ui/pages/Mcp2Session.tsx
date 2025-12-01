@@ -1,8 +1,11 @@
-export const Mcp2Session = ({ sessionId }: { sessionId: string }) => {
+export const Mcp2Session = ({ sessionId, baseUrl }: { sessionId: string; baseUrl?: string }) => {
   const handleLogout = () => {
     // This will be handled by better-auth
     globalThis.location.href = "/api/auth/sign-out";
   };
+
+  // Use provided baseUrl or empty string for SSR
+  const origin = baseUrl || "";
 
   return (
     <div className="flex min-h-screen flex-col justify-center px-6 py-12 lg:px-8 bg-gray-50">
@@ -32,7 +35,7 @@ export const Mcp2Session = ({ sessionId }: { sessionId: string }) => {
               <div className="text-sm text-gray-700 space-y-2">
                 <p>Connect your MCP client to:</p>
                 <code className="block bg-white px-3 py-2 rounded border border-gray-300 font-mono text-xs break-all">
-                  {globalThis.location.origin}/mcp2/{sessionId}
+                  {origin}/mcp2/{sessionId}
                 </code>
               </div>
             </div>

@@ -17,18 +17,90 @@ export const registerUiRoutes = (app: Hono<any>) => {
         headers: c.req.raw.headers,
       });
 
+      console.log("GET /mcp2 - Session check:", {
+        hasSession: !!sessionData?.session,
+        hasUser: !!sessionData?.user,
+        userId: sessionData?.user?.id,
+        organizationId: sessionData?.session?.activeOrganizationId,
+      });
+
       if (sessionData?.session && sessionData?.user) {
-        // User is authenticated - generate new session ID and redirect
-        const sessionId = randomUUID();
-        return c.redirect(`/mcp2/${sessionId}`, 302);
+        let activeOrganizationId = sessionData.session.activeOrganizationId;
+
+        // If no active organization, try to find one or create one
+        if (!activeOrganizationId) {
+          console.log("GET /mcp2 - No active organization, checking existing orgs...");
+          const organizations = await auth.api.listOrganizations({
+            headers: c.req.raw.headers,
+          });
+
+          if (organizations && organizations.length > 0) {
+            // Use the first available organization
+            activeOrganizationId = organizations[0].id;
+            console.log("GET /mcp2 - Found existing org, setting active:", activeOrganizationId);
+          } else {
+            // Create a new "Personal" organization
+            console.log("GET /mcp2 - No orgs found, creating Personal org...");
+            const newOrg = await auth.api.createOrganization({
+              headers: c.req.raw.headers,
+              body: {
+                name: "Personal",
+                slug: `personal-${randomUUID().slice(0, 8)}`,
+              },
+            });
+
+            if (newOrg) {
+              activeOrganizationId = newOrg.id;
+              console.log("GET /mcp2 - Created Personal org:", activeOrganizationId);
+            }
+          }
+
+          // Set the active organization for the session
+          if (activeOrganizationId) {
+            await auth.api.setActiveOrganization({
+              headers: c.req.raw.headers,
+              body: {
+                organizationId: activeOrganizationId,
+              },
+            });
+          }
+        }
+
+        if (activeOrganizationId) {
+          // User is authenticated and has an org - check if they have an existing MCP session
+          const { getActiveSession, createSession } = await import("../models/mcp-session.ts");
+
+          let mcpSession = await getActiveSession(activeOrganizationId);
+
+          if (mcpSession) {
+            console.log(
+              "GET /mcp2 - Found existing session, redirecting to:",
+              `/mcp2/${mcpSession.id}`
+            );
+            return c.redirect(`/mcp2/${mcpSession.id}`, 302);
+          } else {
+            // Create new session
+            mcpSession = await createSession(activeOrganizationId);
+            console.log(
+              "GET /mcp2 - Created new session, redirecting to:",
+              `/mcp2/${mcpSession.id}`
+            );
+            return c.redirect(`/mcp2/${mcpSession.id}`, 302);
+          }
+        } else {
+          console.log("GET /mcp2 - Failed to determine active organization");
+        }
       }
-    } catch (_error) {
+    } catch (error) {
+      console.log("GET /mcp2 - Auth check error:", error);
       // If auth check fails, fall through to show login
     }
 
     // Check if user wants to sign up
     const url = new URL(c.req.url);
     const isSignUp = url.searchParams.get("mode") === "signup";
+
+    console.log("GET /mcp2 - Not authenticated, showing login. isSignUp:", isSignUp);
 
     // User is not authenticated - show login page
     const config = await getConfig();
@@ -42,23 +114,47 @@ export const registerUiRoutes = (app: Hono<any>) => {
   });
 
   app.get("/mcp2/:sessionId", async (c) => {
+    const { sessionId } = c.req.param();
+    console.log("GET /mcp2/:sessionId - Checking auth for session:", sessionId);
+
     // Check if user is authenticated
     try {
       const sessionData = await auth.api.getSession({
         headers: c.req.raw.headers,
       });
 
-      if (sessionData?.session && sessionData?.user) {
-        // User is authenticated - show session page
-        const { sessionId } = c.req.param();
-        const html = renderUi(`/mcp2/${sessionId}`, { sessionId });
+      console.log("GET /mcp2/:sessionId - Session check:", {
+        hasSession: !!sessionData?.session,
+        hasUser: !!sessionData?.user,
+        userId: sessionData?.user?.id,
+        organizationId: sessionData?.session?.activeOrganizationId,
+      });
+
+      if (sessionData?.session && sessionData?.user && sessionData.session.activeOrganizationId) {
+        // User is authenticated - verify the session belongs to their organization
+        const { getSession, createSession } = await import("../models/mcp-session.ts");
+
+        let mcpSession = await getSession(sessionId, sessionData.session.activeOrganizationId);
+
+        if (!mcpSession) {
+          // Session doesn't exist or doesn't belong to this org - create it
+          console.log("GET /mcp2/:sessionId - Session not found, creating it");
+          mcpSession = await createSession(sessionData.session.activeOrganizationId, sessionId);
+        }
+
+        // Show session page
+        console.log("GET /mcp2/:sessionId - Authenticated, showing session page");
+        const config = await getConfig();
+        const html = renderUi(`/mcp2/${sessionId}`, { sessionId, baseUrl: config.baseUrl });
         return c.html("<!DOCTYPE html>" + html);
       }
-    } catch (_error) {
+    } catch (error) {
+      console.log("GET /mcp2/:sessionId - Auth check error:", error);
       // If auth check fails, redirect to login
     }
 
     // User is not authenticated - redirect to /mcp2 login
+    console.log("GET /mcp2/:sessionId - Not authenticated, redirecting to /mcp2");
     return c.redirect("/mcp2", 302);
   });
 };
