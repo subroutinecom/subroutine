@@ -8,7 +8,7 @@ import {
   generateTestEmail,
 } from "../utils/auth-client";
 
-const API_BASE = "http://api:80";
+const API_BASE = "http://api.subroutine.internal:80";
 const VIEWER_ID = "viewer-123";
 
 /**

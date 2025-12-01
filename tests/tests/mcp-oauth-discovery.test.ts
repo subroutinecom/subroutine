@@ -39,11 +39,11 @@ describe("MCP OAuth Discovery", { sanitizeOps: false, sanitizeResources: false }
 
   beforeAll(() => {
     // Start an MCP server with OAuth discovery enabled
-    // Use 'tests' hostname so the API container can reach it via Docker networking
+    // Use the tests.subroutine.internal hostname so the API container can reach it via Docker networking
     mcpServerWithOAuth = startTestMcpServer({
       port: 3470,
       oauthDiscovery: {
-        authorizationServer: "http://tests:3470",
+        authorizationServer: "http://tests.subroutine.internal:3470",
         scopes: ["mcp:read", "mcp:write", "user:info"],
         resourceName: "Test OAuth MCP Server",
       },
@@ -167,7 +167,7 @@ describe("MCP OAuth Discovery", { sanitizeOps: false, sanitizeResources: false }
 
       // Use localhost instead of 0.0.0.0 since the API container may resolve this differently
       const result = await graphqlClient.request<{ discoverMcpOAuth: any }>(DISCOVER_MCP_OAUTH, {
-        serverUrl: `http://tests:${mcpServerWithOAuth.port}/mcp`,
+        serverUrl: `http://tests.subroutine.internal:${mcpServerWithOAuth.port}/mcp`,
       });
 
       expect(result.discoverMcpOAuth.success).toBe(true);

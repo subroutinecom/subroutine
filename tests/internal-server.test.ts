@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 
-const INTERNAL_API_URL = "http://api:8080";
+const INTERNAL_API_URL = "http://api.subroutine.internal:8080";
 
 Deno.test("Internal server /status endpoint", async () => {
   const response = await fetch(`${INTERNAL_API_URL}/status`);

@@ -4,12 +4,14 @@ x-common-args: &common-args
 
 services:
   sandbox:
+    hostname: sandbox.subroutine.internal
     volumes: !reset []
     build:
       target: prod
       args:
         <<: *common-args
   api:
+    hostname: api.subroutine.internal
     volumes: !override
       - ./example.config.yaml:/app/config.yaml:ro
     environment:
@@ -20,6 +22,7 @@ services:
         <<: *common-args
 
   admin-panel:
+    hostname: admin-panel.subroutine.internal
     volumes: !override
       - ./example.config.yaml:/app/config.yaml:ro
     build:
@@ -28,5 +31,6 @@ services:
         <<: *common-args
 
   tests:
+    hostname: tests.subroutine.internal
     build:
       target: ci

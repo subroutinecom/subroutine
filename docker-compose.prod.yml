@@ -7,16 +7,19 @@ x-release-build: &release-build
 
 services:
   admin-panel:
+    hostname: admin-panel.subroutine.internal
     <<: *release-build
     volumes: !reset []
     image: ${GHCR_IMAGE_PREFIX:-ghcr.io/local/subroutine}-admin-panel:${IMAGE_TAG:-dev}
 
   api:
+    hostname: api.subroutine.internal
     volumes: !reset []
     <<: *release-build
     image: ${GHCR_IMAGE_PREFIX:-ghcr.io/local/subroutine}-api:${IMAGE_TAG:-dev}
 
   sandbox:
+    hostname: sandbox.subroutine.internal
     volumes: !reset []
     <<: *release-build
     image: ${GHCR_IMAGE_PREFIX:-ghcr.io/local/subroutine}-sandbox:${IMAGE_TAG:-dev}

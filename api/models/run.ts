@@ -367,7 +367,7 @@ const executeInSandbox = async (
       "  return result;\n" +
       "}\n";
 
-    const sandboxUrl = "http://sandbox/test/executeTypescript";
+    const sandboxUrl = "http://sandbox.subroutine.internal/test/executeTypescript";
     console.log(
       `[executeInSandbox] Sending request to sandbox after ${Date.now() - executionStart}ms`
     );

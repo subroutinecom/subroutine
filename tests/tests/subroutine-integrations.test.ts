@@ -20,7 +20,7 @@ const pollRunCompletion = async (
 ): Promise<Run> => {
   for (let i = 0; i < maxAttempts; i++) {
     const response = await makeRequest({
-      hostname: "api",
+      hostname: "api.subroutine.internal",
       path: `/api/run/${runId}`,
       method: "GET",
       headers: MOCK_HEADERS,
@@ -72,7 +72,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
 
     const createResponse = await makeRequest(
       {
-        hostname: "api",
+        hostname: "api.subroutine.internal",
         path: "/api/subroutine",
         method: "POST",
         headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
@@ -92,7 +92,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
 
     const runResponse = await makeRequest(
       {
-        hostname: "api",
+        hostname: "api.subroutine.internal",
         path: `/api/subroutine/${subroutineId}/run`,
         method: "POST",
         headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
@@ -122,9 +122,9 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
       clientId: "mock-client-id",
       clientSecret: "mock-secret",
       scopes: [],
-      authUrl: "http://api/tests/mock_oauth/authorize",
-      tokenUrl: "http://api/tests/mock_oauth/token",
-      redirectUri: "http://api/tests/mock_oauth/callback",
+      authUrl: "http://api.subroutine.internal/tests/mock_oauth/authorize",
+      tokenUrl: "http://api.subroutine.internal/tests/mock_oauth/token",
+      redirectUri: "http://api.subroutine.internal/tests/mock_oauth/callback",
     };
 
     const integrationResult = await graphqlClient.request(CREATE_INTEGRATION, {
@@ -142,7 +142,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
 
     const createResponse = await makeRequest(
       {
-        hostname: "api",
+        hostname: "api.subroutine.internal",
         path: "/api/subroutine",
         method: "POST",
         headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
@@ -161,7 +161,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
     expect(subroutineId).toBeDefined();
     const initialRun = await makeRequest(
       {
-        hostname: "api",
+        hostname: "api.subroutine.internal",
         path: `/api/subroutine/${subroutineId}/run`,
         method: "POST",
         headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
@@ -182,7 +182,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
 
     const secondRun = await makeRequest(
       {
-        hostname: "api",
+        hostname: "api.subroutine.internal",
         path: `/api/subroutine/${subroutineId}/run`,
         method: "POST",
         headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },

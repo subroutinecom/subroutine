@@ -2,7 +2,7 @@ import { createAuthClient } from "better-auth/client";
 import { apiKeyClient, organizationClient } from "better-auth/client/plugins";
 import { Cookie, CookieJar } from "tough-cookie";
 
-const BASE_URL = "http://api:80";
+const BASE_URL = "http://api.subroutine.internal:80";
 
 const normalizeCookieDomain = (cookieString: string, host: string): string => {
   const parsed = Cookie.parse(cookieString);
@@ -46,7 +46,6 @@ export const createTestAuthClient = (): typeof _dummyClient => {
     if (setCookie) {
       const cookieParts = setCookie.split(/,(?=[^\s]+=)/);
       for (const cookiePart of cookieParts) {
-        console.log(`Setting cookie: ${cookiePart} for url: ${url} targetHost: ${targetHost}`);
         await cookieJar.setCookie(normalizeCookieDomain(cookiePart.trim(), targetHost), url);
       }
     }
@@ -98,7 +97,6 @@ export const createTestAuthClientWithJar = (): {
     if (setCookie) {
       const cookieParts = setCookie.split(/,(?=[^\s]+=)/);
       for (const cookiePart of cookieParts) {
-        console.log(`Setting cookie: ${cookiePart} for url: ${url} targetHost: ${targetHost}`);
         await cookieJar.setCookie(normalizeCookieDomain(cookiePart.trim(), targetHost), url);
       }
     }

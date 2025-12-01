@@ -12,15 +12,5 @@ module.exports = {
         NODE_ENV: "development",
       },
     },
-    {
-      name: "test-watcher",
-      script: "deno",
-      args: "test tests --allow-net --allow-env --allow-read --sloppy-imports --unstable-worker-options --watch",
-      autorestart: false,
-      watch: false,
-      env: {
-        NODE_ENV: "development",
-      },
-    },
   ],
 };

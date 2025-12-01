@@ -7,8 +7,8 @@ export const mockOAuthDefinition: IntegrationDefinition = {
   viewerScoped: true,
   auth: {
     type: "oauth2",
-    authUrl: "http://api/tests/mock_oauth/authorize",
-    tokenUrl: "http://api/tests/mock_oauth/token",
+    authUrl: "http://api.subroutine.internal/tests/mock_oauth/authorize",
+    tokenUrl: "http://api.subroutine.internal/tests/mock_oauth/token",
     defaultScopes: [],
     defaultRedirectPath: "/tests/mock_oauth/callback",
     handlers: {
