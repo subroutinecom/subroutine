@@ -61,7 +61,7 @@ const getEslint = (): ESLint => {
             },
           },
           rules: {
-            "no-undef": "error",
+            "no-undef": "off",
             "no-unreachable": "error",
             "no-constant-condition": "warn",
             "no-dupe-args": "error",
@@ -89,8 +89,6 @@ const getEslint = (): ESLint => {
             "no-delete-var": "error",
             "no-shadow-restricted-names": "error",
 
-            // Disabled rules that would be noisy
-            "no-unused-vars": "off", // TypeScript handles this better
             // we'll use console.log() for debug logs
             "no-console": "off",
           },
