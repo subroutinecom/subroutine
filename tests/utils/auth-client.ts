@@ -1,4 +1,4 @@
-import { createAuthClient } from "better-auth/client";
+import { createAuthClient, type FetchEsque } from "better-auth/client";
 import { apiKeyClient, organizationClient } from "better-auth/client/plugins";
 import { Cookie, CookieJar } from "tough-cookie";
 
@@ -57,7 +57,7 @@ export const createTestAuthClient = (): typeof _dummyClient => {
     baseURL: BASE_URL,
     plugins: [organizationClient(), apiKeyClient()],
     fetchOptions: {
-      customFetchImpl: cookieAwareFetch,
+      customFetchImpl: cookieAwareFetch as FetchEsque,
     },
   }) as typeof _dummyClient;
 };
@@ -108,7 +108,7 @@ export const createTestAuthClientWithJar = (): {
     baseURL: BASE_URL,
     plugins: [organizationClient(), apiKeyClient()],
     fetchOptions: {
-      customFetchImpl: cookieAwareFetch,
+      customFetchImpl: cookieAwareFetch as FetchEsque,
     },
   }) as typeof _dummyClient;
 
