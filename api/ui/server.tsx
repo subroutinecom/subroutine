@@ -65,6 +65,55 @@ export const registerUiRoutes = (app: Hono<any>) => {
     }
   });
 
+  // Custom handler for email sign-up to support form redirects
+  app.post("/api/auth/sign-up/email", async (c) => {
+    if (shouldForwardJsonAuth(c.req.raw)) {
+      return forwardAuthRequest(c.req.raw);
+    }
+
+    try {
+      const body = await c.req.parseBody();
+      const email = body.email as string;
+      const password = body.password as string;
+      const name = (body.name as string) || email;
+      const callbackURL = c.req.query("callbackURL") || "/mcp2";
+
+      const response = await auth.api.signUpEmail({
+        body: {
+          email,
+          password,
+          name,
+        },
+        asResponse: true, // Get the full response to forward headers (cookies)
+      });
+
+      if (response.status === 200) {
+        // Success - redirect to callback URL
+        // We need to copy the Set-Cookie headers from the auth response
+        const headers = new Headers();
+        response.headers.forEach((value, key) => {
+          if (key.toLowerCase() === "set-cookie") {
+            headers.append(key, value);
+          }
+        });
+        headers.set("Location", callbackURL);
+
+        return new Response(null, {
+          status: 302,
+          headers,
+        });
+      } else {
+        // Failure - redirect back to signup with error
+        const errorData = await response.json();
+        const errorMsg = errorData.message || "Sign up failed";
+        return c.redirect(`/mcp2?mode=signup&error=${encodeURIComponent(errorMsg)}`);
+      }
+    } catch (error) {
+      console.error("Sign up error:", error);
+      return c.redirect("/mcp2?mode=signup&error=An+unexpected+error+occurred");
+    }
+  });
+
   // Custom handler for sign-out to support form redirects
   app.post("/api/auth/sign-out", async (c) => {
     if (shouldForwardJsonAuth(c.req.raw)) {
