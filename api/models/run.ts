@@ -358,12 +358,12 @@ const executeInSandbox = async (
 
     const codeToExecute =
       sourceCode +
-      "\n\n// Export a default function that executes main with integrations and inputs\n" +
+      "\n\n// Export a default function that executes main with inputs and integrations\n" +
       "export default async function() {\n" +
       "  const inputs = " +
       JSON.stringify(inputs ?? {}) +
       ";\n" +
-      "  const result = await main(integrations, inputs);\n" +
+      "  const result = await main(inputs, integrations);\n" +
       "  return result;\n" +
       "}\n";
 

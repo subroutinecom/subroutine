@@ -4,6 +4,8 @@ import type { AuthContext } from "./middlewares/auth";
 import { completeMockAuthorization } from "./services/mock-oauth";
 import { generatePatLinkUrl } from "./models/pat-link";
 import { validateCode } from "./agent/validation";
+import { typeCheckCode } from "./agent/validation/type-checker";
+import { lintCode } from "./agent/validation/eslint-checker";
 
 /**
  * Register test-only endpoints. These are only available when ENABLE_MOCK_OAUTH is true.
@@ -84,6 +86,80 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
     }
 
     const result = validateCode(body.code);
+
+    return c.json({
+      valid: result.valid,
+      errors: result.errors,
+    });
+  });
+
+  // TypeScript type checking endpoint - runs full type checking on subroutine code
+  app.post("/tests/typecheck-code", async (c) => {
+    let body: { code?: string };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "Invalid JSON body",
+          },
+        },
+        400
+      );
+    }
+
+    if (!body.code || typeof body.code !== "string") {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "code field is required",
+          },
+        },
+        400
+      );
+    }
+
+    const result = typeCheckCode(body.code);
+
+    return c.json({
+      valid: result.valid,
+      errors: result.errors,
+    });
+  });
+
+  // ESLint linting endpoint - runs ESLint rules on subroutine code
+  app.post("/tests/lint-code", async (c) => {
+    let body: { code?: string };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "Invalid JSON body",
+          },
+        },
+        400
+      );
+    }
+
+    if (!body.code || typeof body.code !== "string") {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "code field is required",
+          },
+        },
+        400
+      );
+    }
+
+    const result = await lintCode(body.code);
 
     return c.json({
       valid: result.valid,

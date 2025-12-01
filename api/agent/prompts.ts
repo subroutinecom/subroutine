@@ -1,18 +1,31 @@
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
 type IntegrationDocs = {
   id: string;
   functionName: string;
-  typeExample: string;
   usageExample: string;
   docsUrl?: string;
 };
 
-/**
- * Simplified MCP integration info for the agent prompt.
- * Only contains identifying information - agent uses listMcpTools to discover tools.
- */
 export type McpIntegrationInfo = {
   id: string;
   name: string;
+};
+
+let integrationTypesCache: string | null = null;
+
+const getIntegrationTypesContent = (): string => {
+  if (integrationTypesCache) return integrationTypesCache;
+
+  try {
+    const currentDir = dirname(fileURLToPath(import.meta.url));
+    const dtsPath = resolve(currentDir, "../../packages/integration-types/integrations.d.ts");
+    integrationTypesCache = Deno.readTextFileSync(dtsPath);
+    return integrationTypesCache;
+  } catch {
+    return "// Integration types not available";
+  }
 };
 
 const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
@@ -21,16 +34,10 @@ const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
       return {
         id: "gmail",
         functionName: "getGmail",
-        typeExample: `getGmail(): Promise<{
-    users: {
-      labels: { list(opts: { userId: string }): Promise<{ data: { labels?: Array<{ id?: string; name?: string }> } }> };
-      messages: { list(opts: { userId: string; maxResults?: number }): Promise<{ data: { messages?: Array<{ id?: string }> } }> };
-    };
-  }>`,
         usageExample: `const gmail = await integrations.getGmail();
-   const labels = await gmail.users.labels.list({ userId: "me" });
-   const messages = await gmail.users.messages.list({ userId: "me", maxResults: 10 });
-   const msg = await gmail.users.messages.get({ userId: "me", id: messageId });`,
+const labels = await gmail.users.labels.list({ userId: "me" });
+const messages = await gmail.users.messages.list({ userId: "me", maxResults: 10 });
+const msg = await gmail.users.messages.get({ userId: "me", id: messageId });`,
         docsUrl: "https://googleapis.dev/nodejs/googleapis/latest/gmail/index.html",
       };
 
@@ -38,22 +45,15 @@ const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
       return {
         id: "google_calendar",
         functionName: "getCalendar",
-        typeExample: `getCalendar(): Promise<{
-    calendarList: { list(): Promise<{ data: { items?: Array<{ id?: string; summary?: string }> } }> };
-    events: {
-      list(opts: { calendarId: string; maxResults?: number }): Promise<{ data: { items?: Array<{ id?: string; summary?: string; start?: any; end?: any }> } }>;
-      insert(opts: { calendarId: string; requestBody: any }): Promise<{ data: any }>;
-    };
-  }>`,
         usageExample: `const calendar = await integrations.getCalendar();
-   const calendars = await calendar.calendarList.list();
-   const events = await calendar.events.list({ calendarId: "primary", maxResults: 10 });
-   const event = await calendar.events.get({ calendarId: "primary", eventId: eventId });
-   const newEvent = await calendar.events.insert({ calendarId: "primary", requestBody: { summary: "Meeting", start: { dateTime: "2024-01-01T10:00:00Z" }, end: { dateTime: "2024-01-01T11:00:00Z" } } });`,
+const calendars = await calendar.calendarList.list();
+const events = await calendar.events.list({ calendarId: "primary", maxResults: 10 });
+const newEvent = await calendar.events.insert({
+  calendarId: "primary",
+  requestBody: { summary: "Meeting", start: { dateTime: "..." }, end: { dateTime: "..." } }
+});`,
         docsUrl: "https://googleapis.dev/nodejs/googleapis/latest/calendar/index.html",
       };
-
-    // Note: GitHub integration removed - use MCP integration instead (e.g., getMcpClient("github"))
 
     default:
       return null;
@@ -122,21 +122,6 @@ const getMcpIntegrationDocs = (mcpIntegrations: McpIntegrationInfo[]): string =>
 MCP INTEGRATIONS:
 Available: ${validNames}
 
-TYPE DECLARATIONS (copy these exactly):
-
-type McpToolResult = {
-  content: Array<{ type: string; text?: string }>;
-  isError?: boolean;
-};
-
-type McpClient = {
-  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<McpToolResult>;
-};
-
-type Integrations = {
-  getMcpClient(name: string): Promise<McpClient>;
-};
-
 CRITICAL - getMcpClient returns a Promise, you MUST await it:
   ✓ const client = await integrations.getMcpClient("${exampleName}");  // Correct
   ✗ const client = integrations.getMcpClient("${exampleName}");        // Wrong - missing await!
@@ -146,40 +131,6 @@ USAGE:
 2. const client = await integrations.getMcpClient("${exampleName}");
 3. const result = await client.callTool({ name: "tool_name", arguments: {...} });
 4. const data = JSON.parse(result.content[0]?.text || "{}");
-
-COMPLETE EXAMPLE:
-
-type McpToolResult = {
-  content: Array<{ type: string; text?: string }>;
-  isError?: boolean;
-};
-
-type McpClient = {
-  callTool(params: { name: string; arguments?: Record<string, unknown> }): Promise<McpToolResult>;
-};
-
-type Integrations = {
-  getMcpClient(name: string): Promise<McpClient>;
-};
-
-type Inputs = { query: string };
-type Outputs = { results: unknown[] };
-
-export async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs> {
-  const client = await integrations.getMcpClient("${exampleName}");
-
-  const result = await client.callTool({
-    name: "search",
-    arguments: { q: inputs.query }
-  });
-
-  if (result.isError) {
-    throw new Error(result.content[0]?.text || "Tool call failed");
-  }
-
-  const data = JSON.parse(result.content[0]?.text || "{}");
-  return { results: data.items || [] };
-}
 `;
 };
 
@@ -202,14 +153,13 @@ export const SYSTEM_PROMPT = (options: SystemPromptOptions | string[] = {}): str
   const hasMcpIntegrations = mcpIntegrations.length > 0;
   const hasAnyIntegrations = hasStandardIntegrations || hasMcpIntegrations;
 
+  const typeDefinitions = getIntegrationTypesContent();
   let integrationsSection = "";
 
   if (hasStandardIntegrations) {
-    const typeDeclarations = integrationDocs.map((doc) => `  ${doc.typeExample};`).join("\n");
-
     const integrationsList = integrationDocs
       .map((doc, idx) => {
-        let entry = `${idx + 1}. ${doc.id}\n   ${doc.usageExample}`;
+        let entry = `${idx + 1}. ${doc.id} (use integrations.${doc.functionName}())\n${doc.usageExample}`;
         if (doc.docsUrl) {
           entry += `\n   Docs: ${doc.docsUrl}`;
         }
@@ -217,35 +167,13 @@ export const SYSTEM_PROMPT = (options: SystemPromptOptions | string[] = {}): str
       })
       .join("\n\n");
 
-    const exampleIntegration = integrationDocs[0];
-
     integrationsSection = `
 BUILT-IN INTEGRATIONS (NOT MCP):
-These are direct API integrations with known interfaces. Use the specific getter functions shown below.
+These are direct API integrations with known interfaces. Use the specific getter functions.
 Do NOT use getMcpClient() or listMcpTools for these - they have dedicated methods.
-
-TypeScript Type Declaration:
-Since integrations is a global object not known to TypeScript, declare it at the top of your code:
-declare const integrations: {
-${typeDeclarations}
-};
 
 Available integrations:
 ${integrationsList}
-
-Example using integrations:
-declare const integrations: {
-  ${exampleIntegration.typeExample};
-};
-
-type Context = Record<string, unknown>;
-type Inputs = Record<string, unknown>;
-type Outputs = { result: unknown };
-
-export async function main(ctx: Context, inputs: Inputs): Promise<Outputs> {
-  const integration = await integrations.${exampleIntegration.functionName}();
-  return { result: integration };
-}
 `;
   }
 
@@ -293,24 +221,54 @@ NEVER generate code that expects the user to provide data they asked YOU to fetc
 ALWAYS use tools to discover/setup integrations BEFORE generating code that uses them.
 
 TECHNICAL REQUIREMENTS:
-1. Define TypeScript interfaces for Inputs and Outputs based on the schemas
-2. Export an async function called "main" that uses these types
-3. The function signature must be: export async function main(integrations: Integrations, inputs: Inputs): Promise<Outputs>
-4. Define the Integrations type at the top of your code (see examples)
-5. Code must be clean, efficient, and production-ready TypeScript
-6. Do not include any imports or external dependencies - code runs in an isolated sandbox
-7. Handle edge cases with proper validation and error messages
-8. Use the actual types you define - no any types
-9. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n10. Use the available integrations to interact with external services" : ""}
+1. Start your code with: import type { Integrations } from "@subroutine/integration-types";
+2. Define TypeScript interfaces for Inputs and Outputs based on the schemas
+3. Export an async function called "main" with signature: export async function main(inputs: Inputs, integrations: Integrations): Promise<Outputs>
+4. Code must be clean, efficient, and production-ready TypeScript
+5. Handle edge cases with proper validation and error messages
+6. Use the actual types you define - no any types
+7. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n8. Use the available integrations to interact with external services" : ""}
 ${sandboxRestrictions}
 ${integrationsSection}
-Use the generateSubroutine tool to submit your code. The tool will validate it and provide feedback if there are issues. You can revise and resubmit based on the feedback.
+
+TYPE DEFINITIONS (reference for available integration methods):
+\`\`\`typescript
+${typeDefinitions}
+\`\`\`
+
+Use the generateSubroutine tool to submit your code. The tool will validate it and provide feedback if there are issues.
 
 EXAMPLE (simple, no integrations needed):
-For "add two numbers", call generateSubroutine with:
-- inputsSchema: { "type": "object", "properties": { "x": { "type": "number" }, "y": { "type": "number" } }, "required": [] }
-- outputsSchema: { "type": "object", "properties": { "result": { "type": "number" }, "calculation": { "type": "string" } }, "required": ["result", "calculation"] }
-- code: "type Inputs = { x?: number; y?: number };\\ntype Outputs = { result: number; calculation: string };\\n\\nexport async function main(integrations: unknown, inputs: Inputs): Promise<Outputs> {\\n  const x = inputs.x ?? 0;\\n  const y = inputs.y ?? 0;\\n  return { result: x + y, calculation: \`\${x} + \${y} = \${x + y}\` };\\n}"`;
+\`\`\`typescript
+import type { Integrations } from "@subroutine/integration-types";
+
+type Inputs = { x?: number; y?: number };
+type Outputs = { result: number; calculation: string };
+
+export async function main(inputs: Inputs, integrations: Integrations): Promise<Outputs> {
+  const x = inputs.x ?? 0;
+  const y = inputs.y ?? 0;
+  return { result: x + y, calculation: \`\${x} + \${y} = \${x + y}\` };
+}
+\`\`\`
+
+EXAMPLE (using Gmail integration):
+\`\`\`typescript
+import type { Integrations } from "@subroutine/integration-types";
+
+type Inputs = { maxResults?: number };
+type Outputs = { messageCount: number; messages: Array<{ id: string; threadId: string }> };
+
+export async function main(inputs: Inputs, integrations: Integrations): Promise<Outputs> {
+  const gmail = await integrations.getGmail();
+  const response = await gmail.users.messages.list({
+    userId: "me",
+    maxResults: inputs.maxResults ?? 10
+  });
+  const messages = response.data.messages ?? [];
+  return { messageCount: messages.length, messages };
+}
+\`\`\``;
 };
 
 type PromptOptions = {

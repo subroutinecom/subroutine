@@ -1,5 +1,5 @@
 import type { gmail_v1, calendar_v3 } from "googleapis";
-import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import type { Client } from "@modelcontextprotocol/sdk/client";
 
 export interface Integrations {
   getMcpClient(name: string): Promise<Client>;
@@ -11,5 +11,5 @@ export interface Integrations {
 }
 
 // Re-export types that subroutine code commonly uses
-export type { Client as McpClient } from "@modelcontextprotocol/sdk/client/index.js";
+export type { Client as McpClient } from "@modelcontextprotocol/sdk/client";
 export type { gmail_v1, calendar_v3 } from "googleapis";
