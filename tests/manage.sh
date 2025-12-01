@@ -2,6 +2,73 @@
 
 set -e
 
+TEST_FILE_ARGS=()
+
+build_test_args() {
+  local raw_names="${TEST_NAMES:-}"
+
+  TEST_FILE_ARGS=()
+
+  if [ -z "$raw_names" ]; then
+    return
+  fi
+
+  # Support comma or space separated lists
+  raw_names=${raw_names//,/ }
+
+  read -ra names <<<"$raw_names"
+
+  for name in "${names[@]}"; do
+    local trimmed
+    trimmed=$(echo "$name" | xargs)
+    if [ -z "$trimmed" ]; then
+      continue
+    fi
+
+    case "$trimmed" in
+      tests/*)
+        TEST_FILE_ARGS+=("$trimmed")
+        ;;
+      ./tests/*)
+        TEST_FILE_ARGS+=("${trimmed#./}")
+        ;;
+      */*)
+        TEST_FILE_ARGS+=("$trimmed")
+        ;;
+      *)
+        TEST_FILE_ARGS+=("tests/$trimmed")
+        ;;
+    esac
+  done
+}
+
+run_deno_tests() {
+  local watch_mode="$1"
+  shift || true
+
+  build_test_args
+
+  local -a cmd=(
+    deno test
+  )
+
+  if [ ${#TEST_FILE_ARGS[@]} -gt 0 ]; then
+    cmd+=("${TEST_FILE_ARGS[@]}")
+  else
+    cmd+=(tests)
+  fi
+
+  cmd+=("--allow-net" "--allow-env" "--allow-read" "--sloppy-imports" "--unstable-worker-options")
+
+  if [ "$watch_mode" = "1" ]; then
+    cmd+=("--watch")
+  fi
+
+  cmd+=("$@")
+
+  "${cmd[@]}"
+}
+
 await_mcp_test_server() {
   echo "Waiting for MCP test server to be ready..."
   for i in {1..30}; do
@@ -24,7 +91,7 @@ do_run() {
 
   await_mcp_test_server
 
-  deno test tests --allow-net --allow-env --allow-read --sloppy-imports --unstable-worker-options "$@" --watch
+  run_deno_tests "1" "$@"
 }
 
 do_test() {
@@ -36,7 +103,7 @@ do_test() {
   await_mcp_test_server
 
   echo "Running tests..."
-  deno test tests --allow-net --allow-env --allow-read --sloppy-imports --unstable-worker-options "$@"
+  run_deno_tests "0" "$@"
 }
 
 if [ "$1" = "--run" ]; then

@@ -100,6 +100,8 @@ services:
       context: .
       dockerfile: ./tests/Dockerfile
       target: dev
+    environment:
+      TEST_NAMES: ${TEST_NAMES:-}
     volumes:
       - ./tests:/app/tests
       - ./packages:/app/packages
