@@ -90,6 +90,8 @@ const initialize = async () => {
     return c.json({ message: "Hono routing works!" });
   });
 
+  registerUiRoutes(app);
+
   app.on(["POST", "GET"], "/api/auth/*", async (c) => {
     const url = new URL(c.req.url);
     url.pathname = url.pathname.replace("/api/auth", "");
@@ -352,8 +354,6 @@ const initialize = async () => {
 
     return c.json({ success: true });
   });
-
-  registerUiRoutes(app);
 
   app.use("*", authMiddleware);
 

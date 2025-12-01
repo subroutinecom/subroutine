@@ -1,9 +1,4 @@
 export const Mcp2Session = ({ sessionId, baseUrl }: { sessionId: string; baseUrl?: string }) => {
-  const handleLogout = () => {
-    // This will be handled by better-auth
-    globalThis.location.href = "/api/auth/sign-out";
-  };
-
   // Use provided baseUrl or empty string for SSR
   const origin = baseUrl || "";
 
@@ -42,19 +37,14 @@ export const Mcp2Session = ({ sessionId, baseUrl }: { sessionId: string; baseUrl
           </div>
 
           <div className="space-y-3">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="w-full flex justify-center rounded-md bg-gray-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
-            >
-              Sign Out
-            </button>
-            <a
-              href="/mcp2"
-              className="w-full flex justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-            >
-              Create New Session
-            </a>
+            <form action="/api/auth/sign-out?callbackURL=/mcp2" method="POST">
+              <button
+                type="submit"
+                className="w-full flex justify-center rounded-md bg-gray-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"
+              >
+                Sign Out
+              </button>
+            </form>
           </div>
         </div>
       </div>

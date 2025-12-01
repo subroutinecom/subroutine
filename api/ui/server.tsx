@@ -10,6 +10,78 @@ export const registerUiRoutes = (app: Hono<any>) => {
     return c.html("<!DOCTYPE html>" + html);
   });
 
+  // Custom handler for email sign-in to support form redirects
+  app.post("/api/auth/sign-in/email", async (c) => {
+    try {
+      const body = await c.req.parseBody();
+      const email = body.email as string;
+      const password = body.password as string;
+      const callbackURL = c.req.query("callbackURL") || "/mcp2";
+
+      const response = await auth.api.signInEmail({
+        body: {
+          email,
+          password,
+        },
+        asResponse: true, // Get the full response to forward headers (cookies)
+      });
+
+      if (response.status === 200) {
+        // Success - redirect to callback URL
+        // We need to copy the Set-Cookie headers from the auth response
+        const headers = new Headers();
+        response.headers.forEach((value, key) => {
+          if (key.toLowerCase() === "set-cookie") {
+            headers.append(key, value);
+          }
+        });
+        headers.set("Location", callbackURL);
+
+        return new Response(null, {
+          status: 302,
+          headers,
+        });
+      } else {
+        // Failure - redirect back to login with error
+        const errorData = await response.json();
+        const errorMsg = errorData.message || "Invalid credentials";
+        return c.redirect(`/login?error=${encodeURIComponent(errorMsg)}`);
+      }
+    } catch (error) {
+      console.error("Sign in error:", error);
+      return c.redirect("/login?error=An+unexpected+error+occurred");
+    }
+  });
+
+  // Custom handler for sign-out to support form redirects
+  app.post("/api/auth/sign-out", async (c) => {
+    try {
+      const callbackURL = c.req.query("callbackURL") || "/";
+
+      const response = await auth.api.signOut({
+        headers: c.req.raw.headers,
+        asResponse: true,
+      });
+
+      // We need to copy the Set-Cookie headers from the auth response to clear cookies
+      const headers = new Headers();
+      response.headers.forEach((value, key) => {
+        if (key.toLowerCase() === "set-cookie") {
+          headers.append(key, value);
+        }
+      });
+      headers.set("Location", callbackURL);
+
+      return new Response(null, {
+        status: 302,
+        headers,
+      });
+    } catch (error) {
+      console.error("Sign out error:", error);
+      return c.redirect("/");
+    }
+  });
+
   app.get("/mcp2", async (c) => {
     // Check if user is authenticated
     try {
