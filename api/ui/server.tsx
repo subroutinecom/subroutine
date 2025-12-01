@@ -5,6 +5,14 @@ import { getConfig } from "../config/loader.ts";
 import { renderUi } from "./router.tsx";
 
 export const registerUiRoutes = (app: Hono<any>) => {
+  const shouldForwardJsonAuth = (request: Request): boolean => {
+    const contentType = request.headers.get("content-type") ?? "";
+    const accept = request.headers.get("accept") ?? "";
+    return contentType.includes("application/json") || accept.includes("application/json");
+  };
+
+  const forwardAuthRequest = (request: Request): Promise<Response> => auth.handler(request);
+
   app.get("/login", (c) => {
     const html = renderUi("/login");
     return c.html("<!DOCTYPE html>" + html);
@@ -12,6 +20,10 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
   // Custom handler for email sign-in to support form redirects
   app.post("/api/auth/sign-in/email", async (c) => {
+    if (shouldForwardJsonAuth(c.req.raw)) {
+      return forwardAuthRequest(c.req.raw);
+    }
+
     try {
       const body = await c.req.parseBody();
       const email = body.email as string;
@@ -55,6 +67,10 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
   // Custom handler for sign-out to support form redirects
   app.post("/api/auth/sign-out", async (c) => {
+    if (shouldForwardJsonAuth(c.req.raw)) {
+      return forwardAuthRequest(c.req.raw);
+    }
+
     try {
       const callbackURL = c.req.query("callbackURL") || "/";
 
