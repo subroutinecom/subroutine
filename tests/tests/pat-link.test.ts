@@ -1,13 +1,13 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
+import { gql } from "graphql-request";
+import type { CookieJar } from "tough-cookie";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
   generateTestEmail,
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
-import { gql } from "graphql-request";
-import type { CookieJar } from "tough-cookie";
 
 const API_BASE = "http://api.subroutine.internal:80";
 
