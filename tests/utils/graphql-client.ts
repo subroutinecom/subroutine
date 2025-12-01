@@ -31,7 +31,7 @@ export const createGraphQLClient = (cookieJar: CookieJar) => {
     return res;
   };
 
-  const client = new GraphQLClient("http://api/graphql", {
+  const client = new GraphQLClient("http://api.subroutine.internal/graphql", {
     // deno-lint-ignore no-explicit-any
     fetch: customFetch as any,
   });

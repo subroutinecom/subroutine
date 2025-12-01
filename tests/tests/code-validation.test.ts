@@ -1,7 +1,7 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
 
-const API_BASE = "http://api";
+const API_BASE = "http://api.subroutine.internal";
 
 type ValidationError = {
   rule: string;

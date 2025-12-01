@@ -1,6 +1,5 @@
 {
   "exclude": [".react-router/", ".vite/", "app/__generated__/"],
-  "nodeModulesDir": "auto",
   "imports": {
     "@cap.js/server": "npm:@cap.js/server@^4.0.3",
     "@cap.js/widget": "npm:@cap.js/widget@^0.1.31",

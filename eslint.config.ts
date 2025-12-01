@@ -47,7 +47,6 @@ export default tseslint.config([
       "@typescript-eslint/no-unused-expressions": 0,
       "@typescript-eslint/no-unused-vars": 0,
 
-      "local/no-anchor-tags": "error",
       "local/no-console-without-text": "error",
       "local/no-routes-imports": "error",
       "local/no-window-session-or-local-storage": "error",

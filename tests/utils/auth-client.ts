@@ -1,11 +1,20 @@
-import { createAuthClient } from "better-auth/client";
+import { createAuthClient, type FetchEsque } from "better-auth/client";
 import { apiKeyClient, organizationClient } from "better-auth/client/plugins";
-import { CookieJar } from "tough-cookie";
+import { Cookie, CookieJar } from "tough-cookie";
+
+const BASE_URL = "http://api.subroutine.internal:80";
+
+const normalizeCookieDomain = (cookieString: string, host: string): string => {
+  const parsed = Cookie.parse(cookieString);
+  if (!parsed) return cookieString;
+  parsed.domain = host;
+  return parsed.toString();
+};
 
 // dummy client but helps for typing. typing of these things is dynamic and infered
 // and in case of factory, it cannot infer it upfront
 const _dummyClient = createAuthClient({
-  baseURL: "http://api:80",
+  baseURL: BASE_URL,
   plugins: [organizationClient(), apiKeyClient()],
 });
 
@@ -16,6 +25,7 @@ export const createTestAuthClient = (): typeof _dummyClient => {
     init?: RequestInit
   ): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const targetHost = new URL(BASE_URL).hostname;
 
     const headers = new Headers(init?.headers);
     if (!headers.has("Origin")) {
@@ -34,18 +44,20 @@ export const createTestAuthClient = (): typeof _dummyClient => {
     // Store cookies from response
     const setCookie = res.headers.get("set-cookie");
     if (setCookie) {
-      await cookieJar.setCookie(setCookie, url);
+      const cookieParts = setCookie.split(/,(?=[^\s]+=)/);
+      for (const cookiePart of cookieParts) {
+        await cookieJar.setCookie(normalizeCookieDomain(cookiePart.trim(), targetHost), url);
+      }
     }
 
     return res;
   };
 
   return createAuthClient({
-    baseURL: "http://api:80",
+    baseURL: BASE_URL,
     plugins: [organizationClient(), apiKeyClient()],
     fetchOptions: {
-      // deno-lint-ignore no-explicit-any
-      customFetchImpl: cookieAwareFetch as any,
+      customFetchImpl: cookieAwareFetch as FetchEsque,
     },
   }) as typeof _dummyClient;
 };
@@ -64,6 +76,7 @@ export const createTestAuthClientWithJar = (): {
     init?: RequestInit
   ): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const targetHost = new URL(BASE_URL).hostname;
 
     const headers = new Headers(init?.headers);
     if (!headers.has("Origin")) {
@@ -82,18 +95,20 @@ export const createTestAuthClientWithJar = (): {
     // Store cookies from response
     const setCookie = res.headers.get("set-cookie");
     if (setCookie) {
-      await cookieJar.setCookie(setCookie, url);
+      const cookieParts = setCookie.split(/,(?=[^\s]+=)/);
+      for (const cookiePart of cookieParts) {
+        await cookieJar.setCookie(normalizeCookieDomain(cookiePart.trim(), targetHost), url);
+      }
     }
 
     return res;
   };
 
   const client = createAuthClient({
-    baseURL: "http://api:80",
+    baseURL: BASE_URL,
     plugins: [organizationClient(), apiKeyClient()],
     fetchOptions: {
-      // deno-lint-ignore no-explicit-any
-      customFetchImpl: cookieAwareFetch as any,
+      customFetchImpl: cookieAwareFetch as FetchEsque,
     },
   }) as typeof _dummyClient;
 

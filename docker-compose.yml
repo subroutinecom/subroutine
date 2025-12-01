@@ -1,5 +1,6 @@
 services:
   postgres:
+    hostname: postgres.subroutine.internal
     image: postgres:18-alpine
     environment:
       POSTGRES_USER: subroutine
@@ -17,6 +18,7 @@ services:
       start_period: 10s
 
   sandbox:
+    hostname: sandbox.subroutine.internal
     build:
       context: .
       dockerfile: ./sandbox/Dockerfile
@@ -40,6 +42,7 @@ services:
       start_period: 10s
 
   api:
+    hostname: api.subroutine.internal
     build:
       context: .
       dockerfile: ./api/Dockerfile
@@ -68,6 +71,7 @@ services:
         condition: service_healthy
 
   admin-panel:
+    hostname: admin-panel.subroutine.internal
     build:
       context: .
       dockerfile: ./admin-panel/Dockerfile
@@ -91,10 +95,13 @@ services:
       start_period: 10s
 
   tests:
+    hostname: tests.subroutine.internal
     build:
       context: .
       dockerfile: ./tests/Dockerfile
       target: dev
+    environment:
+      TEST_NAMES: ${TEST_NAMES:-}
     volumes:
       - ./tests:/app/tests
       - ./packages:/app/packages

@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { useParams } from "react-router";
+import { CheckCircle, ExternalLink, Key, Loader2, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { CheckCircle, XCircle, Key, Loader2, ExternalLink } from "lucide-react";
-import { useAdminConfig } from "~/hooks/use-admin-config";
+import { useParams } from "react-router";
+import { useAdminConfig } from "../hooks/use-admin-config.ts";
 
 interface PatLinkInfo {
   id: string;
@@ -151,7 +151,6 @@ export default function PatSubmissionPage() {
               <div>
                 <p className="text-sm">{linkInfo.integration.authInstructions}</p>
                 {linkInfo.integration.helpUrl && (
-                  // eslint-disable-next-line local/no-anchor-tags -- external link
                   <a
                     href={linkInfo.integration.helpUrl}
                     target="_blank"

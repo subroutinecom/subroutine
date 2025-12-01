@@ -1,12 +1,12 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
+import { gql } from "graphql-request";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
   generateTestEmail,
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
-import { gql } from "graphql-request";
 
 // GraphQL operations for integrations
 const CREATE_INTEGRATION = gql`

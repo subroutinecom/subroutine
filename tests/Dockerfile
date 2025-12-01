@@ -20,6 +20,8 @@ COPY ./packages ./packages
 
 WORKDIR /app/tests
 
+ENV TEST_NAMES=""
+
 FROM base AS dev
 CMD ["./manage.sh", "--run"]
 
