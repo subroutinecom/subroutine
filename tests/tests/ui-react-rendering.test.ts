@@ -1,7 +1,7 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
 
-const API_BASE_URL = "http://localhost:3002";
+const API_BASE_URL = "http://api:80";
 
 const fetchPage = async (path: string, init?: RequestInit) => {
   const response = await fetch(`${API_BASE_URL}${path}`, init);
