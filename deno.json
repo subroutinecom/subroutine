@@ -9,7 +9,7 @@
     "eslint": "deno run -A --sloppy-imports npm:eslint@9",
     "prettier:check": "deno run -A npm:prettier@3 --check .",
     "prettier:format": "deno run -A npm:prettier@3 --write .",
-    "test": "./workspaceScripts/run-tests.sh",
+    "test": "./run-tests.sh",
     "validate": "deno task check && deno task lint && deno task eslint && deno task prettier:check"
   },
   "fmt": {
