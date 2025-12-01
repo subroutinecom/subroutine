@@ -26,6 +26,10 @@ export const registerUiRoutes = (app: Hono<any>) => {
       // If auth check fails, fall through to show login
     }
 
+    // Check if user wants to sign up
+    const url = new URL(c.req.url);
+    const isSignUp = url.searchParams.get("mode") === "signup";
+
     // User is not authenticated - show login page
     const config = await getConfig();
     const authProviders = {
@@ -33,7 +37,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
       google: config.auth.providers.google,
       emailPassword: config.auth.providers.emailPassword,
     };
-    const html = renderUi("/mcp2", { authProviders, authBaseUrl: config.baseUrl });
+    const html = renderUi("/mcp2", { authProviders, authBaseUrl: config.baseUrl, isSignUp });
     return c.html("<!DOCTYPE html>" + html);
   });
 
