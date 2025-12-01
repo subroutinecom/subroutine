@@ -85,7 +85,7 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
       );
     }
 
-    const result = validateCode(body.code);
+    const result = await validateCode(body.code);
 
     return c.json({
       valid: result.valid,

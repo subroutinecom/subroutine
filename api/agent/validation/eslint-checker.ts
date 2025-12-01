@@ -1,4 +1,5 @@
 import { ESLint } from "eslint";
+import tseslint from "typescript-eslint";
 import type { ValidationError } from "./types";
 
 export interface LintResult {
@@ -17,6 +18,7 @@ const getEslint = (): ESLint => {
           languageOptions: {
             ecmaVersion: 2022,
             sourceType: "module",
+            parser: tseslint.parser,
             parserOptions: {
               ecmaFeatures: { jsx: false },
             },
@@ -103,7 +105,7 @@ export const lintCode = async (code: string): Promise<LintResult> => {
   const eslint = getEslint();
 
   const results = await eslint.lintText(code, {
-    filePath: "subroutine.js",
+    filePath: "subroutine.ts",
   });
 
   const errors: ValidationError[] = [];

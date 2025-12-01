@@ -224,7 +224,7 @@ export const generateCode = async (
       generateSubroutine: {
         description: "Submit a generated TypeScript subroutine with schemas",
         inputSchema: toolSchema,
-        execute: (params: z.infer<typeof toolSchema>) => {
+        execute: async (params: z.infer<typeof toolSchema>) => {
           console.log(`[tool:generateSubroutine] Called`);
           console.log(`[tool:generateSubroutine] Code length: ${params.code.length} chars`);
           const { inputsSchema, outputsSchema, code } = params;
@@ -232,7 +232,7 @@ export const generateCode = async (
             "immediateInputs" in params
               ? (params.immediateInputs as Record<string, unknown>)
               : undefined;
-          const validation = validateCode(code);
+          const validation = await validateCode(code);
 
           if (!validation.valid) {
             const errorMessages = validation.errors.map((e) =>

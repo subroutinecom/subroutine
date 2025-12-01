@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { Project } from "ts-morph";
 import { rules } from "./rules";
+import { typeCheckCode } from "./type-checker";
+import { lintCode } from "./eslint-checker";
 import type { ValidationResult, ValidationError } from "./types";
 
 const project = new Project({
@@ -11,7 +13,7 @@ const project = new Project({
   },
 });
 
-export const validateCode = (code: string): ValidationResult => {
+export const validateCode = async (code: string): Promise<ValidationResult> => {
   const filename = `${randomUUID()}.ts`;
   const sourceFile = project.createSourceFile(filename, code);
 
@@ -20,6 +22,20 @@ export const validateCode = (code: string): ValidationResult => {
 
     for (const rule of rules) {
       errors.push(...rule(sourceFile));
+    }
+
+    if (errors.length > 0) {
+      return { valid: false, errors };
+    }
+
+    const typeCheckResult = typeCheckCode(code);
+    if (!typeCheckResult.valid) {
+      errors.push(...typeCheckResult.errors);
+    }
+
+    const lintResult = await lintCode(code);
+    if (!lintResult.valid) {
+      errors.push(...lintResult.errors);
     }
 
     return {

@@ -33,10 +33,12 @@ const validateCode = async (code: string): Promise<ValidationResult> => {
 
 describe("AST-based Code Validation", () => {
   const validCode = `
+    import type { Integrations } from "@subroutine/integration-types";
+
     type Inputs = { value: number };
     type Outputs = { result: number };
 
-    export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+    export async function main(inputs: Inputs, integrations: Integrations): Promise<Outputs> {
       return { result: inputs.value * 2 };
     }
   `;
