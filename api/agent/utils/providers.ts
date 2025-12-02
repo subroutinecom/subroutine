@@ -3,9 +3,9 @@ import { createVertex } from "@ai-sdk/google-vertex";
 import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel, ToolSet } from "ai";
-import { getConfig } from "../config/loader.ts";
-import type { ModelConfig, ModelProvider } from "../config/schema.ts";
-import { createWebSearchTool } from "./web-search-subagent.ts";
+import { getConfig } from "../../config/loader.ts";
+import type { ModelConfig, ModelProvider } from "../../config/schema.ts";
+import { createWebSearchTool } from "../agent-web-search.ts";
 
 import { Capability } from "./types";
 

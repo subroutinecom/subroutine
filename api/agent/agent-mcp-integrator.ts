@@ -24,8 +24,8 @@ import {
   type McpAuthConfig,
 } from "../models/integration.ts";
 import { listMcpTools } from "../utils/mcp-client.ts";
-import { createModel, getWebSearchTools } from "./providers.ts";
-import { Capability } from "./types.ts";
+import { createModel, getWebSearchTools } from "./utils/providers.ts";
+import { Capability } from "./utils/types.ts";
 
 export type McpIntegratorResult = {
   success: boolean;

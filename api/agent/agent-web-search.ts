@@ -2,8 +2,8 @@ import { vertex as vertexProvider } from "@ai-sdk/google-vertex";
 import type { LanguageModel, ToolSet } from "ai";
 import { generateText } from "ai";
 import { z } from "zod";
-import { createModel, getProvider } from "./providers.ts";
-import { Capability } from "./types.ts";
+import { createModel, getProvider } from "./utils/providers.ts";
+import { Capability } from "./utils/types.ts";
 
 export type WebSearchResult = {
   success: boolean;
