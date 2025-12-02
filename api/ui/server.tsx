@@ -28,7 +28,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
       const body = await c.req.parseBody();
       const email = body.email as string;
       const password = body.password as string;
-      const callbackURL = c.req.query("callbackURL") || "/mcp2";
+      const callbackURL = c.req.query("callbackURL") || "/mcp";
 
       const response = await auth.api.signInEmail({
         body: {
@@ -76,7 +76,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
       const email = body.email as string;
       const password = body.password as string;
       const name = (body.name as string) || email;
-      const callbackURL = c.req.query("callbackURL") || "/mcp2";
+      const callbackURL = c.req.query("callbackURL") || "/mcp";
 
       const response = await auth.api.signUpEmail({
         body: {
@@ -106,11 +106,11 @@ export const registerUiRoutes = (app: Hono<any>) => {
         // Failure - redirect back to signup with error
         const errorData = await response.json();
         const errorMsg = errorData.message || "Sign up failed";
-        return c.redirect(`/mcp2?mode=signup&error=${encodeURIComponent(errorMsg)}`);
+        return c.redirect(`/mcp?mode=signup&error=${encodeURIComponent(errorMsg)}`);
       }
     } catch (error) {
       console.error("Sign up error:", error);
-      return c.redirect("/mcp2?mode=signup&error=An+unexpected+error+occurred");
+      return c.redirect("/mcp?mode=signup&error=An+unexpected+error+occurred");
     }
   });
 
@@ -147,14 +147,14 @@ export const registerUiRoutes = (app: Hono<any>) => {
     }
   });
 
-  app.get("/mcp2", async (c) => {
+  app.get("/mcp", async (c) => {
     // Check if user is authenticated
     try {
       const sessionData = await auth.api.getSession({
         headers: c.req.raw.headers,
       });
 
-      console.log("GET /mcp2 - Session check:", {
+      console.log("GET /mcp - Session check:", {
         hasSession: !!sessionData?.session,
         hasUser: !!sessionData?.user,
         userId: sessionData?.user?.id,
@@ -166,7 +166,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
         // If no active organization, try to find one or create one
         if (!activeOrganizationId) {
-          console.log("GET /mcp2 - No active organization, checking existing orgs...");
+          console.log("GET /mcp - No active organization, checking existing orgs...");
           const organizations = await auth.api.listOrganizations({
             headers: c.req.raw.headers,
           });
@@ -174,10 +174,10 @@ export const registerUiRoutes = (app: Hono<any>) => {
           if (organizations && organizations.length > 0) {
             // Use the first available organization
             activeOrganizationId = organizations[0].id;
-            console.log("GET /mcp2 - Found existing org, setting active:", activeOrganizationId);
+            console.log("GET /mcp - Found existing org, setting active:", activeOrganizationId);
           } else {
             // Create a new "Personal" organization
-            console.log("GET /mcp2 - No orgs found, creating Personal org...");
+            console.log("GET /mcp - No orgs found, creating Personal org...");
             const newOrg = await auth.api.createOrganization({
               headers: c.req.raw.headers,
               body: {
@@ -188,7 +188,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
             if (newOrg) {
               activeOrganizationId = newOrg.id;
-              console.log("GET /mcp2 - Created Personal org:", activeOrganizationId);
+              console.log("GET /mcp - Created Personal org:", activeOrganizationId);
             }
           }
 
@@ -211,25 +211,22 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
           if (mcpSession) {
             console.log(
-              "GET /mcp2 - Found existing session, redirecting to:",
-              `/mcp2/${mcpSession.id}`
+              "GET /mcp - Found existing session, redirecting to:",
+              `/mcp/${mcpSession.id}`
             );
-            return c.redirect(`/mcp2/${mcpSession.id}`, 302);
+            return c.redirect(`/mcp/${mcpSession.id}`, 302);
           } else {
             // Create new session
             mcpSession = await createSession(activeOrganizationId);
-            console.log(
-              "GET /mcp2 - Created new session, redirecting to:",
-              `/mcp2/${mcpSession.id}`
-            );
-            return c.redirect(`/mcp2/${mcpSession.id}`, 302);
+            console.log("GET /mcp - Created new session, redirecting to:", `/mcp/${mcpSession.id}`);
+            return c.redirect(`/mcp/${mcpSession.id}`, 302);
           }
         } else {
-          console.log("GET /mcp2 - Failed to determine active organization");
+          console.log("GET /mcp - Failed to determine active organization");
         }
       }
     } catch (error) {
-      console.log("GET /mcp2 - Auth check error:", error);
+      console.log("GET /mcp - Auth check error:", error);
       // If auth check fails, fall through to show login
     }
 
@@ -237,7 +234,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
     const url = new URL(c.req.url);
     const isSignUp = url.searchParams.get("mode") === "signup";
 
-    console.log("GET /mcp2 - Not authenticated, showing login. isSignUp:", isSignUp);
+    console.log("GET /mcp - Not authenticated, showing login. isSignUp:", isSignUp);
 
     // User is not authenticated - show login page
     const config = await getConfig();
@@ -246,13 +243,13 @@ export const registerUiRoutes = (app: Hono<any>) => {
       google: config.auth.providers.google,
       emailPassword: config.auth.providers.emailPassword,
     };
-    const html = renderUi("/mcp2", { authProviders, authBaseUrl: config.baseUrl, isSignUp });
+    const html = renderUi("/mcp", { authProviders, authBaseUrl: config.baseUrl, isSignUp });
     return c.html("<!DOCTYPE html>" + html);
   });
 
-  app.get("/mcp2/:sessionId", async (c) => {
+  app.get("/mcp/:sessionId", async (c) => {
     const { sessionId } = c.req.param();
-    console.log("GET /mcp2/:sessionId - Checking auth for session:", sessionId);
+    console.log("GET /mcp/:sessionId - Checking auth for session:", sessionId);
 
     // Check if user is authenticated
     try {
@@ -260,7 +257,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
         headers: c.req.raw.headers,
       });
 
-      console.log("GET /mcp2/:sessionId - Session check:", {
+      console.log("GET /mcp/:sessionId - Session check:", {
         hasSession: !!sessionData?.session,
         hasUser: !!sessionData?.user,
         userId: sessionData?.user?.id,
@@ -275,23 +272,23 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
         if (!mcpSession) {
           // Session doesn't exist or doesn't belong to this org - create it
-          console.log("GET /mcp2/:sessionId - Session not found, creating it");
+          console.log("GET /mcp/:sessionId - Session not found, creating it");
           mcpSession = await createSession(sessionData.session.activeOrganizationId, sessionId);
         }
 
         // Show session page
-        console.log("GET /mcp2/:sessionId - Authenticated, showing session page");
+        console.log("GET /mcp/:sessionId - Authenticated, showing session page");
         const config = await getConfig();
-        const html = renderUi(`/mcp2/${sessionId}`, { sessionId, baseUrl: config.baseUrl });
+        const html = renderUi(`/mcp/${sessionId}`, { sessionId, baseUrl: config.baseUrl });
         return c.html("<!DOCTYPE html>" + html);
       }
     } catch (error) {
-      console.log("GET /mcp2/:sessionId - Auth check error:", error);
+      console.log("GET /mcp/:sessionId - Auth check error:", error);
       // If auth check fails, redirect to login
     }
 
-    // User is not authenticated - redirect to /mcp2 login
-    console.log("GET /mcp2/:sessionId - Not authenticated, redirecting to /mcp2");
-    return c.redirect("/mcp2", 302);
+    // User is not authenticated - redirect to /mcp login
+    console.log("GET /mcp/:sessionId - Not authenticated, redirecting to /mcp");
+    return c.redirect("/mcp", 302);
   });
 };

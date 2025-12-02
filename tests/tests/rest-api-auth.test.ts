@@ -242,8 +242,8 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
   });
 
   describe("MCP Endpoints - Authentication", () => {
-    it("should reject /mcp POST without authentication", async () => {
-      const response = await makeRequest("/mcp", {
+    it("should reject /mcp-legacy POST without authentication", async () => {
+      const response = await makeRequest("/mcp-legacy", {
         method: "POST",
         body: {
           jsonrpc: "2.0",
@@ -257,10 +257,10 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       expect(response.data.error.code).toBe("UNAUTHORIZED");
     });
 
-    it("should allow /mcp POST with valid API key", async () => {
+    it("should allow /mcp-legacy POST with valid API key", async () => {
       const apiKey = await getTestApiKey();
 
-      const response = await makeRequest("/mcp", {
+      const response = await makeRequest("/mcp-legacy", {
         method: "POST",
         apiKey,
         body: {
@@ -363,10 +363,10 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       expect(Array.isArray(response.data.runs)).toBe(true);
     });
 
-    it("should allow /mcp POST with Bearer token", async () => {
+    it("should allow /mcp-legacy POST with Bearer token", async () => {
       const apiKey = await getTestApiKey();
 
-      const response = await makeRequest("/mcp", {
+      const response = await makeRequest("/mcp-legacy", {
         method: "POST",
         headers: {
           authorization: `Bearer ${apiKey}`,
@@ -453,10 +453,10 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       expect(Array.isArray(response.data.subroutines)).toBe(true);
     });
 
-    it("should allow /mcp POST with BetterAuth session cookie", async () => {
+    it("should allow /mcp-legacy POST with BetterAuth session cookie", async () => {
       const cookieJar = await createSessionCookieJar();
 
-      const response = await makeCookieRequest("/mcp", cookieJar, {
+      const response = await makeCookieRequest("/mcp-legacy", cookieJar, {
         method: "POST",
         body: {
           jsonrpc: "2.0",

@@ -5,6 +5,7 @@ import { Capability } from "../agent/utils/types.ts";
 import { db } from "../db/index.ts";
 import { generateMockCode } from "../mocks.ts";
 import { getIntegration } from "./integration.ts";
+import { runSubroutine, type Run } from "./run.ts";
 
 export type Subroutine = {
   id: string;
@@ -348,3 +349,44 @@ const mapRowToSubroutine = (
   },
   createdAt: row.created_at,
 });
+
+export type ExecuteRequestParams = {
+  request: string;
+  organizationId: string;
+  viewerId: string;
+  integrations?: string[];
+  timeoutMs?: number;
+  useMock?: boolean;
+};
+
+export type ExecuteRequestResult = {
+  subroutine: Subroutine;
+  run: Run;
+};
+
+export const executeRequest = async (
+  params: ExecuteRequestParams
+): Promise<ExecuteRequestResult> => {
+  const subroutine = await generateSubroutine({
+    request: params.request,
+    viewerId: params.viewerId,
+    integrations: params.integrations,
+    organizationId: params.organizationId,
+    useMock: params.useMock,
+    needsImmediateInputs: true,
+  });
+
+  if (!subroutine.initialInputs) {
+    throw new Error("Generated subroutine is missing initial inputs");
+  }
+
+  const run = await runSubroutine({
+    subroutineId: subroutine.id,
+    organizationId: params.organizationId,
+    viewerId: params.viewerId,
+    inputs: subroutine.initialInputs,
+    timeoutMs: params.timeoutMs,
+  });
+
+  return { subroutine, run };
+};
