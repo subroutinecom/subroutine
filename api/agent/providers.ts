@@ -1,9 +1,10 @@
 import type { LanguageModel, ToolSet } from "ai";
 import { createAnthropic, anthropic as anthropicProvider } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
-import { createVertex, vertex as vertexProvider } from "@ai-sdk/google-vertex";
+import { createVertex } from "@ai-sdk/google-vertex";
 import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic";
 import { getConfig } from "../config/loader.ts";
+import { getGoogleSearchTool } from "./tools/google-search";
 
 export type ModelProvider = "anthropic" | "openai" | "vertex-anthropic" | "vertex-gemini";
 
@@ -26,40 +27,22 @@ export const getProvider = async (): Promise<ModelProvider> => {
   return config.provider;
 };
 
-// TODO(greg) - probably instead of using that, we should just have a single
-// google-search tool or alike.
-export const getWebSearchTools = async (): Promise<ToolSet> => {
+export const getWebSearchTools = async (options?: { forceCustom?: boolean }): Promise<ToolSet> => {
   const config = await getProviderFromConfig();
 
-  switch (config.provider) {
-    case "anthropic":
-    case "vertex-anthropic":
-      // Anthropic's built-in web search tool
-      // Supported on both direct API and Vertex AI (for Claude 3.5+/4.x models)
-      // See: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude/web-search
-      // Type assertion needed due to AI SDK TypeScript issue with provider-defined tools
-      // See: https://github.com/vercel/ai/issues/7369
-      return {
-        web_search: anthropicProvider.tools.webSearch_20250305({
-          maxUses: 5,
-        }),
-      } as ToolSet;
-
-    case "vertex-gemini":
-      return {
-        google_search: vertexProvider.tools.googleSearch({}),
-      } as ToolSet;
-
-    case "openai":
-      // TODO(greg) Didn't test with OpenAI yet.
-      return {};
-
-    default: {
-      const _exhaustive: never = config.provider;
-      console.warn(`No web search tools available for provider: ${_exhaustive}`);
-      return {};
-    }
+  // just leave it here for now, though probably should make this configurable
+  if (
+    !options?.forceCustom &&
+    (config.provider === "anthropic" || config.provider === "vertex-anthropic")
+  ) {
+    return {
+      web_search: anthropicProvider.tools.webSearch_20250305({
+        maxUses: 5,
+      }),
+    } as ToolSet;
   }
+
+  return getGoogleSearchTool();
 };
 
 export const createModel = async (): Promise<LanguageModel | null> => {

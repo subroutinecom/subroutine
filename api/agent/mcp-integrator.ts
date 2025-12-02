@@ -164,7 +164,10 @@ const buildTools = (params: McpIntegratorParams) => {
           .default("streamable-http"),
       }),
       execute: async ({ serverUrl, transport }: { serverUrl: string; transport: McpTransport }) => {
-        return await testMcpConnection(serverUrl, transport);
+        console.log(`[mcpIntegrator:testMcpConnection] Testing ${serverUrl} with ${transport}`);
+        const result = await testMcpConnection(serverUrl, transport);
+        console.log(`[mcpIntegrator:testMcpConnection] Result:`, JSON.stringify(result, null, 2));
+        return result;
       },
     },
 
@@ -202,6 +205,13 @@ const buildTools = (params: McpIntegratorParams) => {
         viewerScoped: boolean;
         authHeaderName?: string;
       }) => {
+        console.log(`[mcpIntegrator:createDynamicIntegration] Creating "${name}"`);
+        console.log(
+          `[mcpIntegrator:createDynamicIntegration] URL: ${serverUrl}, transport: ${transport}`
+        );
+        console.log(
+          `[mcpIntegrator:createDynamicIntegration] Auth: ${authType}, viewerScoped: ${viewerScoped}`
+        );
         const existing = await getIntegrationByName(name, params.organizationId);
         if (existing) {
           return {
@@ -235,12 +245,14 @@ const buildTools = (params: McpIntegratorParams) => {
             authConfig,
           });
 
+          console.log(`[mcpIntegrator:createDynamicIntegration] Success! ID: ${integration.id}`);
           return {
             success: true,
             integrationId: integration.id,
             integrationName: integration.name,
           };
         } catch (error) {
+          console.log(`[mcpIntegrator:createDynamicIntegration] Error:`, error);
           return {
             success: false,
             error: error instanceof Error ? error.message : "Failed to create integration",
@@ -271,8 +283,16 @@ const buildTools = (params: McpIntegratorParams) => {
         authType?: "none" | "api_key";
         viewerScoped?: boolean;
       }) => {
+        console.log(`[mcpIntegrator:updateDynamicIntegration] Updating ${integrationId}`);
+        console.log(`[mcpIntegrator:updateDynamicIntegration] Changes:`, {
+          serverUrl,
+          transport,
+          authType,
+          viewerScoped,
+        });
         const existing = await getIntegration(integrationId, params.organizationId);
         if (!existing) {
+          console.log(`[mcpIntegrator:updateDynamicIntegration] Integration not found`);
           return { success: false, error: "Integration not found" };
         }
 
@@ -339,6 +359,7 @@ const buildTools = (params: McpIntegratorParams) => {
         error: z.string().describe("Error message if setup failed").optional(),
       }),
       execute: (result: McpIntegratorResult) => {
+        console.log(`[mcpIntegrator:complete] Called with:`, JSON.stringify(result, null, 2));
         capturedResult = result;
         return { done: true };
       },
@@ -357,15 +378,29 @@ const buildTools = (params: McpIntegratorParams) => {
 export const runMcpIntegrator = async (
   params: McpIntegratorParams
 ): Promise<McpIntegratorResult> => {
+  console.log(`\n${"=".repeat(60)}`);
+  console.log(`[mcpIntegrator] Starting MCP Integrator`);
+  console.log(`[mcpIntegrator] Need: "${params.need}"`);
+  console.log(`[mcpIntegrator] Org: ${params.organizationId}`);
+  if (params.existingIntegrationId) {
+    console.log(`[mcpIntegrator] Fixing existing integration: ${params.existingIntegrationId}`);
+  }
+  console.log(`${"=".repeat(60)}\n`);
+
   const model = await createModel();
   if (!model) {
+    console.log(`[mcpIntegrator] ERROR: Failed to create AI model`);
     return {
       success: false,
       error: "Failed to create AI model for MCP Integrator",
     };
   }
+  console.log(`[mcpIntegrator] Model created successfully`);
 
   const webSearchTools = await getWebSearchTools();
+  console.log(
+    `[mcpIntegrator] Web search tools: ${Object.keys(webSearchTools).join(", ") || "none"}`
+  );
 
   return await runMcpIntegratorWithModel(model, params, webSearchTools);
 };
@@ -382,6 +417,8 @@ export const runMcpIntegratorWithModel = async (
     ...tools,
   };
 
+  console.log(`[mcpIntegrator] Available tools: ${Object.keys(allTools).join(", ")}`);
+
   let userPrompt: string;
   if (params.existingIntegrationId) {
     userPrompt = `Fix the existing dynamic integration with ID "${params.existingIntegrationId}".
@@ -393,8 +430,10 @@ Investigate and fix it, or find a better alternative server.`;
 Search for available servers, pick the best one with the simplest auth, test it, and create the integration.`;
   }
 
+  console.log(`[mcpIntegrator] User prompt: ${userPrompt}`);
+
   try {
-    await generateText({
+    const { steps } = await generateText({
       model,
       system: MCP_INTEGRATOR_SYSTEM_PROMPT,
       prompt: userPrompt,
@@ -402,16 +441,53 @@ Search for available servers, pick the best one with the simplest auth, test it,
       stopWhen: () => getCapturedResult() !== null,
     });
 
+    // Log step details
+    console.log(`\n[mcpIntegrator] Completed in ${steps.length} step(s)`);
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      console.log(`\n[mcpIntegrator] Step ${i + 1}:`);
+
+      if (step.toolCalls && step.toolCalls.length > 0) {
+        for (const tc of step.toolCalls) {
+          const args = "args" in tc ? tc.args : {};
+          console.log(`  - Tool call: ${tc.toolName}`);
+          console.log(`    Args: ${JSON.stringify(args, null, 2)}`);
+        }
+      }
+
+      if (step.toolResults && step.toolResults.length > 0) {
+        for (const tr of step.toolResults) {
+          console.log(`  - Tool result: ${tr.toolName}`);
+          const resultData = "result" in tr ? tr.result : tr;
+          const resultStr = JSON.stringify(resultData, null, 2);
+          // Truncate long results
+          console.log(
+            `    Result: ${resultStr.length > 500 ? resultStr.slice(0, 500) + "..." : resultStr}`
+          );
+        }
+      }
+
+      if (step.text) {
+        console.log(`  - Text: "${step.text.slice(0, 200)}${step.text.length > 200 ? "..." : ""}"`);
+      }
+    }
+
     const capturedResult = getCapturedResult();
     if (capturedResult) {
+      console.log(`\n[mcpIntegrator] Final result:`, JSON.stringify(capturedResult, null, 2));
+      console.log(`${"=".repeat(60)}\n`);
       return capturedResult;
     }
 
+    console.log(`[mcpIntegrator] ERROR: No result captured`);
+    console.log(`${"=".repeat(60)}\n`);
     return {
       success: false,
       error: "MCP Integrator did not complete the setup process",
     };
   } catch (error) {
+    console.log(`[mcpIntegrator] ERROR:`, error);
+    console.log(`${"=".repeat(60)}\n`);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error in MCP Integrator",
