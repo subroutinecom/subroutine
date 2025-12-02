@@ -22,7 +22,8 @@ ENV CI=${CI:-}
 ARG BUILD_SHA
 ENV BUILD_SHA=${BUILD_SHA:-}
 
-RUN ["./manage.sh", "--build"]
+RUN deno install --node-modules-dir
+RUN deno task migrations:generate
 
 FROM build AS dev
 
@@ -33,11 +34,6 @@ CMD ["./manage.sh", "--run"]
 FROM base AS prod
 
 WORKDIR /app/api
-
-COPY --from=build /app/api/api-server /release/build
-COPY --from=build /app/packages /app/packages
-COPY ./api/ecosystem.config.js /app/api/ecosystem.config.js
-COPY ./api/manage.sh /app/api/manage.sh
 
 ENV NODE_ENV=production
 ARG CI
