@@ -3,16 +3,18 @@ import { jsonSchema, streamObject, zodSchema } from "ai";
 import type { z } from "zod";
 import { createModel } from "./providers";
 
-export type TypeCoercerParams<K> = {
+type SchemaType<S extends z.ZodTypeAny | string> = S extends z.ZodType<infer Out> ? Out : unknown;
+
+export type TypeCoercerParams<S extends z.ZodTypeAny | string> = {
   input: unknown;
-  schema: z.ZodType<K> | string;
+  schema: S;
   model?: LanguageModel | null;
   instructions?: string;
   mode?: "auto" | "json" | "tool";
 };
 
-export type TypeCoercerResult<K> =
-  | { success: true; value: K; rawText: string }
+export type TypeCoercerResult<S extends z.ZodTypeAny | string> =
+  | { success: true; value: SchemaType<S>; rawText: string }
   | { success: false; error: string };
 
 const TYPE_COERCER_SYSTEM_PROMPT = `
@@ -28,10 +30,10 @@ const parseJsonSchema = (schemaText: string): JSONSchema7 => {
   return parsed as JSONSchema7;
 };
 
-const materializeSchema = <K>(schema: z.ZodType<K> | string): Schema<K> => {
+const materializeSchema = <S extends z.ZodTypeAny | string>(schema: S): Schema<SchemaType<S>> => {
   if (typeof schema === "string") {
     const parsed = parseJsonSchema(schema);
-    return jsonSchema<K>(parsed);
+    return jsonSchema<SchemaType<S>>(parsed);
   }
 
   return zodSchema(schema);
@@ -55,16 +57,16 @@ Input data (JSON):
 ${serializedInput ?? "null"}`;
 };
 
-export const coerceToSchema = async <K>(
-  params: TypeCoercerParams<K>
-): Promise<TypeCoercerResult<K>> => {
+export const coerceToSchema = async <S extends z.ZodTypeAny | string>(
+  params: TypeCoercerParams<S>
+): Promise<TypeCoercerResult<S>> => {
   const model = params.model ?? (await createModel());
 
   if (!model) {
     return { success: false, error: "No language model configured or available" };
   }
 
-  let schemaForModel: Schema<K>;
+  let schemaForModel: Schema<SchemaType<S>>;
   try {
     schemaForModel = materializeSchema(params.schema);
   } catch (error) {
@@ -75,10 +77,11 @@ export const coerceToSchema = async <K>(
   const prompt = buildPrompt(params.input, params.instructions);
 
   try {
-    const stream = await streamObject({
+    const stream = await streamObject<Schema<SchemaType<S>>, "object", SchemaType<S>>({
       model,
       schema: schemaForModel,
       mode: params.mode,
+      output: "object",
       system: TYPE_COERCER_SYSTEM_PROMPT.trim(),
       prompt,
     });

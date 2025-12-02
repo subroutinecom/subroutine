@@ -6,6 +6,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createYoga } from "graphql-yoga";
 import { randomUUID } from "node:crypto";
 import process from "node:process";
+import { coerceToSchema } from "./agent/type-coercer.ts";
 import { auth } from "./auth.ts";
 import { getConfig } from "./config/loader.ts";
 import { initializeDatabase } from "./db/index.ts";
@@ -354,6 +355,43 @@ const initialize = async () => {
 
     return c.json({ success: true });
   });
+
+  if (Deno.env.get("NODE_ENV") !== "production") {
+    app.post("/api/dev/type-coerce", async (c) => {
+      let body: {
+        input: unknown;
+        schema?: string;
+        instructions?: string;
+        mode?: "auto" | "json" | "tool";
+      };
+
+      try {
+        body = await c.req.json();
+      } catch {
+        return c.json({ success: false, error: "Invalid JSON body" }, 400);
+      }
+
+      if (!body.schema || typeof body.schema !== "string") {
+        return c.json(
+          { success: false, error: "schema field is required and must be a string" },
+          400
+        );
+      }
+
+      const result = await coerceToSchema<string>({
+        input: body.input,
+        schema: body.schema,
+        instructions: body.instructions,
+        mode: body.mode,
+      });
+
+      if (!result.success) {
+        return c.json(result, 400);
+      }
+
+      return c.json(result);
+    });
+  }
 
   app.use("*", authMiddleware);
 
