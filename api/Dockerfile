@@ -35,6 +35,9 @@ FROM base AS prod
 
 WORKDIR /app/api
 
+COPY --from=build /app/api /app/api
+COPY --from=build /app/packages /app/packages
+
 ENV NODE_ENV=production
 ARG CI
 ENV CI=${CI:-}
