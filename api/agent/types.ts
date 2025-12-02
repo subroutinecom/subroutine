@@ -10,6 +10,24 @@ export type CodeGenerationResult = {
   usedIntegrationIds?: string[];
 };
 
+export type SubroutineCapture = {
+  inputsSchema: Record<string, unknown>;
+  outputsSchema: Record<string, unknown>;
+  code: string;
+  immediateInputs?: Record<string, unknown>;
+};
+
+/**
+ * Context for MCP tool discovery during code generation.
+ * Provides the information needed to look up integrations and check auth.
+ */
+export type McpContext = {
+  organizationId: string;
+  viewerId: string;
+  /** Maps integration names to their IDs for quick lookup */
+  integrationNameToId: Map<string, string>;
+};
+
 export type { TypeCoercerParams, TypeCoercerResult } from "./type-coercer";
 
 export enum Capability {
