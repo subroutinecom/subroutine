@@ -1,5 +1,5 @@
-import { createModel } from "./api/agent/providers.ts";
-import { Capability } from "./api/agent/types.ts";
+import { createModel } from "./api/agent/utils/providers.ts";
+import { Capability } from "./api/agent/utils/types.ts";
 import { getConfig } from "./api/config/loader.ts";
 import { printConfigReport, validateConfig } from "./api/config/validator.ts";
 
