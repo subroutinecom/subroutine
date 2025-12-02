@@ -1,10 +1,19 @@
 import { parse } from "yaml";
 import { type Config, configSchema } from "./schema.ts";
+import { printConfigReport, validateConfig } from "./validator.ts";
 
 let cachedConfig: Config | null = null;
 
 export const loadConfig = async (path: string): Promise<Config> => {
-  const yamlContent = await Deno.readTextFile(path);
+  let yamlContent = await Deno.readTextFile(path);
+
+  // Environment variable interpolation
+  // Supports $VAR and ${VAR} syntax
+  yamlContent = yamlContent.replace(/\$\{?([a-zA-Z_][a-zA-Z0-9_]*)\}?/g, (match, varName) => {
+    const value = Deno.env.get(varName);
+    return value !== undefined ? value : match;
+  });
+
   const parsed = parse(yamlContent);
 
   const result = configSchema.safeParse(parsed);
@@ -23,6 +32,19 @@ export const loadConfig = async (path: string): Promise<Config> => {
   }
   if (!config.apiUrl && config.baseUrl) {
     config.apiUrl = config.baseUrl;
+  }
+
+  // Validate config consistency
+  const validation = validateConfig(config);
+  if (!validation.valid) {
+    throw new Error(
+      `Config validation failed:\n${validation.errors.map((e: string) => `  - ${e}`).join("\n")}`
+    );
+  }
+
+  // Optional verbose output for debugging
+  if (Deno.env.get("VERBOSE_CONFIG") === "true") {
+    printConfigReport(config);
   }
 
   return config;

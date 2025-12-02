@@ -1,8 +1,9 @@
+import { vertex as vertexProvider } from "@ai-sdk/google-vertex";
 import type { LanguageModel, ToolSet } from "ai";
 import { generateText } from "ai";
-import { vertex as vertexProvider } from "@ai-sdk/google-vertex";
 import { z } from "zod";
-import { createModel, getProvider } from "./providers";
+import { createModel, getProvider } from "./providers.ts";
+import { Capability } from "./types.ts";
 
 export type WebSearchResult = {
   success: boolean;
@@ -25,7 +26,7 @@ export const runWebSearchSubagent = async (
   query: string,
   model?: LanguageModel
 ): Promise<WebSearchResult> => {
-  const aiModel = model ?? (await createModel());
+  const aiModel = model ?? (await createModel(Capability.WEB_SEARCH));
   if (!aiModel) {
     return {
       success: false,
@@ -77,6 +78,6 @@ Returns a summary of relevant search results.`,
 });
 
 export const requiresWebSearchSubagent = async (): Promise<boolean> => {
-  const provider = await getProvider();
+  const provider = await getProvider(Capability.WEB_SEARCH);
   return provider === "vertex-gemini";
 };

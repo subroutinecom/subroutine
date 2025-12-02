@@ -1,7 +1,8 @@
 import type { JSONSchema7, LanguageModel, Schema } from "ai";
 import { jsonSchema, streamObject, zodSchema } from "ai";
 import type { z } from "zod";
-import { createModel } from "./providers";
+import { createModel } from "./providers.ts";
+import { Capability } from "./types.ts";
 
 type SchemaType<S extends z.ZodTypeAny | string> = S extends z.ZodType<infer Out> ? Out : unknown;
 
@@ -60,7 +61,7 @@ ${serializedInput ?? "null"}`;
 export const coerceToSchema = async <S extends z.ZodTypeAny | string>(
   params: TypeCoercerParams<S>
 ): Promise<TypeCoercerResult<S>> => {
-  const model = params.model ?? (await createModel());
+  const model = params.model ?? (await createModel(Capability.GENERAL));
 
   if (!model) {
     return { success: false, error: "No language model configured or available" };

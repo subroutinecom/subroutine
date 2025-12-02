@@ -15,16 +15,17 @@
 import type { LanguageModel } from "ai";
 import { generateText } from "ai";
 import { z } from "zod";
-import { createModel, getWebSearchTools } from "./providers";
+import type { McpAuthStrategy, McpTransport } from "../integrations/providers.ts";
 import {
   createDynamicIntegration,
-  updateDynamicIntegration,
   getIntegration,
   getIntegrationByName,
+  updateDynamicIntegration,
   type McpAuthConfig,
-} from "../models/integration";
-import { listMcpTools } from "../utils/mcp-client";
-import type { McpTransport, McpAuthStrategy } from "../integrations/providers";
+} from "../models/integration.ts";
+import { listMcpTools } from "../utils/mcp-client.ts";
+import { createModel, getWebSearchTools } from "./providers.ts";
+import { Capability } from "./types.ts";
 
 export type McpIntegratorResult = {
   success: boolean;
@@ -357,7 +358,7 @@ const buildTools = (params: McpIntegratorParams) => {
 export const runMcpIntegrator = async (
   params: McpIntegratorParams
 ): Promise<McpIntegratorResult> => {
-  const model = await createModel();
+  const model = await createModel(Capability.GENERAL);
   if (!model) {
     return {
       success: false,

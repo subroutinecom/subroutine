@@ -11,3 +11,11 @@ export type CodeGenerationResult = {
 };
 
 export type { TypeCoercerParams, TypeCoercerResult } from "./type-coercer";
+
+export enum Capability {
+  CODING = "coding",
+  CODING_FIRSTPASS = "coding.firstpass",
+  WEB_SEARCH = "web_search",
+  PLANNING = "planning",
+  GENERAL = "general",
+}
