@@ -34,12 +34,12 @@ CMD ["./manage.sh", "--run"]
 
 FROM base AS prod
 
-WORKDIR /app/sandbox
+WORKDIR /app
 
-COPY --from=build /app/sandbox/sandbox /release/build
+COPY --from=build /app/sandbox /app/sandbox
 COPY --from=build /app/packages /app/packages
-COPY ./sandbox/ecosystem.config.js /app/sandbox/ecosystem.config.js
-COPY ./sandbox/manage.sh /app/sandbox/manage.sh
+
+WORKDIR /app/sandbox
 
 ENV NODE_ENV=production
 

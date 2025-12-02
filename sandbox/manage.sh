@@ -5,12 +5,8 @@ if [ -n "$CI" ] || [ -n "$BUILD_SHA" ]; then IS_BUILD="1"; else IS_BUILD=""; fi
 set -e
 
 do_run() {
-  if [ -n "$IS_BUILD" ]; then
-    echo "The project has been compiled"
-  else
-    echo "The project is not compiled"
-    deno install
-  fi
+  echo "Installing dependencies..."
+  deno install
 
   export IS_BUILD="$IS_BUILD"
 
@@ -24,12 +20,7 @@ do_run() {
 do_build() {
   deno install
 
-  if [ -n "$IS_BUILD" ]; then
-    echo "Compiling the project"
-    deno task build
-  else
-    echo "Skipping compilation"
-  fi
+  echo "Skipping compilation; sandbox now runs directly from source"
 }
 
 if [ "$1" = "--run" ]; then
