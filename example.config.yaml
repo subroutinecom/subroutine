@@ -1,26 +1,73 @@
 # Subroutine Configuration
 # Copy this file to config.yaml and customize for your environment
-# Secrets (API keys, credentials) remain in .env files
+# Secrets (API keys, credentials) remain in .env files or environment variables
 
 # Base URL (defaults to http://localhost)
 # baseUrl: "https://your-production-domain.com"
 
-# AI Model Configuration
-ai:
-  # Provider: anthropic | openai | vertex-anthropic | vertex-gemini
-  provider: vertex-gemini
-  # Model name to use
-  # Examples:
-  #   - claude-sonnet-4-5-20250929 (for Anthropic)
-  #   - gpt-4 (for OpenAI)
-  #   - gemini-3-pro-preview (for Vertex AI Gemini 3)
-  #   - gemini-2.5-flash (for Vertex AI Gemini 2.5)
-  model: gemini-3-pro-preview
+# AI Model Definitions
+# Define your available models with their provider and authentication details
+models:
+  # Anthropic Claude via direct API
+  claude-sonnet-4.5:
+    provider: anthropic
+    model: claude-sonnet-4-5-20250929
+    apiKey: $ANTHROPIC_API_KEY # Environment variable interpolation
+    # endpoint: "https://api.anthropic.com"  # Optional custom endpoint
 
+  # Anthropic Claude via Google Vertex AI
+  vertex-claude-sonnet:
+    provider: vertex-anthropic
+    model: claude-sonnet-4-5-20250929
+    # Uses GOOGLE_VERTEX_PROJECT, GOOGLE_VERTEX_LOCATION env vars
+
+  # OpenAI GPT-4
+  gpt-4o:
+    provider: openai
+    model: gpt-4o
+    apiKey: $OPENAI_API_KEY
+    # endpoint: "https://api.openai.com/v1"  # Optional custom endpoint
+
+  # Google Gemini 2.5 Flash via Vertex AI
+  gemini-2.5-flash:
+    provider: vertex-gemini
+    model: gemini-2.5-flash
+    # Uses GOOGLE_VERTEX_PROJECT, GOOGLE_VERTEX_LOCATION env vars
+
+  # Google Gemini 3.0 Pro via Vertex AI (example for newer model)
+  gemini-3.0-pro:
+    provider: vertex-gemini
+    model: gemini-3-pro-preview
+    # Uses GOOGLE_VERTEX_PROJECT, GOOGLE_VERTEX_LOCATION env vars
+
+# Capability-to-Model Mappings
+# Map capabilities to models (supports fallback with arrays)
+# Nested capabilities support fallback (e.g., coding.syntax_fix falls back to coding)
+capabilities:
+  # General purpose tasks
+  general: claude-sonnet-4.5
+
+  # Code generation and analysis
+  coding:
+    - claude-sonnet-4.5 # Primary
+    - gemini-2.5-flash # Fallback
+
+  # Nested capability example: specific retry logic for syntax errors
+  # Falls back to 'coding' if not explicitly mapped
+  coding.syntax_fix: gemini-3.0-pro
+
+  # Web search functionality
+  web_search: gemini-2.5-flash
+
+  # Planning and design tasks
+  planning: claude-sonnet-4.5
+
+# Authentication Configuration
 auth:
   # Base URL override (optional - inherits from top-level baseUrl if not set)
   # Only needed for separate auth domain (e.g., auth.yourdomain.com)
   # baseUrl: "https://auth.your-domain.com"
+
   providers:
     github:
       enabled: false
@@ -37,3 +84,18 @@ auth:
     # Email/Password authentication
     emailPassword:
       enabled: true
+
+# Rate Limiting Configuration (optional)
+# rateLimit:
+#   enabled: true
+#   patLinkGet:
+#     windowMs: 60000  # 1 minute
+#     limit: 30
+#   patLinkSubmit:
+#     windowMs: 60000
+#     limit: 5
+
+# Superadmin Configuration (optional)
+# superadmin:
+#   organizationIds:
+#     - "org_abc123"  # Organization IDs with superadmin privileges
