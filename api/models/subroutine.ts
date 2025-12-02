@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { createModel, generateCode, type McpContext } from "../agent/index.ts";
-import type { McpIntegrationInfo } from "../agent/prompts.ts";
-import { Capability } from "../agent/types.ts";
+import type { McpIntegrationInfo } from "../agent/prompts/index.ts";
+import { Capability } from "../agent/utils/types.ts";
 import { db } from "../db/index.ts";
 import { generateMockCode } from "../mocks.ts";
 import { getIntegration } from "./integration.ts";

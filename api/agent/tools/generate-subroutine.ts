@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { validateCode } from "../validation";
-import type { SubroutineCapture } from "../types";
+import type { SubroutineCapture } from "../utils/types";
 
 export const createGenerateSubroutineTool = (
   onCapture: (result: SubroutineCapture) => void,

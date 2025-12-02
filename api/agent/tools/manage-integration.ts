@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { McpContext } from "../types";
+import type { McpContext } from "../utils/types";
 import { getIntegrationByName } from "../../models/integration";
 import { runMcpIntegrator } from "../agent-mcp-integrator";
 

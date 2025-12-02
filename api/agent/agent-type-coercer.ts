@@ -1,8 +1,8 @@
 import type { JSONSchema7, LanguageModel, Schema } from "ai";
 import { jsonSchema, streamObject, zodSchema } from "ai";
 import type { z } from "zod";
-import { createModel } from "./providers.ts";
-import { Capability } from "./types.ts";
+import { createModel } from "./utils/providers.ts";
+import { Capability } from "./utils/types.ts";
 
 type SchemaType<S extends z.ZodTypeAny | string> = S extends z.ZodType<infer Out> ? Out : unknown;
 

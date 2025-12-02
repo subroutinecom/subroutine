@@ -1,4 +1,4 @@
-import type { McpContext } from "../types";
+import type { McpContext } from "../utils/types";
 import type { AuthRequirement } from "../../models/errors";
 import {
   getIntegrationOrGlobal,

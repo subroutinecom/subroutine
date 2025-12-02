@@ -1,6 +1,6 @@
 import type { McpContext, SubroutineCapture } from "./types";
-import type { McpIntegrationInfo } from "./prompts";
-import { IntegrationAuthRequiredError, type AuthRequirement } from "../models/errors";
+import type { McpIntegrationInfo } from "../prompts/index.ts";
+import { IntegrationAuthRequiredError, type AuthRequirement } from "../../models/errors";
 import {
   createGenerateSubroutineTool,
   createListMcpToolsProvided,
@@ -8,7 +8,7 @@ import {
   createGetOrganizationIntegrations,
   createGetGlobalIntegrations,
   createManageMcpIntegration,
-} from "./tools";
+} from "../tools/index.ts";
 
 export type ToolCreationOptions = {
   mcpContext?: McpContext;

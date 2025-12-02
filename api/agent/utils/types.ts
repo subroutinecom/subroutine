@@ -28,7 +28,7 @@ export type McpContext = {
   integrationNameToId: Map<string, string>;
 };
 
-export type { TypeCoercerParams, TypeCoercerResult } from "./agent-type-coercer";
+export type { TypeCoercerParams, TypeCoercerResult } from "../agent-type-coercer.ts";
 
 export enum Capability {
   CODING = "coding",

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { McpContext } from "../types";
+import type { McpContext } from "../utils/types";
 import { getConnectedIntegrationIds } from "../../models/connected-account";
 import { getAvailableIntegrations } from "../../models/integration";
 
