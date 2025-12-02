@@ -14,8 +14,8 @@ import { generateCode } from "./agent/agent-code-generator.ts";
 import { getConfig } from "./config/loader.ts";
 import { initializeDatabase } from "./db/index.ts";
 import { buildContext, schema } from "./internal/schema.ts";
+import { createLegacyMcpServer } from "./mcp-legacy-server.ts";
 import { createMcpServer } from "./mcp-server.ts";
-import { createMcpServer2 } from "./mcp-server2.ts";
 import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
@@ -1234,7 +1234,7 @@ const initialize = async () => {
           }
         };
 
-        const server = createMcpServer(auth);
+        const server = createLegacyMcpServer(auth);
         await server.connect(transport);
         const req = c.req.raw;
         const res = new NodeResponseAdapter();
@@ -1404,7 +1404,7 @@ const initialize = async () => {
           }
         };
 
-        const server = createMcpServer2({
+        const server = createMcpServer({
           organizationId: mcpSession.organizationId,
           sessionId,
         });
@@ -1428,7 +1428,7 @@ const initialize = async () => {
             }
           };
 
-          const server = createMcpServer2({
+          const server = createMcpServer({
             organizationId: mcpSession.organizationId,
             sessionId,
           });
