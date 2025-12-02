@@ -1,9 +1,10 @@
 import type { LanguageModel, ToolSet } from "ai";
 import { createAnthropic, anthropic as anthropicProvider } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
-import { createVertex, vertex as vertexProvider } from "@ai-sdk/google-vertex";
+import { createVertex } from "@ai-sdk/google-vertex";
 import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic";
 import { getConfig } from "../config/loader.ts";
+import { createWebSearchTool } from "./web-search-subagent";
 
 export type ModelProvider = "anthropic" | "openai" | "vertex-anthropic" | "vertex-gemini";
 
@@ -47,7 +48,7 @@ export const getWebSearchTools = async (): Promise<ToolSet> => {
 
     case "vertex-gemini":
       return {
-        google_search: vertexProvider.tools.googleSearch({}),
+        web_search: createWebSearchTool(),
       } as ToolSet;
 
     case "openai":
