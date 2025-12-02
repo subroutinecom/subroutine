@@ -6,8 +6,11 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createYoga } from "graphql-yoga";
 import { randomUUID } from "node:crypto";
 import process from "node:process";
+import { createModel } from "./agent/providers.ts";
 import { coerceToSchema } from "./agent/type-coercer.ts";
+import { Capability } from "./agent/types.ts";
 import { auth } from "./auth.ts";
+import { generateCode } from "./agent/core.ts";
 import { getConfig } from "./config/loader.ts";
 import { initializeDatabase } from "./db/index.ts";
 import { buildContext, schema } from "./internal/schema.ts";
@@ -357,6 +360,39 @@ const initialize = async () => {
   });
 
   if (Deno.env.get("NODE_ENV") !== "production") {
+    app.post("/api/dev/generate-code", async (c) => {
+      let body: {
+        request: string;
+        needsImmediateInputs?: boolean;
+        integrations?: string[];
+      };
+
+      try {
+        body = await c.req.json();
+      } catch {
+        return c.json({ success: false, error: "Invalid JSON body" }, 400);
+      }
+
+      if (!body.request || typeof body.request !== "string") {
+        return c.json(
+          { success: false, error: "request field is required and must be a string" },
+          400
+        );
+      }
+
+      const model = await createModel(Capability.CODING);
+      if (!model) {
+        return c.json({ success: false, error: "Failed to create coding model" }, 500);
+      }
+
+      const result = await generateCode(model, body.request, {
+        needsImmediateInputs: body.needsImmediateInputs,
+        integrations: body.integrations,
+      });
+
+      return c.json(result);
+    });
+
     app.post("/api/dev/type-coerce", async (c) => {
       let body: {
         input: unknown;

@@ -4,7 +4,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import { enableAiTests } from "../fixtures/aitests.ts";
 
 Deno.test({
-  name: "agent type coercer API (requires ENABLE_AI_TESTS=true|1)",
+  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent type coercer API`,
   ignore: !enableAiTests,
   fn: async () => {
     const personSchema = z.object({
@@ -36,7 +36,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "agent type coercer API rejects incompatible input (requires ENABLE_AI_TESTS=true|1)",
+  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent type coercer API rejects incompatible input`,
   ignore: !enableAiTests,
   fn: async () => {
     const schema = z.object({
@@ -71,7 +71,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "agent type coercer flattens GitHub-like repo/pr response (requires ENABLE_AI_TESTS=true|1)",
+  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent type coercer flattens GitHub-like repo/pr response`,
   ignore: !enableAiTests,
   fn: async () => {
     const simplifiedPrSchema = z.object({
