@@ -13,12 +13,9 @@ install_deps() {
 }
 
 do_run() {
-  if [ -n "$IS_BUILD" ] && [ -f "/release/build" ]; then
-    echo "The project has been compiled"
-  else
-    echo "The project is not compiled"
-    install_deps
-  fi
+  install_deps
+
+  deno task migrations:generate
 
   export IS_BUILD="$IS_BUILD"
 
@@ -32,12 +29,8 @@ do_run() {
 do_build() {
   install_deps
 
-  if [ -n "$IS_BUILD" ]; then
-    echo "Compiling the API server"
-    deno task build
-  else
-    echo "Skipping compilation"
-  fi
+  echo "Preparing the API server (no compilation needed)"
+  deno task migrations:generate
 }
 
 if [ "$1" = "--run" ]; then
