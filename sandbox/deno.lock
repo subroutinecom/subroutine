@@ -5,8 +5,7 @@
     "npm:@types/node@*": "24.2.0",
     "npm:express@4": "4.21.2",
     "npm:googleapis@134": "134.0.0",
-    "npm:hono@^4.10.4": "4.10.4",
-    "npm:typescript@*": "5.9.3"
+    "npm:hono@^4.10.4": "4.10.4"
   },
   "npm": {
     "@modelcontextprotocol/sdk@1.22.0_ajv@8.17.1_express@5.1.0_zod@3.25.76": {
@@ -799,10 +798,6 @@
         "mime-types@3.0.2"
       ]
     },
-    "typescript@5.9.3": {
-      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
-      "bin": true
-    },
     "undici-types@7.10.0": {
       "integrity": "sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag=="
     },
@@ -857,8 +852,7 @@
       "npm:@modelcontextprotocol/sdk@^1.21.0",
       "npm:@types/node@*",
       "npm:googleapis@134",
-      "npm:hono@^4.10.4",
-      "npm:typescript@*"
+      "npm:hono@^4.10.4"
     ]
   }
 }
