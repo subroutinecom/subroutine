@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import { createModel, generateCode, type McpContext } from "../agent/index.ts";
 import type { McpIntegrationInfo } from "../agent/prompts.ts";
+import { Capability } from "../agent/types.ts";
 import { db } from "../db/index.ts";
 import { generateMockCode } from "../mocks.ts";
 import { getIntegration } from "./integration.ts";
@@ -91,7 +92,7 @@ export const generateSubroutine = async (
       initialInputs = {};
     }
   } else {
-    const model = await createModel();
+    const model = await createModel(Capability.CODING);
     console.log(
       `[generateSubroutine] Using model: ${(model as { modelId?: string })?.modelId ?? "none"}`
     );

@@ -1,5 +1,6 @@
-export { generateCode } from "./core";
-export type { McpContext } from "./core";
-export { createModel } from "./providers";
-export type { CodeGenerationResult, TypeCoercerParams, TypeCoercerResult } from "./types";
-export { coerceToSchema } from "./type-coercer";
+export { generateCode } from "./core.ts";
+export type { McpContext } from "./core.ts";
+export { createModel } from "./providers.ts";
+export { coerceToSchema } from "./type-coercer.ts";
+export { Capability } from "./types.ts";
+export type { CodeGenerationResult, TypeCoercerParams, TypeCoercerResult } from "./types.ts";

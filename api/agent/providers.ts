@@ -1,36 +1,61 @@
-import type { LanguageModel, ToolSet } from "ai";
-import { createAnthropic, anthropic as anthropicProvider } from "@ai-sdk/anthropic";
-import { createOpenAI } from "@ai-sdk/openai";
+import { anthropic as anthropicProvider, createAnthropic } from "@ai-sdk/anthropic";
 import { createVertex } from "@ai-sdk/google-vertex";
 import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic";
+import { createOpenAI } from "@ai-sdk/openai";
+import type { LanguageModel, ToolSet } from "ai";
 import { getConfig } from "../config/loader.ts";
-import { createWebSearchTool } from "./web-search-subagent";
+import type { ModelConfig, ModelProvider } from "../config/schema.ts";
+import { createWebSearchTool } from "./web-search-subagent.ts";
 
-export type ModelProvider = "anthropic" | "openai" | "vertex-anthropic" | "vertex-gemini";
+import { Capability } from "./types";
 
-type ProviderConfig = {
-  provider: ModelProvider;
-  model: string;
-};
+export { Capability };
 
-const getProviderFromConfig = async (): Promise<ProviderConfig> => {
+const getModelConfig = async (capability: Capability): Promise<ModelConfig> => {
   const config = await getConfig();
 
+  // 1. Look up capability in config.capabilities
+  let modelNames = config.capabilities[capability];
+
+  // 2. Fallback logic: if not found, try stripping last segment
+  if (!modelNames && capability.includes(".")) {
+    const parentCapability = capability.split(".").slice(0, -1).join(".");
+    modelNames = config.capabilities[parentCapability];
+  }
+
+  if (!modelNames) {
+    throw new Error(`No model mapped for capability: ${capability}`);
+  }
+
+  // Handle array of models (take first for now, could implement retry logic later)
+  const modelName = Array.isArray(modelNames) ? modelNames[0] : modelNames;
+
+  // 3. Resolve model name to model config
+  const modelConfig = config.models[modelName];
+  if (!modelConfig) {
+    throw new Error(`Model definition not found for: ${modelName}`);
+  }
+
   return {
-    provider: config.ai.provider,
-    model: config.ai.model,
+    provider: modelConfig.provider,
+    model: modelConfig.model,
+    apiKey: modelConfig.apiKey,
+    endpoint: modelConfig.endpoint,
+    apiVersion: modelConfig.apiVersion,
   };
 };
 
-export const getProvider = async (): Promise<ModelProvider> => {
-  const config = await getProviderFromConfig();
+export const getProvider = async (
+  capability: Capability = Capability.GENERAL
+): Promise<ModelProvider> => {
+  const config = await getModelConfig(capability);
   return config.provider;
 };
 
 // TODO(greg) - probably instead of using that, we should just have a single
 // google-search tool or alike.
 export const getWebSearchTools = async (): Promise<ToolSet> => {
-  const config = await getProviderFromConfig();
+  const config = await getModelConfig(Capability.WEB_SEARCH);
 
   switch (config.provider) {
     case "anthropic":
@@ -63,27 +88,55 @@ export const getWebSearchTools = async (): Promise<ToolSet> => {
   }
 };
 
-export const createModel = async (): Promise<LanguageModel | null> => {
-  const config = await getProviderFromConfig();
+export const createModel = async (
+  capability: Capability,
+  options?: { model?: string }
+): Promise<LanguageModel | null> => {
+  // If specific model override is provided, we bypass capability lookup
+  // But we still need to find the model config for that model name
+  let config: ModelConfig;
+
+  if (options?.model) {
+    const fullConfig = await getConfig();
+    const modelConfig = fullConfig.models[options.model];
+    if (!modelConfig) {
+      console.error(`Model definition not found for override: ${options.model}`);
+      return null;
+    }
+    config = {
+      provider: modelConfig.provider,
+      model: modelConfig.model,
+      apiKey: modelConfig.apiKey,
+      endpoint: modelConfig.endpoint,
+      apiVersion: modelConfig.apiVersion,
+    };
+  } else {
+    try {
+      config = await getModelConfig(capability);
+    } catch (e) {
+      console.error("Failed to get model config:", e);
+      return null;
+    }
+  }
 
   switch (config.provider) {
     case "anthropic": {
-      const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+      const apiKey = config.apiKey || Deno.env.get("ANTHROPIC_API_KEY");
       if (!apiKey) {
         console.error("ANTHROPIC_API_KEY not set");
         return null;
       }
-      const anthropic = createAnthropic({ apiKey });
+      const anthropic = createAnthropic({ apiKey, baseURL: config.endpoint });
       return anthropic(config.model);
     }
 
     case "openai": {
-      const apiKey = Deno.env.get("OPENAI_API_KEY");
+      const apiKey = config.apiKey || Deno.env.get("OPENAI_API_KEY");
       if (!apiKey) {
         console.error("OPENAI_API_KEY not set");
         return null;
       }
-      const openai = createOpenAI({ apiKey });
+      const openai = createOpenAI({ apiKey, baseURL: config.endpoint });
       return openai(config.model);
     }
 
