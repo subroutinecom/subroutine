@@ -5,7 +5,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel, ToolSet } from "ai";
 import { getConfig } from "../config/loader.ts";
 import type { ModelConfig, ModelProvider } from "../config/schema.ts";
-import { createWebSearchTool } from "./web-search-subagent.ts";
+import { createWebSearchTool } from "./agent-web-search.ts";
 
 import { Capability } from "./types";
 

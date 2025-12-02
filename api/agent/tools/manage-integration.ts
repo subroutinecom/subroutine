@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpContext } from "../types";
 import { getIntegrationByName } from "../../models/integration";
-import { runMcpIntegrator } from "../mcp-integrator";
+import { runMcpIntegrator } from "../agent-mcp-integrator";
 
 export const createManageMcpIntegration = (
   mcpContext: McpContext,
