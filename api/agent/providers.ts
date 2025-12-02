@@ -14,26 +14,46 @@ export { Capability };
 const getModelConfig = async (capability: Capability): Promise<ModelConfig> => {
   const config = await getConfig();
 
-  // 1. Look up capability in config.capabilities
+  // 1. Try to find the capability, walking up the hierarchy recursively
   let modelNames = config.capabilities[capability];
+  let currentCapability: string = capability;
 
-  // 2. Fallback logic: if not found, try stripping last segment
-  if (!modelNames && capability.includes(".")) {
-    const parentCapability = capability.split(".").slice(0, -1).join(".");
-    modelNames = config.capabilities[parentCapability];
+  // 2. Recursive fallback: keep stripping segments until we find a match
+  while (!modelNames && currentCapability.includes(".")) {
+    const segments = currentCapability.split(".");
+    segments.pop(); // Remove last segment
+    currentCapability = segments.join(".");
+    modelNames = config.capabilities[currentCapability];
   }
 
+  // 3. Ultimate fallback to 'general' if nothing found
+  if (!modelNames && capability !== Capability.GENERAL) {
+    modelNames = config.capabilities["general"];
+    if (modelNames) {
+      console.log(
+        `[getModelConfig] Capability "${capability}" not found, falling back to 'general'`
+      );
+    }
+  }
+
+  // 4. Error if still no model found
   if (!modelNames) {
-    throw new Error(`No model mapped for capability: ${capability}`);
+    const availableCapabilities = Object.keys(config.capabilities).join(", ");
+    throw new Error(
+      `No model mapped for capability: ${capability}. Available capabilities: ${availableCapabilities}`
+    );
   }
 
   // Handle array of models (take first for now, could implement retry logic later)
   const modelName = Array.isArray(modelNames) ? modelNames[0] : modelNames;
 
-  // 3. Resolve model name to model config
+  // 5. Resolve model name to model config
   const modelConfig = config.models[modelName];
   if (!modelConfig) {
-    throw new Error(`Model definition not found for: ${modelName}`);
+    const availableModels = Object.keys(config.models).join(", ");
+    throw new Error(
+      `Model definition not found for: ${modelName}. Available models: ${availableModels}`
+    );
   }
 
   return {
