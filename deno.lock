@@ -17,10 +17,10 @@
     "jsr:@std/path@^1.1.1": "1.1.2",
     "jsr:@std/path@^1.1.2": "1.1.2",
     "jsr:@std/testing@^1.0.16": "1.0.16",
-    "npm:@ai-sdk/anthropic@^2.0.41": "2.0.50_zod@3.25.76",
-    "npm:@ai-sdk/anthropic@^2.0.49": "2.0.50_zod@3.25.76",
-    "npm:@ai-sdk/google-vertex@*": "3.0.81_zod@3.25.76",
-    "npm:@ai-sdk/google-vertex@^3.0.58": "3.0.81_zod@3.25.76",
+    "npm:@ai-sdk/anthropic@^2.0.41": "2.0.53_zod@3.25.76",
+    "npm:@ai-sdk/anthropic@^2.0.49": "2.0.53_zod@3.25.76",
+    "npm:@ai-sdk/google-vertex@^3.0.85": "3.0.85_zod@3.25.76",
+    "npm:@ai-sdk/google@^2.0.44": "2.0.44_zod@3.25.76",
     "npm:@ai-sdk/openai@^2.0.64": "2.0.74_zod@3.25.76",
     "npm:@cap.js/server@^4.0.3": "4.0.4",
     "npm:@cap.js/widget@~0.1.31": "0.1.31",
@@ -47,9 +47,8 @@
     "npm:@types/react@^19.1.13": "19.2.7",
     "npm:@typescript-eslint/utils@^8.46.3": "8.48.0_eslint@9.39.1_typescript@5.9.3",
     "npm:@uidotdev/usehooks@^2.4.1": "2.4.1_react@18.3.1_react-dom@18.3.1__react@18.3.1",
-    "npm:ai@*": "5.0.104_zod@3.25.76",
-    "npm:ai@^5.0.102": "5.0.104_zod@3.25.76",
-    "npm:ai@^5.0.89": "5.0.104_zod@3.25.76",
+    "npm:ai@^5.0.102": "5.0.106_zod@3.25.76",
+    "npm:ai@^5.0.106": "5.0.106_zod@3.25.76",
     "npm:arg@5": "5.0.2",
     "npm:bcrypt@6": "6.0.0",
     "npm:better-auth@1.3.34": "1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.2_kysely@0.28.8_nanostores@1.1.0",
@@ -159,16 +158,16 @@
     }
   },
   "npm": {
-    "@ai-sdk/anthropic@2.0.50_zod@3.25.76": {
-      "integrity": "sha512-21PaHfoLmouOXXNINTsZJsMw+wE5oLR2He/1kq/sKokTVKyq7ObGT1LDk6ahwxaz/GoaNaGankMh+EgVcdv2Cw==",
+    "@ai-sdk/anthropic@2.0.53_zod@3.25.76": {
+      "integrity": "sha512-ih7NV+OFSNWZCF+tYYD7ovvvM+gv7TRKQblpVohg2ipIwC9Y0TirzocJVREzZa/v9luxUwFbsPji++DUDWWxsg==",
       "dependencies": [
         "@ai-sdk/provider",
         "@ai-sdk/provider-utils",
         "zod@3.25.76"
       ]
     },
-    "@ai-sdk/gateway@2.0.17_zod@3.25.76": {
-      "integrity": "sha512-oVAG6q72KsjKlrYdLhWjRO7rcqAR8CjokAbYuyVZoCO4Uh2PH/VzZoxZav71w2ipwlXhHCNaInGYWNs889MMDA==",
+    "@ai-sdk/gateway@2.0.18_zod@3.25.76": {
+      "integrity": "sha512-sDQcW+6ck2m0pTIHW6BPHD7S125WD3qNkx/B8sEzJp/hurocmJ5Cni0ybExg6sQMGo+fr/GWOwpHF1cmCdg5rQ==",
       "dependencies": [
         "@ai-sdk/provider",
         "@ai-sdk/provider-utils",
@@ -176,14 +175,14 @@
         "zod@3.25.76"
       ]
     },
-    "@ai-sdk/google-vertex@3.0.81_zod@3.25.76": {
-      "integrity": "sha512-yrl5Ug0Mqwo9ya45oxczgy2RWgpEA/XQQCSFYP+3NZMQ4yA3Iim1vkOjVCsGaZZ8rjVk395abi1ZMZV0/6rqVA==",
+    "@ai-sdk/google-vertex@3.0.85_zod@3.25.76": {
+      "integrity": "sha512-FOoPNdkXp3QE9F93HKD11YdS+ONNijacOH80bNKZSAFNIcxSQ+0UOW46b9OxCV576SP2DAuU1FSD4z6hhhMkrg==",
       "dependencies": [
         "@ai-sdk/anthropic",
         "@ai-sdk/google",
         "@ai-sdk/provider",
         "@ai-sdk/provider-utils",
-        "google-auth-library@9.15.1",
+        "google-auth-library@10.5.0",
         "zod@3.25.76"
       ]
     },
@@ -2328,8 +2327,8 @@
     "agent-base@7.1.4": {
       "integrity": "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="
     },
-    "ai@5.0.104_zod@3.25.76": {
-      "integrity": "sha512-MZOkL9++nY5PfkpWKBR3Rv+Oygxpb9S16ctv8h91GvrSif7UnNEdPMVZe3bUyMd2djxf0AtBk/csBixP0WwWZQ==",
+    "ai@5.0.106_zod@3.25.76": {
+      "integrity": "sha512-M5obwavxSJJ3tGlAFqI6eltYNJB0D20X6gIBCFx/KVorb/X1fxVVfiZZpZb+Gslu4340droSOjT0aKQFCarNVg==",
       "dependencies": [
         "@ai-sdk/gateway",
         "@ai-sdk/provider",
@@ -5636,7 +5635,8 @@
           "jsr:@hono-rate-limiter/hono-rate-limiter@~0.4.2",
           "jsr:@hono/hono@^4.10.5",
           "npm:@ai-sdk/anthropic@^2.0.41",
-          "npm:@ai-sdk/google-vertex@^3.0.58",
+          "npm:@ai-sdk/google-vertex@^3.0.85",
+          "npm:@ai-sdk/google@^2.0.44",
           "npm:@ai-sdk/openai@^2.0.64",
           "npm:@graphql-codegen/schema-ast@5",
           "npm:@hono/zod-openapi@~0.18.4",
@@ -5645,7 +5645,7 @@
           "npm:@types/node@*",
           "npm:@types/react-dom@^18.3.1",
           "npm:@types/react@^18.3.12",
-          "npm:ai@^5.0.89",
+          "npm:ai@^5.0.106",
           "npm:bcrypt@6",
           "npm:better-auth@1.3.34",
           "npm:eslint@^9.39.1",
