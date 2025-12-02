@@ -23,8 +23,8 @@ export const authMiddleware = async (
     path.startsWith("/api/auth/") ||
     path === "/status" ||
     path === "/graphql" ||
-    path === "/mcp2" ||
-    path.startsWith("/mcp2/")
+    path === "/mcp" ||
+    path.startsWith("/mcp/")
   ) {
     return next();
   }

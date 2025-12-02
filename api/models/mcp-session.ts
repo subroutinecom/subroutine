@@ -87,3 +87,21 @@ export async function getSession(
     createdAt: result.created_at,
   };
 }
+
+export async function getSessionById(sessionId: string): Promise<McpSession | null> {
+  const result = await db
+    .selectFrom("mcp_session")
+    .selectAll()
+    .where("id", "=", sessionId)
+    .executeTakeFirst();
+
+  if (!result) {
+    return null;
+  }
+
+  return {
+    id: result.id,
+    organizationId: result.organization_id!,
+    createdAt: result.created_at,
+  };
+}

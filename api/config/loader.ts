@@ -28,7 +28,7 @@ export const loadConfig = async (path: string): Promise<Config> => {
   const config = result.data;
 
   if (!config.baseUrl) {
-    config.baseUrl = "http://localhost";
+    config.baseUrl = "http://localhost:3002";
   }
   if (!config.apiUrl && config.baseUrl) {
     config.apiUrl = config.baseUrl;

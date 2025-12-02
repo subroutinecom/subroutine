@@ -1,4 +1,4 @@
-export const Mcp2Session = ({ sessionId, baseUrl }: { sessionId: string; baseUrl?: string }) => {
+export const McpSession = ({ sessionId, baseUrl }: { sessionId: string; baseUrl?: string }) => {
   // Use provided baseUrl or empty string for SSR
   const origin = baseUrl || "";
 
@@ -7,7 +7,7 @@ export const Mcp2Session = ({ sessionId, baseUrl }: { sessionId: string; baseUrl
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white px-6 py-8 shadow sm:rounded-lg">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">MCP2 Session Active</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">MCP Session Active</h2>
             <p className="text-sm text-gray-600">
               Your session is ready for MCP client connections
             </p>
@@ -30,14 +30,14 @@ export const Mcp2Session = ({ sessionId, baseUrl }: { sessionId: string; baseUrl
               <div className="text-sm text-gray-700 space-y-2">
                 <p>Connect your MCP client to:</p>
                 <code className="block bg-white px-3 py-2 rounded border border-gray-300 font-mono text-xs break-all">
-                  {origin}/mcp2/{sessionId}
+                  {origin}/mcp/{sessionId}
                 </code>
               </div>
             </div>
           </div>
 
           <div className="space-y-3">
-            <form action="/api/auth/sign-out?callbackURL=/mcp2" method="POST">
+            <form action="/api/auth/sign-out?callbackURL=/mcp" method="POST">
               <button
                 type="submit"
                 className="w-full flex justify-center rounded-md bg-gray-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600"

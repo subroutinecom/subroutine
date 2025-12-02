@@ -14,12 +14,13 @@ import { generateCode } from "./agent/agent-code-generator.ts";
 import { getConfig } from "./config/loader.ts";
 import { initializeDatabase } from "./db/index.ts";
 import { buildContext, schema } from "./internal/schema.ts";
+import { createLegacyMcpServer } from "./mcp-legacy-server.ts";
 import { createMcpServer } from "./mcp-server.ts";
-import { createMcpServer2 } from "./mcp-server2.ts";
 import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
 import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
+import { getSessionById } from "./models/mcp-session.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 import { registerAuthenticatedTestEndpoints, registerTestEndpoints } from "./testEndpoints.ts";
@@ -1187,7 +1188,7 @@ const initialize = async () => {
     }
   );
 
-  app.post("/mcp", async (c) => {
+  app.post("/mcp-legacy", async (c) => {
     const auth = c.get("auth");
     if (!auth?.organizationId) {
       return c.json(
@@ -1233,7 +1234,7 @@ const initialize = async () => {
           }
         };
 
-        const server = createMcpServer(auth);
+        const server = createLegacyMcpServer(auth);
         await server.connect(transport);
         const req = c.req.raw;
         const res = new NodeResponseAdapter();
@@ -1297,7 +1298,7 @@ const initialize = async () => {
     }
   });
 
-  app.get("/mcp", async (c) => {
+  app.get("/mcp-legacy", async (c) => {
     const sessionId = c.req.header("mcp-session-id");
 
     if (!sessionId || !transports[sessionId]) {
@@ -1316,7 +1317,7 @@ const initialize = async () => {
     return res.toResponse();
   });
 
-  app.delete("/mcp", async (c) => {
+  app.delete("/mcp-legacy", async (c) => {
     const sessionId = c.req.header("mcp-session-id");
 
     if (!sessionId || !transports[sessionId]) {
@@ -1338,28 +1339,38 @@ const initialize = async () => {
     }
   });
 
-  // MCP v2 (unauthenticated) using path-based session IDs without SSE
-  const mcp2Transports: Record<string, StreamableHTTPServerTransport> = {};
-  const isValidMcp2SessionId = (sid: string): boolean => sid === "all" || sid.length === 36;
+  // MCP session-based endpoint using path-based session IDs
+  const mcpSessionTransports: Record<string, StreamableHTTPServerTransport> = {};
+  const isValidMcpSessionId = (sid: string): boolean => sid === "all" || sid.length === 36;
 
-  // Handle GET /mcp2 - check auth and redirect or show login
+  // Handle GET /mcp - check auth and redirect or show login
   // Note: This route is registered via registerUiRoutes() in ui/server.tsx
-  // But we need to handle the redirect logic here after auth check
 
-  // Handle GET /mcp2/:sessionId - check auth before allowing access
+  // Handle GET /mcp/:sessionId - check auth before allowing access
   // Note: The UI rendering is handled in ui/server.tsx
-  // But we don't need special handling here since the UI routes are registered first
 
-  app.post("/mcp2/:sessionId", async (c) => {
+  app.post("/mcp/:sessionId", async (c) => {
     const { sessionId } = c.req.param();
 
-    if (!isValidMcp2SessionId(sessionId)) {
+    if (!isValidMcpSessionId(sessionId)) {
       const payload = {
         jsonrpc: "2.0",
         error: { code: -32000 as const, message: "Bad Request: Invalid session ID" },
         id: null,
       };
-      console.log("MCP2 POST response (invalid sessionId)", JSON.stringify(payload));
+      console.log("MCP POST response (invalid sessionId)", JSON.stringify(payload));
+      return c.json(payload, 400);
+    }
+
+    // Look up the session to get the organization context
+    const mcpSession = await getSessionById(sessionId);
+    if (!mcpSession) {
+      const payload = {
+        jsonrpc: "2.0",
+        error: { code: -32000 as const, message: "Bad Request: Session not found" },
+        id: null,
+      };
+      console.log("MCP POST response (session not found)", JSON.stringify(payload));
       return c.json(payload, 400);
     }
 
@@ -1368,56 +1379,62 @@ const initialize = async () => {
       const body = await c.req.json();
       const initialize = isInitializeRequest(body);
 
-      if (!mcp2Transports[sessionId]) {
+      if (!mcpSessionTransports[sessionId]) {
         if (!initialize) {
           const payload = {
             jsonrpc: "2.0",
             error: { code: -32000 as const, message: "Bad Request: No valid session initialized" },
             id: null,
           };
-          console.log("MCP2 POST response (no session yet)", JSON.stringify(payload));
+          console.log("MCP POST response (no session yet)", JSON.stringify(payload));
           return c.json(payload, 400);
         }
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => sessionId,
           onsessioninitialized: (newSessionId) => {
-            mcp2Transports[newSessionId] = transport;
+            mcpSessionTransports[newSessionId] = transport;
           },
           enableJsonResponse: true,
         });
 
         transport.onclose = () => {
           const sid = transport.sessionId;
-          if (sid && mcp2Transports[sid]) {
-            delete mcp2Transports[sid];
+          if (sid && mcpSessionTransports[sid]) {
+            delete mcpSessionTransports[sid];
           }
         };
 
-        const server = createMcpServer2();
+        const server = createMcpServer({
+          organizationId: mcpSession.organizationId,
+          sessionId,
+        });
         await server.connect(transport);
       } else {
         if (initialize) {
           // Reset the existing session to allow re-initialization
-          delete mcp2Transports[sessionId];
+          delete mcpSessionTransports[sessionId];
           transport = new StreamableHTTPServerTransport({
             sessionIdGenerator: () => sessionId,
             onsessioninitialized: (newSessionId) => {
-              mcp2Transports[newSessionId] = transport;
+              mcpSessionTransports[newSessionId] = transport;
             },
             enableJsonResponse: true,
           });
 
           transport.onclose = () => {
             const sid = transport.sessionId;
-            if (sid && mcp2Transports[sid]) {
-              delete mcp2Transports[sid];
+            if (sid && mcpSessionTransports[sid]) {
+              delete mcpSessionTransports[sid];
             }
           };
 
-          const server = createMcpServer2();
+          const server = createMcpServer({
+            organizationId: mcpSession.organizationId,
+            sessionId,
+          });
           await server.connect(transport);
         } else {
-          transport = mcp2Transports[sessionId];
+          transport = mcpSessionTransports[sessionId];
         }
       }
 
@@ -1458,30 +1475,18 @@ const initialize = async () => {
         headers: res.getHeaders(),
         body: res.getBodyText(),
       };
-      console.log("MCP2 POST response", JSON.stringify(debugOut));
+      console.log("MCP POST response", JSON.stringify(debugOut));
       return res.toResponse();
     } catch (error) {
-      console.error("Error handling MCP2 request:", error);
+      console.error("Error handling MCP request:", error);
       const payload = {
         jsonrpc: "2.0",
         error: { code: -32603 as const, message: "Internal server error" },
         id: null,
       };
-      console.log("MCP2 POST response (500)", JSON.stringify(payload));
+      console.log("MCP POST response (500)", JSON.stringify(payload));
       return c.json(payload, 500);
     }
-  });
-
-  app.get("/mcp2/:sessionId", async (_c) => {
-    const text = "SSE is disabled for MCP2. Use POST for JSON-RPC.";
-    console.log("MCP2 GET response", JSON.stringify({ status: 405, body: text }));
-    return new Response(text, { status: 405 });
-  });
-
-  app.delete("/mcp2/:sessionId", async (_c) => {
-    const text = "SSE termination not supported on MCP2.";
-    console.log("MCP2 DELETE response", JSON.stringify({ status: 405, body: text }));
-    return new Response(text, { status: 405 });
   });
 
   app.doc("/openapi.json", {
@@ -1497,8 +1502,8 @@ const initialize = async () => {
 
   console.log(`Server running on port ${PORT}`);
   console.log(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
-  console.log(`MCP endpoint available at http://localhost:${PORT}/mcp`);
-  console.log(`MCP2 endpoint available at http://localhost:${PORT}/mcp2/{sessionId}`);
+  console.log(`MCP endpoint available at http://localhost:${PORT}/mcp/{sessionId}`);
+  console.log(`MCP legacy endpoint available at http://localhost:${PORT}/mcp-legacy`);
   console.log(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
 };
 

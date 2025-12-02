@@ -35,48 +35,48 @@ describe("UI React Rendering", { sanitizeOps: false, sanitizeResources: false },
     expect(html, "Should close html tag").toContain("</html>");
   });
 
-  it("renders the /mcp2 sign-in screen for unauthenticated users", async () => {
-    const { response, html } = await fetchPage("/mcp2");
+  it("renders the /mcp sign-in screen for unauthenticated users", async () => {
+    const { response, html } = await fetchPage("/mcp");
 
     expect(response.status, "Should return 200 OK").toBe(200);
     expect(html, "Should show product heading").toContain("subroutine");
     expect(html, "Should prompt for sign in").toContain("Sign in to continue");
     expect(html, "Should post back to email sign-in endpoint").toContain(
-      'action="/api/auth/sign-in/email?callbackURL=/mcp2"'
+      'action="/api/auth/sign-in/email?callbackURL=/mcp"'
     );
     expect(html, "Should render email input").toContain('name="email"');
     expect(html, "Should render password input").toContain('name="password"');
     expect(html, "Should render sign in button").toContain(">Sign In<");
-    expect(html, "Should include sign up toggle").toContain('href="/mcp2?mode=signup"');
+    expect(html, "Should include sign up toggle").toContain('href="/mcp?mode=signup"');
     expect(
       html.includes('id="name-hidden"'),
       "Sign-in mode should not render signup-only fields"
     ).toBe(false);
   });
 
-  it("renders the /mcp2 sign-up screen when mode=signup", async () => {
-    const { response, html } = await fetchPage("/mcp2?mode=signup");
+  it("renders the /mcp sign-up screen when mode=signup", async () => {
+    const { response, html } = await fetchPage("/mcp?mode=signup");
 
     expect(response.status, "Should return 200 OK").toBe(200);
     expect(html, "Should show sign-up heading").toContain("Create your account");
     expect(html, "Should post to email sign-up endpoint").toContain(
-      'action="/api/auth/sign-up/email?callbackURL=/mcp2"'
+      'action="/api/auth/sign-up/email?callbackURL=/mcp"'
     );
     expect(html, "Should include hidden name field for account creation").toContain(
       'id="name-hidden"'
     );
     expect(html, "Should render Create Account button").toContain(">Create Account<");
-    expect(html, "Should include sign-in toggle link").toContain('href="/mcp2"');
+    expect(html, "Should include sign-in toggle link").toContain('href="/mcp"');
   });
 
-  it("redirects /mcp2/:sessionId to /mcp2 when unauthenticated", async () => {
+  it("redirects /mcp/:sessionId to /mcp when unauthenticated", async () => {
     const sessionId = "test-session-id";
-    const { response } = await fetchPage(`/mcp2/${sessionId}`, {
+    const { response } = await fetchPage(`/mcp/${sessionId}`, {
       redirect: "manual",
     });
 
     expect(response.status, "Should return 302 Redirect").toBe(302);
-    expect(response.headers.get("location"), "Should redirect to /mcp2").toBe("/mcp2");
+    expect(response.headers.get("location"), "Should redirect to /mcp").toBe("/mcp");
   });
 
   it("returns 401 for unknown authenticated routes", async () => {

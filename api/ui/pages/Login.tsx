@@ -34,7 +34,7 @@ export const Login = ({ authProviders, authBaseUrl, isSignUp = false }: LoginPro
             <div className="space-y-3">
               {providers.github?.enabled && (
                 <a
-                  href={`${baseUrl}/api/auth/sign-in/social?provider=github&callbackURL=/mcp2`}
+                  href={`${baseUrl}/api/auth/sign-in/social?provider=github&callbackURL=/mcp`}
                   className="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-gray-600"
                 >
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
@@ -45,7 +45,7 @@ export const Login = ({ authProviders, authBaseUrl, isSignUp = false }: LoginPro
               )}
               {providers.google?.enabled && (
                 <a
-                  href={`${baseUrl}/api/auth/sign-in/social?provider=google&callbackURL=/mcp2`}
+                  href={`${baseUrl}/api/auth/sign-in/social?provider=google&callbackURL=/mcp`}
                   className="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-gray-600"
                 >
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -87,8 +87,8 @@ export const Login = ({ authProviders, authBaseUrl, isSignUp = false }: LoginPro
             <form
               action={
                 isSignUp
-                  ? "/api/auth/sign-up/email?callbackURL=/mcp2"
-                  : "/api/auth/sign-in/email?callbackURL=/mcp2"
+                  ? "/api/auth/sign-up/email?callbackURL=/mcp"
+                  : "/api/auth/sign-in/email?callbackURL=/mcp"
               }
               method="POST"
               className={showSocialLogins ? "mt-6 space-y-4" : "space-y-4"}
@@ -138,7 +138,7 @@ export const Login = ({ authProviders, authBaseUrl, isSignUp = false }: LoginPro
 
               <div className="text-center">
                 <a
-                  href={isSignUp ? "/mcp2" : "/mcp2?mode=signup"}
+                  href={isSignUp ? "/mcp" : "/mcp?mode=signup"}
                   className="text-sm font-medium text-gray-600 hover:text-gray-900 underline"
                 >
                   {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
