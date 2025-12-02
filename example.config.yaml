@@ -13,7 +13,8 @@ ai:
   # Examples:
   #   - claude-sonnet-4-5-20250929 (for Anthropic)
   #   - gpt-4 (for OpenAI)
-  #   - gemini-3-pro-preview (for Vertex AI Gemini 3 Pro)
+  #   - gemini-3-pro-preview (for Vertex AI Gemini 3)
+  #   - gemini-2.5-flash (for Vertex AI Gemini 2.5)
   model: gemini-3-pro-preview
 
 auth:
