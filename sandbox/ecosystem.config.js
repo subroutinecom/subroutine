@@ -6,22 +6,16 @@ module.exports = {
     {
       name: "sandbox",
 
-      ...(IS_BUILD
-        ? {
-            script: "/release/build",
-          }
-        : {
-            script: "deno",
-            args: "task dev",
-          }),
+      script: "deno",
+      args: "task dev",
       autorestart: true,
 
-      watch: ["*.ts", "*.js", "*.json"],
+      watch: IS_BUILD ? false : ["*.ts", "*.js", "*.json"],
 
-      ignore_watch: IS_BUILD ? false : ["node_modules", ".git"],
+      ignore_watch: IS_BUILD ? [] : ["node_modules", ".git"],
 
       env: {
-        NODE_ENV: "development",
+        NODE_ENV: IS_BUILD ? "production" : "development",
       },
     },
     ...(IS_BUILD
