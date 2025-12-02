@@ -2,6 +2,16 @@
 
 set -e
 
+ENV_FILE=".env"
+
+load_env_file() {
+  if [ -f "$ENV_FILE" ]; then
+    set -a
+    source "$ENV_FILE"
+    set +a
+  fi
+}
+
 TEST_FILE_ARGS=()
 
 build_test_args() {
@@ -81,6 +91,8 @@ await_mcp_test_server() {
 }
 
 do_run() {
+  load_env_file
+
   deno install
 
   echo "Starting PM2 processes (MCP test server)..."
@@ -95,6 +107,8 @@ do_run() {
 }
 
 do_test() {
+  load_env_file
+
   deno install
 
   echo "Starting PM2 processes (MCP test server)..."

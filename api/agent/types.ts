@@ -9,3 +9,5 @@ export type CodeGenerationResult = {
 
   usedIntegrationIds?: string[];
 };
+
+export type { TypeCoercerParams, TypeCoercerResult } from "./type-coercer";

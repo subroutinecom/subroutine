@@ -70,6 +70,7 @@ web_modules/
 .env
 .env.*
 !.env.example
+tests/.env
 
 # Config files
 config.yaml
