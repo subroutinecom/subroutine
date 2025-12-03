@@ -21,6 +21,7 @@ import { createGraphqlClient } from "~/lib/graphql-client";
 import {
   createApiClient,
   isIntegrationAuthRequiredError,
+  getErrorMessage,
   type ApiError,
   type ExecuteRequestResult,
   type AuthRequirement,
@@ -198,7 +199,7 @@ export default function PlaygroundPage() {
       } else {
         setExecutionState({
           phase: "error",
-          error: apiError.error?.message || "An unexpected error occurred",
+          error: getErrorMessage(err),
         });
       }
     }
@@ -252,7 +253,7 @@ export default function PlaygroundPage() {
         setExecutionState((prev) => ({
           ...prev,
           phase: "error",
-          error: apiError.error?.message || "An unexpected error occurred",
+          error: getErrorMessage(err),
         }));
       }
     } finally {
