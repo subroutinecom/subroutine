@@ -3,6 +3,7 @@ x-release-build: &release-build
     args:
       CI: true
       BUILD_SHA: ${BUILD_SHA:-}
+      VITE_API_URL: ${VITE_API_URL:-https://api.subroutine.com}
     target: prod
 
 services:

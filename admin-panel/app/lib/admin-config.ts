@@ -37,6 +37,11 @@ const buildCandidateUrls = (): string[] => {
   const candidates = new Set<string>();
   const origin = globalThis.location.origin;
 
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    candidates.add(`${apiUrl}/admin-config.json`);
+  }
+
   candidates.add("/admin-config.json");
   candidates.add(`${origin}/admin-config.json`);
 

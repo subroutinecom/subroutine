@@ -76,6 +76,8 @@ services:
       context: .
       dockerfile: ./admin-panel/Dockerfile
       target: dev
+    environment:
+      VITE_API_URL: http://localhost:3002
     ports:
       - "3001:80"
     volumes:

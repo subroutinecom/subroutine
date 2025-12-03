@@ -21,6 +21,8 @@ ARG CI
 ENV CI=${CI:-}
 ARG BUILD_SHA
 ENV BUILD_SHA=${BUILD_SHA:-}
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL:-}
 RUN ["./manage.sh", "--build"]
 
 FROM build AS dev
