@@ -18,6 +18,45 @@ export const registerUiRoutes = (app: Hono<any>) => {
     return c.html("<!DOCTYPE html>" + html);
   });
 
+  app.post("/api/auth/sign-in/social", async (c) => {
+    if (shouldForwardJsonAuth(c.req.raw)) {
+      return forwardAuthRequest(c.req.raw);
+    }
+
+    try {
+      const body = await c.req.parseBody();
+      const provider = body.provider as string;
+      const callbackURL = (body.callbackURL as string) || "/mcp";
+
+      const response = await auth.api.signInSocial({
+        body: { provider, callbackURL },
+        asResponse: true,
+      });
+
+      const data = await response.json();
+
+      if (data.url && data.redirect) {
+        const headers = new Headers();
+        response.headers.forEach((value, key) => {
+          if (key.toLowerCase() === "set-cookie") {
+            headers.append(key, value);
+          }
+        });
+        headers.set("Location", data.url);
+
+        return new Response(null, {
+          status: 302,
+          headers,
+        });
+      }
+
+      return c.redirect(`/mcp?error=${encodeURIComponent("Failed to start OAuth flow")}`);
+    } catch (error) {
+      console.error("Social sign-in error:", error);
+      return c.redirect("/mcp?error=An+unexpected+error+occurred");
+    }
+  });
+
   // Custom handler for email sign-in to support form redirects
   app.post("/api/auth/sign-in/email", async (c) => {
     if (shouldForwardJsonAuth(c.req.raw)) {
