@@ -14,7 +14,7 @@ export const auth = betterAuth({
   database: new Pool({
     connectionString: DATABASE_URL,
   }),
-  baseURL: Deno.env.get("BASE_URL") || "http://localhost:3002",
+  baseURL: config.baseUrl || "http://localhost:3002",
   secret: Deno.env.get("BETTER_AUTH_SECRET")!,
   trustedOrigins: config.auth.allowedOrigins,
   emailAndPassword: {
