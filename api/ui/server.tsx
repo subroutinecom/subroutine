@@ -310,7 +310,6 @@ export const registerUiRoutes = (app: Hono<any>) => {
   // PAT submission page
   app.get("/pat/:linkId", async (c) => {
     const { linkId } = c.req.param();
-    console.log(`[GET /pat/:linkId] Received request for linkId: ${linkId}`);
     const url = new URL(c.req.url);
     const success = url.searchParams.get("success") === "true";
     const errorParam = url.searchParams.get("error") || undefined;
@@ -318,7 +317,6 @@ export const registerUiRoutes = (app: Hono<any>) => {
     // If success=true, we need to get the link info without validating status
     // because the link is now marked as "used" after successful submission
     if (success) {
-      console.log(`[GET /pat/:linkId] Success redirect, fetching link info without validation`);
       const { getPatLinkWithIntegration } = await import("../models/pat-link.ts");
       const patLink = await getPatLinkWithIntegration(linkId);
 
@@ -339,12 +337,8 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
     const { validatePatLink } = await import("../models/pat-link.ts");
     const validation = await validatePatLink(linkId);
-    console.log(
-      `[GET /pat/:linkId] Validation result: valid=${validation.valid}, error=${validation.error || "none"}`
-    );
 
     if (!validation.valid || !validation.patLink) {
-      console.log(`[GET /pat/:linkId] Rendering invalid state`);
       const html = renderUi(`/pat/${linkId}`, {
         patLinkId: linkId,
         patInvalid: true,

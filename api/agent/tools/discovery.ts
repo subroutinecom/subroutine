@@ -34,13 +34,7 @@ If a matching integration exists here, USE IT. Do not check global integrations 
 Only proceed to getGlobalIntegrations if no suitable org-specific integration is found.`,
     inputSchema: z.object({}),
     execute: async () => {
-      console.log(
-        `[tool:getOrganizationIntegrations] Called for org: ${mcpContext.organizationId}, viewer: ${mcpContext.viewerId}`
-      );
       const integrations = await fetchIntegrationsWithStatus(mcpContext, "private");
-      console.log(
-        `[tool:getOrganizationIntegrations] Found ${integrations.length} org-specific MCP integrations: ${JSON.stringify(integrations.map((i) => ({ id: i.id, name: i.name })))}`
-      );
 
       if (integrations.length === 0) {
         return {
@@ -72,13 +66,7 @@ Use one of these if no organization-specific integration exists for your need.
 Only use manageMcpIntegration if neither org nor global integrations have what you need.`,
     inputSchema: z.object({}),
     execute: async () => {
-      console.log(
-        `[tool:getGlobalIntegrations] Called for org: ${mcpContext.organizationId}, viewer: ${mcpContext.viewerId}`
-      );
       const integrations = await fetchIntegrationsWithStatus(mcpContext, "global");
-      console.log(
-        `[tool:getGlobalIntegrations] Found ${integrations.length} global MCP integrations: ${JSON.stringify(integrations.map((i) => ({ id: i.id, name: i.name })))}`
-      );
 
       if (integrations.length === 0) {
         return {
