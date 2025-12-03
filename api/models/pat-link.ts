@@ -62,8 +62,7 @@ export const generatePatLinkUrl = async (
     .execute();
 
   const config = await getConfig();
-  const adminPanelUrl = config.adminPanelUrl || "http://localhost:3001";
-  const url = `${adminPanelUrl}/pat/${id}`;
+  const url = `${config.baseUrl}/pat/${id}`;
 
   return {
     url,
@@ -95,18 +94,27 @@ export const getPatLink = async (id: string): Promise<PatLink | null> => {
 export const getPatLinkWithIntegration = async (
   id: string
 ): Promise<PatLinkWithIntegration | null> => {
+  console.log(`[getPatLinkWithIntegration] Looking up PAT link: ${id}`);
   const patLink = await getPatLink(id);
 
   if (!patLink) {
+    console.log(`[getPatLinkWithIntegration] PAT link not found in database`);
     return null;
   }
 
+  console.log(
+    `[getPatLinkWithIntegration] Found PAT link, looking up integration: ${patLink.integrationId} in org: ${patLink.organizationId}`
+  );
   const integration = await getIntegration(patLink.integrationId, patLink.organizationId);
 
   if (!integration) {
+    console.log(
+      `[getPatLinkWithIntegration] Integration not found: ${patLink.integrationId} in org: ${patLink.organizationId}`
+    );
     return null;
   }
 
+  console.log(`[getPatLinkWithIntegration] Found integration: ${integration.name}`);
   const mcpConfig = integration.authConfig as McpAuthConfig;
   const metadata = mcpConfig.metadata || {};
 
@@ -129,17 +137,26 @@ export type ValidatePatLinkResult = {
 };
 
 export const validatePatLink = async (id: string): Promise<ValidatePatLinkResult> => {
+  console.log(`[validatePatLink] Validating PAT link: ${id}`);
+
   const patLink = await getPatLinkWithIntegration(id);
 
   if (!patLink) {
+    console.log(`[validatePatLink] PAT link not found or integration missing for id: ${id}`);
     return { valid: false, error: "Invalid or expired link" };
   }
 
+  console.log(
+    `[validatePatLink] Found PAT link: status=${patLink.status}, integrationId=${patLink.integrationId}, expiresAt=${patLink.expiresAt}`
+  );
+
   if (patLink.status === "used") {
+    console.log(`[validatePatLink] PAT link already used`);
     return { valid: false, error: "Invalid or expired link" };
   }
 
   if (patLink.status === "expired") {
+    console.log(`[validatePatLink] PAT link status is expired`);
     return { valid: false, error: "Invalid or expired link" };
   }
 
@@ -147,10 +164,14 @@ export const validatePatLink = async (id: string): Promise<ValidatePatLinkResult
   const expiresAt = new Date(patLink.expiresAt);
 
   if (now > expiresAt) {
+    console.log(
+      `[validatePatLink] PAT link expired: now=${now.toISOString()}, expiresAt=${expiresAt.toISOString()}`
+    );
     await markPatLinkExpired(id);
     return { valid: false, error: "Invalid or expired link" };
   }
 
+  console.log(`[validatePatLink] PAT link is valid`);
   return { valid: true, patLink };
 };
 

@@ -26,19 +26,23 @@ export const runWebSearchSubagent = async (
   query: string,
   model?: LanguageModel
 ): Promise<WebSearchResult> => {
+  console.log(`[web-search-subagent] Starting web search for: "${query}"`);
   const aiModel = model ?? (await createModel(Capability.WEB_SEARCH));
   if (!aiModel) {
+    console.log(`[web-search-subagent] Failed to create AI model`);
     return {
       success: false,
       error: "Failed to create AI model for web search",
     };
   }
+  console.log(`[web-search-subagent] Using model (created successfully)`);
 
   const tools: ToolSet = {
     google_search: vertexProvider.tools.googleSearch({}),
   } as ToolSet;
 
   try {
+    console.log(`[web-search-subagent] Calling generateText with google_search tool`);
     const result = await generateText({
       model: aiModel,
       system: WEB_SEARCH_SYSTEM_PROMPT,
@@ -46,11 +50,16 @@ export const runWebSearchSubagent = async (
       tools,
     });
 
+    console.log(`[web-search-subagent] Success, result length: ${result.text.length}`);
     return {
       success: true,
       results: result.text,
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : String(error);
+    console.log(`[web-search-subagent] Error: ${errorMessage}`);
+    console.log(`[web-search-subagent] Full error: ${errorStack}`);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Web search failed",

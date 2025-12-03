@@ -17,9 +17,7 @@ export const createListMcpToolsProvided = (
     description:
       "Discover the available tools from an MCP integration. Call this before writing code that uses MCP tools to understand what tools are available and their input schemas.",
     inputSchema: z.object({
-      integrationName: z
-        .string()
-        .describe("The name of the MCP integration to list tools from"),
+      integrationName: z.string().describe("The name of the MCP integration to list tools from"),
     }),
     execute: async (params: { integrationName: string }) => {
       console.log(`[tool:listMcpTools] Called for integration: "${params.integrationName}"`);
@@ -67,27 +65,40 @@ export const createListMcpToolsDiscovery = (
     }),
     execute: async (params: { integrationName: string; integrationId?: string }) => {
       console.log(
-        `[tool:listMcpTools:discovery] Called for integration: "${params.integrationName}" (id: ${params.integrationId ?? "not provided"})`
+        `[tool:listMcpTools:discovery] Called for integration: "${params.integrationName}" (id: ${params.integrationId ?? "not provided"}), orgId: ${mcpContext.organizationId}`
       );
 
       // If integrationId provided, use it directly; otherwise look up by name
       let integration;
       if (params.integrationId) {
-        integration = await getIntegrationOrGlobal(
-          params.integrationId,
-          mcpContext.organizationId
+        console.log(`[tool:listMcpTools:discovery] Looking up by ID: ${params.integrationId}`);
+        integration = await getIntegrationOrGlobal(params.integrationId, mcpContext.organizationId);
+        console.log(
+          `[tool:listMcpTools:discovery] getIntegrationOrGlobal result: ${integration ? `found "${integration.name}" (id: ${integration.id})` : "not found"}`
         );
       } else {
         // Try org-specific first, then fall back to searching all available
-        integration = await getIntegrationByName(
-          params.integrationName,
-          mcpContext.organizationId
+        console.log(
+          `[tool:listMcpTools:discovery] Looking up by name in org: "${params.integrationName}"`
+        );
+        integration = await getIntegrationByName(params.integrationName, mcpContext.organizationId);
+        console.log(
+          `[tool:listMcpTools:discovery] getIntegrationByName result: ${integration ? `found "${integration.name}" (id: ${integration.id})` : "not found"}`
         );
         if (!integration) {
           // Check global integrations by name
+          console.log(
+            `[tool:listMcpTools:discovery] Checking all available integrations for org: ${mcpContext.organizationId}`
+          );
           const allAvailable = await getAvailableIntegrations(mcpContext.organizationId);
+          console.log(
+            `[tool:listMcpTools:discovery] Available integrations: ${JSON.stringify(allAvailable.map((i) => ({ id: i.id, name: i.name, organizationId: i.organizationId })))}`
+          );
           integration = allAvailable.find(
             (i) => i.name.toLowerCase() === params.integrationName.toLowerCase()
+          );
+          console.log(
+            `[tool:listMcpTools:discovery] Name match result: ${integration ? `found "${integration.name}" (id: ${integration.id})` : "not found"}`
           );
         }
       }
@@ -95,6 +106,9 @@ export const createListMcpToolsDiscovery = (
       if (integration) {
         mcpContext.integrationNameToId.set(integration.name, integration.id);
       } else {
+        console.log(
+          `[tool:listMcpTools:discovery] ERROR: Integration "${params.integrationName}" not found after all lookups`
+        );
         return {
           success: false,
           error: `Integration "${params.integrationName}" not found. Call getOrganizationIntegrations or getGlobalIntegrations first to see available integrations.`,
@@ -112,9 +126,7 @@ export const createListMcpToolsDiscovery = (
       // Track successful integration usage
       if (result.success) {
         usedIntegrationIds.add(integration.id);
-        console.log(
-          `[tool:listMcpTools:discovery] Tracked integration ID: ${integration.id}`
-        );
+        console.log(`[tool:listMcpTools:discovery] Tracked integration ID: ${integration.id}`);
       }
       return result;
     },

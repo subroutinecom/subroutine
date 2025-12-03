@@ -76,6 +76,9 @@ export const getProvider = async (
 // google-search tool or alike.
 export const getWebSearchTools = async (): Promise<ToolSet> => {
   const config = await getModelConfig(Capability.WEB_SEARCH);
+  console.log(
+    `[getWebSearchTools] Using provider "${config.provider}" with model "${config.model}" for web search`
+  );
 
   switch (config.provider) {
     case "anthropic":
@@ -85,6 +88,7 @@ export const getWebSearchTools = async (): Promise<ToolSet> => {
       // See: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude/web-search
       // Type assertion needed due to AI SDK TypeScript issue with provider-defined tools
       // See: https://github.com/vercel/ai/issues/7369
+      console.log(`[getWebSearchTools] Returning Anthropic webSearch tool`);
       return {
         web_search: anthropicProvider.tools.webSearch_20250305({
           maxUses: 5,
@@ -92,12 +96,14 @@ export const getWebSearchTools = async (): Promise<ToolSet> => {
       } as ToolSet;
 
     case "vertex-gemini":
+      console.log(`[getWebSearchTools] Returning Vertex Gemini web search subagent tool`);
       return {
         web_search: createWebSearchTool(),
       } as ToolSet;
 
     case "openai":
       // TODO(greg) Didn't test with OpenAI yet.
+      console.log(`[getWebSearchTools] OpenAI - no web search tools available`);
       return {};
 
     default: {

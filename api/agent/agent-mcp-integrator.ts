@@ -203,7 +203,13 @@ const buildTools = (params: McpIntegratorParams) => {
         viewerScoped: boolean;
         authHeaderName?: string;
       }) => {
+        console.log(
+          `[mcp-integrator:createDynamicIntegration] Creating integration: name="${name}", org="${params.organizationId}", serverUrl="${serverUrl}", transport="${transport}", authType="${authType}"`
+        );
         const existing = await getIntegrationByName(name, params.organizationId);
+        console.log(
+          `[mcp-integrator:createDynamicIntegration] Existing check: ${existing ? `found id=${existing.id}` : "not found"}`
+        );
         if (existing) {
           return {
             success: false,
@@ -230,11 +236,17 @@ const buildTools = (params: McpIntegratorParams) => {
         };
 
         try {
+          console.log(
+            `[mcp-integrator:createDynamicIntegration] Calling createDynamicIntegration with authConfig: ${JSON.stringify(authConfig)}`
+          );
           const integration = await createDynamicIntegration({
             organizationId: params.organizationId,
             name,
             authConfig,
           });
+          console.log(
+            `[mcp-integrator:createDynamicIntegration] SUCCESS: Created integration id="${integration.id}", name="${integration.name}"`
+          );
 
           return {
             success: true,
@@ -242,6 +254,9 @@ const buildTools = (params: McpIntegratorParams) => {
             integrationName: integration.name,
           };
         } catch (error) {
+          console.log(
+            `[mcp-integrator:createDynamicIntegration] ERROR: ${error instanceof Error ? error.message : "Unknown error"}`
+          );
           return {
             success: false,
             error: error instanceof Error ? error.message : "Failed to create integration",
@@ -358,15 +373,21 @@ const buildTools = (params: McpIntegratorParams) => {
 export const runMcpIntegrator = async (
   params: McpIntegratorParams
 ): Promise<McpIntegratorResult> => {
+  console.log(`[mcp-integrator:runMcpIntegrator] Starting, creating model...`);
   const model = await createModel(Capability.GENERAL);
   if (!model) {
+    console.log(`[mcp-integrator:runMcpIntegrator] Failed to create model`);
     return {
       success: false,
       error: "Failed to create AI model for MCP Integrator",
     };
   }
+  console.log(`[mcp-integrator:runMcpIntegrator] Model created, getting web search tools...`);
 
   const webSearchTools = await getWebSearchTools();
+  console.log(
+    `[mcp-integrator:runMcpIntegrator] Web search tools: ${Object.keys(webSearchTools).join(", ") || "(none)"}`
+  );
 
   return await runMcpIntegratorWithModel(model, params, webSearchTools);
 };
@@ -376,6 +397,19 @@ export const runMcpIntegratorWithModel = async (
   params: McpIntegratorParams,
   webSearchTools: Record<string, unknown> = {}
 ): Promise<McpIntegratorResult> => {
+  // Log model info - LanguageModel might have different properties depending on provider
+  const modelInfo = JSON.stringify({
+    modelId: (model as { modelId?: string }).modelId,
+    provider: (model as { provider?: string }).provider,
+    specificationVersion: (model as { specificationVersion?: string }).specificationVersion,
+  });
+  console.log(`[mcp-integrator] Model info: ${modelInfo}`);
+  console.log(
+    `[mcp-integrator] Starting with params: org="${params.organizationId}", viewer="${params.viewerId}", need="${params.need}", existingId="${params.existingIntegrationId ?? "none"}"`
+  );
+  console.log(
+    `[mcp-integrator] Web search tools provided: ${Object.keys(webSearchTools).join(", ") || "(none)"}`
+  );
   const { tools, getCapturedResult } = buildTools(params);
 
   const allTools = {
@@ -394,7 +428,11 @@ Investigate and fix it, or find a better alternative server.`;
 Search for available servers, pick the best one with the simplest auth, test it, and create the integration.`;
   }
 
+  console.log(`[mcp-integrator] User prompt: ${userPrompt}`);
+  console.log(`[mcp-integrator] Available tools: ${Object.keys(allTools).join(", ")}`);
+
   try {
+    console.log(`[mcp-integrator] Calling generateText...`);
     await generateText({
       model,
       system: MCP_INTEGRATOR_SYSTEM_PROMPT,
@@ -402,17 +440,23 @@ Search for available servers, pick the best one with the simplest auth, test it,
       tools: allTools as Parameters<typeof generateText>[0]["tools"],
       stopWhen: () => getCapturedResult() !== null,
     });
+    console.log(`[mcp-integrator] generateText completed`);
 
     const capturedResult = getCapturedResult();
+    console.log(`[mcp-integrator] Captured result: ${JSON.stringify(capturedResult)}`);
     if (capturedResult) {
       return capturedResult;
     }
 
+    console.log(`[mcp-integrator] No captured result - agent did not call complete`);
     return {
       success: false,
       error: "MCP Integrator did not complete the setup process",
     };
   } catch (error) {
+    console.log(
+      `[mcp-integrator] Error: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error in MCP Integrator",

@@ -291,4 +291,110 @@ export const registerUiRoutes = (app: Hono<any>) => {
     console.log("GET /mcp/:sessionId - Not authenticated, redirecting to /mcp");
     return c.redirect("/mcp", 302);
   });
+
+  // OAuth result page
+  app.get("/oauth/result", (c) => {
+    const url = new URL(c.req.url);
+    const success = url.searchParams.get("success") === "true";
+    const error = url.searchParams.get("error") || undefined;
+    const provider = url.searchParams.get("provider") || undefined;
+
+    const html = renderUi("/oauth/result", {
+      oauthSuccess: success,
+      oauthError: error,
+      oauthProvider: provider,
+    });
+    return c.html("<!DOCTYPE html>" + html);
+  });
+
+  // PAT submission page
+  app.get("/pat/:linkId", async (c) => {
+    const { linkId } = c.req.param();
+    console.log(`[GET /pat/:linkId] Received request for linkId: ${linkId}`);
+    const url = new URL(c.req.url);
+    const success = url.searchParams.get("success") === "true";
+    const errorParam = url.searchParams.get("error") || undefined;
+
+    // If success=true, we need to get the link info without validating status
+    // because the link is now marked as "used" after successful submission
+    if (success) {
+      console.log(`[GET /pat/:linkId] Success redirect, fetching link info without validation`);
+      const { getPatLinkWithIntegration } = await import("../models/pat-link.ts");
+      const patLink = await getPatLinkWithIntegration(linkId);
+
+      if (patLink) {
+        const html = renderUi(`/pat/${linkId}`, {
+          patLinkId: linkId,
+          patLinkInfo: {
+            id: patLink.id,
+            integration: patLink.integration,
+            expiresAt: patLink.expiresAt,
+          },
+          patSuccess: true,
+        });
+        return c.html("<!DOCTYPE html>" + html);
+      }
+      // If link doesn't exist at all, fall through to invalid
+    }
+
+    const { validatePatLink } = await import("../models/pat-link.ts");
+    const validation = await validatePatLink(linkId);
+    console.log(
+      `[GET /pat/:linkId] Validation result: valid=${validation.valid}, error=${validation.error || "none"}`
+    );
+
+    if (!validation.valid || !validation.patLink) {
+      console.log(`[GET /pat/:linkId] Rendering invalid state`);
+      const html = renderUi(`/pat/${linkId}`, {
+        patLinkId: linkId,
+        patInvalid: true,
+        patError: validation.error,
+      });
+      return c.html("<!DOCTYPE html>" + html);
+    }
+
+    const html = renderUi(`/pat/${linkId}`, {
+      patLinkId: linkId,
+      patLinkInfo: {
+        id: validation.patLink.id,
+        integration: validation.patLink.integration,
+        expiresAt: validation.patLink.expiresAt,
+      },
+      patSuccess: false,
+      patError: errorParam,
+    });
+    return c.html("<!DOCTYPE html>" + html);
+  });
+
+  // PAT submission form handler
+  app.post("/pat/:linkId/submit", async (c) => {
+    const { linkId } = c.req.param();
+
+    try {
+      const body = await c.req.parseBody();
+      const pat = body.pat as string;
+
+      if (!pat || pat.length < 8) {
+        return c.redirect(
+          `/pat/${linkId}?error=${encodeURIComponent("Token must be at least 8 characters")}`
+        );
+      }
+
+      const { submitPatLink } = await import("../models/pat-link.ts");
+      const result = await submitPatLink(linkId, pat);
+
+      if (result.success) {
+        return c.redirect(`/pat/${linkId}?success=true`);
+      } else {
+        return c.redirect(
+          `/pat/${linkId}?error=${encodeURIComponent(result.error || "Failed to save token")}`
+        );
+      }
+    } catch (error) {
+      console.error("PAT submission error:", error);
+      return c.redirect(
+        `/pat/${linkId}?error=${encodeURIComponent("An unexpected error occurred")}`
+      );
+    }
+  });
 };

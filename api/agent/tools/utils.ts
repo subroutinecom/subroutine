@@ -1,9 +1,6 @@
 import type { McpContext } from "../utils/types";
 import type { AuthRequirement } from "../../models/errors";
-import {
-  getIntegrationOrGlobal,
-  type McpAuthConfig,
-} from "../../models/integration";
+import { getIntegrationOrGlobal, type McpAuthConfig } from "../../models/integration";
 import { getConnectedAccountByViewer } from "../../models/connected-account";
 import { listMcpTools as listMcpToolsUtil } from "../../utils/mcp-client";
 import { generateAuthorizationUrl } from "../../services/oauth";
