@@ -82,10 +82,58 @@ export interface ApiError {
   subroutineUri?: string;
 }
 
+/**
+ * Helper to extract a useful error message from various error types
+ */
+export const getErrorMessage = (err: unknown): string => {
+  // Standard ApiError format from our server
+  if (
+    err &&
+    typeof err === "object" &&
+    "error" in err &&
+    typeof (err as ApiError).error?.message === "string"
+  ) {
+    return (err as ApiError).error.message;
+  }
+
+  // Standard Error instance
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  // String error
+  if (typeof err === "string") {
+    return err;
+  }
+
+  // Unknown error type
+  return "An unexpected error occurred";
+};
+
 export const isIntegrationAuthRequiredError = (
   error: ApiError
 ): error is { error: IntegrationAuthRequiredError } => {
   return error.error?.code === "INTEGRATION_AUTH_REQUIRED";
+};
+
+/**
+ * Helper to safely parse JSON response and handle non-JSON responses gracefully
+ */
+const parseJsonResponse = async (response: Response): Promise<unknown> => {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Response is not JSON - this can happen with proxy timeouts, server crashes, etc.
+    // Create an ApiError-shaped object with the raw response text for debugging
+    const statusText = response.status ? `${response.status} ${response.statusText}` : "Unknown";
+    throw {
+      error: {
+        code: "PARSE_ERROR",
+        message: `Server returned non-JSON response (${statusText}): ${text.substring(0, 200)}${text.length > 200 ? "..." : ""}`,
+      },
+    } as ApiError;
+  }
 };
 
 export const createApiClient = (config: AdminClientConfig) => {
@@ -104,7 +152,7 @@ export const createApiClient = (config: AdminClientConfig) => {
       body: JSON.stringify({ request, viewerId, integrations }),
     });
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
 
     if (!response.ok) {
       throw data as ApiError;
@@ -127,7 +175,7 @@ export const createApiClient = (config: AdminClientConfig) => {
       body: JSON.stringify({ request, viewerId, integrations, timeoutMs }),
     });
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
 
     if (!response.ok) {
       throw data as ApiError;
@@ -150,7 +198,7 @@ export const createApiClient = (config: AdminClientConfig) => {
       body: JSON.stringify({ viewerId, inputs, timeoutMs }),
     });
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
 
     if (!response.ok) {
       throw data as ApiError;
@@ -167,7 +215,7 @@ export const createApiClient = (config: AdminClientConfig) => {
       },
     });
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
 
     if (!response.ok) {
       throw data as ApiError;
@@ -184,7 +232,7 @@ export const createApiClient = (config: AdminClientConfig) => {
       },
     });
 
-    const data = await response.json();
+    const data = await parseJsonResponse(response);
 
     if (!response.ok) {
       throw data as ApiError;

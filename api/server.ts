@@ -49,6 +49,42 @@ const initialize = async () => {
     },
   });
 
+  // Global error handler to ensure all uncaught errors return JSON
+  app.onError((err, c) => {
+    console.error("Unhandled error:", err);
+
+    // Handle IntegrationAuthRequiredError specially
+    if (err instanceof IntegrationAuthRequiredError) {
+      return c.json(
+        {
+          error: {
+            code: "INTEGRATION_AUTH_REQUIRED",
+            message: err.message,
+            integrationId: err.integrationId,
+            provider: err.provider,
+            authorizationUrl: err.authorizationUrl,
+            state: err.state,
+            viewerId: err.viewerId,
+            requirements: err.requirements,
+          },
+        },
+        403
+      );
+    }
+
+    // Return all other errors as JSON with error details
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return c.json(
+      {
+        error: {
+          code: "INTERNAL_ERROR",
+          message,
+        },
+      },
+      500
+    );
+  });
+
   const PORT = process.env.PORT ? Number(process.env.PORT) : 80;
 
   await initializeDatabase();
