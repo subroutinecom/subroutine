@@ -70,10 +70,7 @@ Returns a summary of relevant search results.`,
     query: z.string().describe("The search query to find information about"),
   }),
   execute: async ({ query }: { query: string }): Promise<WebSearchResult> => {
-    console.log(`[tool:web_search] Searching for: "${query}"`);
-    const result = await runWebSearchSubagent(query);
-    console.log(`[tool:web_search] Result: success=${result.success}`);
-    return result;
+    return await runWebSearchSubagent(query);
   },
 });
 

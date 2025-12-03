@@ -149,6 +149,6 @@ export const determineUsedIntegrations = (
   const finalUsedIds =
     actuallyUsedIds.size > 0 ? Array.from(actuallyUsedIds) : Array.from(usedIntegrationIds);
   console.log(`[generateCode] Final used integration IDs: ${finalUsedIds.join(", ") || "none"}`);
-  
+
   return finalUsedIds;
 };

@@ -62,8 +62,7 @@ export const generatePatLinkUrl = async (
     .execute();
 
   const config = await getConfig();
-  const adminPanelUrl = config.adminPanelUrl || "http://localhost:3001";
-  const url = `${adminPanelUrl}/pat/${id}`;
+  const url = `${config.baseUrl}/pat/${id}`;
 
   return {
     url,

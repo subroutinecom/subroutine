@@ -11,13 +11,8 @@ const fetchIntegrationsWithStatus = async (
     mcpContext.viewerId,
     mcpContext.organizationId
   );
-  const integrations = await getAvailableIntegrations(
-    mcpContext.organizationId,
-    visibilityFilter
-  );
-  const mcpIntegrations = integrations.filter(
-    (i) => i.enabled && i.authConfig.type === "mcp"
-  );
+  const integrations = await getAvailableIntegrations(mcpContext.organizationId, visibilityFilter);
+  const mcpIntegrations = integrations.filter((i) => i.enabled && i.authConfig.type === "mcp");
 
   return mcpIntegrations.map((i) => ({
     id: i.id,
@@ -39,11 +34,7 @@ If a matching integration exists here, USE IT. Do not check global integrations 
 Only proceed to getGlobalIntegrations if no suitable org-specific integration is found.`,
     inputSchema: z.object({}),
     execute: async () => {
-      console.log(`[tool:getOrganizationIntegrations] Called`);
       const integrations = await fetchIntegrationsWithStatus(mcpContext, "private");
-      console.log(
-        `[tool:getOrganizationIntegrations] Found ${integrations.length} org-specific MCP integrations`
-      );
 
       if (integrations.length === 0) {
         return {
@@ -75,11 +66,7 @@ Use one of these if no organization-specific integration exists for your need.
 Only use manageMcpIntegration if neither org nor global integrations have what you need.`,
     inputSchema: z.object({}),
     execute: async () => {
-      console.log(`[tool:getGlobalIntegrations] Called`);
       const integrations = await fetchIntegrationsWithStatus(mcpContext, "global");
-      console.log(
-        `[tool:getGlobalIntegrations] Found ${integrations.length} global MCP integrations`
-      );
 
       if (integrations.length === 0) {
         return {

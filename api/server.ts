@@ -171,15 +171,13 @@ const initialize = async () => {
       const error = c.req.query("error");
       const errorDescription = c.req.query("error_description");
 
-      const adminPanelUrl = config.adminPanelUrl || "http://localhost:3001";
-
       if (error) {
         const message = errorDescription || error;
         const params = new URLSearchParams({
           success: "false",
           error: message,
         });
-        return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+        return c.redirect(`/oauth/result?${params.toString()}`);
       }
 
       if (!code || !state) {
@@ -187,7 +185,7 @@ const initialize = async () => {
           success: "false",
           error: "Missing required parameters",
         });
-        return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+        return c.redirect(`/oauth/result?${params.toString()}`);
       }
 
       const { handleOAuthCallback } = await import("./services/oauth.ts");
@@ -200,22 +198,21 @@ const initialize = async () => {
           integrationId: result.integrationId || "",
           connectedAccountId: result.connectedAccountId || "",
         });
-        return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+        return c.redirect(`/oauth/result?${params.toString()}`);
       } else {
         const params = new URLSearchParams({
           success: "false",
           error: result.error || "Unknown error",
         });
-        return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+        return c.redirect(`/oauth/result?${params.toString()}`);
       }
     } catch (error) {
       console.error("OAuth callback error:", error);
-      const adminPanelUrl = config.adminPanelUrl || "http://localhost:3001";
       const params = new URLSearchParams({
         success: "false",
         error: "An unexpected error occurred",
       });
-      return c.redirect(`${adminPanelUrl}/oauth/result?${params.toString()}`);
+      return c.redirect(`/oauth/result?${params.toString()}`);
     }
   });
 
