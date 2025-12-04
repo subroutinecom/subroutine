@@ -8,6 +8,7 @@
     "@pothos/core": "npm:@pothos/core@^4.10.0",
     "@subroutine/integration-types": "../packages/integration-types/mod.ts",
     "@subroutinecom/config": "../packages/config/mod.ts",
+    "globals": "npm:globals@^16.5.0",
     "googleapis": "npm:googleapis@^134.0.0",
     "@ai-sdk/anthropic": "npm:@ai-sdk/anthropic@^2.0.41",
     "@ai-sdk/google-vertex": "npm:@ai-sdk/google-vertex@^3.0.85",

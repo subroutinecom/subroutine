@@ -16,6 +16,8 @@ import {
 import type { CodeGenerationResult, McpContext, SubroutineCapture } from "./utils/types.ts";
 const logger = getLogger("api/agent/agent-code-generator.ts");
 
+const MAX_ITERATIONS = 5;
+
 type GenerateCodeOptions = {
   needsImmediateInputs?: boolean;
   integrations?: string[];
@@ -56,6 +58,7 @@ export const generateCode = async (
     logger.debug(`Available tools: ${Object.keys(tools).join(", ")}`);
 
     // 2. Run Agent
+    let iters = 0;
     const result = streamText({
       model,
       system: SYSTEM_PROMPT({
@@ -67,7 +70,8 @@ export const generateCode = async (
       }),
       tools: tools as Parameters<typeof streamText>[0]["tools"],
       stopWhen: () => {
-        return capturedResult !== null;
+        iters++;
+        return capturedResult !== null || iters >= MAX_ITERATIONS;
       },
     });
 

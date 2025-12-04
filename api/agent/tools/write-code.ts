@@ -62,6 +62,7 @@ export const createWriteCodeTool = (
           : undefined;
 
       const validationContext = await buildValidationContext(options);
+      logger.info(`Validating code with context: ${JSON.stringify(validationContext)}`);
       const validation = await validateCode(code, validationContext);
 
       if (!validation.valid) {
