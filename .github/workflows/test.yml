@@ -50,7 +50,3 @@ jobs:
             echo "=========================================="
             docker compose -f docker-compose.yml -f docker-compose.ci.yml logs "$service" || echo "Failed to get logs for $service"
           done
-
-      - name: Cleanup
-        if: always()
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
