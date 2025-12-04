@@ -34,6 +34,7 @@ jobs:
       IMAGE_TAG: ${{ github.event.inputs.tag != '' && github.event.inputs.tag || github.sha }}
       GHCR_IMAGE_PREFIX: ghcr.io/${{ github.repository }}
       BUILD_SHA: ${{ github.sha }}
+      SHORT_IMAGE_TAG: ${{ github.sha.substr(0, 7) }}
       CI: true
     steps:
       - name: Checkout repository
@@ -75,6 +76,18 @@ jobs:
 
       - name: Push release images via docker compose
         run: docker compose -f docker-compose.yml -f docker-compose.prod.yml push $SERVICES
+
+      - name: Tag images with short SHA
+        run: |
+          for image in $SERVICES; do
+            docker tag "${GHCR_IMAGE_PREFIX}-${image}:${IMAGE_TAG}" "${GHCR_IMAGE_PREFIX}-${image}:${SHORT_IMAGE_TAG}"
+          done
+
+      - name: Push short SHA tags
+        run: |
+          for image in $SERVICES; do
+            docker push "${GHCR_IMAGE_PREFIX}-${image}:${SHORT_IMAGE_TAG}"
+          done
 
       - name: Tag images as latest
         run: |
