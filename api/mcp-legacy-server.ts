@@ -5,7 +5,7 @@ import { generateSubroutine, getSubroutine, listSubroutines } from "./models/sub
 import type { AuthContext } from "./middlewares/auth.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
 import { getLogger } from "./utils/logger.ts";
-const logger = getLogger("mcp-legacy-server");
+const logger = getLogger("api/mcp-legacy-server.ts");
 
 
 const requireOrganizationId = (auth: AuthContext): string => {

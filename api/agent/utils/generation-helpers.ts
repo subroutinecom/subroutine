@@ -1,4 +1,5 @@
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../../models/errors.ts";
+import { getLogger } from "../../utils/logger.ts";
 import type { McpIntegrationInfo } from "../prompts/index.ts";
 import {
   createGetGlobalIntegrations,
@@ -11,9 +12,7 @@ import {
 import { createManageMcpIntegration } from "../tools/manage-integration.ts";
 import { createWriteCodeTool } from "../tools/write-code.ts";
 import type { McpContext, SubroutineCapture } from "./types.ts";
-import { getLogger } from "../../utils/logger.ts";
-const logger = getLogger("agent.utils.generation-helpers");
-
+const logger = getLogger("api/agent/utils/generation-helpers.ts", "warn");
 
 export type ToolCreationOptions = {
   mcpContext?: McpContext;
@@ -46,7 +45,7 @@ export const createAgentTools = (
         usedIntegrationIds
       );
     } else {
-      logger.info(`[generateCode] Discovery mode enabled - adding discovery tools`);
+      logger.debug(`Discovery mode enabled - adding discovery tools`);
       tools.getOrganizationIntegrations = createGetOrganizationIntegrations(mcpContext);
       tools.getGlobalIntegrations = createGetGlobalIntegrations(mcpContext);
       tools.listMcpTools = createListMcpToolsDiscovery(
@@ -62,26 +61,26 @@ export const createAgentTools = (
 };
 
 export const logGenerationSteps = (steps: any[]) => {
-  logger.info(`[generateCode] Completed in ${steps.length} step(s)`);
+  logger.info(`Completed in ${steps.length} step(s)`);
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    logger.info(`[generateCode] Step ${i + 1}:`);
+    logger.debug(`Step ${i + 1}:`);
     if (step.toolCalls && step.toolCalls.length > 0) {
       for (const tc of step.toolCalls) {
         const args = "args" in tc ? tc.args : {};
-        logger.info(`  - Tool call: ${tc.toolName}`);
-        logger.info(`    Args: ${JSON.stringify(args, null, 2)}`);
+        logger.debug(`  - Tool call: ${tc.toolName}`);
+        logger.debug(`    Args: ${JSON.stringify(args, null, 2)}`);
       }
     }
     if (step.toolResults && step.toolResults.length > 0) {
       for (const tr of step.toolResults) {
-        logger.info(`  - Tool result: ${tr.toolName}`);
+        logger.debug(`  - Tool result: ${tr.toolName}`);
         const resultData = "result" in tr ? tr.result : tr;
-        logger.info(`    Result: ${JSON.stringify(resultData, null, 2)}`);
+        logger.debug(`    Result: ${JSON.stringify(resultData, null, 2)}`);
       }
     }
     if (step.text) {
-      logger.info(`  - Text response: "${step.text}"`);
+      logger.debug(`  - Text response: "${step.text}"`);
     }
   }
 };
@@ -94,7 +93,7 @@ export const checkAuthRequirements = (
   // If no code generated, strictly enforce any captured requirements
   if (capturedResult === null) {
     if (capturedAuthRequirements.length > 0) {
-      logger.info(
+      logger.warn(
         `[generateCode] No code generated and auth required. Throwing auth error for: ${capturedAuthRequirements.map((r) => r.integrationName).join(", ")}`
       );
       throw new IntegrationAuthRequiredError({
@@ -112,14 +111,14 @@ export const checkAuthRequirements = (
       const usesIntegration =
         code.includes(`getMcpClient("${req.integrationName}")`) ||
         code.includes(`getMcpClient('${req.integrationName}')`);
-      logger.info(
+      logger.debug(
         `[generateCode] Auth requirement for "${req.integrationName}" - used in code: ${usesIntegration}`
       );
       return usesIntegration;
     });
 
     if (relevantAuthRequirements.length > 0) {
-      logger.info(
+      logger.warn(
         `[generateCode] Throwing auth error for integrations used in code: ${relevantAuthRequirements.map((r) => r.integrationName).join(", ")}`
       );
       throw new IntegrationAuthRequiredError({
@@ -127,7 +126,7 @@ export const checkAuthRequirements = (
         requirements: relevantAuthRequirements,
       });
     } else {
-      logger.info(
+      logger.debug(
         `[generateCode] Auth requirements captured but not used in code, ignoring: ${capturedAuthRequirements.map((r) => r.integrationName).join(", ")}`
       );
     }
@@ -139,7 +138,7 @@ export const determineUsedIntegrations = (
   usedIntegrationIds: Set<string>,
   mcpContext?: McpContext
 ) => {
-  logger.info(
+  logger.debug(
     `[generateCode] Used integration IDs (from tools): ${Array.from(usedIntegrationIds).join(", ") || "none"}`
   );
 
@@ -148,14 +147,14 @@ export const determineUsedIntegrations = (
   for (const [name, id] of mcpContext?.integrationNameToId ?? new Map()) {
     if (code.includes(`getMcpClient("${name}")`) || code.includes(`getMcpClient('${name}')`)) {
       actuallyUsedIds.add(id);
-      logger.info(`[generateCode] Integration "${name}" (${id}) is used in generated code`);
+      logger.debug(`Integration "${name}" (${id}) is used in generated code`);
     }
   }
 
   // Only use the filtered set if we found any matches (fallback to original if parsing fails)
   const finalUsedIds =
     actuallyUsedIds.size > 0 ? Array.from(actuallyUsedIds) : Array.from(usedIntegrationIds);
-  logger.info(`[generateCode] Final used integration IDs: ${finalUsedIds.join(", ") || "none"}`);
+  logger.debug(`Final used integration IDs: ${finalUsedIds.join(", ") || "none"}`);
 
   return finalUsedIds;
 };

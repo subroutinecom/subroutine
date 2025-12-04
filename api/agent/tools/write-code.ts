@@ -1,11 +1,10 @@
 import { z } from "zod";
 import { getAvailableIntegrations } from "../../models/integration.ts";
+import { getLogger } from "../../utils/logger.ts";
 import type { McpIntegrationInfo } from "../prompts/index.ts";
 import type { McpContext, SubroutineCapture } from "../utils/types.ts";
 import { validateCode } from "../validation/validator.ts";
-import { getLogger } from "../../utils/logger.ts";
-const logger = getLogger("agent.tools.write-code");
-
+const logger = getLogger("api/agent/tools/write-code.ts", "debug");
 
 type GenerateSubroutineOptions = {
   needsImmediateInputs?: boolean;
@@ -54,8 +53,8 @@ export const createWriteCodeTool = (
     description: "Submit a generated TypeScript function with input and output schemas",
     inputSchema: toolSchema,
     execute: async (params: z.infer<typeof toolSchema>) => {
-      logger.info(`[tool:writeCode] Called`);
-      logger.info(`[tool:writeCode] Code length: ${params.code.length} chars`);
+      logger.debug(`Called`);
+      logger.debug(`Code length: ${params.code.length} chars`);
       const { inputsSchema, outputsSchema, code } = params;
       const immediateInputs =
         "immediateInputs" in params
@@ -69,7 +68,7 @@ export const createWriteCodeTool = (
         const errorMessages = validation.errors.map((e) =>
           e.line ? `Line ${e.line}: ${e.message}` : e.message
         );
-        logger.info(`[tool:writeCode] Validation failed:`, errorMessages);
+        logger.warn(`Validation failed:`, errorMessages);
         return {
           success: false,
           errors: errorMessages,
@@ -83,7 +82,7 @@ export const createWriteCodeTool = (
         immediateInputs,
       };
       onCapture(result);
-      logger.info(`[tool:writeCode] Success - code captured`);
+      logger.info(`Success - code captured`);
       return {
         success: true,
         message: "Subroutine generated successfully",

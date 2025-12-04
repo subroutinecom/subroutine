@@ -1,7 +1,6 @@
-import type { Config } from "./schema.ts";
 import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("config.validator");
-
+import type { Config } from "./schema.ts";
+const logger = getLogger("api/config/validator.ts");
 
 /**
  * Validates configuration consistency beyond schema validation.
@@ -32,10 +31,9 @@ export function validateConfig(config: Config): { valid: boolean; errors: string
  * Useful for debugging and verification.
  */
 export function printConfigReport(config: Config): void {
-  logger.info("[Config Validator]", "\n📋 Configuration Report");
-  logger.info("[Config Validator]", "=".repeat(50));
+  logger.info(`\n📋 Configuration Report\n${"=".repeat(50)}`);
 
-  logger.info("[Config Validator]", "\n🤖 Models Defined:");
+  logger.info("\n🤖 Models Defined:");
   for (const [modelName, modelConfig] of Object.entries(config.models)) {
     logger.info(`  • ${modelName}`);
     logger.info(`    Provider: ${modelConfig.provider}`);
@@ -48,7 +46,7 @@ export function printConfigReport(config: Config): void {
     }
   }
 
-  logger.info("[Config Validator]", "\n🎯 Capability Mappings:");
+  logger.info("\n🎯 Capability Mappings:");
   for (const [capability, modelNames] of Object.entries(config.capabilities)) {
     const names = Array.isArray(modelNames) ? modelNames : [modelNames];
     logger.info(`  • ${capability} → ${names.join(", ")}`);
@@ -56,13 +54,13 @@ export function printConfigReport(config: Config): void {
 
   const validation = validateConfig(config);
   if (validation.valid) {
-    logger.info("[Config Validator]", "\n✅ Configuration is valid");
+    logger.info("\n✅ Configuration is valid");
   } else {
-    logger.info("[Config Validator]", "\n❌ Configuration has errors:");
+    logger.info("\n❌ Configuration has errors:");
     for (const error of validation.errors) {
       logger.info(`  • ${error}`);
     }
   }
 
-  logger.info("[Config Validator]", "=".repeat(50) + "\n");
+  logger.info(`\n${"=".repeat(50)}\n`);
 }

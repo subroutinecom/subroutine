@@ -1,6 +1,7 @@
 import type { LanguageModel } from "ai";
 import { streamText } from "ai";
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../models/errors.ts";
+import { getLogger } from "../utils/logger.ts";
 import {
   CODE_GENERATION_USER_PROMPT,
   SYSTEM_PROMPT,
@@ -13,9 +14,7 @@ import {
   logGenerationSteps,
 } from "./utils/generation-helpers.ts";
 import type { CodeGenerationResult, McpContext, SubroutineCapture } from "./utils/types.ts";
-import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("agent.agent-code-generator");
-
+const logger = getLogger("api/agent/agent-code-generator.ts");
 
 type GenerateCodeOptions = {
   needsImmediateInputs?: boolean;
@@ -33,9 +32,9 @@ export const generateCode = async (
   logger.info(
     `[generateCode] Starting with model: ${(model as { modelId?: string }).modelId ?? "unknown"}`
   );
-  logger.info(`[generateCode] Request: "${request}"`);
-  logger.info(
-    `[generateCode] Options: mcpIntegrations=${options?.mcpIntegrations?.length ?? 0}, hasContext=${!!options?.mcpContext}`
+  logger.debug(`Request: "${request}"`);
+  logger.debug(
+    `Options: mcpIntegrations=${options?.mcpIntegrations?.length ?? 0}, hasContext=${!!options?.mcpContext}`
   );
 
   try {
@@ -54,7 +53,7 @@ export const generateCode = async (
       needsImmediateInputs: options?.needsImmediateInputs,
     });
 
-    logger.info(`[generateCode] Available tools: ${Object.keys(tools).join(", ")}`);
+    logger.debug(`Available tools: ${Object.keys(tools).join(", ")}`);
 
     // 2. Run Agent
     const result = streamText({

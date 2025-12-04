@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { Buffer } from "node:buffer";
 import { getLogger } from "./logger.ts";
-const logger = getLogger("utils.encryption");
+const logger = getLogger("api/utils/encryption.ts");
 
 
 const ALGORITHM = "aes-256-gcm";

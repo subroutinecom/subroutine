@@ -1,6 +1,6 @@
 import { ESLintUtils } from "@typescript-eslint/utils";
 import { getLogger } from "../../../utils/logger.ts";
-const logger = getLogger("agent.validation.eslint-rules.always-fail-warn");
+const logger = getLogger("api/agent/validation/eslint-rules/always-fail-warn.ts");
 
 
 const createRule = ESLintUtils.RuleCreator((name) => `http://docs.subroutine.com/rule/${name}`);

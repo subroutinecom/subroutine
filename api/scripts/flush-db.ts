@@ -3,7 +3,7 @@
 import { Kysely, PostgresDialect, sql } from "kysely";
 import pg from "pg";
 import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("scripts.flush-db");
+const logger = getLogger("api/scripts/flush-db.ts");
 
 
 const { Pool } = pg;

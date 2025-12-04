@@ -4,11 +4,10 @@ import type { McpIntegrationInfo } from "../agent/prompts/index.ts";
 import { Capability } from "../agent/utils/types.ts";
 import { db } from "../db/index.ts";
 import { generateMockCode } from "../mocks.ts";
+import { getLogger } from "../utils/logger.ts";
 import { getIntegration } from "./integration.ts";
 import { runSubroutine, type Run } from "./run.ts";
-import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("models.subroutine");
-
+const logger = getLogger("api/models/subroutine.ts");
 
 export type Subroutine = {
   id: string;
@@ -103,7 +102,7 @@ export const generateSubroutine = async (
     logger.info(
       `[generateSubroutine] Integrations passed: ${params.integrations?.join(", ") || "none"}`
     );
-    logger.info(`[generateSubroutine] Viewer: ${params.viewerId}`);
+    logger.info(`Viewer: ${params.viewerId}`);
 
     if (!model) {
       throw new Error("No model provider configured. Check config.yaml for AI model settings.");
