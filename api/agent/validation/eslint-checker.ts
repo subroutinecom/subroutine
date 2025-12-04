@@ -1,6 +1,7 @@
 import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
 import { agentRulesPlugin } from "./eslint-rules/index.ts";
+import { localRulesPlugin } from "../../../eslint/index.ts";
 import type { ValidationError } from "./types.ts";
 
 export interface LintResult {
@@ -17,6 +18,7 @@ const getEslint = (): ESLint => {
       overrideConfig: [
         {
           plugins: {
+            "local-rules": localRulesPlugin as any,
             "agent-rules": agentRulesPlugin as any,
           },
           languageOptions: {
@@ -96,8 +98,12 @@ const getEslint = (): ESLint => {
             // we'll use console.log() for debug logs
             "no-console": "off",
 
+            // Local rules - available for use if needed, but agent uses agent-rules
+            "local-rules/no-console-without-text": "error",
+            
             // Agent rules
             "agent-rules/always-fail-warn": "warn",
+            "local-rules/no-console": "error", // Reuse the rule from local-rules
           },
         },
       ],
