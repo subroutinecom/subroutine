@@ -369,7 +369,7 @@ const executeInSandbox = async (
       "}\n";
 
     const config = await getConfig();
-    const sandboxUrl = `${config.internalSandboxUri}/test/executeTypescript`;
+    const sandboxUrl = `${config.internalSandboxUrl}/test/executeTypescript`;
     console.log(
       `[executeInSandbox] Sending request to sandbox after ${Date.now() - executionStart}ms`
     );
