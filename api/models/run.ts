@@ -10,6 +10,7 @@ import { IntegrationAuthRequiredError } from "./errors.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
 import { generatePatLinkUrl } from "./pat-link.ts";
 import type { SandboxMcpConfig } from "../integrations/providers/types.ts";
+import { getConfig } from "../config/loader.ts";
 
 export type Run = {
   id: string;
@@ -367,7 +368,8 @@ const executeInSandbox = async (
       "  return result;\n" +
       "}\n";
 
-    const sandboxUrl = "http://sandbox.subroutine.internal/test/executeTypescript";
+    const config = await getConfig();
+    const sandboxUrl = `${config.internalSandboxUrl}/test/executeTypescript`;
     console.log(
       `[executeInSandbox] Sending request to sandbox after ${Date.now() - executionStart}ms`
     );
