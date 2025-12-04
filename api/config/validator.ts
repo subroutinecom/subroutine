@@ -46,7 +46,7 @@ export function printConfigReport(config: Config): void {
     }
   }
 
-  logger.info("", "\n🎯 Capability Mappings:");
+  logger.info("\n🎯 Capability Mappings:");
   for (const [capability, modelNames] of Object.entries(config.capabilities)) {
     const names = Array.isArray(modelNames) ? modelNames : [modelNames];
     logger.info(`  • ${capability} → ${names.join(", ")}`);
@@ -54,9 +54,9 @@ export function printConfigReport(config: Config): void {
 
   const validation = validateConfig(config);
   if (validation.valid) {
-    logger.info("", "\n✅ Configuration is valid");
+    logger.info("\n✅ Configuration is valid");
   } else {
-    logger.info("", "\n❌ Configuration has errors:");
+    logger.info("\n❌ Configuration has errors:");
     for (const error of validation.errors) {
       logger.info(`  • ${error}`);
     }
