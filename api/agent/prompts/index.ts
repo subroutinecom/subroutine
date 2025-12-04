@@ -120,15 +120,20 @@ const getMcpIntegrationDocs = (mcpIntegrations: McpIntegrationInfo[]): string =>
 
   return `
 MCP INTEGRATIONS:
-Available: ${validNames}
+Available integration names: ${validNames}
 
-CRITICAL - getMcpClient returns a Promise, you MUST await it:
-  ✓ const client = await integrations.getMcpClient("${exampleName}");  // Correct
-  ✗ const client = integrations.getMcpClient("${exampleName}");        // Wrong - missing await!
+CRITICAL - getMcpClient REQUIREMENTS:
+1. The argument MUST be one of the exact integration names listed above: ${validNames}
+2. You MUST await the call - getMcpClient returns a Promise
+3. DO NOT invent or guess integration names - only use the names listed above
+
+  const client = await integrations.getMcpClient("${exampleName}");  // Correct - uses exact name from list
+  const client = integrations.getMcpClient("${exampleName}");        // Wrong - missing await!
+  const client = await integrations.getMcpClient("some-other-name"); // Wrong - not in available list!
 
 USAGE:
 1. Call listMcpTools({ integrationName: "${exampleName}" }) to discover tools
-2. const client = await integrations.getMcpClient("${exampleName}");
+2. const client = await integrations.getMcpClient("${exampleName}");  // Use exact name from Available list
 3. const result = await client.callTool({ name: "tool_name", arguments: {...} });
 4. const data = JSON.parse(result.content[0]?.text || "{}");
 `;

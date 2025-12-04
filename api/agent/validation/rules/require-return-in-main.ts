@@ -1,5 +1,5 @@
 import { SyntaxKind, type SourceFile, type Node } from "ts-morph";
-import type { ValidationError } from "../types";
+import type { ValidationError, ValidationContext } from "../types";
 
 const hasReturnStatement = (node: Node): boolean => {
   // Check if this node is a return statement
@@ -28,7 +28,10 @@ const hasReturnStatement = (node: Node): boolean => {
   return false;
 };
 
-export const requireReturnInMain = (sourceFile: SourceFile): ValidationError[] => {
+export const requireReturnInMain = (
+  sourceFile: SourceFile,
+  _context?: ValidationContext
+): ValidationError[] => {
   const mainFunc = sourceFile.getFunction("main");
 
   if (mainFunc) {

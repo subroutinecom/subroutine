@@ -1,10 +1,35 @@
 import { z } from "zod";
 import { validateCode } from "../validation";
-import type { SubroutineCapture } from "../utils/types";
+import type { McpContext, SubroutineCapture } from "../utils/types";
+import type { McpIntegrationInfo } from "../prompts/index";
+import { getAvailableIntegrations } from "../../models/integration";
+
+type GenerateSubroutineOptions = {
+  needsImmediateInputs?: boolean;
+  mcpContext?: McpContext;
+  // specific integrations to use - this is for provided mode, not discovery mode
+  mcpIntegrations?: McpIntegrationInfo[];
+};
+
+const buildValidationContext = async (options?: GenerateSubroutineOptions) => {
+  if (options?.mcpIntegrations?.length) {
+    return { mcpIntegrationNames: options.mcpIntegrations.map((i) => i.name) };
+  }
+
+  if (options?.mcpContext) {
+    const integrations = await getAvailableIntegrations(options.mcpContext.organizationId, "all");
+    const mcpIntegrations = integrations.filter((i) => i.enabled && i.authConfig.type === "mcp");
+    if (mcpIntegrations.length > 0) {
+      return { mcpIntegrationNames: mcpIntegrations.map((i) => i.name) };
+    }
+  }
+
+  return undefined;
+};
 
 export const createGenerateSubroutineTool = (
   onCapture: (result: SubroutineCapture) => void,
-  options?: { needsImmediateInputs?: boolean }
+  options?: GenerateSubroutineOptions
 ) => {
   const baseToolSchema = z.object({
     inputsSchema: z.record(z.unknown()).describe("JSON Schema for the input parameters"),
@@ -33,7 +58,9 @@ export const createGenerateSubroutineTool = (
         "immediateInputs" in params
           ? (params.immediateInputs as Record<string, unknown>)
           : undefined;
-      const validation = await validateCode(code);
+
+      const validationContext = await buildValidationContext(options);
+      const validation = await validateCode(code, validationContext);
 
       if (!validation.valid) {
         const errorMessages = validation.errors.map((e) =>

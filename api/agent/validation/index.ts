@@ -3,7 +3,7 @@ import { Project } from "ts-morph";
 import { rules } from "./rules";
 import { typeCheckCode } from "./type-checker";
 import { lintCode } from "./eslint-checker";
-import type { ValidationResult, ValidationError } from "./types";
+import type { ValidationResult, ValidationError, ValidationContext } from "./types";
 
 const project = new Project({
   useInMemoryFileSystem: true,
@@ -13,7 +13,10 @@ const project = new Project({
   },
 });
 
-export const validateCode = async (code: string): Promise<ValidationResult> => {
+export const validateCode = async (
+  code: string,
+  context?: ValidationContext
+): Promise<ValidationResult> => {
   const filename = `${randomUUID()}.ts`;
   const sourceFile = project.createSourceFile(filename, code);
 
@@ -21,7 +24,7 @@ export const validateCode = async (code: string): Promise<ValidationResult> => {
     const errors: ValidationError[] = [];
 
     for (const rule of rules) {
-      errors.push(...rule(sourceFile));
+      errors.push(...rule(sourceFile, context));
     }
 
     if (errors.length > 0) {
@@ -47,4 +50,4 @@ export const validateCode = async (code: string): Promise<ValidationResult> => {
   }
 };
 
-export type { ValidationResult, ValidationError, ValidationRule } from "./types";
+export type { ValidationResult, ValidationError, ValidationRule, ValidationContext } from "./types";

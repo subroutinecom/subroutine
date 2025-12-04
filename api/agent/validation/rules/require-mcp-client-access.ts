@@ -1,8 +1,11 @@
 import { SyntaxKind } from "ts-morph";
 import type { SourceFile } from "ts-morph";
-import type { ValidationError } from "../types";
+import type { ValidationError, ValidationContext } from "../types";
 
-export const requireMcpClientAccess = (sourceFile: SourceFile): ValidationError[] => {
+export const requireMcpClientAccess = (
+  sourceFile: SourceFile,
+  _context?: ValidationContext
+): ValidationError[] => {
   const errors: ValidationError[] = [];
 
   const propertyAccesses = sourceFile.getDescendantsOfKind(SyntaxKind.PropertyAccessExpression);
