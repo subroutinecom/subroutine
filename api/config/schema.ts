@@ -52,6 +52,7 @@ export const configSchema = z.object({
   baseUrl: z.string().url("Base URL must be a valid URL").optional(),
   adminPanelUrl: z.string().url("Admin panel URL must be a valid URL").optional(),
   apiUrl: z.string().url("API URL must be a valid URL").optional(),
+  internalSandboxUri: z.string().url().default("http://sandbox.subroutine.internal"),
   models: z.record(z.string(), modelConfigSchema),
   capabilities: capabilitiesConfigSchema,
   auth: authConfigSchema,
