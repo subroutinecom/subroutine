@@ -245,7 +245,7 @@ const buildSandboxIntegrations = async (params: {
                 integrationId,
                 integrationName: integration.name,
                 provider,
-                authorizationUrl: "",
+                authorizationUrl: patLink.url,
                 state: "",
                 patLinkUrl: patLink.url,
                 authInstructions: metadata.authInstructions as string | undefined,

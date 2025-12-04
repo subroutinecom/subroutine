@@ -63,6 +63,7 @@ export const createMcpServer = (ctx: McpServerContext): McpServer => {
         };
       } catch (error) {
         if (error instanceof IntegrationAuthRequiredError) {
+          const req = error.requirements[0];
           return {
             content: [
               {
@@ -71,8 +72,10 @@ export const createMcpServer = (ctx: McpServerContext): McpServer => {
                   error: {
                     code: "INTEGRATION_AUTH_REQUIRED",
                     message: error.message,
-                    integrationId: error.integrationId,
-                    authorizationUrl: error.authorizationUrl,
+                    integrationId: req?.integrationId ?? error.integrationId,
+                    authorizationUrl: req?.authorizationUrl ?? "",
+                    authInstructions: req?.authInstructions,
+                    requirements: error.requirements,
                   },
                 }),
               },
