@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { Project } from "ts-morph";
-import { rules } from "./rules";
-import { typeCheckCode } from "./type-checker";
-import { lintCode } from "./eslint-checker";
-import type { ValidationResult, ValidationError, ValidationContext } from "./types";
+import { rules } from "./rules/index.ts";
+import { typeCheckCode } from "./type-checker.ts";
+import { lintCode } from "./eslint-checker.ts";
+import type { ValidationResult, ValidationError, ValidationContext } from "./types.ts";
 
 const project = new Project({
   useInMemoryFileSystem: true,
@@ -49,5 +49,3 @@ export const validateCode = async (
     sourceFile.delete();
   }
 };
-
-export type { ValidationResult, ValidationError, ValidationRule, ValidationContext } from "./types";

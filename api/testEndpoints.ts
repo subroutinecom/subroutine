@@ -3,9 +3,9 @@ import { randomUUID } from "node:crypto";
 import type { AuthContext } from "./middlewares/auth";
 import { completeMockAuthorization } from "./services/mock-oauth";
 import { generatePatLinkUrl } from "./models/pat-link";
-import { validateCode } from "./agent/validation";
-import { typeCheckCode } from "./agent/validation/type-checker";
-import { lintCode } from "./agent/validation/eslint-checker";
+import { validateCode } from "./agent/validation/validator.ts";
+import { typeCheckCode } from "./agent/validation/type-checker.ts";
+import { lintCode } from "./agent/validation/eslint-checker.ts";
 
 /**
  * Register test-only endpoints. These are only available when ENABLE_MOCK_OAUTH is true.
