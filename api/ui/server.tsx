@@ -3,6 +3,9 @@ import { randomUUID } from "node:crypto";
 import { auth } from "../auth.ts";
 import { getConfig } from "../config/loader.ts";
 import { renderUi } from "./router.tsx";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("ui.server");
+
 
 export const registerUiRoutes = (app: Hono<any>) => {
   const shouldForwardJsonAuth = (request: Request): boolean => {
@@ -52,7 +55,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
       return c.redirect(`/mcp?error=${encodeURIComponent("Failed to start OAuth flow")}`);
     } catch (error) {
-      console.error("Social sign-in error:", error);
+      logger.error("Social sign-in error:", error);
       return c.redirect("/mcp?error=An+unexpected+error+occurred");
     }
   });
@@ -99,7 +102,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
         return c.redirect(`/login?error=${encodeURIComponent(errorMsg)}`);
       }
     } catch (error) {
-      console.error("Sign in error:", error);
+      logger.error("Sign in error:", error);
       return c.redirect("/login?error=An+unexpected+error+occurred");
     }
   });
@@ -148,7 +151,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
         return c.redirect(`/mcp?mode=signup&error=${encodeURIComponent(errorMsg)}`);
       }
     } catch (error) {
-      console.error("Sign up error:", error);
+      logger.error("Sign up error:", error);
       return c.redirect("/mcp?mode=signup&error=An+unexpected+error+occurred");
     }
   });
@@ -181,7 +184,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
         headers,
       });
     } catch (error) {
-      console.error("Sign out error:", error);
+      logger.error("Sign out error:", error);
       return c.redirect("/");
     }
   });
@@ -193,7 +196,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
         headers: c.req.raw.headers,
       });
 
-      console.log("GET /mcp - Session check:", {
+      logger.info("GET /mcp - Session check:", {
         hasSession: !!sessionData?.session,
         hasUser: !!sessionData?.user,
         userId: sessionData?.user?.id,
@@ -205,7 +208,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
         // If no active organization, try to find one or create one
         if (!activeOrganizationId) {
-          console.log("GET /mcp - No active organization, checking existing orgs...");
+          logger.info("GET /mcp - No active organization, checking existing orgs...");
           const organizations = await auth.api.listOrganizations({
             headers: c.req.raw.headers,
           });
@@ -213,10 +216,10 @@ export const registerUiRoutes = (app: Hono<any>) => {
           if (organizations && organizations.length > 0) {
             // Use the first available organization
             activeOrganizationId = organizations[0].id;
-            console.log("GET /mcp - Found existing org, setting active:", activeOrganizationId);
+            logger.info("GET /mcp - Found existing org, setting active:", activeOrganizationId);
           } else {
             // Create a new "Personal" organization
-            console.log("GET /mcp - No orgs found, creating Personal org...");
+            logger.info("GET /mcp - No orgs found, creating Personal org...");
             const newOrg = await auth.api.createOrganization({
               headers: c.req.raw.headers,
               body: {
@@ -227,7 +230,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
             if (newOrg) {
               activeOrganizationId = newOrg.id;
-              console.log("GET /mcp - Created Personal org:", activeOrganizationId);
+              logger.info("GET /mcp - Created Personal org:", activeOrganizationId);
             }
           }
 
@@ -249,7 +252,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
           let mcpSession = await getActiveSession(activeOrganizationId);
 
           if (mcpSession) {
-            console.log(
+            logger.info(
               "GET /mcp - Found existing session, redirecting to:",
               `/mcp/${mcpSession.id}`
             );
@@ -257,15 +260,15 @@ export const registerUiRoutes = (app: Hono<any>) => {
           } else {
             // Create new session
             mcpSession = await createSession(activeOrganizationId);
-            console.log("GET /mcp - Created new session, redirecting to:", `/mcp/${mcpSession.id}`);
+            logger.info("GET /mcp - Created new session, redirecting to:", `/mcp/${mcpSession.id}`);
             return c.redirect(`/mcp/${mcpSession.id}`, 302);
           }
         } else {
-          console.log("GET /mcp - Failed to determine active organization");
+          logger.info("GET /mcp - Failed to determine active organization");
         }
       }
     } catch (error) {
-      console.log("GET /mcp - Auth check error:", error);
+      logger.info("GET /mcp - Auth check error:", error);
       // If auth check fails, fall through to show login
     }
 
@@ -273,7 +276,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
     const url = new URL(c.req.url);
     const isSignUp = url.searchParams.get("mode") === "signup";
 
-    console.log("GET /mcp - Not authenticated, showing login. isSignUp:", isSignUp);
+    logger.info("GET /mcp - Not authenticated, showing login. isSignUp:", isSignUp);
 
     // User is not authenticated - show login page
     const config = await getConfig();
@@ -288,7 +291,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
   app.get("/mcp/:sessionId", async (c) => {
     const { sessionId } = c.req.param();
-    console.log("GET /mcp/:sessionId - Checking auth for session:", sessionId);
+    logger.info("GET /mcp/:sessionId - Checking auth for session:", sessionId);
 
     // Check if user is authenticated
     try {
@@ -296,7 +299,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
         headers: c.req.raw.headers,
       });
 
-      console.log("GET /mcp/:sessionId - Session check:", {
+      logger.info("GET /mcp/:sessionId - Session check:", {
         hasSession: !!sessionData?.session,
         hasUser: !!sessionData?.user,
         userId: sessionData?.user?.id,
@@ -311,23 +314,23 @@ export const registerUiRoutes = (app: Hono<any>) => {
 
         if (!mcpSession) {
           // Session doesn't exist or doesn't belong to this org - create it
-          console.log("GET /mcp/:sessionId - Session not found, creating it");
+          logger.info("GET /mcp/:sessionId - Session not found, creating it");
           mcpSession = await createSession(sessionData.session.activeOrganizationId, sessionId);
         }
 
         // Show session page
-        console.log("GET /mcp/:sessionId - Authenticated, showing session page");
+        logger.info("GET /mcp/:sessionId - Authenticated, showing session page");
         const config = await getConfig();
         const html = renderUi(`/mcp/${sessionId}`, { sessionId, baseUrl: config.baseUrl });
         return c.html("<!DOCTYPE html>" + html);
       }
     } catch (error) {
-      console.log("GET /mcp/:sessionId - Auth check error:", error);
+      logger.info("GET /mcp/:sessionId - Auth check error:", error);
       // If auth check fails, redirect to login
     }
 
     // User is not authenticated - redirect to /mcp login
-    console.log("GET /mcp/:sessionId - Not authenticated, redirecting to /mcp");
+    logger.info("GET /mcp/:sessionId - Not authenticated, redirecting to /mcp");
     return c.redirect("/mcp", 302);
   });
 
@@ -424,7 +427,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
         );
       }
     } catch (error) {
-      console.error("PAT submission error:", error);
+      logger.error("PAT submission error:", error);
       return c.redirect(
         `/pat/${linkId}?error=${encodeURIComponent("An unexpected error occurred")}`
       );

@@ -1,4 +1,4 @@
-import { resolve, dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 type IntegrationDocs = {
@@ -241,7 +241,7 @@ TYPE DEFINITIONS (reference for available integration methods):
 ${typeDefinitions}
 \`\`\`
 
-Use the generateSubroutine tool to submit your code. The tool will validate it and provide feedback if there are issues.
+Use the writeCode tool to submit your code. The tool will validate it and provide feedback if there are issues.
 
 EXAMPLE (simple, no integrations needed):
 \`\`\`typescript

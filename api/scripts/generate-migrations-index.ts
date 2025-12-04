@@ -4,6 +4,9 @@
  */
 
 import { join } from "node:path";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("scripts.generate-migrations-index");
+
 
 const migrationsDir = join(new URL(".", import.meta.url).pathname, "../migrations");
 
@@ -36,5 +39,5 @@ const outputPath = join(new URL(".", import.meta.url).pathname, "../db/migration
 
 await Deno.writeTextFile(outputPath, content);
 
-console.log(`Generated migrations index with ${migrationFiles.length} migrations`);
-console.log(`Output: ${outputPath}`);
+logger.info(`Generated migrations index with ${migrationFiles.length} migrations`);
+logger.info(`Output: ${outputPath}`);

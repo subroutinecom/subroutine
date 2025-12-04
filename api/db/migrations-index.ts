@@ -6,10 +6,8 @@ export const migrations = {
   "002_auth_schema": import("../migrations/002_auth_schema.ts"),
   "20251115_0952_apikey_schema": import("../migrations/20251115_0952_apikey_schema.ts"),
   "20251115_2105_integrations_schema": import("../migrations/20251115_2105_integrations_schema.ts"),
-  "20251116_1200_subroutine_org_integrations":
-    import("../migrations/20251116_1200_subroutine_org_integrations.ts"),
-  "20251125_connected_account_viewerid":
-    import("../migrations/20251125_connected_account_viewerid.ts"),
+  "20251116_1200_subroutine_org_integrations": import("../migrations/20251116_1200_subroutine_org_integrations.ts"),
+  "20251125_connected_account_viewerid": import("../migrations/20251125_connected_account_viewerid.ts"),
   "20251126_add_mcp_session": import("../migrations/20251126_add_mcp_session.ts"),
   "20251126_dynamic_mcp_status": import("../migrations/20251126_dynamic_mcp_status.ts"),
   "20251127_pat_link": import("../migrations/20251127_pat_link.ts"),

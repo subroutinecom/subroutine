@@ -26,6 +26,9 @@ import { generateSubroutine, getSubroutine, listSubroutines } from "./models/sub
 import { registerAuthenticatedTestEndpoints, registerTestEndpoints } from "./testEndpoints.ts";
 import { registerUiRoutes } from "./ui/server.tsx";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
+import { getLogger } from "./utils/logger.ts";
+const logger = getLogger("server");
+
 
 const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";
 
@@ -51,7 +54,7 @@ const initialize = async () => {
 
   // Global error handler to ensure all uncaught errors return JSON
   app.onError((err, c) => {
-    console.error("Unhandled error:", err);
+    logger.error("Unhandled error:", err);
 
     // Handle IntegrationAuthRequiredError specially
     if (err instanceof IntegrationAuthRequiredError) {
@@ -243,7 +246,7 @@ const initialize = async () => {
         return c.redirect(`/oauth/result?${params.toString()}`);
       }
     } catch (error) {
-      console.error("OAuth callback error:", error);
+      logger.error("OAuth callback error:", error);
       const params = new URLSearchParams({
         success: "false",
         error: "An unexpected error occurred",
@@ -1200,10 +1203,10 @@ const initialize = async () => {
         );
       }
 
-      console.log("Fetching run with ID:", c.req.valid("param").id);
+      logger.info("Fetching run with ID:", c.req.valid("param").id);
       const { id } = c.req.valid("param");
       const run = await getRun(id, auth.organizationId);
-      console.log("Fetched run:", run);
+      logger.info("Fetched run:", run);
 
       if (!run) {
         return c.json(
@@ -1238,15 +1241,15 @@ const initialize = async () => {
     const sessionId = c.req.header("mcp-session-id");
 
     if (sessionId) {
-      console.log(`Received MCP request for session: ${sessionId}`);
+      logger.info(`Received MCP request for session: ${sessionId}`);
     } else {
-      console.log("New MCP request");
+      logger.info("New MCP request");
     }
 
     try {
       let transport: StreamableHTTPServerTransport;
       const body = await c.req.json();
-      console.log("MCP request body:", JSON.stringify(body, null, 2));
+      logger.info("MCP request body:", JSON.stringify(body, null, 2));
 
       if (sessionId && transports[sessionId]) {
         transport = transports[sessionId];
@@ -1254,7 +1257,7 @@ const initialize = async () => {
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (newSessionId) => {
-            console.log(`Session initialized with ID: ${newSessionId}`);
+            logger.info(`Session initialized with ID: ${newSessionId}`);
             transports[newSessionId] = transport;
           },
         });
@@ -1262,7 +1265,7 @@ const initialize = async () => {
         transport.onclose = () => {
           const sid = transport.sessionId;
           if (sid && transports[sid]) {
-            console.log(`Transport closed for session ${sid}, removing from transports map`);
+            logger.info(`Transport closed for session ${sid}, removing from transports map`);
             delete transports[sid];
           }
         };
@@ -1274,7 +1277,7 @@ const initialize = async () => {
         // @ts-ignore - MCP SDK expects Node.js HTTP response types
         await transport.handleRequest(req, res, body);
         const response = res.toResponse();
-        console.log("MCP response status:", response.status);
+        logger.info("MCP response status:", response.status);
         return response;
       } else {
         return c.json(
@@ -1316,7 +1319,7 @@ const initialize = async () => {
       await transport.handleRequest(nodeReq, res, body);
       return res.toResponse();
     } catch (error) {
-      console.error("Error handling MCP request:", error);
+      logger.error("Error handling MCP request:", error);
       return c.json(
         {
           jsonrpc: "2.0",
@@ -1338,7 +1341,7 @@ const initialize = async () => {
       return c.text("Invalid or missing session ID", 400);
     }
 
-    console.log(`Establishing SSE stream for session ${sessionId}`);
+    logger.info(`Establishing SSE stream for session ${sessionId}`);
     const transport = transports[sessionId];
     const req = c.req.raw;
     const res = new NodeResponseAdapter();
@@ -1357,7 +1360,7 @@ const initialize = async () => {
       return c.text("Invalid or missing session ID", 400);
     }
 
-    console.log(`Received session termination request for session ${sessionId}`);
+    logger.info(`Received session termination request for session ${sessionId}`);
 
     try {
       const transport = transports[sessionId];
@@ -1367,7 +1370,7 @@ const initialize = async () => {
       await transport.handleRequest(req, res);
       return res.toResponse();
     } catch (error) {
-      console.error("Error handling session termination:", error);
+      logger.error("Error handling session termination:", error);
       return c.text("Error processing session termination", 500);
     }
   });
@@ -1391,7 +1394,7 @@ const initialize = async () => {
         error: { code: -32000 as const, message: "Bad Request: Invalid session ID" },
         id: null,
       };
-      console.log("MCP POST response (invalid sessionId)", JSON.stringify(payload));
+      logger.info("MCP POST response (invalid sessionId)", JSON.stringify(payload));
       return c.json(payload, 400);
     }
 
@@ -1403,7 +1406,7 @@ const initialize = async () => {
         error: { code: -32000 as const, message: "Bad Request: Session not found" },
         id: null,
       };
-      console.log("MCP POST response (session not found)", JSON.stringify(payload));
+      logger.info("MCP POST response (session not found)", JSON.stringify(payload));
       return c.json(payload, 400);
     }
 
@@ -1419,7 +1422,7 @@ const initialize = async () => {
             error: { code: -32000 as const, message: "Bad Request: No valid session initialized" },
             id: null,
           };
-          console.log("MCP POST response (no session yet)", JSON.stringify(payload));
+          logger.info("MCP POST response (no session yet)", JSON.stringify(payload));
           return c.json(payload, 400);
         }
         transport = new StreamableHTTPServerTransport({
@@ -1508,16 +1511,16 @@ const initialize = async () => {
         headers: res.getHeaders(),
         body: res.getBodyText(),
       };
-      console.log("MCP POST response", JSON.stringify(debugOut));
+      logger.info("MCP POST response", JSON.stringify(debugOut));
       return res.toResponse();
     } catch (error) {
-      console.error("Error handling MCP request:", error);
+      logger.error("Error handling MCP request:", error);
       const payload = {
         jsonrpc: "2.0",
         error: { code: -32603 as const, message: "Internal server error" },
         id: null,
       };
-      console.log("MCP POST response (500)", JSON.stringify(payload));
+      logger.info("MCP POST response (500)", JSON.stringify(payload));
       return c.json(payload, 500);
     }
   });
@@ -1533,11 +1536,11 @@ const initialize = async () => {
 
   Deno.serve({ port: PORT, hostname: "::" }, app.fetch);
 
-  console.log(`Server running on port ${PORT}`);
-  console.log(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
-  console.log(`MCP endpoint available at http://localhost:${PORT}/mcp/{sessionId}`);
-  console.log(`MCP legacy endpoint available at http://localhost:${PORT}/mcp-legacy`);
-  console.log(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
+  logger.info(`Server running on port ${PORT}`);
+  logger.info(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
+  logger.info(`MCP endpoint available at http://localhost:${PORT}/mcp/{sessionId}`);
+  logger.info(`MCP legacy endpoint available at http://localhost:${PORT}/mcp-legacy`);
+  logger.info(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
 };
 
 initialize();

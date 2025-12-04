@@ -1,14 +1,19 @@
-import type { McpContext, SubroutineCapture } from "./types";
+import { IntegrationAuthRequiredError, type AuthRequirement } from "../../models/errors.ts";
 import type { McpIntegrationInfo } from "../prompts/index.ts";
-import { IntegrationAuthRequiredError, type AuthRequirement } from "../../models/errors";
 import {
-  createGenerateSubroutineTool,
-  createListMcpToolsProvided,
-  createListMcpToolsDiscovery,
-  createGetOrganizationIntegrations,
   createGetGlobalIntegrations,
-  createManageMcpIntegration,
-} from "../tools/index.ts";
+  createGetOrganizationIntegrations,
+} from "../tools/discovery.ts";
+import {
+  createListMcpToolsDiscovery,
+  createListMcpToolsProvided,
+} from "../tools/list-mcp-tools.ts";
+import { createManageMcpIntegration } from "../tools/manage-integration.ts";
+import { createWriteCodeTool } from "../tools/write-code.ts";
+import type { McpContext, SubroutineCapture } from "./types.ts";
+import { getLogger } from "../../utils/logger.ts";
+const logger = getLogger("agent.utils.generation-helpers");
+
 
 export type ToolCreationOptions = {
   mcpContext?: McpContext;
@@ -23,7 +28,7 @@ export const createAgentTools = (
   options: ToolCreationOptions
 ) => {
   const tools: Record<string, unknown> = {
-    generateSubroutine: createGenerateSubroutineTool(onCapture, {
+    writeCode: createWriteCodeTool(onCapture, {
       needsImmediateInputs: options.needsImmediateInputs,
       mcpContext: options.mcpContext,
       mcpIntegrations: options.mcpIntegrations,
@@ -41,7 +46,7 @@ export const createAgentTools = (
         usedIntegrationIds
       );
     } else {
-      console.log(`[generateCode] Discovery mode enabled - adding discovery tools`);
+      logger.info(`[generateCode] Discovery mode enabled - adding discovery tools`);
       tools.getOrganizationIntegrations = createGetOrganizationIntegrations(mcpContext);
       tools.getGlobalIntegrations = createGetGlobalIntegrations(mcpContext);
       tools.listMcpTools = createListMcpToolsDiscovery(
@@ -57,26 +62,26 @@ export const createAgentTools = (
 };
 
 export const logGenerationSteps = (steps: any[]) => {
-  console.log(`[generateCode] Completed in ${steps.length} step(s)`);
+  logger.info(`[generateCode] Completed in ${steps.length} step(s)`);
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    console.log(`[generateCode] Step ${i + 1}:`);
+    logger.info(`[generateCode] Step ${i + 1}:`);
     if (step.toolCalls && step.toolCalls.length > 0) {
       for (const tc of step.toolCalls) {
         const args = "args" in tc ? tc.args : {};
-        console.log(`  - Tool call: ${tc.toolName}`);
-        console.log(`    Args: ${JSON.stringify(args, null, 2)}`);
+        logger.info(`  - Tool call: ${tc.toolName}`);
+        logger.info(`    Args: ${JSON.stringify(args, null, 2)}`);
       }
     }
     if (step.toolResults && step.toolResults.length > 0) {
       for (const tr of step.toolResults) {
-        console.log(`  - Tool result: ${tr.toolName}`);
+        logger.info(`  - Tool result: ${tr.toolName}`);
         const resultData = "result" in tr ? tr.result : tr;
-        console.log(`    Result: ${JSON.stringify(resultData, null, 2)}`);
+        logger.info(`    Result: ${JSON.stringify(resultData, null, 2)}`);
       }
     }
     if (step.text) {
-      console.log(`  - Text response: "${step.text}"`);
+      logger.info(`  - Text response: "${step.text}"`);
     }
   }
 };
@@ -89,7 +94,7 @@ export const checkAuthRequirements = (
   // If no code generated, strictly enforce any captured requirements
   if (capturedResult === null) {
     if (capturedAuthRequirements.length > 0) {
-      console.log(
+      logger.info(
         `[generateCode] No code generated and auth required. Throwing auth error for: ${capturedAuthRequirements.map((r) => r.integrationName).join(", ")}`
       );
       throw new IntegrationAuthRequiredError({
@@ -107,14 +112,14 @@ export const checkAuthRequirements = (
       const usesIntegration =
         code.includes(`getMcpClient("${req.integrationName}")`) ||
         code.includes(`getMcpClient('${req.integrationName}')`);
-      console.log(
+      logger.info(
         `[generateCode] Auth requirement for "${req.integrationName}" - used in code: ${usesIntegration}`
       );
       return usesIntegration;
     });
 
     if (relevantAuthRequirements.length > 0) {
-      console.log(
+      logger.info(
         `[generateCode] Throwing auth error for integrations used in code: ${relevantAuthRequirements.map((r) => r.integrationName).join(", ")}`
       );
       throw new IntegrationAuthRequiredError({
@@ -122,7 +127,7 @@ export const checkAuthRequirements = (
         requirements: relevantAuthRequirements,
       });
     } else {
-      console.log(
+      logger.info(
         `[generateCode] Auth requirements captured but not used in code, ignoring: ${capturedAuthRequirements.map((r) => r.integrationName).join(", ")}`
       );
     }
@@ -134,7 +139,7 @@ export const determineUsedIntegrations = (
   usedIntegrationIds: Set<string>,
   mcpContext?: McpContext
 ) => {
-  console.log(
+  logger.info(
     `[generateCode] Used integration IDs (from tools): ${Array.from(usedIntegrationIds).join(", ") || "none"}`
   );
 
@@ -143,14 +148,14 @@ export const determineUsedIntegrations = (
   for (const [name, id] of mcpContext?.integrationNameToId ?? new Map()) {
     if (code.includes(`getMcpClient("${name}")`) || code.includes(`getMcpClient('${name}')`)) {
       actuallyUsedIds.add(id);
-      console.log(`[generateCode] Integration "${name}" (${id}) is used in generated code`);
+      logger.info(`[generateCode] Integration "${name}" (${id}) is used in generated code`);
     }
   }
 
   // Only use the filtered set if we found any matches (fallback to original if parsing fails)
   const finalUsedIds =
     actuallyUsedIds.size > 0 ? Array.from(actuallyUsedIds) : Array.from(usedIntegrationIds);
-  console.log(`[generateCode] Final used integration IDs: ${finalUsedIds.join(", ") || "none"}`);
+  logger.info(`[generateCode] Final used integration IDs: ${finalUsedIds.join(", ") || "none"}`);
 
   return finalUsedIds;
 };

@@ -53,4 +53,10 @@ export default tseslint.config([
       "local/only-fieldWithInput-mutations": "error",
     },
   },
+  {
+    files: ["api/**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
+    rules: {
+      "local/no-console": "error",
+    },
+  },
 ]);

@@ -1,6 +1,9 @@
 import type { Context, Next } from "hono";
 import { auth } from "../auth.ts";
 import { verifyApiKey } from "../models/apikey.ts";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("middlewares.auth");
+
 
 type ApiSession = Awaited<ReturnType<typeof auth.api.getSession>>;
 type SessionData = NonNullable<ApiSession>;
@@ -77,7 +80,7 @@ export const authMiddleware = async (
       return next();
     }
   } catch (error) {
-    console.error("Session auth error:", error);
+    logger.error("Session auth error:", error);
   }
 
   return c.json(

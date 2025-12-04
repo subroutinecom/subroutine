@@ -1,5 +1,8 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-env
 
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("scripts.better-auth-generate");
+
 const sqlDir = "better-auth_migrations";
 const tsDir = "migrations";
 
@@ -26,7 +29,7 @@ const command = new Deno.Command("deno", {
 const { code } = await command.output();
 
 if (code !== 0) {
-  console.error("❌ Failed to generate migration");
+  logger.error("❌ Failed to generate migration");
   Deno.exit(code);
 }
 
@@ -66,4 +69,4 @@ try {
   // ignore
 }
 
-console.log("moved migration to the ts folder");
+logger.info("moved migration to the ts folder");

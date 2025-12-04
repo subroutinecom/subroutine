@@ -2,6 +2,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
 import { executeRequest } from "./models/subroutine.ts";
+import { getLogger } from "./utils/logger.ts";
+const logger = getLogger("mcp-server");
+
 
 export type McpServerContext = {
   organizationId: string;
@@ -35,7 +38,7 @@ export const createMcpServer = (ctx: McpServerContext): McpServer => {
       },
     },
     async ({ request }) => {
-      console.log(`[MCP] handleRequest: ${request}`);
+      logger.info(`[MCP] handleRequest: ${request}`);
 
       try {
         const { subroutine, run } = await executeRequest({
