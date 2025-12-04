@@ -29,6 +29,7 @@
     "react-router-dom": "npm:react-router-dom@^6.28.0",
     "@types/react": "npm:@types/react@^18.3.12",
     "@types/react-dom": "npm:@types/react-dom@^18.3.1",
+    "@typescript-eslint/utils": "npm:@typescript-eslint/utils@^8.46.3",
     "yaml": "npm:yaml@^2.8.1",
     "zod": "npm:zod@^3.25.76",
     "ts-morph": "npm:ts-morph@^26.0.0",

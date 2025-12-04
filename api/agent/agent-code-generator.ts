@@ -2,16 +2,16 @@ import type { LanguageModel } from "ai";
 import { streamText } from "ai";
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../models/errors.ts";
 import {
+  CODE_GENERATION_USER_PROMPT,
+  SYSTEM_PROMPT,
+  type McpIntegrationInfo,
+} from "./prompts/index.ts";
+import {
   checkAuthRequirements,
   createAgentTools,
   determineUsedIntegrations,
   logGenerationSteps,
 } from "./utils/generation-helpers.ts";
-import {
-  CODE_GENERATION_USER_PROMPT,
-  SYSTEM_PROMPT,
-  type McpIntegrationInfo,
-} from "./prompts/index.ts";
 import type { CodeGenerationResult, McpContext, SubroutineCapture } from "./utils/types.ts";
 
 type GenerateCodeOptions = {

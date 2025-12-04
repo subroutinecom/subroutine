@@ -1,6 +1,7 @@
 import { ESLint } from "eslint";
 import tseslint from "typescript-eslint";
-import type { ValidationError } from "./types";
+import { agentRulesPlugin } from "./eslint-rules/index.ts";
+import type { ValidationError } from "./types.ts";
 
 export interface LintResult {
   valid: boolean;
@@ -15,6 +16,9 @@ const getEslint = (): ESLint => {
       overrideConfigFile: true,
       overrideConfig: [
         {
+          plugins: {
+            "agent-rules": agentRulesPlugin as any,
+          },
           languageOptions: {
             ecmaVersion: 2022,
             sourceType: "module",
@@ -91,6 +95,9 @@ const getEslint = (): ESLint => {
 
             // we'll use console.log() for debug logs
             "no-console": "off",
+
+            // Agent rules
+            "agent-rules/always-fail-warn": "warn",
           },
         },
       ],
