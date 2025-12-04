@@ -1,6 +1,6 @@
 import { getLogger } from "../utils/logger.ts";
 import type { Config } from "./schema.ts";
-const logger = getLogger("config.validator");
+const logger = getLogger("api/config/validator.ts");
 
 /**
  * Validates configuration consistency beyond schema validation.
@@ -31,10 +31,9 @@ export function validateConfig(config: Config): { valid: boolean; errors: string
  * Useful for debugging and verification.
  */
 export function printConfigReport(config: Config): void {
-  logger.info("", "\n📋 Configuration Report");
-  logger.info("", "=".repeat(50));
+  logger.info(`\n📋 Configuration Report\n${"=".repeat(50)}`);
 
-  logger.info("", "\n🤖 Models Defined:");
+  logger.info("\n🤖 Models Defined:");
   for (const [modelName, modelConfig] of Object.entries(config.models)) {
     logger.info(`  • ${modelName}`);
     logger.info(`    Provider: ${modelConfig.provider}`);
@@ -63,5 +62,5 @@ export function printConfigReport(config: Config): void {
     }
   }
 
-  logger.info("", "=".repeat(50) + "\n");
+  logger.info(`\n${"=".repeat(50)}\n`);
 }

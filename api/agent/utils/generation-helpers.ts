@@ -12,7 +12,7 @@ import {
 import { createManageMcpIntegration } from "../tools/manage-integration.ts";
 import { createWriteCodeTool } from "../tools/write-code.ts";
 import type { McpContext, SubroutineCapture } from "./types.ts";
-const logger = getLogger("agent.utils.generation-helpers", "warn");
+const logger = getLogger("api/agent/utils/generation-helpers.ts", "warn");
 
 export type ToolCreationOptions = {
   mcpContext?: McpContext;

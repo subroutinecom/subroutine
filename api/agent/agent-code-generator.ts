@@ -14,7 +14,7 @@ import {
   logGenerationSteps,
 } from "./utils/generation-helpers.ts";
 import type { CodeGenerationResult, McpContext, SubroutineCapture } from "./utils/types.ts";
-const logger = getLogger("agent.agent-code-generator");
+const logger = getLogger("api/agent/agent-code-generator.ts");
 
 type GenerateCodeOptions = {
   needsImmediateInputs?: boolean;

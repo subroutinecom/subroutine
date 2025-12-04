@@ -1,10 +1,10 @@
+import loggerNameMatch from "./logger-name-match.ts";
 import noConsoleWithout from "./no-console-without-text.ts";
+import noConsole from "./no-console.ts";
 import noGraphqlFetch from "./no-graphql-fetch.ts";
 import noRoutesImports from "./no-routes-imports.ts";
 import noWindowSessionOrLocalStorage from "./no-window-session-or-local-storage.ts";
 import onlyFieldWithInputMutations from "./only-fieldWithInput-mutations.ts";
-import noConsole from "./no-console.ts";
-import loggerNameMatch from "./logger-name-match.ts";
 
 export const localRulesPlugin = {
   rules: {

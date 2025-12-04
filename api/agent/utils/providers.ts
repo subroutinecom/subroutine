@@ -9,7 +9,7 @@ import { createWebSearchTool } from "../agent-web-search.ts";
 
 import { Capability } from "./types";
 import { getLogger } from "../../utils/logger.ts";
-const logger = getLogger("agent.utils.providers");
+const logger = getLogger("api/agent/utils/providers.ts");
 
 
 export { Capability };

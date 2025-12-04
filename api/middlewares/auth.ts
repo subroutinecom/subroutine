@@ -2,7 +2,7 @@ import type { Context, Next } from "hono";
 import { auth } from "../auth.ts";
 import { verifyApiKey } from "../models/apikey.ts";
 import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("middlewares.auth");
+const logger = getLogger("api/middlewares/auth.ts");
 
 
 type ApiSession = Awaited<ReturnType<typeof auth.api.getSession>>;

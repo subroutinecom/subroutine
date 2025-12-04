@@ -3,7 +3,7 @@ import pg from "pg";
 import { migrations } from "./migrations-index.ts";
 import type { Database as DB } from "./schema.ts";
 import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("db.index");
+const logger = getLogger("api/db/index.ts");
 
 
 const { Pool } = pg;

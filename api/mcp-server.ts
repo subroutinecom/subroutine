@@ -3,7 +3,7 @@ import { z } from "zod";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
 import { executeRequest } from "./models/subroutine.ts";
 import { getLogger } from "./utils/logger.ts";
-const logger = getLogger("mcp-server");
+const logger = getLogger("api/mcp-server.ts");
 
 export type McpServerContext = {
   organizationId: string;

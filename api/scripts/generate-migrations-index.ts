@@ -5,7 +5,7 @@
 
 import { join } from "node:path";
 import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("scripts.generate-migrations-index");
+const logger = getLogger("api/scripts/generate-migrations-index.ts");
 
 
 const migrationsDir = join(new URL(".", import.meta.url).pathname, "../migrations");

@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-read --allow-write --allow-run --allow-env
 
 import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("scripts.better-auth-generate");
+const logger = getLogger("api/scripts/better-auth-generate.ts");
 
 const sqlDir = "better-auth_migrations";
 const tsDir = "migrations";

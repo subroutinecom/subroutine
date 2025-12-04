@@ -12,7 +12,7 @@ import type { McpAuthConfig } from "./integration.ts";
 import { getIntegration } from "./integration.ts";
 import { generatePatLinkUrl } from "./pat-link.ts";
 import { getSubroutine } from "./subroutine.ts";
-const logger = getLogger("models.run");
+const logger = getLogger("api/models/run.ts");
 
 export type Run = {
   id: string;

@@ -3,7 +3,7 @@ import { getIntegrationByName } from "../../models/integration.ts";
 import { getLogger } from "../../utils/logger.ts";
 import { runMcpIntegrator } from "../agent-mcp-integrator.ts";
 import type { McpContext } from "../utils/types.ts";
-const logger = getLogger("agent.tools.manage-integration");
+const logger = getLogger("api/agent/tools/manage-integration.ts");
 
 export const createManageMcpIntegration = (
   mcpContext: McpContext,

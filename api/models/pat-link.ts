@@ -5,7 +5,7 @@ import { getConfig } from "../config/loader.ts";
 import { getIntegration, type McpAuthConfig } from "./integration.ts";
 import { createConnectedAccount, type ConnectedAccountCredentials } from "./connected-account.ts";
 import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("models.pat-link");
+const logger = getLogger("api/models/pat-link.ts");
 
 
 export const PAT_LINK_STATUS = ["pending", "used", "expired"] as const;

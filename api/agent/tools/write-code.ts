@@ -4,7 +4,7 @@ import { getLogger } from "../../utils/logger.ts";
 import type { McpIntegrationInfo } from "../prompts/index.ts";
 import type { McpContext, SubroutineCapture } from "../utils/types.ts";
 import { validateCode } from "../validation/validator.ts";
-const logger = getLogger("agent.tools.write-code", "debug");
+const logger = getLogger("api/agent/tools/write-code.ts", "debug");
 
 type GenerateSubroutineOptions = {
   needsImmediateInputs?: boolean;

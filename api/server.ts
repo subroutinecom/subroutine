@@ -27,7 +27,7 @@ import { registerAuthenticatedTestEndpoints, registerTestEndpoints } from "./tes
 import { registerUiRoutes } from "./ui/server.tsx";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
 import { getLogger } from "./utils/logger.ts";
-const logger = getLogger("server");
+const logger = getLogger("api/server.ts");
 
 
 const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";

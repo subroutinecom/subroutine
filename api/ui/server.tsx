@@ -4,7 +4,7 @@ import { auth } from "../auth.ts";
 import { getConfig } from "../config/loader.ts";
 import { renderUi } from "./router.tsx";
 import { getLogger } from "../utils/logger.ts";
-const logger = getLogger("ui.server");
+const logger = getLogger("api/ui/server.tsx");
 
 
 export const registerUiRoutes = (app: Hono<any>) => {

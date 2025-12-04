@@ -7,7 +7,7 @@ import { generateMockCode } from "../mocks.ts";
 import { getLogger } from "../utils/logger.ts";
 import { getIntegration } from "./integration.ts";
 import { runSubroutine, type Run } from "./run.ts";
-const logger = getLogger("models.subroutine");
+const logger = getLogger("api/models/subroutine.ts");
 
 export type Subroutine = {
   id: string;
