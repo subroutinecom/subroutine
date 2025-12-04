@@ -33,6 +33,7 @@
     "yaml": "npm:yaml@^2.8.1",
     "zod": "npm:zod@^3.25.76",
     "ts-morph": "npm:ts-morph@^26.0.0",
+    "winston": "npm:winston@^3.13.0",
     "eslint": "npm:eslint@^9.39.1",
     "typescript-eslint": "npm:typescript-eslint@^8.46.3"
   },

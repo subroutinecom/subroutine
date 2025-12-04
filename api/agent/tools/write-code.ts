@@ -48,7 +48,7 @@ export const createWriteCodeTool = (
     : baseToolSchema;
 
   return {
-    description: "Submit a generated TypeScript subroutine with schemas",
+    description: "Submit a generated TypeScript function with input and output schemas",
     inputSchema: toolSchema,
     execute: async (params: z.infer<typeof toolSchema>) => {
       console.log(`[tool:writeCode] Called`);
