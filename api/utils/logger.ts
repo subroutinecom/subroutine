@@ -1,11 +1,37 @@
 import winston from "winston";
 
+const { combine, timestamp, printf, colorize, errors } = winston.format;
+
+const logFormat = printf((info: any) => {
+  const { level, message, module, timestamp, stack, ...meta } = info;
+  let log = `${timestamp} [${level}]`;
+  if (module) {
+    log += ` [${module}]`;
+  }
+  log += `: ${message}`;
+
+  if (stack) {
+    log += `\n${stack}`;
+  }
+
+  if (Object.keys(meta).length > 0) {
+    log += `\n${JSON.stringify(meta, null, 2)}`;
+  }
+
+  return log;
+});
+
 const rootLogger = winston.createLogger({
   level: "info",
   format: winston.format.json(),
   transports: [
     new winston.transports.Console({
-      format: winston.format.json(),
+      format: combine(
+        timestamp({ format: "HH:mm:ss" }),
+        colorize(),
+        errors({ stack: true }),
+        logFormat
+      ),
     }),
   ],
 });
