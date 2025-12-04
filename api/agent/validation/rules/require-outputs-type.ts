@@ -1,7 +1,10 @@
 import type { SourceFile } from "ts-morph";
-import type { ValidationError } from "../types";
+import type { ValidationError, ValidationContext } from "../types";
 
-export const requireOutputsType = (sourceFile: SourceFile): ValidationError[] => {
+export const requireOutputsType = (
+  sourceFile: SourceFile,
+  _context?: ValidationContext
+): ValidationError[] => {
   const outputsTypeAlias = sourceFile.getTypeAlias("Outputs");
   const outputsInterface = sourceFile.getInterface("Outputs");
 

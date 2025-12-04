@@ -1,7 +1,10 @@
 import type { SourceFile } from "ts-morph";
-import type { ValidationError } from "../types";
+import type { ValidationError, ValidationContext } from "../types";
 
-export const requireExportMain = (sourceFile: SourceFile): ValidationError[] => {
+export const requireExportMain = (
+  sourceFile: SourceFile,
+  _context?: ValidationContext
+): ValidationError[] => {
   const mainFunc = sourceFile.getFunction("main");
 
   if (mainFunc?.isExported()) {

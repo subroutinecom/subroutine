@@ -25,6 +25,8 @@ export const createAgentTools = (
   const tools: Record<string, unknown> = {
     generateSubroutine: createGenerateSubroutineTool(onCapture, {
       needsImmediateInputs: options.needsImmediateInputs,
+      mcpContext: options.mcpContext,
+      mcpIntegrations: options.mcpIntegrations,
     }),
   };
 

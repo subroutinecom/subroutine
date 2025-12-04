@@ -1,7 +1,10 @@
 import { SyntaxKind, type SourceFile } from "ts-morph";
-import type { ValidationError } from "../types";
+import type { ValidationError, ValidationContext } from "../types";
 
-export const noFetchCalls = (sourceFile: SourceFile): ValidationError[] => {
+export const noFetchCalls = (
+  sourceFile: SourceFile,
+  _context?: ValidationContext
+): ValidationError[] => {
   const errors: ValidationError[] = [];
 
   const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);

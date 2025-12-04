@@ -1,7 +1,10 @@
 import { SyntaxKind, type SourceFile } from "ts-morph";
-import type { ValidationError } from "../types";
+import type { ValidationError, ValidationContext } from "../types";
 
-export const requireAsyncMain = (sourceFile: SourceFile): ValidationError[] => {
+export const requireAsyncMain = (
+  sourceFile: SourceFile,
+  _context?: ValidationContext
+): ValidationError[] => {
   const mainFunc = sourceFile.getFunction("main");
 
   if (mainFunc) {

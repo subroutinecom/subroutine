@@ -15,13 +15,20 @@ type ValidationResult = {
   errors: ValidationError[];
 };
 
-const validateCode = async (code: string): Promise<ValidationResult> => {
+type ValidationContext = {
+  mcpIntegrationNames?: string[];
+};
+
+const validateCode = async (
+  code: string,
+  context?: ValidationContext
+): Promise<ValidationResult> => {
   const response = await fetch(`${API_BASE}/tests/validate-code`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ code, mcpIntegrationNames: context?.mcpIntegrationNames }),
   });
 
   if (!response.ok) {
@@ -553,6 +560,154 @@ describe("AST-based Code Validation", () => {
       expect(
         result.errors.some((e: ValidationError) => e.rule === "require-mcp-client-access")
       ).toBe(true);
+    });
+  });
+
+  describe("validate-mcp-integration-name", () => {
+    it("accepts valid integration name when context provided", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { result: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getMcpClient("github");
+          return { result: client };
+        }
+      `;
+      const result = await validateCode(code, { mcpIntegrationNames: ["github", "slack"] });
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "validate-mcp-integration-name")
+      ).toHaveLength(0);
+    });
+
+    it("rejects invalid integration name when context provided", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { result: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getMcpClient("made-up-integration");
+          return { result: client };
+        }
+      `;
+      const result = await validateCode(code, { mcpIntegrationNames: ["github", "slack"] });
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some((e: ValidationError) => e.rule === "validate-mcp-integration-name")
+      ).toBe(true);
+    });
+
+    it("error message lists available integrations", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = {};
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getMcpClient("unknown");
+          return {};
+        }
+      `;
+      const result = await validateCode(code, { mcpIntegrationNames: ["github", "linear"] });
+      const error = result.errors.find(
+        (e: ValidationError) => e.rule === "validate-mcp-integration-name"
+      );
+      expect(error?.message).toContain("unknown");
+      expect(error?.message).toContain("github");
+      expect(error?.message).toContain("linear");
+    });
+
+    it("skips validation when no context provided (discovery mode)", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { result: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getMcpClient("any-name-is-fine");
+          return { result: client };
+        }
+      `;
+      // No context provided - discovery mode, should not validate names
+      const result = await validateCode(code);
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "validate-mcp-integration-name")
+      ).toHaveLength(0);
+    });
+
+    it("skips validation when mcpIntegrationNames is empty", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { result: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getMcpClient("any-name");
+          return { result: client };
+        }
+      `;
+      const result = await validateCode(code, { mcpIntegrationNames: [] });
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "validate-mcp-integration-name")
+      ).toHaveLength(0);
+    });
+
+    it("catches multiple invalid integration names", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = {};
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client1 = await integrations.getMcpClient("invalid1");
+          const client2 = await integrations.getMcpClient("invalid2");
+          return {};
+        }
+      `;
+      const result = await validateCode(code, { mcpIntegrationNames: ["github"] });
+      const errors = result.errors.filter(
+        (e: ValidationError) => e.rule === "validate-mcp-integration-name"
+      );
+      expect(errors).toHaveLength(2);
+    });
+
+    it("allows mix of valid and invalid names, catches only invalid", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = {};
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client1 = await integrations.getMcpClient("github");
+          const client2 = await integrations.getMcpClient("invalid");
+          return {};
+        }
+      `;
+      const result = await validateCode(code, { mcpIntegrationNames: ["github", "slack"] });
+      const errors = result.errors.filter(
+        (e: ValidationError) => e.rule === "validate-mcp-integration-name"
+      );
+      expect(errors).toHaveLength(1);
+      expect(errors[0].message).toContain("invalid");
+    });
+
+    it("handles template literals without substitutions", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = {};
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getMcpClient(\`invalid-name\`);
+          return {};
+        }
+      `;
+      const result = await validateCode(code, { mcpIntegrationNames: ["github"] });
+      expect(
+        result.errors.some((e: ValidationError) => e.rule === "validate-mcp-integration-name")
+      ).toBe(true);
+    });
+
+    it("skips dynamic expressions (variables)", async () => {
+      const code = `
+        type Inputs = { integrationName: string };
+        type Outputs = {};
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getMcpClient(inputs.integrationName);
+          return {};
+        }
+      `;
+      // Dynamic expressions can't be validated at compile time
+      const result = await validateCode(code, { mcpIntegrationNames: ["github"] });
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "validate-mcp-integration-name")
+      ).toHaveLength(0);
     });
   });
 
