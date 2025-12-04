@@ -26,7 +26,6 @@ Interactions:
 
 Feedback Loop:
 
-- After code implementation, run `deno task prettier:format` to format the code properly.
 - Before handing off control to the user, run `deno task validate` and `deno task test` and ensure those are passing.
 
 Dont's
