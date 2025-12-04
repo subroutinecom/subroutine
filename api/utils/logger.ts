@@ -21,21 +21,6 @@ const logFormat = printf((info: any) => {
   return log;
 });
 
-const rootLogger = winston.createLogger({
-  level: "debug", // Set to debug to allow child loggers to use debug level
-  format: winston.format.json(),
-  transports: [
-    new winston.transports.Console({
-      format: combine(
-        timestamp({ format: "HH:mm:ss" }),
-        colorize(),
-        errors({ stack: true }),
-        logFormat
-      ),
-    }),
-  ],
-});
-
 /**
  * Returns a logger instance for the given module name.
  *
@@ -47,7 +32,22 @@ export const getLogger = (
   name: string,
   level: "debug" | "info" | "warn" | "error" = "info"
 ): winston.Logger => {
-  const childLogger = rootLogger.child({ module: name });
-  childLogger.level = level;
-  return childLogger;
+  return winston
+    .createLogger({
+      levels: winston.config.npm.levels,
+      level: "debug", // Set to debug to allow child loggers to use debug level
+      format: winston.format.json(),
+      transports: [
+        new winston.transports.Console({
+          level,
+          format: combine(
+            timestamp({ format: "HH:mm:ss" }),
+            colorize(),
+            errors({ stack: true }),
+            logFormat
+          ),
+        }),
+      ],
+    })
+    .child({ module: name });
 };

@@ -4,7 +4,7 @@ import { getLogger } from "../../utils/logger.ts";
 import type { McpIntegrationInfo } from "../prompts/index.ts";
 import type { McpContext, SubroutineCapture } from "../utils/types.ts";
 import { validateCode } from "../validation/validator.ts";
-const logger = getLogger("agent.tools.write-code");
+const logger = getLogger("agent.tools.write-code", "debug");
 
 type GenerateSubroutineOptions = {
   needsImmediateInputs?: boolean;
@@ -53,8 +53,8 @@ export const createWriteCodeTool = (
     description: "Submit a generated TypeScript function with input and output schemas",
     inputSchema: toolSchema,
     execute: async (params: z.infer<typeof toolSchema>) => {
-      logger.info(`[tool:writeCode] Called`);
-      logger.info(`[tool:writeCode] Code length: ${params.code.length} chars`);
+      logger.debug(`[tool:writeCode] Called`);
+      logger.debug(`[tool:writeCode] Code length: ${params.code.length} chars`);
       const { inputsSchema, outputsSchema, code } = params;
       const immediateInputs =
         "immediateInputs" in params
@@ -68,7 +68,7 @@ export const createWriteCodeTool = (
         const errorMessages = validation.errors.map((e) =>
           e.line ? `Line ${e.line}: ${e.message}` : e.message
         );
-        logger.info(`[tool:writeCode] Validation failed:`, errorMessages);
+        logger.warn(`[tool:writeCode] Validation failed:`, errorMessages);
         return {
           success: false,
           errors: errorMessages,

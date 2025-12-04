@@ -33,8 +33,8 @@ export const generateCode = async (
   logger.info(
     `[generateCode] Starting with model: ${(model as { modelId?: string }).modelId ?? "unknown"}`
   );
-  logger.info(`[generateCode] Request: "${request}"`);
-  logger.info(
+  logger.debug(`[generateCode] Request: "${request}"`);
+  logger.debug(
     `[generateCode] Options: mcpIntegrations=${options?.mcpIntegrations?.length ?? 0}, hasContext=${!!options?.mcpContext}`
   );
 
@@ -54,7 +54,7 @@ export const generateCode = async (
       needsImmediateInputs: options?.needsImmediateInputs,
     });
 
-    logger.info(`[generateCode] Available tools: ${Object.keys(tools).join(", ")}`);
+    logger.debug(`[generateCode] Available tools: ${Object.keys(tools).join(", ")}`);
 
     // 2. Run Agent
     const result = streamText({
