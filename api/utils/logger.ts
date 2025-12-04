@@ -22,7 +22,7 @@ const logFormat = printf((info: any) => {
 });
 
 const rootLogger = winston.createLogger({
-  level: "info",
+  level: "debug", // Set to debug to allow child loggers to use debug level
   format: winston.format.json(),
   transports: [
     new winston.transports.Console({
@@ -43,10 +43,11 @@ const rootLogger = winston.createLogger({
  * @param level - Optional log level override for this logger
  * @returns A Winston logger instance
  */
-export const getLogger = (name: string, level?: string): winston.Logger => {
+export const getLogger = (
+  name: string,
+  level: "debug" | "info" | "warn" | "error" = "info"
+): winston.Logger => {
   const childLogger = rootLogger.child({ module: name });
-  if (level) {
-    childLogger.level = level;
-  }
+  childLogger.level = level;
   return childLogger;
 };

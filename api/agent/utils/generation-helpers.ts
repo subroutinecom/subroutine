@@ -1,4 +1,5 @@
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../../models/errors.ts";
+import { getLogger } from "../../utils/logger.ts";
 import type { McpIntegrationInfo } from "../prompts/index.ts";
 import {
   createGetGlobalIntegrations,
@@ -11,9 +12,7 @@ import {
 import { createManageMcpIntegration } from "../tools/manage-integration.ts";
 import { createWriteCodeTool } from "../tools/write-code.ts";
 import type { McpContext, SubroutineCapture } from "./types.ts";
-import { getLogger } from "../../utils/logger.ts";
-const logger = getLogger("agent.utils.generation-helpers");
-
+const logger = getLogger("agent.utils.generation-helpers", "warn");
 
 export type ToolCreationOptions = {
   mcpContext?: McpContext;
