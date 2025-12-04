@@ -22,6 +22,7 @@
     "npm:bcrypt@6": "6.0.0",
     "npm:better-auth@1.3.34": "1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.1_kysely@0.28.8_nanostores@1.0.1",
     "npm:eslint@^9.39.1": "9.39.1",
+    "npm:globals@^16.5.0": "16.5.0",
     "npm:google-auth-library@^10.5.0": "10.5.0",
     "npm:googleapis@134": "134.0.0",
     "npm:graphql-yoga@^5.16.2": "5.16.2_graphql@16.12.0",
@@ -579,7 +580,7 @@
         "ajv@6.12.6",
         "debug",
         "espree",
-        "globals",
+        "globals@14.0.0",
         "ignore@5.3.2",
         "import-fresh",
         "js-yaml",
@@ -3045,6 +3046,9 @@
     "globals@14.0.0": {
       "integrity": "sha512-oahGvuMGQlPw/ivIYBjVSrWAfWLBeku5tpPE2fOPLi+WHffIWbuh2tCjhyQhTBPMf5E9jDEH4FOmTYgYwbKwtQ=="
     },
+    "globals@16.5.0": {
+      "integrity": "sha512-c/c15i26VrJ4IRt5Z89DnIzCGDn9EcebibhAOjw5ibqEHsE1wLUgkPn9RDmNcUKyU87GeaL633nyJ+pplFR2ZQ=="
+    },
     "globby@11.1.0": {
       "integrity": "sha512-jhIXaOzy1sb8IyocaruWSn1TjmnBVs8Ayhcy83rmxNJ8q2uWKCAj3CnJY+KpGSXCueAPc0i05kVvVKtP1t9S3g==",
       "dependencies": [
@@ -4885,6 +4889,7 @@
       "npm:bcrypt@6",
       "npm:better-auth@1.3.34",
       "npm:eslint@^9.39.1",
+      "npm:globals@^16.5.0",
       "npm:google-auth-library@^10.5.0",
       "npm:googleapis@134",
       "npm:graphql-yoga@^5.16.2",

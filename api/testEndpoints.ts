@@ -1,11 +1,11 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { randomUUID } from "node:crypto";
-import type { AuthContext } from "./middlewares/auth";
-import { completeMockAuthorization } from "./services/mock-oauth";
-import { generatePatLinkUrl } from "./models/pat-link";
-import { validateCode } from "./agent/validation/validator.ts";
+import { checkCustomRules } from "./agent/validation/ast-checker.ts";
 import { typeCheckCode } from "./agent/validation/type-checker.ts";
-import { lintCode } from "./agent/validation/eslint-checker.ts";
+import { validateCode } from "./agent/validation/validator.ts";
+import type { AuthContext } from "./middlewares/auth.ts";
+import { generatePatLinkUrl } from "./models/pat-link.ts";
+import { completeMockAuthorization } from "./services/mock-oauth.ts";
 
 /**
  * Register test-only endpoints. These are only available when ENABLE_MOCK_OAUTH is true.
@@ -135,9 +135,9 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
     });
   });
 
-  // ESLint linting endpoint - runs ESLint rules on subroutine code
-  app.post("/tests/lint-code", async (c) => {
-    let body: { code?: string };
+  // Custom rules validation endpoint - runs AST-based rules
+  app.post("/tests/check-custom-rules", async (c) => {
+    let body: { code?: string; mcpIntegrationNames?: string[] };
     try {
       body = await c.req.json();
     } catch {
@@ -164,7 +164,12 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
       );
     }
 
-    const result = await lintCode(body.code);
+    // Build context for validation if mcpIntegrationNames is provided
+    const context = body.mcpIntegrationNames
+      ? { mcpIntegrationNames: body.mcpIntegrationNames }
+      : undefined;
+
+    const result = checkCustomRules(body.code, context);
 
     return c.json({
       valid: result.valid,
