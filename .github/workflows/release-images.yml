@@ -7,6 +7,21 @@ on:
         description: Docker image tag (defaults to commit SHA)
         required: false
         default: ""
+      admin_panel:
+        description: Build admin-panel image
+        required: false
+        type: boolean
+        default: true
+      api:
+        description: Build api image
+        required: false
+        type: boolean
+        default: true
+      sandbox:
+        description: Build sandbox image
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build-and-push:
@@ -34,20 +49,41 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Select services
+        run: |
+          services=()
+          if [[ "${{ github.event.inputs.admin_panel }}" == 'true' ]]; then
+            services+=("admin-panel")
+          fi
+          if [[ "${{ github.event.inputs.api }}" == 'true' ]]; then
+            services+=("api")
+          fi
+          if [[ "${{ github.event.inputs.sandbox }}" == 'true' ]]; then
+            services+=("sandbox")
+          fi
+
+          if [[ ${#services[@]} -eq 0 ]]; then
+            echo "No services selected to build."
+            exit 1
+          fi
+
+          echo "SERVICES=${services[*]}" >> "$GITHUB_ENV"
+          echo "Selected services: ${services[*]}"
+
       - name: Build release images via docker compose
-        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml build admin-panel api sandbox
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml build $SERVICES
 
       - name: Push release images via docker compose
-        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml push admin-panel api sandbox
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml push $SERVICES
 
       - name: Tag images as latest
         run: |
-          for image in admin-panel api sandbox; do
+          for image in $SERVICES; do
             docker tag "${GHCR_IMAGE_PREFIX}-${image}:${IMAGE_TAG}" "${GHCR_IMAGE_PREFIX}-${image}:latest"
           done
 
       - name: Push latest tags
         run: |
-          for image in admin-panel api sandbox; do
+          for image in $SERVICES; do
             docker push "${GHCR_IMAGE_PREFIX}-${image}:latest"
           done
