@@ -5,7 +5,6 @@ import { executeRequest } from "./models/subroutine.ts";
 import { getLogger } from "./utils/logger.ts";
 const logger = getLogger("mcp-server");
 
-
 export type McpServerContext = {
   organizationId: string;
   sessionId: string; // Used as viewerId for subroutine calls
@@ -38,7 +37,7 @@ export const createMcpServer = (ctx: McpServerContext): McpServer => {
       },
     },
     async ({ request }) => {
-      logger.info(`[MCP] handleRequest: ${request}`);
+      logger.info(`handleRequest: ${request}`);
 
       try {
         const { subroutine, run } = await executeRequest({

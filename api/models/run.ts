@@ -1,19 +1,18 @@
 import { nanoid } from "nanoid";
+import { getConfig } from "../config/loader.ts";
 import { db } from "../db/index.ts";
-import type { McpAuthConfig } from "./integration.ts";
-import { getIntegration } from "./integration.ts";
-import { getSubroutine } from "./subroutine.ts";
+import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
+import type { SandboxMcpConfig } from "../integrations/providers/types.ts";
+import { generateAuthorizationUrl } from "../services/oauth.ts";
+import { getLogger } from "../utils/logger.ts";
 import type { ConnectedAccountCredentials } from "./connected-account.ts";
 import { getConnectedAccountsByViewer } from "./connected-account.ts";
-import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
 import { IntegrationAuthRequiredError } from "./errors.ts";
-import { generateAuthorizationUrl } from "../services/oauth.ts";
+import type { McpAuthConfig } from "./integration.ts";
+import { getIntegration } from "./integration.ts";
 import { generatePatLinkUrl } from "./pat-link.ts";
-import type { SandboxMcpConfig } from "../integrations/providers/types.ts";
-import { getConfig } from "../config/loader.ts";
-import { getLogger } from "../utils/logger.ts";
+import { getSubroutine } from "./subroutine.ts";
 const logger = getLogger("models.run");
-
 
 export type Run = {
   id: string;
@@ -71,8 +70,8 @@ const requiresViewerScopedAccount = (provider: IntegrationProvider): boolean => 
 };
 
 export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> => {
-  logger.info(`[runSubroutine] Starting for subroutine: ${params.subroutineId}`);
-  logger.info(`[runSubroutine] viewerId: ${params.viewerId}, orgId: ${params.organizationId}`);
+  logger.info(`Starting for subroutine: ${params.subroutineId}`);
+  logger.info(`viewerId: ${params.viewerId}, orgId: ${params.organizationId}`);
 
   const subroutine = await getSubroutine(params.subroutineId, params.organizationId);
   if (!subroutine) {
@@ -143,10 +142,10 @@ const buildSandboxIntegrations = async (params: {
   logger.info(
     `[buildSandboxIntegrations] viewerId: ${params.viewerId}, orgId: ${params.organizationId}`
   );
-  logger.info(`[buildSandboxIntegrations] integrationIds: ${params.integrationIds.join(", ")}`);
+  logger.info(`integrationIds: ${params.integrationIds.join(", ")}`);
 
   if (params.integrationIds.length === 0) {
-    logger.info(`[buildSandboxIntegrations] No integrations to process`);
+    logger.info(`No integrations to process`);
     return [];
   }
 
@@ -157,10 +156,10 @@ const buildSandboxIntegrations = async (params: {
 
   const integrations: SandboxIntegrationDefinition[] = [];
   for (const integrationId of params.integrationIds) {
-    logger.info(`[buildSandboxIntegrations] Processing integration: ${integrationId}`);
+    logger.info(`Processing integration: ${integrationId}`);
     const integration = await getIntegration(integrationId, params.organizationId);
     if (!integration || !integration.enabled) {
-      logger.info(`[buildSandboxIntegrations] Integration ${integrationId} not found or disabled`);
+      logger.info(`Integration ${integrationId} not found or disabled`);
       throw new Error(`Integration ${integrationId} is not available`);
     }
 
@@ -180,7 +179,7 @@ const buildSandboxIntegrations = async (params: {
       // For bearer_passthrough, we need the viewer's connected account
       if (authConfig.authStrategy.type === "bearer_passthrough") {
         const connectedAccount = connectedAccountsMap.get(integrationId);
-        logger.info(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
+        logger.info(`Connected account found: ${!!connectedAccount}`);
         if (!connectedAccount) {
           // MCP with bearer_passthrough requires OAuth config for user authentication
           if (!authConfig.oauthConfig) {
@@ -232,7 +231,7 @@ const buildSandboxIntegrations = async (params: {
       ) {
         // Viewer-scoped api_key - user provides their own PAT
         const connectedAccount = connectedAccountsMap.get(integrationId);
-        logger.info(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
+        logger.info(`Connected account found: ${!!connectedAccount}`);
         if (!connectedAccount) {
           // Generate PAT link for user to provide their API key
           const metadata = authConfig.metadata || {};

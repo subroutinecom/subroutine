@@ -53,8 +53,8 @@ export const createWriteCodeTool = (
     description: "Submit a generated TypeScript function with input and output schemas",
     inputSchema: toolSchema,
     execute: async (params: z.infer<typeof toolSchema>) => {
-      logger.debug(`[tool:writeCode] Called`);
-      logger.debug(`[tool:writeCode] Code length: ${params.code.length} chars`);
+      logger.debug(`Called`);
+      logger.debug(`Code length: ${params.code.length} chars`);
       const { inputsSchema, outputsSchema, code } = params;
       const immediateInputs =
         "immediateInputs" in params
@@ -68,7 +68,7 @@ export const createWriteCodeTool = (
         const errorMessages = validation.errors.map((e) =>
           e.line ? `Line ${e.line}: ${e.message}` : e.message
         );
-        logger.warn(`[tool:writeCode] Validation failed:`, errorMessages);
+        logger.warn(`Validation failed:`, errorMessages);
         return {
           success: false,
           errors: errorMessages,
@@ -82,7 +82,7 @@ export const createWriteCodeTool = (
         immediateInputs,
       };
       onCapture(result);
-      logger.info(`[tool:writeCode] Success - code captured`);
+      logger.info(`Success - code captured`);
       return {
         success: true,
         message: "Subroutine generated successfully",

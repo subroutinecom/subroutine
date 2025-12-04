@@ -45,7 +45,7 @@ export const createAgentTools = (
         usedIntegrationIds
       );
     } else {
-      logger.debug(`[generateCode] Discovery mode enabled - adding discovery tools`);
+      logger.debug(`Discovery mode enabled - adding discovery tools`);
       tools.getOrganizationIntegrations = createGetOrganizationIntegrations(mcpContext);
       tools.getGlobalIntegrations = createGetGlobalIntegrations(mcpContext);
       tools.listMcpTools = createListMcpToolsDiscovery(
@@ -61,10 +61,10 @@ export const createAgentTools = (
 };
 
 export const logGenerationSteps = (steps: any[]) => {
-  logger.info(`[generateCode] Completed in ${steps.length} step(s)`);
+  logger.info(`Completed in ${steps.length} step(s)`);
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    logger.debug(`[generateCode] Step ${i + 1}:`);
+    logger.debug(`Step ${i + 1}:`);
     if (step.toolCalls && step.toolCalls.length > 0) {
       for (const tc of step.toolCalls) {
         const args = "args" in tc ? tc.args : {};
@@ -147,14 +147,14 @@ export const determineUsedIntegrations = (
   for (const [name, id] of mcpContext?.integrationNameToId ?? new Map()) {
     if (code.includes(`getMcpClient("${name}")`) || code.includes(`getMcpClient('${name}')`)) {
       actuallyUsedIds.add(id);
-      logger.debug(`[generateCode] Integration "${name}" (${id}) is used in generated code`);
+      logger.debug(`Integration "${name}" (${id}) is used in generated code`);
     }
   }
 
   // Only use the filtered set if we found any matches (fallback to original if parsing fails)
   const finalUsedIds =
     actuallyUsedIds.size > 0 ? Array.from(actuallyUsedIds) : Array.from(usedIntegrationIds);
-  logger.debug(`[generateCode] Final used integration IDs: ${finalUsedIds.join(", ") || "none"}`);
+  logger.debug(`Final used integration IDs: ${finalUsedIds.join(", ") || "none"}`);
 
   return finalUsedIds;
 };
