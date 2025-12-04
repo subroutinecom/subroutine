@@ -47,7 +47,7 @@
     "jsxImportSource": "react"
   },
   "tasks": {
-    "migrations:generate": "deno run --allow-read --allow-write scripts/generate-migrations-index.ts",
+    "migrations:generate": "deno run --allow-read --allow-write --allow-env scripts/generate-migrations-index.ts",
     "start": "deno run --env-file=.env --allow-net --allow-read --allow-env --allow-ffi --allow-sys --sloppy-imports --node-modules-dir server.ts",
     "typecheck": "deno check --sloppy-imports",
     "eslint": "deno run --allow-read --allow-env --allow-sys --allow-run npm:eslint@^9.39.1",
