@@ -42,6 +42,7 @@ export const createMcpServer = (ctx: McpServerContext): McpServer => {
           request,
           organizationId,
           viewerId: sessionId,
+          wait: true,
         });
 
         return {

@@ -357,6 +357,7 @@ export type ExecuteRequestParams = {
   integrations?: string[];
   timeoutMs?: number;
   useMock?: boolean;
+  wait?: boolean;
 };
 
 export type ExecuteRequestResult = {
@@ -386,6 +387,7 @@ export const executeRequest = async (
     viewerId: params.viewerId,
     inputs: subroutine.initialInputs,
     timeoutMs: params.timeoutMs,
+    wait: params.wait,
   });
 
   return { subroutine, run };
