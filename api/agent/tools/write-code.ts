@@ -1,8 +1,8 @@
 import { z } from "zod";
+import { getAvailableIntegrations } from "../../models/integration.ts";
+import type { McpIntegrationInfo } from "../prompts/index.ts";
+import type { McpContext, SubroutineCapture } from "../utils/types.ts";
 import { validateCode } from "../validation/validator.ts";
-import type { McpContext, SubroutineCapture } from "../utils/types";
-import type { McpIntegrationInfo } from "../prompts/index";
-import { getAvailableIntegrations } from "../../models/integration";
 
 type GenerateSubroutineOptions = {
   needsImmediateInputs?: boolean;
@@ -27,7 +27,7 @@ const buildValidationContext = async (options?: GenerateSubroutineOptions) => {
   return undefined;
 };
 
-export const createGenerateSubroutineTool = (
+export const createWriteCodeTool = (
   onCapture: (result: SubroutineCapture) => void,
   options?: GenerateSubroutineOptions
 ) => {
@@ -51,8 +51,8 @@ export const createGenerateSubroutineTool = (
     description: "Submit a generated TypeScript subroutine with schemas",
     inputSchema: toolSchema,
     execute: async (params: z.infer<typeof toolSchema>) => {
-      console.log(`[tool:generateSubroutine] Called`);
-      console.log(`[tool:generateSubroutine] Code length: ${params.code.length} chars`);
+      console.log(`[tool:writeCode] Called`);
+      console.log(`[tool:writeCode] Code length: ${params.code.length} chars`);
       const { inputsSchema, outputsSchema, code } = params;
       const immediateInputs =
         "immediateInputs" in params
@@ -66,7 +66,7 @@ export const createGenerateSubroutineTool = (
         const errorMessages = validation.errors.map((e) =>
           e.line ? `Line ${e.line}: ${e.message}` : e.message
         );
-        console.log(`[tool:generateSubroutine] Validation failed:`, errorMessages);
+        console.log(`[tool:writeCode] Validation failed:`, errorMessages);
         return {
           success: false,
           errors: errorMessages,
@@ -80,7 +80,7 @@ export const createGenerateSubroutineTool = (
         immediateInputs,
       };
       onCapture(result);
-      console.log(`[tool:generateSubroutine] Success - code captured`);
+      console.log(`[tool:writeCode] Success - code captured`);
       return {
         success: true,
         message: "Subroutine generated successfully",

@@ -1,16 +1,16 @@
-import type { McpContext, SubroutineCapture } from "./types";
+import { IntegrationAuthRequiredError, type AuthRequirement } from "../../models/errors.ts";
 import type { McpIntegrationInfo } from "../prompts/index.ts";
-import { IntegrationAuthRequiredError, type AuthRequirement } from "../../models/errors";
-import { createGenerateSubroutineTool } from "../tools/generate-subroutine.ts";
 import {
-  createListMcpToolsProvided,
-  createListMcpToolsDiscovery,
-} from "../tools/list-mcp-tools.ts";
-import {
-  createGetOrganizationIntegrations,
   createGetGlobalIntegrations,
+  createGetOrganizationIntegrations,
 } from "../tools/discovery.ts";
+import {
+  createListMcpToolsDiscovery,
+  createListMcpToolsProvided,
+} from "../tools/list-mcp-tools.ts";
 import { createManageMcpIntegration } from "../tools/manage-integration.ts";
+import { createWriteCodeTool } from "../tools/write-code.ts";
+import type { McpContext, SubroutineCapture } from "./types.ts";
 
 export type ToolCreationOptions = {
   mcpContext?: McpContext;
@@ -25,7 +25,7 @@ export const createAgentTools = (
   options: ToolCreationOptions
 ) => {
   const tools: Record<string, unknown> = {
-    generateSubroutine: createGenerateSubroutineTool(onCapture, {
+    writeCode: createWriteCodeTool(onCapture, {
       needsImmediateInputs: options.needsImmediateInputs,
       mcpContext: options.mcpContext,
       mcpIntegrations: options.mcpIntegrations,
