@@ -68,35 +68,29 @@ jobs:
             exit 1
           fi
 
-          echo "SERVICES=${services[*]}" >> "$GITHUB_ENV"
+          printf "SERVICES<<'EOF'\n%s\nEOF\n" "$(printf "%s\n" "${services[@]}")" >> "$GITHUB_ENV"
           echo "Selected services: ${services[*]}"
 
-      - name: Build release images via docker compose
-        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml build $SERVICES
-
-      - name: Push release images via docker compose
-        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml push $SERVICES
+      - name: Build and push release images (with cache)
+        uses: docker/bake-action@v5
+        with:
+          files: |
+            docker-compose.yml
+            docker-compose.prod.yml
+          targets: ${{ env.SERVICES }}
+          set: |
+            *.cache-from=type=gha,scope=subroutine
+            *.cache-to=type=gha,scope=subroutine,mode=max
+          push: true
 
       - name: Tag images with short SHA
         run: |
           for image in $SERVICES; do
-            docker tag "${GHCR_IMAGE_PREFIX}-${image}:${IMAGE_TAG}" "${GHCR_IMAGE_PREFIX}-${image}:${SHORT_IMAGE_TAG}"
-          done
-
-      - name: Push short SHA tags
-        run: |
-          for image in $SERVICES; do
-            docker push "${GHCR_IMAGE_PREFIX}-${image}:${SHORT_IMAGE_TAG}"
+            docker buildx imagetools create --tag "${GHCR_IMAGE_PREFIX}-${image}:${SHORT_IMAGE_TAG}" "${GHCR_IMAGE_PREFIX}-${image}:${IMAGE_TAG}"
           done
 
       - name: Tag images as latest
         run: |
           for image in $SERVICES; do
-            docker tag "${GHCR_IMAGE_PREFIX}-${image}:${IMAGE_TAG}" "${GHCR_IMAGE_PREFIX}-${image}:latest"
-          done
-
-      - name: Push latest tags
-        run: |
-          for image in $SERVICES; do
-            docker push "${GHCR_IMAGE_PREFIX}-${image}:latest"
+            docker buildx imagetools create --tag "${GHCR_IMAGE_PREFIX}-${image}:latest" "${GHCR_IMAGE_PREFIX}-${image}:${IMAGE_TAG}"
           done

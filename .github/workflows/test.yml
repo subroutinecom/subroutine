@@ -14,8 +14,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test images (with cache)
+        uses: docker/bake-action@v5
+        with:
+          files: |
+            docker-compose.yml
+            docker-compose.ci.yml
+          targets: sandbox,api,admin-panel,tests
+          set: |
+            *.cache-from=type=gha,scope=subroutine
+            *.cache-to=type=gha,scope=subroutine,mode=max
+          load: true
+
       - name: Run tests
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up --build --abort-on-container-exit --exit-code-from tests tests
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml up --abort-on-container-exit --exit-code-from tests tests
 
       - name: Dump container logs on failure
         if: failure()
@@ -35,7 +50,3 @@ jobs:
             echo "=========================================="
             docker compose -f docker-compose.yml -f docker-compose.ci.yml logs "$service" || echo "Failed to get logs for $service"
           done
-
-      - name: Cleanup
-        if: always()
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
