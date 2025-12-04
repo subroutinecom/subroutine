@@ -543,7 +543,7 @@ export default function PlaygroundPage() {
                         )}
 
                         <div className="flex flex-wrap gap-2">
-                          {req.patLinkUrl && (
+                          {req.patLinkUrl ? (
                             <button
                               type="button"
                               onClick={() => globalThis.open(req.patLinkUrl, "_blank")}
@@ -552,17 +552,16 @@ export default function PlaygroundPage() {
                               <ExternalLink size={14} />
                               Enter API Key / Token
                             </button>
-                          )}
-                          {req.authorizationUrl && (
+                          ) : req.authorizationUrl ? (
                             <button
                               type="button"
                               onClick={() => globalThis.open(req.authorizationUrl, "_blank")}
-                              className="btn btn-sm btn-outline gap-2"
+                              className="btn btn-sm btn-primary gap-2"
                             >
                               <ExternalLink size={14} />
-                              Authorize with OAuth
+                              Authorize
                             </button>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     ))}

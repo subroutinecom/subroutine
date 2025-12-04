@@ -100,7 +100,7 @@ export const handleListMcpTools = async (
             integrationId,
             integrationName: integration.name,
             provider: integration.provider as IntegrationProvider,
-            authorizationUrl: "",
+            authorizationUrl: patLink.url,
             state: "",
             patLinkUrl: patLink.url,
             authInstructions: metadata.authInstructions as string | undefined,
