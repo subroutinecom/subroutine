@@ -7,10 +7,10 @@ const rule = createRule({
   meta: {
     type: "problem",
     docs: {
-      description: "Disallow use of console messages without descriptive text.",
+      description: "Disallow use of log methods without descriptive text.",
     },
     messages: {
-      noConsoleWithoutText: "console messages must include a descriptive text.",
+      noConsoleWithoutText: "Log messages must include a descriptive text string.",
     },
     schema: [], // no options
   },
@@ -21,8 +21,6 @@ const rule = createRule({
       CallExpression(node) {
         if (
           node.callee.type === "MemberExpression" &&
-          node.callee.object.type === "Identifier" &&
-          node.callee.object.name === "console" &&
           node.callee.property.type === "Identifier" &&
           ["log", "warn", "error", "info", "debug"].indexOf(node.callee.property.name) !== -1
         ) {
