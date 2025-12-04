@@ -4,6 +4,9 @@ import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 import type { AuthContext } from "./middlewares/auth.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
+import { getLogger } from "./utils/logger.ts";
+const logger = getLogger("mcp-legacy-server");
+
 
 const requireOrganizationId = (auth: AuthContext): string => {
   if (!auth.organizationId) {
@@ -172,7 +175,7 @@ export function createLegacyMcpServer(auth: AuthContext): McpServer {
       },
     },
     async ({ request, viewerId, useMock, integrations }) => {
-      console.log(`Generating subroutine for request: ${request}, useMock: ${useMock}`);
+      logger.info(`Generating subroutine for request: ${request}, useMock: ${useMock}`);
 
       try {
         const subroutine = await generateSubroutine({
@@ -242,7 +245,7 @@ export function createLegacyMcpServer(auth: AuthContext): McpServer {
       },
     },
     async ({ request, viewerId, timeoutMs, useMock, integrations }) => {
-      console.log(`Executing request via generated subroutine: ${request}`, {
+      logger.info(`Executing request via generated subroutine: ${request}`, {
         useMock,
         timeoutMs,
       });

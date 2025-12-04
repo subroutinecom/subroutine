@@ -13,6 +13,9 @@ import {
   logGenerationSteps,
 } from "./utils/generation-helpers.ts";
 import type { CodeGenerationResult, McpContext, SubroutineCapture } from "./utils/types.ts";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("agent.agent-code-generator");
+
 
 type GenerateCodeOptions = {
   needsImmediateInputs?: boolean;
@@ -27,11 +30,11 @@ export const generateCode = async (
   request: string,
   options?: GenerateCodeOptions
 ): Promise<CodeGenerationResult> => {
-  console.log(
+  logger.info(
     `[generateCode] Starting with model: ${(model as { modelId?: string }).modelId ?? "unknown"}`
   );
-  console.log(`[generateCode] Request: "${request}"`);
-  console.log(
+  logger.info(`[generateCode] Request: "${request}"`);
+  logger.info(
     `[generateCode] Options: mcpIntegrations=${options?.mcpIntegrations?.length ?? 0}, hasContext=${!!options?.mcpContext}`
   );
 
@@ -51,7 +54,7 @@ export const generateCode = async (
       needsImmediateInputs: options?.needsImmediateInputs,
     });
 
-    console.log(`[generateCode] Available tools: ${Object.keys(tools).join(", ")}`);
+    logger.info(`[generateCode] Available tools: ${Object.keys(tools).join(", ")}`);
 
     // 2. Run Agent
     const result = streamText({

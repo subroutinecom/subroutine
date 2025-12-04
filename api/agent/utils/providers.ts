@@ -8,6 +8,9 @@ import type { ModelConfig, ModelProvider } from "../../config/schema.ts";
 import { createWebSearchTool } from "../agent-web-search.ts";
 
 import { Capability } from "./types";
+import { getLogger } from "../../utils/logger.ts";
+const logger = getLogger("agent.utils.providers");
+
 
 export { Capability };
 
@@ -30,7 +33,7 @@ const getModelConfig = async (capability: Capability): Promise<ModelConfig> => {
   if (!modelNames && capability !== Capability.GENERAL) {
     modelNames = config.capabilities["general"];
     if (modelNames) {
-      console.log(
+      logger.info(
         `[getModelConfig] Capability "${capability}" not found, falling back to 'general'`
       );
     }
@@ -102,7 +105,7 @@ export const getWebSearchTools = async (): Promise<ToolSet> => {
 
     default: {
       const _exhaustive: never = config.provider;
-      console.warn(`No web search tools available for provider: ${_exhaustive}`);
+      logger.warn(`No web search tools available for provider: ${_exhaustive}`);
       return {};
     }
   }
@@ -120,7 +123,7 @@ export const createModel = async (
     const fullConfig = await getConfig();
     const modelConfig = fullConfig.models[options.model];
     if (!modelConfig) {
-      console.error(`Model definition not found for override: ${options.model}`);
+      logger.error(`Model definition not found for override: ${options.model}`);
       return null;
     }
     config = {
@@ -134,7 +137,7 @@ export const createModel = async (
     try {
       config = await getModelConfig(capability);
     } catch (e) {
-      console.error("Failed to get model config:", e);
+      logger.error("Failed to get model config:", e);
       return null;
     }
   }
@@ -143,7 +146,7 @@ export const createModel = async (
     case "anthropic": {
       const apiKey = config.apiKey || Deno.env.get("ANTHROPIC_API_KEY");
       if (!apiKey) {
-        console.error("ANTHROPIC_API_KEY not set");
+        logger.error("ANTHROPIC_API_KEY not set");
         return null;
       }
       const anthropic = createAnthropic({ apiKey, baseURL: config.endpoint });
@@ -153,7 +156,7 @@ export const createModel = async (
     case "openai": {
       const apiKey = config.apiKey || Deno.env.get("OPENAI_API_KEY");
       if (!apiKey) {
-        console.error("OPENAI_API_KEY not set");
+        logger.error("OPENAI_API_KEY not set");
         return null;
       }
       const openai = createOpenAI({ apiKey, baseURL: config.endpoint });
@@ -171,7 +174,7 @@ export const createModel = async (
         ?.replace(/\\n/g, "\n");
 
       if (!project) {
-        console.error("GOOGLE_VERTEX_PROJECT not set");
+        logger.error("GOOGLE_VERTEX_PROJECT not set");
         return null;
       }
 
@@ -208,7 +211,7 @@ export const createModel = async (
 
     default: {
       const _exhaustive: never = config.provider;
-      console.error(`Unknown provider: ${_exhaustive}`);
+      logger.error(`Unknown provider: ${_exhaustive}`);
       return null;
     }
   }

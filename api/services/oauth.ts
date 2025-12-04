@@ -3,6 +3,9 @@ import type { OAuthTokenResponse } from "../integrations/providers/types.ts";
 import { getIntegrationOrGlobal, type IntegrationAuthConfig } from "../models/integration.ts";
 import { createConnectedAccount } from "../models/connected-account.ts";
 import { discoverMcpOAuth } from "./mcp-oauth-discovery.ts";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("services.oauth");
+
 
 export interface OAuthState {
   integrationId: string;
@@ -23,7 +26,7 @@ const decodeState = (encoded: string): OAuthState => {
     const decoded = atob(encoded);
     return JSON.parse(decoded);
   } catch (error) {
-    console.error("[OAuth] Failed to decode state:", error);
+    logger.error("[OAuth] Failed to decode state:", error);
     throw new Error("Invalid state parameter");
   }
 };
@@ -159,7 +162,7 @@ export const generateAuthorizationUrl = async (params: {
         scopes = mergeScopes(scopes, discovered.scopesSupported);
       }
     } catch (e) {
-      console.warn("[OAuth] MCP scope discovery failed:", e);
+      logger.warn("[OAuth] MCP scope discovery failed:", e);
       // Continue with original scopes
     }
   }
@@ -281,7 +284,7 @@ export const handleOAuthCallback = async (params: {
 
     const TEN_MINUTES = 10 * 60 * 1000;
     if (timeDiff > TEN_MINUTES) {
-      console.error("[OAuth] State expired - time diff:", Math.floor(timeDiff / 1000), "seconds");
+      logger.error("[OAuth] State expired - time diff:", Math.floor(timeDiff / 1000), "seconds");
       return {
         success: false,
         error: "Authorization state expired. Please try again.",
@@ -295,7 +298,7 @@ export const handleOAuthCallback = async (params: {
     );
 
     if (!integration) {
-      console.error("[OAuth] Integration not found:", stateData.integrationId);
+      logger.error("[OAuth] Integration not found:", stateData.integrationId);
       return {
         success: false,
         error: "Integration not found",
@@ -303,7 +306,7 @@ export const handleOAuthCallback = async (params: {
     }
 
     if (!integration.enabled) {
-      console.error("[OAuth] Integration disabled:", stateData.integrationId);
+      logger.error("[OAuth] Integration disabled:", stateData.integrationId);
       return {
         success: false,
         error: "Integration is disabled",
@@ -360,7 +363,7 @@ export const handleOAuthCallback = async (params: {
       accountIdentifier: providerAccountIdentifier ?? stateData.viewerId,
     });
 
-    console.log("[OAuth] Connected account created:", connectedAccount.id);
+    logger.info("[OAuth] Connected account created:", connectedAccount.id);
 
     return {
       success: true,
@@ -369,7 +372,7 @@ export const handleOAuthCallback = async (params: {
       provider: stateData.provider,
     };
   } catch (error) {
-    console.error("[OAuth] Callback error:", error);
+    logger.error("[OAuth] Callback error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error",

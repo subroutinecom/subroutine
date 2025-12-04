@@ -1,5 +1,8 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { Buffer } from "node:buffer";
+import { getLogger } from "./logger.ts";
+const logger = getLogger("utils.encryption");
+
 
 const ALGORITHM = "aes-256-gcm";
 
@@ -59,7 +62,7 @@ export const validateEncryptionKey = (): void => {
   try {
     getEncryptionKey();
   } catch (error) {
-    console.error("Encryption key validation failed:", error);
+    logger.error("Encryption key validation failed:", error);
     throw error;
   }
 };

@@ -1,4 +1,7 @@
 import type { Config } from "./schema.ts";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("config.validator");
+
 
 /**
  * Validates configuration consistency beyond schema validation.
@@ -29,37 +32,37 @@ export function validateConfig(config: Config): { valid: boolean; errors: string
  * Useful for debugging and verification.
  */
 export function printConfigReport(config: Config): void {
-  console.log("[Config Validator]", "\n📋 Configuration Report");
-  console.log("[Config Validator]", "=".repeat(50));
+  logger.info("[Config Validator]", "\n📋 Configuration Report");
+  logger.info("[Config Validator]", "=".repeat(50));
 
-  console.log("[Config Validator]", "\n🤖 Models Defined:");
+  logger.info("[Config Validator]", "\n🤖 Models Defined:");
   for (const [modelName, modelConfig] of Object.entries(config.models)) {
-    console.log(`  • ${modelName}`);
-    console.log(`    Provider: ${modelConfig.provider}`);
-    console.log(`    Model: ${modelConfig.model}`);
+    logger.info(`  • ${modelName}`);
+    logger.info(`    Provider: ${modelConfig.provider}`);
+    logger.info(`    Model: ${modelConfig.model}`);
     if (modelConfig.apiKey) {
-      console.log(`    API Key: ${modelConfig.apiKey.substring(0, 10)}...`);
+      logger.info(`    API Key: ${modelConfig.apiKey.substring(0, 10)}...`);
     }
     if (modelConfig.endpoint) {
-      console.log(`    Endpoint: ${modelConfig.endpoint}`);
+      logger.info(`    Endpoint: ${modelConfig.endpoint}`);
     }
   }
 
-  console.log("[Config Validator]", "\n🎯 Capability Mappings:");
+  logger.info("[Config Validator]", "\n🎯 Capability Mappings:");
   for (const [capability, modelNames] of Object.entries(config.capabilities)) {
     const names = Array.isArray(modelNames) ? modelNames : [modelNames];
-    console.log(`  • ${capability} → ${names.join(", ")}`);
+    logger.info(`  • ${capability} → ${names.join(", ")}`);
   }
 
   const validation = validateConfig(config);
   if (validation.valid) {
-    console.log("[Config Validator]", "\n✅ Configuration is valid");
+    logger.info("[Config Validator]", "\n✅ Configuration is valid");
   } else {
-    console.log("[Config Validator]", "\n❌ Configuration has errors:");
+    logger.info("[Config Validator]", "\n❌ Configuration has errors:");
     for (const error of validation.errors) {
-      console.log(`  • ${error}`);
+      logger.info(`  • ${error}`);
     }
   }
 
-  console.log("[Config Validator]", "=".repeat(50) + "\n");
+  logger.info("[Config Validator]", "=".repeat(50) + "\n");
 }

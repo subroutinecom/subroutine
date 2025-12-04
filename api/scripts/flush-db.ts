@@ -2,6 +2,9 @@
 
 import { Kysely, PostgresDialect, sql } from "kysely";
 import pg from "pg";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("scripts.flush-db");
+
 
 const { Pool } = pg;
 
@@ -9,21 +12,21 @@ const DATABASE_URL =
   Deno.env.get("DATABASE_URL") || "postgresql://subroutine:subroutine@localhost:5432/subroutine";
 
 // Show warning and get confirmation
-console.log("\nWARNING: DATABASE FLUSH\n");
-console.log("This will:");
-console.log("  • Drop ALL tables");
-console.log("  • Delete ALL data");
-console.log("  • Reset the database to empty state");
-console.log(`\nTarget database: ${DATABASE_URL}\n`);
+logger.info("\nWARNING: DATABASE FLUSH\n");
+logger.info("This will:");
+logger.info("  • Drop ALL tables");
+logger.info("  • Delete ALL data");
+logger.info("  • Reset the database to empty state");
+logger.info(`\nTarget database: ${DATABASE_URL}\n`);
 
 const confirmation = prompt("Type 'FLUSH' to confirm:");
 
 if (confirmation !== "FLUSH") {
-  console.log("\nFlush cancelled - confirmation did not match");
+  logger.info("\nFlush cancelled - confirmation did not match");
   Deno.exit(0);
 }
 
-console.log("\nFlushing database...\n");
+logger.info("\nFlushing database...\n");
 
 const db = new Kysely({
   dialect: new PostgresDialect({
@@ -42,27 +45,27 @@ try {
   `.execute(db);
 
   if (result.rows.length === 0) {
-    console.log("Database is already empty");
+    logger.info("Database is already empty");
   } else {
-    console.log(`Found ${result.rows.length} tables to drop:\n`);
+    logger.info(`Found ${result.rows.length} tables to drop:\n`);
 
     for (const row of result.rows) {
-      console.log(`Dropping table: ${row.tablename}`);
+      logger.info(`Dropping table: ${row.tablename}`);
       await sql`DROP TABLE IF EXISTS ${sql.table(row.tablename)} CASCADE`.execute(db);
     }
 
-    console.log(`\nSuccessfully dropped ${result.rows.length} tables`);
+    logger.info(`\nSuccessfully dropped ${result.rows.length} tables`);
   }
 
   // Also drop the kysely migration table if it exists
   await sql`DROP TABLE IF EXISTS kysely_migration CASCADE`.execute(db);
-  console.log("Dropped migration tracking table");
+  logger.info("Dropped migration tracking table");
 
-  console.log("\n🎉 Database flush complete!\n");
-  console.log("Run migrations to set up schema:");
-  console.log("deno task migrate (or however you run migrations)\n");
+  logger.info("\n🎉 Database flush complete!\n");
+  logger.info("Run migrations to set up schema:");
+  logger.info("deno task migrate (or however you run migrations)\n");
 } catch (error) {
-  console.error("\nError flushing database:", error);
+  logger.error("\nError flushing database:", error);
   Deno.exit(1);
 } finally {
   await db.destroy();

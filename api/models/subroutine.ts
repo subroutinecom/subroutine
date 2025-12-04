@@ -6,6 +6,9 @@ import { db } from "../db/index.ts";
 import { generateMockCode } from "../mocks.ts";
 import { getIntegration } from "./integration.ts";
 import { runSubroutine, type Run } from "./run.ts";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("models.subroutine");
+
 
 export type Subroutine = {
   id: string;
@@ -87,20 +90,20 @@ export const generateSubroutine = async (
   let initialInputs: Record<string, unknown> | undefined;
 
   if (params.useMock) {
-    console.log(`Using mock code generation for "${params.request}" (requested via useMock flag)`);
+    logger.info(`Using mock code generation for "${params.request}" (requested via useMock flag)`);
     source = generateMockCode(params.request);
     if (params.needsImmediateInputs) {
       initialInputs = {};
     }
   } else {
     const model = await createModel(Capability.CODING);
-    console.log(
+    logger.info(
       `[generateSubroutine] Using model: ${(model as { modelId?: string })?.modelId ?? "none"}`
     );
-    console.log(
+    logger.info(
       `[generateSubroutine] Integrations passed: ${params.integrations?.join(", ") || "none"}`
     );
-    console.log(`[generateSubroutine] Viewer: ${params.viewerId}`);
+    logger.info(`[generateSubroutine] Viewer: ${params.viewerId}`);
 
     if (!model) {
       throw new Error("No model provider configured. Check config.yaml for AI model settings.");
@@ -143,7 +146,7 @@ export const generateSubroutine = async (
 
     // In discovery mode, merge any integrations discovered during code generation
     if (result.usedIntegrationIds && result.usedIntegrationIds.length > 0) {
-      console.log(
+      logger.info(
         `[generateSubroutine] usedIntegrationIds from code gen: ${result.usedIntegrationIds.join(", ")}`
       );
       for (const id of result.usedIntegrationIds) {
@@ -151,15 +154,15 @@ export const generateSubroutine = async (
           resolvedIntegrationIds.push(id);
         }
       }
-      console.log(
+      logger.info(
         `[generateSubroutine] Merged discovered integrations. Final list: ${resolvedIntegrationIds.join(", ")}`
       );
     }
 
-    console.log(
+    logger.info(
       `[generateSubroutine] Integration IDs to store with subroutine: ${resolvedIntegrationIds.join(", ") || "none"}`
     );
-    console.log(
+    logger.info(
       `[generateSubroutine] Generated code preview (first 200 chars): ${source.substring(0, 200)}...`
     );
   }

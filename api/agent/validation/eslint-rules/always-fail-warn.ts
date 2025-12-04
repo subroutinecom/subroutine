@@ -1,4 +1,7 @@
 import { ESLintUtils } from "@typescript-eslint/utils";
+import { getLogger } from "../../../utils/logger.ts";
+const logger = getLogger("agent.validation.eslint-rules.always-fail-warn");
+
 
 const createRule = ESLintUtils.RuleCreator((name) => `http://docs.subroutine.com/rule/${name}`);
 
@@ -17,7 +20,7 @@ const rule = createRule({
   defaultOptions: [],
 
   create(context) {
-    console.log("DEBUG: always-fail-warn rule executing");
+    logger.info("DEBUG: always-fail-warn rule executing");
     return {
       Program(node) {
         context.report({

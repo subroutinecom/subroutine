@@ -4,6 +4,9 @@ import type { PatLinkTable } from "../db/schema.ts";
 import { getConfig } from "../config/loader.ts";
 import { getIntegration, type McpAuthConfig } from "./integration.ts";
 import { createConnectedAccount, type ConnectedAccountCredentials } from "./connected-account.ts";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("models.pat-link");
+
 
 export const PAT_LINK_STATUS = ["pending", "used", "expired"] as const;
 
@@ -223,7 +226,7 @@ export const submitPatLink = async (id: string, pat: string): Promise<SubmitPatL
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to create connected account:", error);
+    logger.error("Failed to create connected account:", error);
     return { success: false, error: "Failed to save token" };
   }
 };

@@ -2,6 +2,9 @@ import { Kysely, Migrator, PostgresDialect } from "kysely";
 import pg from "pg";
 import { migrations } from "./migrations-index.ts";
 import type { Database as DB } from "./schema.ts";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("db.index");
+
 
 const { Pool } = pg;
 
@@ -21,7 +24,7 @@ export const db = new Kysely<DB>({
 
 export const initializeDatabase = async () => {
   try {
-    console.log("Running database migrations...");
+    logger.info("Running database migrations...");
 
     const migrator = new Migrator({
       db,
@@ -44,20 +47,20 @@ export const initializeDatabase = async () => {
 
     results?.forEach((result) => {
       if (result.status === "Success") {
-        console.log(`Migration "${result.migrationName}" executed successfully`);
+        logger.info(`Migration "${result.migrationName}" executed successfully`);
       } else if (result.status === "Error") {
-        console.error(`Migration "${result.migrationName}" failed`);
+        logger.error(`Migration "${result.migrationName}" failed`);
       }
     });
 
     if (error) {
-      console.error("Failed to run migrations:", error);
+      logger.error("Failed to run migrations:", error);
       throw error;
     }
 
-    console.log("Database initialized successfully");
+    logger.info("Database initialized successfully");
   } catch (error) {
-    console.error("Failed to initialize database:", error);
+    logger.error("Failed to initialize database:", error);
     throw error;
   }
 };

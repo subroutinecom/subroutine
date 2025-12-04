@@ -11,6 +11,9 @@ import { generateAuthorizationUrl } from "../services/oauth.ts";
 import { generatePatLinkUrl } from "./pat-link.ts";
 import type { SandboxMcpConfig } from "../integrations/providers/types.ts";
 import { getConfig } from "../config/loader.ts";
+import { getLogger } from "../utils/logger.ts";
+const logger = getLogger("models.run");
+
 
 export type Run = {
   id: string;
@@ -68,15 +71,15 @@ const requiresViewerScopedAccount = (provider: IntegrationProvider): boolean => 
 };
 
 export const runSubroutine = async (params: RunSubroutineRequest): Promise<Run> => {
-  console.log(`[runSubroutine] Starting for subroutine: ${params.subroutineId}`);
-  console.log(`[runSubroutine] viewerId: ${params.viewerId}, orgId: ${params.organizationId}`);
+  logger.info(`[runSubroutine] Starting for subroutine: ${params.subroutineId}`);
+  logger.info(`[runSubroutine] viewerId: ${params.viewerId}, orgId: ${params.organizationId}`);
 
   const subroutine = await getSubroutine(params.subroutineId, params.organizationId);
   if (!subroutine) {
     throw new Error("Subroutine not found");
   }
 
-  console.log(
+  logger.info(
     `[runSubroutine] Subroutine found, integrationIds: ${subroutine.integrationIds.join(", ") || "none"}`
   );
 
@@ -134,16 +137,16 @@ const buildSandboxIntegrations = async (params: {
   organizationId: string;
   viewerId: string;
 }): Promise<SandboxIntegrationDefinition[]> => {
-  console.log(
+  logger.info(
     `[buildSandboxIntegrations] Starting with ${params.integrationIds.length} integrations`
   );
-  console.log(
+  logger.info(
     `[buildSandboxIntegrations] viewerId: ${params.viewerId}, orgId: ${params.organizationId}`
   );
-  console.log(`[buildSandboxIntegrations] integrationIds: ${params.integrationIds.join(", ")}`);
+  logger.info(`[buildSandboxIntegrations] integrationIds: ${params.integrationIds.join(", ")}`);
 
   if (params.integrationIds.length === 0) {
-    console.log(`[buildSandboxIntegrations] No integrations to process`);
+    logger.info(`[buildSandboxIntegrations] No integrations to process`);
     return [];
   }
 
@@ -154,14 +157,14 @@ const buildSandboxIntegrations = async (params: {
 
   const integrations: SandboxIntegrationDefinition[] = [];
   for (const integrationId of params.integrationIds) {
-    console.log(`[buildSandboxIntegrations] Processing integration: ${integrationId}`);
+    logger.info(`[buildSandboxIntegrations] Processing integration: ${integrationId}`);
     const integration = await getIntegration(integrationId, params.organizationId);
     if (!integration || !integration.enabled) {
-      console.log(`[buildSandboxIntegrations] Integration ${integrationId} not found or disabled`);
+      logger.info(`[buildSandboxIntegrations] Integration ${integrationId} not found or disabled`);
       throw new Error(`Integration ${integrationId} is not available`);
     }
 
-    console.log(
+    logger.info(
       `[buildSandboxIntegrations] Found integration: ${integration.name}, provider: ${integration.provider}`
     );
     const provider = integration.provider as IntegrationProvider;
@@ -169,7 +172,7 @@ const buildSandboxIntegrations = async (params: {
 
     // Handle MCP integrations
     if (authConfig.type === "mcp") {
-      console.log(
+      logger.info(
         `[buildSandboxIntegrations] MCP integration, authStrategy: ${authConfig.authStrategy.type}`
       );
       const mcpConfig = buildMcpConfig(authConfig);
@@ -177,7 +180,7 @@ const buildSandboxIntegrations = async (params: {
       // For bearer_passthrough, we need the viewer's connected account
       if (authConfig.authStrategy.type === "bearer_passthrough") {
         const connectedAccount = connectedAccountsMap.get(integrationId);
-        console.log(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
+        logger.info(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
         if (!connectedAccount) {
           // MCP with bearer_passthrough requires OAuth config for user authentication
           if (!authConfig.oauthConfig) {
@@ -229,7 +232,7 @@ const buildSandboxIntegrations = async (params: {
       ) {
         // Viewer-scoped api_key - user provides their own PAT
         const connectedAccount = connectedAccountsMap.get(integrationId);
-        console.log(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
+        logger.info(`[buildSandboxIntegrations] Connected account found: ${!!connectedAccount}`);
         if (!connectedAccount) {
           // Generate PAT link for user to provide their API key
           const metadata = authConfig.metadata || {};
@@ -344,7 +347,7 @@ const executeInSandbox = async (
   timeoutMs?: number
 ): Promise<void> => {
   const executionStart = Date.now();
-  console.log(
+  logger.info(
     `[executeInSandbox] Starting execution for run ${runId}, timeoutMs: ${timeoutMs ?? "default"}`
   );
 
@@ -370,7 +373,7 @@ const executeInSandbox = async (
 
     const config = await getConfig();
     const sandboxUrl = `${config.internalSandboxUrl}/test/executeTypescript`;
-    console.log(
+    logger.info(
       `[executeInSandbox] Sending request to sandbox after ${Date.now() - executionStart}ms`
     );
     const response = await fetch(sandboxUrl, {
@@ -384,7 +387,7 @@ const executeInSandbox = async (
         timeoutMs,
       }),
     });
-    console.log(
+    logger.info(
       `[executeInSandbox] Sandbox responded after ${Date.now() - executionStart}ms, status: ${response.status}`
     );
 

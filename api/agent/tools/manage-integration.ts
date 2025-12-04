@@ -2,6 +2,9 @@ import { z } from "zod";
 import type { McpContext } from "../utils/types";
 import { getIntegrationByName } from "../../models/integration";
 import { runMcpIntegrator } from "../agent-mcp-integrator";
+import { getLogger } from "../../utils/logger.ts";
+const logger = getLogger("agent.tools.manage-integration");
+
 
 export const createManageMcpIntegration = (
   mcpContext: McpContext,
@@ -40,12 +43,12 @@ The result tells you what authentication the user needs to provide:
         ),
     }),
     execute: async (params: { need: string }) => {
-      console.log(`[tool:manageMcpIntegration] Called with need: "${params.need}"`);
+      logger.info(`[tool:manageMcpIntegration] Called with need: "${params.need}"`);
       // Check if an integration with this name already exists
       const existing = await getIntegrationByName(params.need, mcpContext.organizationId);
 
       if (existing && existing.status === "dynamic") {
-        console.log(`[tool:manageMcpIntegration] Found existing dynamic integration, fixing`);
+        logger.info(`[tool:manageMcpIntegration] Found existing dynamic integration, fixing`);
         // Fix existing dynamic integration
         const result = await runMcpIntegrator({
           organizationId: mcpContext.organizationId,
@@ -53,7 +56,7 @@ The result tells you what authentication the user needs to provide:
           need: params.need,
           existingIntegrationId: existing.id,
         });
-        console.log(`[tool:manageMcpIntegration] Fix result:`, JSON.stringify(result));
+        logger.info(`[tool:manageMcpIntegration] Fix result:`, JSON.stringify(result));
         // Track the integration ID if successful
         if (result.success && result.integrationId) {
           usedIntegrationIds.add(result.integrationId);
@@ -61,21 +64,21 @@ The result tells you what authentication the user needs to provide:
             result.integrationName || params.need,
             result.integrationId
           );
-          console.log(
+          logger.info(
             `[tool:manageMcpIntegration] Tracked fixed integration ID: ${result.integrationId}`
           );
         }
         return result;
       }
 
-      console.log(`[tool:manageMcpIntegration] Creating new integration`);
+      logger.info(`[tool:manageMcpIntegration] Creating new integration`);
       // Create new integration
       const result = await runMcpIntegrator({
         organizationId: mcpContext.organizationId,
         viewerId: mcpContext.viewerId,
         need: params.need,
       });
-      console.log(`[tool:manageMcpIntegration] Create result:`, JSON.stringify(result));
+      logger.info(`[tool:manageMcpIntegration] Create result:`, JSON.stringify(result));
       // Track the integration ID if successful
       if (result.success && result.integrationId) {
         usedIntegrationIds.add(result.integrationId);
@@ -83,7 +86,7 @@ The result tells you what authentication the user needs to provide:
           result.integrationName || params.need,
           result.integrationId
         );
-        console.log(
+        logger.info(
           `[tool:manageMcpIntegration] Tracked new integration ID: ${result.integrationId}`
         );
       }
