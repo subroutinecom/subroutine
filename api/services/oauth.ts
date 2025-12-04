@@ -4,7 +4,7 @@ import { createConnectedAccount } from "../models/connected-account.ts";
 import { getIntegrationOrGlobal, type IntegrationAuthConfig } from "../models/integration.ts";
 import { getLogger } from "../utils/logger.ts";
 import { discoverMcpOAuth } from "./mcp-oauth-discovery.ts";
-const logger = getLogger("services.oauth");
+const logger = getLogger("api/services/oauth.ts");
 
 export interface OAuthState {
   integrationId: string;

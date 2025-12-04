@@ -4,6 +4,7 @@ import noRoutesImports from "./no-routes-imports.ts";
 import noWindowSessionOrLocalStorage from "./no-window-session-or-local-storage.ts";
 import onlyFieldWithInputMutations from "./only-fieldWithInput-mutations.ts";
 import noConsole from "./no-console.ts";
+import loggerNameMatch from "./logger-name-match.ts";
 
 export const localRulesPlugin = {
   rules: {
@@ -13,5 +14,6 @@ export const localRulesPlugin = {
     "no-window-session-or-local-storage": noWindowSessionOrLocalStorage,
     "only-fieldWithInput-mutations": onlyFieldWithInputMutations,
     "no-console": noConsole,
+    "logger-name-match": loggerNameMatch,
   },
 };

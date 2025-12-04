@@ -57,6 +57,7 @@ export default tseslint.config([
     files: ["api/**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     rules: {
       "local/no-console": "error",
+      "local/logger-name-match": "error",
     },
   },
 ]);
