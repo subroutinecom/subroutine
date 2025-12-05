@@ -171,4 +171,12 @@ type Query {
   """Check if the current organization has superadmin privileges"""
   isSuperadmin: Boolean
   ping: String
+  """Validate an organization slug for format and availability"""
+  validateSlug(slug: String!): SlugValidationResult
+}
+
+type SlugValidationResult {
+  available: Boolean
+  error: String
+  valid: Boolean
 }

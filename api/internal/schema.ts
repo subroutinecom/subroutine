@@ -35,6 +35,7 @@ import {
   type IntegrationProvider,
 } from "../integrations/providers.ts";
 import { discoverMcpOAuth, type McpOAuthDiscoveryResult } from "../services/mcp-oauth-discovery.ts";
+import { validateSlug, type SlugValidationWithAvailabilityResult } from "../validation/slug";
 
 type User = {
   id: string;
@@ -227,6 +228,18 @@ IntegrationProviderDefinitionType.implement({
   }),
 });
 
+// Slug Validation Result Type
+const SlugValidationResultType =
+  builder.objectRef<SlugValidationWithAvailabilityResult>("SlugValidationResult");
+
+SlugValidationResultType.implement({
+  fields: (t) => ({
+    valid: t.exposeBoolean("valid"),
+    error: t.exposeString("error", { nullable: true }),
+    available: t.exposeBoolean("available", { nullable: true }),
+  }),
+});
+
 // MCP OAuth Discovery Result Type
 const McpOAuthDiscoveryResultType =
   builder.objectRef<McpOAuthDiscoveryResult>("McpOAuthDiscoveryResult");
@@ -344,6 +357,16 @@ builder.queryType({
       },
       resolve: async (_parent, args) => {
         return discoverMcpOAuth(args.serverUrl);
+      },
+    }),
+    validateSlug: t.field({
+      type: SlugValidationResultType,
+      description: "Validate an organization slug for format and availability",
+      args: {
+        slug: t.arg.string({ required: true }),
+      },
+      resolve: async (_parent, args) => {
+        return validateSlug(args.slug);
       },
     }),
   }),

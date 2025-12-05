@@ -4,6 +4,7 @@ import { gql } from "graphql-request";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
+  generateSlug,
   generateTestEmail,
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
@@ -183,7 +184,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     // Create organization
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     expect(org.data).toBeDefined();
@@ -291,7 +292,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({
@@ -407,7 +408,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const org1 = await authClient1.organization.create({
       name: orgName1,
-      slug: orgName1.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName1),
     });
 
     await authClient1.organization.setActive({
@@ -428,7 +429,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const org2 = await authClient2.organization.create({
       name: orgName2,
-      slug: orgName2.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName2),
     });
 
     await authClient2.organization.setActive({
@@ -497,7 +498,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({ organizationId: org.data!.id });
@@ -538,7 +539,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({ organizationId: org.data!.id });
@@ -597,7 +598,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({ organizationId: org.data!.id });
@@ -666,7 +667,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({ organizationId: org.data!.id });
@@ -725,7 +726,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({ organizationId: org.data!.id });
@@ -778,7 +779,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({ organizationId: org.data!.id });
