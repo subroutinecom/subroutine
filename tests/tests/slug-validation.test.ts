@@ -4,6 +4,7 @@ import { gql } from "graphql-request";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
+  generateSlug,
   generateTestEmail,
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
@@ -43,7 +44,7 @@ describe("Slug Validation", { sanitizeOps: false, sanitizeResources: false }, ()
       const orgName = generateOrgName();
       await authClient.organization.create({
         name: orgName,
-        slug: `${orgName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+        slug: `${generateSlug(orgName)}-${Date.now()}`,
       });
 
       // Now test validation with short slug
@@ -69,7 +70,7 @@ describe("Slug Validation", { sanitizeOps: false, sanitizeResources: false }, ()
       const orgName = generateOrgName();
       await authClient.organization.create({
         name: orgName,
-        slug: `${orgName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+        slug: `${generateSlug(orgName)}-${Date.now()}`,
       });
 
       const result = await graphqlClient.request<ValidateSlugResponse>(VALIDATE_SLUG_QUERY, {
@@ -94,7 +95,7 @@ describe("Slug Validation", { sanitizeOps: false, sanitizeResources: false }, ()
       const orgName = generateOrgName();
       await authClient.organization.create({
         name: orgName,
-        slug: `${orgName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+        slug: `${generateSlug(orgName)}-${Date.now()}`,
       });
 
       const result = await graphqlClient.request<ValidateSlugResponse>(VALIDATE_SLUG_QUERY, {
@@ -119,7 +120,7 @@ describe("Slug Validation", { sanitizeOps: false, sanitizeResources: false }, ()
       const orgName = generateOrgName();
       await authClient.organization.create({
         name: orgName,
-        slug: `${orgName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+        slug: `${generateSlug(orgName)}-${Date.now()}`,
       });
 
       const result = await graphqlClient.request<ValidateSlugResponse>(VALIDATE_SLUG_QUERY, {
@@ -144,7 +145,7 @@ describe("Slug Validation", { sanitizeOps: false, sanitizeResources: false }, ()
       const orgName = generateOrgName();
       await authClient.organization.create({
         name: orgName,
-        slug: `${orgName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+        slug: `${generateSlug(orgName)}-${Date.now()}`,
       });
 
       const result = await graphqlClient.request<ValidateSlugResponse>(VALIDATE_SLUG_QUERY, {
@@ -169,7 +170,7 @@ describe("Slug Validation", { sanitizeOps: false, sanitizeResources: false }, ()
       const orgName = generateOrgName();
       await authClient.organization.create({
         name: orgName,
-        slug: `${orgName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+        slug: `${generateSlug(orgName)}-${Date.now()}`,
       });
 
       const uniqueSlug = `test-company-${Date.now()}`;

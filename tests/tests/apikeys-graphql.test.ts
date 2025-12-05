@@ -3,6 +3,7 @@ import { describe, it } from "@std/testing/bdd";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
+  generateSlug,
   generateTestEmail,
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
@@ -114,7 +115,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -154,7 +155,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -188,7 +189,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -270,7 +271,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -313,7 +314,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -345,7 +346,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -383,7 +384,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -415,7 +416,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -453,7 +454,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -496,7 +497,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -539,7 +540,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -571,7 +572,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
       // Create first organization
       const org1 = await authClient.organization.create({
         name: generateOrgName(),
-        slug: generateOrgName().toLowerCase(),
+        slug: generateSlug(generateOrgName()),
       });
 
       await authClient.organization.setActive({
@@ -588,7 +589,7 @@ describe("API Keys - GraphQL", { sanitizeOps: false, sanitizeResources: false },
       // Create second organization
       const org2 = await authClient.organization.create({
         name: generateOrgName(),
-        slug: generateOrgName().toLowerCase(),
+        slug: generateSlug(generateOrgName()),
       });
 
       await authClient.organization.setActive({

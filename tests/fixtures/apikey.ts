@@ -1,6 +1,7 @@
 import {
   createTestAuthClientWithJar,
   generateOrgName,
+  generateSlug,
   generateTestEmail,
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
@@ -61,7 +62,7 @@ export const createTestApiKey = async (options?: {
   // Create organization
   const org = await authClient.organization.create({
     name: orgName,
-    slug: orgName.toLowerCase(),
+    slug: generateSlug(orgName),
   });
 
   // Set active organization
@@ -128,7 +129,7 @@ export const createMultipleTestApiKeys = async (count: number) => {
 
   const org = await authClient.organization.create({
     name: orgName,
-    slug: orgName.toLowerCase(),
+    slug: generateSlug(orgName),
   });
 
   await authClient.organization.setActive({

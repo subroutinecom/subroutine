@@ -122,3 +122,28 @@ export const generateTestEmail = (prefix = "test") => {
 export const generateOrgName = (prefix = "TestOrg") => {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 };
+
+/**
+ * Generates a valid slug from a name.
+ * Ensures the slug meets validation requirements:
+ * - At least 6 characters
+ * - Lowercase alphanumeric and hyphens only
+ * - No leading/trailing hyphens
+ */
+export const generateSlug = (name: string): string => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .replace(/-+/g, "-");
+};
+
+/**
+ * Generates a unique valid slug for testing.
+ * Always produces a slug that passes validation.
+ */
+export const generateTestSlug = (prefix = "testorg"): string => {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  return `${prefix}-${timestamp}-${random}`;
+};

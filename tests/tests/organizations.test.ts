@@ -1,6 +1,11 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
-import { createTestAuthClient, generateOrgName, generateTestEmail } from "../utils/auth-client.ts";
+import {
+  createTestAuthClient,
+  generateOrgName,
+  generateSlug,
+  generateTestEmail,
+} from "../utils/auth-client.ts";
 
 describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () => {
   describe("Organization Creation & Management", () => {
@@ -18,7 +23,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
 
       const result = await client.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+        slug: generateSlug(orgName),
       });
 
       expect(result.data, "Result should have data").not.toBeNull();
@@ -65,11 +70,11 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
 
       const org1 = await client.organization.create({
         name: org1Name,
-        slug: org1Name.toLowerCase(),
+        slug: generateSlug(org1Name),
       });
       const org2 = await client.organization.create({
         name: org2Name,
-        slug: org2Name.toLowerCase(),
+        slug: generateSlug(org2Name),
       });
 
       const result = await client.organization.list();
@@ -98,11 +103,11 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
 
       const org1 = await client.organization.create({
         name: org1Name,
-        slug: org1Name.toLowerCase(),
+        slug: generateSlug(org1Name),
       });
       const org2 = await client.organization.create({
         name: org2Name,
-        slug: org2Name.toLowerCase(),
+        slug: generateSlug(org2Name),
       });
 
       await client.organization.setActive({ organizationId: org1.data!.id });
@@ -127,7 +132,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
 
       const result = await client.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       expect(result.error, "Should have error").not.toBeNull();
@@ -150,7 +155,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
       });
       const org = await client.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       const invitation = await client.organization.inviteMember({
@@ -181,7 +186,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
       });
       const org = await ownerClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       await memberClient.signUp.email({
@@ -224,7 +229,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
       });
       const org = await ownerClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
       await memberClient.signUp.email({
         email: memberEmail,
@@ -264,7 +269,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
       });
       const org = await ownerClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
       await memberClient.signUp.email({
         email: memberEmail,
@@ -304,7 +309,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
       });
       const org = await ownerClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
       await memberClient.signUp.email({
         email: memberEmail,
@@ -353,7 +358,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
       });
       const org = await client.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       const invitation = await client.organization.inviteMember({
@@ -383,15 +388,15 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
 
       const org1 = await client.organization.create({
         name: org1Name,
-        slug: org1Name.toLowerCase(),
+        slug: generateSlug(org1Name),
       });
       const org2 = await client.organization.create({
         name: org2Name,
-        slug: org2Name.toLowerCase(),
+        slug: generateSlug(org2Name),
       });
       const org3 = await client.organization.create({
         name: org3Name,
-        slug: org3Name.toLowerCase(),
+        slug: generateSlug(org3Name),
       });
 
       const orgs = await client.organization.list();
@@ -428,7 +433,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
       });
       const org1 = await owner1Client.organization.create({
         name: org1Name,
-        slug: org1Name.toLowerCase(),
+        slug: generateSlug(org1Name),
       });
 
       await owner2Client.signUp.email({
@@ -438,7 +443,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
       });
       const org2 = await owner2Client.organization.create({
         name: org2Name,
-        slug: org2Name.toLowerCase(),
+        slug: generateSlug(org2Name),
       });
 
       await memberClient.signUp.email({
@@ -634,7 +639,7 @@ describe("Organizations", { sanitizeOps: false, sanitizeResources: false }, () =
       });
       const org = await client.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase(),
+        slug: generateSlug(orgName),
       });
 
       const orgDetails = await client.organization.getFullOrganization({

@@ -11,6 +11,7 @@ import { startTestMcpServer } from "../mcp-test-server/server.ts";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
+  generateSlug,
   generateTestEmail,
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
@@ -156,7 +157,7 @@ describe("MCP OAuth Discovery", { sanitizeOps: false, sanitizeResources: false }
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({
@@ -197,7 +198,7 @@ describe("MCP OAuth Discovery", { sanitizeOps: false, sanitizeResources: false }
 
       const org = await authClient.organization.create({
         name: orgName,
-        slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+        slug: generateSlug(orgName),
       });
 
       await authClient.organization.setActive({

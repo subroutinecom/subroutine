@@ -5,6 +5,7 @@ import type { CookieJar } from "tough-cookie";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
+  generateSlug,
   generateTestEmail,
 } from "../utils/auth-client.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
@@ -69,7 +70,7 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     expect(org.data).toBeDefined();
@@ -158,7 +159,7 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({
@@ -223,7 +224,7 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({
@@ -312,7 +313,7 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const org = await authClient.organization.create({
       name: orgName,
-      slug: orgName.toLowerCase().replace(/\s+/g, "-"),
+      slug: generateSlug(orgName),
     });
 
     await authClient.organization.setActive({

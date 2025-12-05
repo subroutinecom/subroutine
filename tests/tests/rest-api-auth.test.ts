@@ -5,6 +5,7 @@ import { getTestApiKey } from "../fixtures/apikey";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
+  generateSlug,
   generateTestEmail,
 } from "../utils/auth-client";
 
@@ -92,7 +93,7 @@ const createSessionCookieJar = async (): Promise<CookieJar> => {
 
   const org = await authClient.organization.create({
     name: orgName,
-    slug: orgName.toLowerCase(),
+    slug: generateSlug(orgName),
   });
 
   const organizationId = org.data?.id;
