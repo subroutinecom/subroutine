@@ -1,20 +1,50 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useForm } from "react-hook-form";
+import { gql } from "graphql-request";
 import { getAuthClient } from "~/lib/auth-client";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { useAdminConfig } from "~/hooks/use-admin-config";
+import { createGraphqlClient } from "~/lib/graphql-client";
+
+const VALIDATE_SLUG_QUERY = gql`
+  query ValidateSlug($slug: String!) {
+    validateSlug(slug: $slug) {
+      valid
+      error
+      available
+    }
+  }
+`;
+
+type SlugValidationResult = {
+  valid: boolean;
+  error?: string | null;
+  available?: boolean | null;
+};
 
 type OrganizationFormData = {
   organizationName: string;
+};
+
+const generateSlug = (name: string): string => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .replace(/-+/g, "-");
 };
 
 export default function SetupOrganization() {
   const navigate = useNavigate();
   const config = useAdminConfig();
   const authClient = useMemo(() => getAuthClient(config), [config]);
+  const graphqlClient = useMemo(() => createGraphqlClient(config), [config]);
   const { isAuthenticated, organizations, isLoading: authLoading, refetch } = useAuth();
   const [serverError, setServerError] = useState("");
+  const [slugValidation, setSlugValidation] = useState<SlugValidationResult | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     register,
@@ -24,6 +54,53 @@ export default function SetupOrganization() {
   } = useForm<OrganizationFormData>();
 
   const organizationName = watch("organizationName", "");
+  const currentSlug = generateSlug(organizationName);
+
+  // Validate slug via GraphQL with debounce
+  const validateSlug = useCallback(
+    async (slug: string) => {
+      if (!slug) {
+        setSlugValidation(null);
+        return;
+      }
+
+      setIsValidating(true);
+      try {
+        const result = await graphqlClient.request<{ validateSlug: SlugValidationResult }>(
+          VALIDATE_SLUG_QUERY,
+          { slug }
+        );
+        setSlugValidation(result.validateSlug);
+      } catch {
+        setSlugValidation({ valid: false, error: "Failed to validate slug" });
+      } finally {
+        setIsValidating(false);
+      }
+    },
+    [graphqlClient]
+  );
+
+  // Debounced validation effect
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    if (!currentSlug) {
+      setSlugValidation(null);
+      return;
+    }
+
+    debounceRef.current = setTimeout(() => {
+      validateSlug(currentSlug);
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [currentSlug, validateSlug]);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -48,19 +125,18 @@ export default function SetupOrganization() {
     );
   }
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-  };
-
   const onSubmit = async (data: OrganizationFormData) => {
     setServerError("");
 
     const slug = generateSlug(data.organizationName);
     if (!slug) {
       setServerError("Organization name must contain at least one alphanumeric character");
+      return;
+    }
+
+    // Re-validate slug before submission
+    if (!slugValidation?.valid) {
+      setServerError(slugValidation?.error || "Invalid slug");
       return;
     }
 
@@ -123,9 +199,20 @@ export default function SetupOrganization() {
                 <p className="text-xs text-error mt-1">{errors.organizationName.message}</p>
               )}
               {organizationName && (
-                <p className="text-xs text-base-content/50 mt-1">
-                  Slug: {generateSlug(organizationName) || "(invalid)"}
-                </p>
+                <div className="mt-2">
+                  <p className="text-xs text-base-content/50">
+                    Slug: <span className="font-mono">{currentSlug || "(invalid)"}</span>
+                    {isValidating && (
+                      <span className="loading loading-spinner loading-xs ml-2"></span>
+                    )}
+                  </p>
+                  {!isValidating && slugValidation && !slugValidation.valid && (
+                    <p className="text-xs text-error mt-1">{slugValidation.error}</p>
+                  )}
+                  {!isValidating && slugValidation?.valid && (
+                    <p className="text-xs text-success mt-1">Slug is available</p>
+                  )}
+                </div>
               )}
             </div>
 
@@ -135,7 +222,11 @@ export default function SetupOrganization() {
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>
+            <button
+              type="submit"
+              className="btn btn-primary w-full"
+              disabled={isSubmitting || isValidating || !slugValidation?.valid}
+            >
               {isSubmitting ? (
                 <span className="loading loading-spinner"></span>
               ) : (
