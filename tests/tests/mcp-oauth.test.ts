@@ -9,7 +9,7 @@
  */
 
 import { expect } from "@std/expect";
-import { afterAll, beforeAll, describe, it } from "@std/testing/bdd";
+import { beforeAll, describe, it } from "@std/testing/bdd";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
@@ -19,10 +19,7 @@ import {
 const API_HOST = "api.subroutine.internal";
 
 // Simple fetch helper that doesn't add auth headers
-const fetchApi = async (
-  path: string,
-  options: RequestInit = {}
-): Promise<Response> => {
+const fetchApi = async (path: string, options: RequestInit = {}): Promise<Response> => {
   const url = `http://${API_HOST}${path}`;
   return fetch(url, {
     ...options,
@@ -148,7 +145,7 @@ describe("MCP OAuth Routes", { sanitizeOps: false, sanitizeResources: false }, (
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer invalid-token-12345",
+          Authorization: "Bearer invalid-token-12345",
         },
         body: JSON.stringify({
           jsonrpc: "2.0",
