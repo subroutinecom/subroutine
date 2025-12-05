@@ -4,7 +4,6 @@ import { verifyApiKey } from "../models/apikey.ts";
 import { getLogger } from "../utils/logger.ts";
 const logger = getLogger("api/middlewares/auth.ts");
 
-
 type ApiSession = Awaited<ReturnType<typeof auth.api.getSession>>;
 type SessionData = NonNullable<ApiSession>;
 
@@ -26,8 +25,8 @@ export const authMiddleware = async (
     path.startsWith("/api/auth/") ||
     path === "/status" ||
     path === "/graphql" ||
-    path === "/mcp" ||
-    path.startsWith("/mcp/")
+    path.startsWith("/@") ||
+    path.startsWith("/.well-known/")
   ) {
     return next();
   }

@@ -20,7 +20,7 @@ import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
 import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
-import { getSessionById } from "./models/mcp-session.ts";
+import { getOrganizationBySlug, isUserMemberOfOrganization } from "./models/organization.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 import { registerAuthenticatedTestEndpoints, registerTestEndpoints } from "./testEndpoints.ts";
@@ -28,7 +28,6 @@ import { registerUiRoutes } from "./ui/server.tsx";
 import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
 import { getLogger } from "./utils/logger.ts";
 const logger = getLogger("api/server.ts");
-
 
 const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";
 
@@ -142,6 +141,15 @@ const initialize = async () => {
     const response = await auth.handler(c.req.raw);
     return response;
   });
+
+  // The MCP plugin auto-hosts these at /api/auth/.well-known/*, but some clients
+  // expect them at the standard /.well-known/* locations
+  app.get("/.well-known/oauth-authorization-server", (c) =>
+    c.redirect("/api/auth/.well-known/oauth-authorization-server")
+  );
+  app.get("/.well-known/oauth-protected-resource", (c) =>
+    c.redirect("/api/auth/.well-known/oauth-protected-resource")
+  );
 
   app.use(
     "/api/oauth/*",
@@ -1375,102 +1383,147 @@ const initialize = async () => {
     }
   });
 
-  // MCP session-based endpoint using path-based session IDs
-  const mcpSessionTransports: Record<string, StreamableHTTPServerTransport> = {};
-  const isValidMcpSessionId = (sid: string): boolean => sid === "all" || sid.length === 36;
+  const mcpOAuthTransports: Record<string, StreamableHTTPServerTransport> = {};
 
-  // Handle GET /mcp - check auth and redirect or show login
-  // Note: This route is registered via registerUiRoutes() in ui/server.tsx
+  // Helper to extract orgSlug from @-prefixed path param
+  const extractOrgSlug = (atOrg: string) => atOrg.slice(1); // Remove @ prefix
 
-  // Handle GET /mcp/:sessionId - check auth before allowing access
-  // Note: The UI rendering is handled in ui/server.tsx
+  // MCP OAuth routes use regex pattern because Hono's router doesn't handle /@literal correctly
+  app.get("/:atOrg{@[^/]+}", async (c) => {
+    const orgSlug = extractOrgSlug(c.req.param("atOrg")!);
 
-  app.post("/mcp/:sessionId", async (c) => {
-    const { sessionId } = c.req.param();
-
-    if (!isValidMcpSessionId(sessionId)) {
-      const payload = {
-        jsonrpc: "2.0",
-        error: { code: -32000 as const, message: "Bad Request: Invalid session ID" },
-        id: null,
-      };
-      logger.info("MCP POST response (invalid sessionId)", JSON.stringify(payload));
-      return c.json(payload, 400);
+    const org = await getOrganizationBySlug(orgSlug);
+    if (!org) {
+      return c.json({ error: "Organization not found" }, 404);
     }
 
-    // Look up the session to get the organization context
-    const mcpSession = await getSessionById(sessionId);
-    if (!mcpSession) {
-      const payload = {
-        jsonrpc: "2.0",
-        error: { code: -32000 as const, message: "Bad Request: Session not found" },
-        id: null,
-      };
-      logger.info("MCP POST response (session not found)", JSON.stringify(payload));
-      return c.json(payload, 400);
+    return c.json({
+      name: `${org.name} MCP Server`,
+      version: "0.1.0",
+      protocolVersion: "2025-03-26",
+    });
+  });
+
+  app.post("/:atOrg{@[^/]+}", async (c) => {
+    const orgSlug = extractOrgSlug(c.req.param("atOrg")!);
+
+    // 1. Look up organization by slug
+    const org = await getOrganizationBySlug(orgSlug);
+    if (!org) {
+      return c.json(
+        {
+          jsonrpc: "2.0",
+          error: { code: -32000 as const, message: "Organization not found" },
+          id: null,
+        },
+        404
+      );
     }
+
+    // 2. Validate OAuth session using better-auth MCP plugin
+    // Type assertion needed because TypeScript doesn't infer plugin methods
+    // getMcpSession returns the OAuth access token data with userId directly
+    const getMcpSession = (auth.api as any).getMcpSession as (opts: {
+      headers: Headers;
+    }) => Promise<{ userId: string; accessToken: string; scopes: string } | null>;
+    const session = await getMcpSession({
+      headers: c.req.raw.headers,
+    });
+
+    if (!session) {
+      const resourceUrl = `${config.apiUrl ?? config.baseUrl}/@${orgSlug}`;
+      c.header("WWW-Authenticate", `Bearer resource="${resourceUrl}"`);
+      return c.json(
+        {
+          jsonrpc: "2.0",
+          error: { code: -32001 as const, message: "Unauthorized" },
+          id: null,
+        },
+        401
+      );
+    }
+
+    // 3. Verify user is a member of the organization
+    const isMember = await isUserMemberOfOrganization(session.userId, org.id);
+    if (!isMember) {
+      return c.json(
+        {
+          jsonrpc: "2.0",
+          error: { code: -32003 as const, message: "Not a member of this organization" },
+          id: null,
+        },
+        403
+      );
+    }
+
+    // 4. Handle MCP request with organization context
+    const transportKey = `${org.id}:${session.userId}`;
 
     try {
       let transport: StreamableHTTPServerTransport;
       const body = await c.req.json();
       const initialize = isInitializeRequest(body);
 
-      if (!mcpSessionTransports[sessionId]) {
+      if (!mcpOAuthTransports[transportKey]) {
         if (!initialize) {
-          const payload = {
-            jsonrpc: "2.0",
-            error: { code: -32000 as const, message: "Bad Request: No valid session initialized" },
-            id: null,
-          };
-          logger.info("MCP POST response (no session yet)", JSON.stringify(payload));
-          return c.json(payload, 400);
+          return c.json(
+            {
+              jsonrpc: "2.0",
+              error: {
+                code: -32000 as const,
+                message: "Bad Request: No valid session initialized",
+              },
+              id: null,
+            },
+            400
+          );
         }
         transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => sessionId,
+          sessionIdGenerator: () => transportKey,
           onsessioninitialized: (newSessionId) => {
-            mcpSessionTransports[newSessionId] = transport;
+            mcpOAuthTransports[newSessionId] = transport;
           },
           enableJsonResponse: true,
         });
 
         transport.onclose = () => {
           const sid = transport.sessionId;
-          if (sid && mcpSessionTransports[sid]) {
-            delete mcpSessionTransports[sid];
+          if (sid && mcpOAuthTransports[sid]) {
+            delete mcpOAuthTransports[sid];
           }
         };
 
         const server = createMcpServer({
-          organizationId: mcpSession.organizationId,
-          sessionId,
+          organizationId: org.id,
+          userId: session.userId,
         });
         await server.connect(transport);
       } else {
         if (initialize) {
           // Reset the existing session to allow re-initialization
-          delete mcpSessionTransports[sessionId];
+          delete mcpOAuthTransports[transportKey];
           transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: () => sessionId,
+            sessionIdGenerator: () => transportKey,
             onsessioninitialized: (newSessionId) => {
-              mcpSessionTransports[newSessionId] = transport;
+              mcpOAuthTransports[newSessionId] = transport;
             },
             enableJsonResponse: true,
           });
 
           transport.onclose = () => {
             const sid = transport.sessionId;
-            if (sid && mcpSessionTransports[sid]) {
-              delete mcpSessionTransports[sid];
+            if (sid && mcpOAuthTransports[sid]) {
+              delete mcpOAuthTransports[sid];
             }
           };
 
           const server = createMcpServer({
-            organizationId: mcpSession.organizationId,
-            sessionId,
+            organizationId: org.id,
+            userId: session.userId,
           });
           await server.connect(transport);
         } else {
-          transport = mcpSessionTransports[sessionId];
+          transport = mcpOAuthTransports[transportKey];
         }
       }
 
@@ -1484,7 +1537,7 @@ const initialize = async () => {
         headersObj["content-type"] = "application/json";
       }
       // Ensure session header is present for the transport
-      headersObj["mcp-session-id"] = sessionId;
+      headersObj["mcp-session-id"] = transportKey;
 
       const nodeReq = {
         method: c.req.method,
@@ -1511,17 +1564,18 @@ const initialize = async () => {
         headers: res.getHeaders(),
         body: res.getBodyText(),
       };
-      logger.info("MCP POST response", JSON.stringify(debugOut));
+      logger.info("MCP OAuth POST response", JSON.stringify(debugOut));
       return res.toResponse();
     } catch (error) {
-      logger.error("Error handling MCP request:", error);
-      const payload = {
-        jsonrpc: "2.0",
-        error: { code: -32603 as const, message: "Internal server error" },
-        id: null,
-      };
-      logger.info("MCP POST response (500)", JSON.stringify(payload));
-      return c.json(payload, 500);
+      logger.error("Error handling MCP OAuth request:", error);
+      return c.json(
+        {
+          jsonrpc: "2.0",
+          error: { code: -32603 as const, message: "Internal server error" },
+          id: null,
+        },
+        500
+      );
     }
   });
 
@@ -1538,7 +1592,7 @@ const initialize = async () => {
 
   logger.info(`Server running on port ${PORT}`);
   logger.info(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
-  logger.info(`MCP endpoint available at http://localhost:${PORT}/mcp/{sessionId}`);
+  logger.info(`MCP OAuth endpoint available at http://localhost:${PORT}/@{orgSlug}`);
   logger.info(`MCP legacy endpoint available at http://localhost:${PORT}/mcp-legacy`);
   logger.info(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
 };

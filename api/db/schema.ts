@@ -17,6 +17,13 @@ export interface Database {
   organization: Organization;
   member: Member;
   invitation: Invitation;
+
+  // these are used by MCP plugin.
+  // The same tables as oidc provider plugin - may be useful
+  // in the future
+  oauthApplication: OAuthApplicationTable;
+  oauthAccessToken: OAuthAccessTokenTable;
+  oauthConsent: OAuthConsentTable;
 }
 
 export interface McpSessionTable {
@@ -118,4 +125,42 @@ export interface PatLinkTable {
   usedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OAuthApplicationTable {
+  id: string;
+  name: string;
+  icon: string | null;
+  metadata: string | null;
+  clientId: string;
+  clientSecret: string | null;
+  redirectURLs: string;
+  type: string;
+  disabled: boolean | null;
+  userId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OAuthAccessTokenTable {
+  id: string;
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAt: string;
+  refreshTokenExpiresAt: string;
+  clientId: string;
+  userId: string | null;
+  scopes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OAuthConsentTable {
+  id: string;
+  clientId: string;
+  userId: string;
+  scopes: string;
+  createdAt: string;
+  updatedAt: string;
+  consentGiven: boolean;
 }

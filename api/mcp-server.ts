@@ -7,11 +7,11 @@ const logger = getLogger("api/mcp-server.ts");
 
 export type McpServerContext = {
   organizationId: string;
-  sessionId: string; // Used as viewerId for subroutine calls
+  userId: string;
 };
 
 export const createMcpServer = (ctx: McpServerContext): McpServer => {
-  const { organizationId, sessionId } = ctx;
+  const { organizationId, userId } = ctx;
 
   const server = new McpServer(
     {
@@ -43,7 +43,7 @@ export const createMcpServer = (ctx: McpServerContext): McpServer => {
         const { subroutine, run } = await executeRequest({
           request,
           organizationId,
-          viewerId: sessionId,
+          viewerId: userId,
           wait: true,
         });
 
@@ -75,7 +75,7 @@ export const createMcpServer = (ctx: McpServerContext): McpServer => {
                   error: {
                     code: "INTEGRATION_AUTH_REQUIRED",
                     message: error.message,
-                    integrationId: req?.integrationId ?? error.integrationId,
+                    integrationId: req?.integrationId,
                     authorizationUrl: req?.authorizationUrl ?? "",
                     authInstructions: req?.authInstructions,
                     requirements: error.requirements,

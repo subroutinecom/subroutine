@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { organization } from "better-auth/plugins";
+import { organization, mcp } from "better-auth/plugins";
 import pg from "pg";
 import { getConfig } from "./config/loader.ts";
 
@@ -34,5 +34,10 @@ export const auth = betterAuth({
       },
     }),
   },
-  plugins: [organization({})],
+  plugins: [
+    organization({}),
+    mcp({
+      loginPage: "/login",
+    }),
+  ],
 });
