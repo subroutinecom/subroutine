@@ -1385,8 +1385,12 @@ const initialize = async () => {
 
   const mcpOAuthTransports: Record<string, StreamableHTTPServerTransport> = {};
 
-  app.get("/@:orgSlug", async (c) => {
-    const orgSlug = c.req.param("orgSlug")!;
+  // Helper to extract orgSlug from @-prefixed path param
+  const extractOrgSlug = (atOrg: string) => atOrg.slice(1); // Remove @ prefix
+
+  // MCP OAuth routes use regex pattern because Hono's router doesn't handle /@literal correctly
+  app.get("/:atOrg{@[^/]+}", async (c) => {
+    const orgSlug = extractOrgSlug(c.req.param("atOrg")!);
 
     const org = await getOrganizationBySlug(orgSlug);
     if (!org) {
@@ -1400,8 +1404,8 @@ const initialize = async () => {
     });
   });
 
-  app.post("/@:orgSlug", async (c) => {
-    const orgSlug = c.req.param("orgSlug")!;
+  app.post("/:atOrg{@[^/]+}", async (c) => {
+    const orgSlug = extractOrgSlug(c.req.param("atOrg")!);
 
     // 1. Look up organization by slug
     const org = await getOrganizationBySlug(orgSlug);
