@@ -2,7 +2,6 @@ import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router-dom/server.js";
 import { Layout } from "./components/Layout.tsx";
 import { Login } from "./pages/Login.tsx";
-import { McpSession } from "./pages/McpSession.tsx";
 import { OAuthResult } from "./pages/OAuthResult.tsx";
 import { PatSubmission } from "./pages/PatSubmission.tsx";
 
@@ -19,10 +18,8 @@ type PatLinkInfo = {
 };
 
 type RenderUiProps = {
-  sessionId?: string;
   authProviders?: any;
   authBaseUrl?: string;
-  baseUrl?: string;
   isSignUp?: boolean;
   // OAuth result props
   oauthSuccess?: boolean;
@@ -37,10 +34,6 @@ type RenderUiProps = {
 };
 
 export const renderUi = (path: string, props?: RenderUiProps) => {
-  // Parse the route params from the path for /mcp/:sessionId
-  const sessionIdMatch = path.match(/^\/mcp\/([^/]+)$/);
-  const sessionId = sessionIdMatch?.[1] || "";
-
   // Parse route params for /pat/:linkId
   const patLinkIdMatch = path.match(/^\/pat\/([^/]+)$/);
   const patLinkId = patLinkIdMatch?.[1] || props?.patLinkId || "";
@@ -48,15 +41,11 @@ export const renderUi = (path: string, props?: RenderUiProps) => {
   const isOAuthResult = path === "/oauth/result";
   const isPatSubmission = patLinkId !== "";
   const isLogin = path === "/login";
-  const isMcpLogin = path === "/mcp";
-  const isMcpSession = sessionId !== "";
 
   return renderToString(
     <StaticRouter location={path}>
       <Layout>
         {isLogin && <Login {...props} />}
-        {isMcpLogin && <Login {...props} />}
-        {isMcpSession && <McpSession sessionId={sessionId} baseUrl={props?.baseUrl} />}
         {isOAuthResult && (
           <OAuthResult
             success={props?.oauthSuccess ?? false}
@@ -73,7 +62,7 @@ export const renderUi = (path: string, props?: RenderUiProps) => {
             invalid={props?.patInvalid}
           />
         )}
-        {!isLogin && !isMcpLogin && !isMcpSession && !isOAuthResult && !isPatSubmission && (
+        {!isLogin && !isOAuthResult && !isPatSubmission && (
           <div>Not Found</div>
         )}
       </Layout>
