@@ -2,11 +2,7 @@ import { z } from "zod";
 import type { McpContext } from "../utils/types";
 import type { AuthRequirement } from "../../models/errors";
 import { handleInspectMcp, handleInspectGraphQL } from "./utils";
-import {
-  getIntegrationOrGlobal,
-  getIntegrationByName,
-  getAvailableIntegrations,
-} from "../../models/integration";
+import { getIntegrationOrGlobal } from "../../models/integration";
 
 /**
  * Result type for inspectIntegration tool.
@@ -16,7 +12,6 @@ type InspectResult =
   | {
       success: true;
       type: "mcp";
-      integrationId: string;
       integrationName: string;
       tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>;
       usage: string;
@@ -24,7 +19,6 @@ type InspectResult =
   | {
       success: true;
       type: "graphql";
-      integrationId: string;
       integrationName: string;
       schema: string;
       schemaFetchedAt: number;
@@ -36,9 +30,15 @@ type InspectResult =
     };
 
 /**
- * Creates the inspectIntegration tool for the "provided" context (integration name already known).
+ * Creates the unified inspectIntegration tool.
+ * Works in both provided and discovery modes.
+ *
+ * The integration must be "known" - either:
+ * - Listed via listIntegrations (provided mode)
+ * - Found via findIntegration (both modes)
+ * - Registered in mcpContext.integrationNameToId
  */
-export const createInspectIntegrationProvided = (
+export const createInspectIntegration = (
   mcpContext: McpContext,
   capturedAuthRequirements: AuthRequirement[],
   usedIntegrationIds: Set<string>
@@ -49,24 +49,27 @@ export const createInspectIntegrationProvided = (
 For MCP integrations: Returns the list of available tools and their input schemas.
 For GraphQL integrations: Returns the GraphQL schema (SDL) for generating queries.
 
-Call this BEFORE writing code that uses an integration to understand its capabilities.`,
+The integration must be found first (via listIntegrations or findIntegration).
+Call this BEFORE writing code to understand what the integration can do.`,
     inputSchema: z.object({
       integrationName: z.string().describe("The name of the integration to inspect"),
     }),
     execute: async (params: { integrationName: string }): Promise<InspectResult> => {
+      // Look up the integration ID from the map
       const integrationId = mcpContext.integrationNameToId.get(params.integrationName);
       if (!integrationId) {
         return {
           success: false,
-          error: `Unknown integration: "${params.integrationName}". Valid integrations are: ${Array.from(mcpContext.integrationNameToId.keys()).join(", ")}`,
+          error: `Integration "${params.integrationName}" not found. Call findIntegration("${params.integrationName}") first to locate it.`,
         };
       }
 
+      // Fetch the full integration
       const integration = await getIntegrationOrGlobal(integrationId, mcpContext.organizationId);
       if (!integration) {
         return {
           success: false,
-          error: `Integration "${params.integrationName}" not found`,
+          error: `Integration "${params.integrationName}" (id: ${integrationId}) not found in database.`,
         };
       }
 
@@ -78,7 +81,6 @@ Call this BEFORE writing code that uses an integration to understand its capabil
           return {
             success: true,
             type: "mcp",
-            integrationId: integration.id,
             integrationName: integration.name,
             tools: result.tools,
             usage: `This is an MCP integration. Use the subroutine SDK's callTool() to invoke tools:
@@ -96,110 +98,6 @@ const result = await callTool("toolName", { param: "value" });`,
           return {
             success: true,
             type: "graphql",
-            integrationId: integration.id,
-            integrationName: integration.name,
-            schema: result.schema,
-            schemaFetchedAt: result.schemaFetchedAt!,
-            usage: `This is a GraphQL integration. Use the subroutine SDK's graphql client:
-import { graphql } from "subroutine:integration/${integration.name}";
-const result = await graphql(\`query { ... }\`, { variables });
-
-IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
-          };
-        }
-        return { success: false, error: result.error ?? "Unknown error" };
-      }
-
-      return {
-        success: false,
-        error: `Unsupported integration type: ${integration.authConfig.type}`,
-      };
-    },
-  };
-};
-
-/**
- * Creates the inspectIntegration tool for the "discovery" context (needs to look up integration).
- */
-export const createInspectIntegrationDiscovery = (
-  mcpContext: McpContext,
-  capturedAuthRequirements: AuthRequirement[],
-  usedIntegrationIds: Set<string>
-) => {
-  return {
-    description: `Inspect an integration to discover what it provides.
-
-For MCP integrations: Returns the list of available tools and their input schemas.
-For GraphQL integrations: Returns the GraphQL schema (SDL) for generating queries.
-
-Call this after getOrganizationIntegrations or getGlobalIntegrations to see what an integration provides.
-Works with both org-specific and global integrations.`,
-    inputSchema: z.object({
-      integrationName: z
-        .string()
-        .describe("The name of the integration to inspect (from listAvailableIntegrations)"),
-      integrationId: z
-        .string()
-        .optional()
-        .describe("The ID of the integration (recommended for global integrations to avoid name collisions)"),
-    }),
-    execute: async (params: {
-      integrationName: string;
-      integrationId?: string;
-    }): Promise<InspectResult> => {
-      // If integrationId provided, use it directly; otherwise look up by name
-      let integration;
-      if (params.integrationId) {
-        integration = await getIntegrationOrGlobal(params.integrationId, mcpContext.organizationId);
-      } else {
-        // Try org-specific first, then fall back to searching all available
-        integration = await getIntegrationByName(params.integrationName, mcpContext.organizationId);
-        if (!integration) {
-          // Check global integrations by name
-          const allAvailable = await getAvailableIntegrations(mcpContext.organizationId);
-          integration = allAvailable.find(
-            (i) => i.name.toLowerCase() === params.integrationName.toLowerCase()
-          );
-        }
-      }
-
-      if (!integration) {
-        return {
-          success: false,
-          error: `Integration "${params.integrationName}" not found. Call getOrganizationIntegrations or getGlobalIntegrations first to see available integrations.`,
-        };
-      }
-
-      // Register the integration name -> id mapping for future calls
-      mcpContext.integrationNameToId.set(integration.name, integration.id);
-
-      // Handle based on integration type
-      if (integration.authConfig.type === "mcp") {
-        const result = await handleInspectMcp(integration, mcpContext, capturedAuthRequirements);
-        if (result.success && result.tools) {
-          usedIntegrationIds.add(integration.id);
-          return {
-            success: true,
-            type: "mcp",
-            integrationId: integration.id,
-            integrationName: integration.name,
-            tools: result.tools,
-            usage: `This is an MCP integration. Use the subroutine SDK's callTool() to invoke tools:
-import { callTool } from "subroutine:integration/${integration.name}";
-const result = await callTool("toolName", { param: "value" });`,
-          };
-        }
-        return { success: false, error: result.error ?? "Unknown error" };
-      }
-
-      if (integration.authConfig.type === "graphql") {
-        const result = await handleInspectGraphQL(integration, mcpContext, capturedAuthRequirements);
-        if (result.success && result.schema) {
-          usedIntegrationIds.add(integration.id);
-          return {
-            success: true,
-            type: "graphql",
-            integrationId: integration.id,
             integrationName: integration.name,
             schema: result.schema,
             schemaFetchedAt: result.schemaFetchedAt!,

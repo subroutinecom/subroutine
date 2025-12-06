@@ -1,7 +1,41 @@
 import type { SourceFile, CallExpression, Node } from "ts-morph";
 import { SyntaxKind } from "ts-morph";
 import type { ValidationError, ValidationContext } from "../types";
-import { validateOperation } from "../../../../sandbox/integrations/graphql/validate";
+import { buildSchema, parse, validate, Source } from "graphql";
+
+/**
+ * Validates a GraphQL operation against a schema SDL.
+ * Returns { valid: true } or { valid: false, errors: [...] }
+ */
+const validateGraphqlOperation = (
+  schemaSDL: string,
+  operation: string
+): { valid: true } | { valid: false; errors: Array<{ message: string }> } => {
+  try {
+    const schema = buildSchema(schemaSDL);
+    const document = parse(new Source(operation, "Operation"));
+    const errors = validate(schema, document);
+
+    if (errors.length > 0) {
+      return {
+        valid: false,
+        errors: errors.map((e) => ({ message: e.message })),
+      };
+    }
+    return { valid: true };
+  } catch (err) {
+    if (err instanceof Error) {
+      return {
+        valid: false,
+        errors: [{ message: err.message }],
+      };
+    }
+    return {
+      valid: false,
+      errors: [{ message: String(err) }],
+    };
+  }
+};
 
 /**
  * Validates GraphQL queries in generated code against their respective schemas.
@@ -99,7 +133,7 @@ export const validateGraphqlQueries = (
     }
 
     // Validate the query against the schema
-    const result = validateOperation(schema, queryString);
+    const result = validateGraphqlOperation(schema, queryString);
     if (!result.valid) {
       for (const validationError of result.errors) {
         errors.push({

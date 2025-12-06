@@ -72,9 +72,16 @@ const getProvidedIntegrationsDocs = (integrations: IntegrationInfo[]): string =>
 AVAILABLE INTEGRATIONS: ${namesList}
 
 You MUST use these integrations to fulfill the user's request.
-1. Call inspectIntegration({ integrationName: "name" }) to discover what each integration provides
-2. For MCP integrations: The response includes available tools - use getMcpClient() and callTool()
-3. For GraphQL integrations: The response includes the schema - use graphql() from the SDK
+
+TOOLS:
+- listIntegrations() - see all available integrations
+- findIntegration(name) - check if a specific integration exists
+- inspectIntegration(name) - get details (tools for MCP, schema for GraphQL)
+
+WORKFLOW:
+1. Call listIntegrations() or findIntegration() to see what's available
+2. Call inspectIntegration(name) to discover what the integration provides
+3. Write code using the discovered capabilities
 
 DO NOT generate code that assumes capabilities exist - always call inspectIntegration first.
 `;
@@ -89,21 +96,27 @@ const getDiscoveryModeDocs = (): string => {
 INTEGRATION DISCOVERY MODE:
 No integrations were provided. You must discover what's available.
 
-REQUIRED STEPS when the user's request needs an external service (GitHub, Slack, database, etc.):
-1. FIRST call getOrganizationIntegrations() to see organization-specific integrations
-2. If not found, call getGlobalIntegrations() to check the first-party registry
-3. Call inspectIntegration({ integrationName: "name" }) to see what the integration provides
-   - For MCP: Returns available tools
-   - For GraphQL: Returns the schema
-4. If no integration exists, call manageMcpIntegration({ need: "service-name" }) as a last resort
+TOOLS:
+- getOrganizationIntegrations() - list org-specific integrations (check first)
+- getGlobalIntegrations() - list first-party registry integrations
+- findIntegration(name) - search for a specific integration by name
+- inspectIntegration(name) - get details (tools for MCP, schema for GraphQL)
+- manageMcpIntegration(need) - set up a new integration (last resort)
+
+WORKFLOW:
+1. Call findIntegration(name) to check if the integration you need exists
+2. If not found, call getOrganizationIntegrations() then getGlobalIntegrations()
+3. Call inspectIntegration(name) to discover what the integration provides
+4. If no integration exists, call manageMcpIntegration({ need: "service-name" })
+5. Write code using the discovered capabilities
 
 DO NOT skip discovery. DO NOT assume any integrations exist.
 DO NOT generate code until you've confirmed the integration exists via inspectIntegration.
 
 Example flow for "get my GitHub PRs":
-1. Call getOrganizationIntegrations() -> check for GitHub integration
-2. If not found, call getGlobalIntegrations() -> find GitHub in registry
-3. Call inspectIntegration({ integrationName: "github" }) -> discover tools or schema
+1. Call findIntegration("github") -> check if GitHub integration exists
+2. If not found, try getOrganizationIntegrations() and getGlobalIntegrations()
+3. Call inspectIntegration("github") -> discover tools or schema
 4. NOW write code using the discovered capabilities
 `;
 };

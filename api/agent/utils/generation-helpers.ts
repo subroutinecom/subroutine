@@ -5,10 +5,12 @@ import {
   createGetGlobalIntegrations,
   createGetOrganizationIntegrations,
 } from "../tools/discovery.ts";
+import { createListIntegrations } from "../tools/list-integrations.ts";
 import {
-  createInspectIntegrationProvided,
-  createInspectIntegrationDiscovery,
-} from "../tools/inspect-integration.ts";
+  createFindIntegrationProvided,
+  createFindIntegrationDiscovery,
+} from "../tools/find-integration.ts";
+import { createInspectIntegration } from "../tools/inspect-integration.ts";
 import { createManageMcpIntegration } from "../tools/manage-integration.ts";
 import { createWriteCodeTool } from "../tools/write-code.ts";
 import type { McpContext, SubroutineCapture } from "./types.ts";
@@ -37,25 +39,33 @@ export const createAgentTools = (
 
   if (options.mcpContext) {
     const mcpContext = options.mcpContext;
-    const hasProvidedIntegrations = options.integrations && options.integrations.length > 0;
+    const providedIntegrations = options.integrations ?? [];
+    const hasProvidedIntegrations = providedIntegrations.length > 0;
+
+    // inspectIntegration is available in both modes (unified)
+    tools.inspectIntegration = createInspectIntegration(
+      mcpContext,
+      capturedAuthRequirements,
+      usedIntegrationIds
+    );
 
     if (hasProvidedIntegrations) {
-      // Provided mode: integrations were explicitly passed, use inspectIntegration
-      tools.inspectIntegration = createInspectIntegrationProvided(
-        mcpContext,
-        capturedAuthRequirements,
-        usedIntegrationIds
-      );
+      // Provided mode: integrations were explicitly passed
+      logger.debug(`Provided mode - ${providedIntegrations.length} integration(s)`);
+
+      // Pre-populate the name→id map so inspectIntegration works
+      for (const integration of providedIntegrations) {
+        mcpContext.integrationNameToId.set(integration.name, integration.id);
+      }
+
+      tools.listIntegrations = createListIntegrations(providedIntegrations);
+      tools.findIntegration = createFindIntegrationProvided(mcpContext, providedIntegrations);
     } else {
       // Discovery mode: agent must discover integrations
       logger.debug(`Discovery mode enabled - adding discovery tools`);
       tools.getOrganizationIntegrations = createGetOrganizationIntegrations(mcpContext);
       tools.getGlobalIntegrations = createGetGlobalIntegrations(mcpContext);
-      tools.inspectIntegration = createInspectIntegrationDiscovery(
-        mcpContext,
-        capturedAuthRequirements,
-        usedIntegrationIds
-      );
+      tools.findIntegration = createFindIntegrationDiscovery(mcpContext);
       tools.manageMcpIntegration = createManageMcpIntegration(mcpContext, usedIntegrationIds);
     }
   }
