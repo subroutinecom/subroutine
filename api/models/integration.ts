@@ -2,17 +2,23 @@ import { nanoid } from "nanoid";
 import { db } from "../db/index.ts";
 import type { IntegrationTable } from "../db/schema.ts";
 import type {
+  AuthStrategy,
   IntegrationProvider,
-  McpAuthStrategy,
   McpTransport,
+  AuthBlock,
 } from "../integrations/providers.ts";
+import type { OAuthConfig } from "../../packages/shared-types/integration";
 import { isValidProvider } from "../integrations/providers.ts";
 import { decrypt, encrypt } from "../utils/encryption.ts";
 
+// Re-export for convenience
+export type { AuthStrategy, AuthBlock, OAuthConfig };
+
 /**
- * OAuth2 integration auth configuration.
+ * OAuth2 native integration config (Gmail, GitHub, Calendar, etc.)
+ * For these, OAuth IS the integration - there's no separate auth block.
  */
-export interface OAuth2AuthConfig {
+export interface OAuth2IntegrationConfig {
   type: "oauth2";
   clientId: string;
   clientSecret: string;
@@ -24,55 +30,53 @@ export interface OAuth2AuthConfig {
 }
 
 /**
- * OAuth configuration for MCP integrations using bearer_passthrough.
- * This allows users to authenticate via OAuth and pass their token to the MCP server.
+ * MCP integration config.
+ * Protocol-specific fields + a dedicated auth block.
  */
-export interface McpOAuthConfig {
-  clientId: string;
-  clientSecret: string;
-  authUrl: string;
-  tokenUrl: string;
-  redirectUri: string;
-  scopes: string[];
-}
-
-/**
- * MCP integration auth configuration.
- */
-export interface McpAuthConfig {
+export interface McpIntegrationConfig {
   type: "mcp";
   serverUrl: string;
   transport: McpTransport;
-  authStrategy: McpAuthStrategy;
-  /** API key for api_key auth strategy (encrypted in DB) */
-  apiKey?: string;
-  /**
-   * OAuth configuration for bearer_passthrough auth strategy.
-   * Required when authStrategy.type is "bearer_passthrough".
-   * Users will authenticate via OAuth and their token will be passed to the MCP server.
-   */
-  oauthConfig?: McpOAuthConfig;
+  auth: AuthBlock;
   metadata?: Record<string, unknown>;
 }
 
 /**
- * Union type for all integration auth configurations.
+ * GraphQL integration config.
+ * Protocol-specific fields + a dedicated auth block.
  */
-export type IntegrationAuthConfig = OAuth2AuthConfig | McpAuthConfig;
+export interface GraphQLIntegrationConfig {
+  type: "graphql";
+  endpoint: string;
+  auth: AuthBlock;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Union type for all integration configurations.
+ * The `type` field identifies the protocol, and `auth` (when present)
+ * is a standardized block for authentication - orthogonal to protocol.
+ */
+export type IntegrationConfig =
+  | OAuth2IntegrationConfig
+  | McpIntegrationConfig
+  | GraphQLIntegrationConfig;
 
 export type IntegrationStatus = "static" | "dynamic";
 export type IntegrationVisibility = "private" | "global";
 
-export interface IntegrationWithConfig extends Omit<
-  IntegrationTable,
-  "authConfig" | "status" | "visibility"
-> {
-  authConfig: IntegrationAuthConfig;
+export interface IntegrationWithConfig
+  extends Omit<IntegrationTable, "authConfig" | "status" | "visibility"> {
+  authConfig: IntegrationConfig;
   status: IntegrationStatus;
   visibility: IntegrationVisibility;
 }
 
-const validateOAuth2AuthConfig = (config: OAuth2AuthConfig) => {
+// =============================================================================
+// Validation
+// =============================================================================
+
+const validateOAuth2Config = (config: OAuth2IntegrationConfig) => {
   if (!config.clientId) {
     throw new Error("authConfig.clientId is required");
   }
@@ -90,137 +94,201 @@ const validateOAuth2AuthConfig = (config: OAuth2AuthConfig) => {
   }
 };
 
-const validateMcpOAuthConfig = (oauthConfig: McpOAuthConfig | undefined, required: boolean) => {
+/**
+ * Validates OAuth configuration for bearer_oauth strategy.
+ */
+const validateOAuthConfig = (
+  oauthConfig: OAuthConfig | undefined,
+  opts: { required: boolean }
+) => {
   if (!oauthConfig) {
-    if (required) {
+    if (opts.required) {
       throw new Error(
-        "authConfig.oauthConfig is required when using bearer_passthrough auth strategy"
+        "auth.oauthConfig is required when using bearer_oauth auth strategy"
       );
     }
     return;
   }
 
   if (!oauthConfig.clientId) {
-    throw new Error("authConfig.oauthConfig.clientId is required");
+    throw new Error("auth.oauthConfig.clientId is required");
   }
   if (!oauthConfig.clientSecret) {
-    throw new Error("authConfig.oauthConfig.clientSecret is required");
+    throw new Error("auth.oauthConfig.clientSecret is required");
   }
   if (!oauthConfig.authUrl) {
-    throw new Error("authConfig.oauthConfig.authUrl is required");
+    throw new Error("auth.oauthConfig.authUrl is required");
   }
   if (!oauthConfig.tokenUrl) {
-    throw new Error("authConfig.oauthConfig.tokenUrl is required");
+    throw new Error("auth.oauthConfig.tokenUrl is required");
   }
   if (!oauthConfig.redirectUri) {
-    throw new Error("authConfig.oauthConfig.redirectUri is required");
+    throw new Error("auth.oauthConfig.redirectUri is required");
   }
   if (!oauthConfig.scopes || oauthConfig.scopes.length === 0) {
-    throw new Error("authConfig.oauthConfig.scopes must have at least one scope");
+    throw new Error("auth.oauthConfig.scopes must have at least one scope");
   }
 
   // Validate URLs
   try {
     new URL(oauthConfig.authUrl);
   } catch {
-    throw new Error("authConfig.oauthConfig.authUrl must be a valid URL");
+    throw new Error("auth.oauthConfig.authUrl must be a valid URL");
   }
   try {
     new URL(oauthConfig.tokenUrl);
   } catch {
-    throw new Error("authConfig.oauthConfig.tokenUrl must be a valid URL");
-  }
-};
-
-const validateMcpAuthConfig = (config: McpAuthConfig) => {
-  if (!config.serverUrl) {
-    throw new Error("authConfig.serverUrl is required");
-  }
-
-  // Validate URL format
-  try {
-    new URL(config.serverUrl);
-  } catch {
-    throw new Error("authConfig.serverUrl must be a valid URL");
-  }
-
-  if (!config.transport) {
-    throw new Error("authConfig.transport is required");
-  }
-  if (config.transport !== "sse" && config.transport !== "streamable-http") {
-    throw new Error("authConfig.transport must be 'sse' or 'streamable-http'");
-  }
-
-  if (!config.authStrategy) {
-    throw new Error("authConfig.authStrategy is required");
-  }
-
-  // Validate auth strategy specific fields
-  switch (config.authStrategy.type) {
-    case "none":
-      // No additional validation needed
-      break;
-    case "api_key":
-      // apiKey is only required for org-level (non-viewer-scoped) API key auth
-      // For viewer-scoped PAT, each user provides their own token via connected accounts
-      if (!config.authStrategy.viewerScoped && !config.apiKey) {
-        throw new Error("authConfig.apiKey is required when using org-level api_key auth strategy");
-      }
-      break;
-    case "bearer_passthrough":
-      // OAuth config is required for bearer_passthrough to enable user authentication
-      validateMcpOAuthConfig(config.oauthConfig, true);
-      break;
-    case "custom_headers":
-      if (!config.authStrategy.headers || Object.keys(config.authStrategy.headers).length === 0) {
-        throw new Error("authConfig.authStrategy.headers must have at least one header");
-      }
-      break;
-    default:
-      throw new Error(
-        `Unknown auth strategy type: ${(config.authStrategy as { type: string }).type}`
-      );
-  }
-};
-
-const validateIntegrationAuthConfig = (config: IntegrationAuthConfig) => {
-  switch (config.type) {
-    case "oauth2":
-      validateOAuth2AuthConfig(config);
-      break;
-    case "mcp":
-      validateMcpAuthConfig(config);
-      break;
-    default:
-      throw new Error(`Unsupported auth config type: ${(config as { type: string }).type}`);
+    throw new Error("auth.oauthConfig.tokenUrl must be a valid URL");
   }
 };
 
 /**
- * Returns a sanitized version of the auth config without secrets.
- * - OAuth2: removes clientSecret
- * - MCP: removes apiKey
+ * Validates the auth block - same logic for MCP, GraphQL, REST, etc.
+ * This is the single source of truth for auth validation.
  */
-export const getPublicIntegrationAuthConfig = (
-  config: IntegrationAuthConfig
-): Omit<OAuth2AuthConfig, "clientSecret"> | Omit<McpAuthConfig, "apiKey"> => {
+const validateAuthBlock = (auth: AuthBlock) => {
+  if (!auth) {
+    throw new Error("auth block is required");
+  }
+  if (!auth.strategy) {
+    throw new Error("auth.strategy is required");
+  }
+
+  switch (auth.strategy.type) {
+    case "none":
+      // No additional validation needed
+      break;
+    case "api_key":
+      // apiKey is only required for org-level (non-viewer-scoped)
+      if (!auth.strategy.viewerScoped && !auth.apiKey) {
+        throw new Error("auth.apiKey is required when using org-level api_key auth strategy");
+      }
+      break;
+    case "bearer_oauth":
+      validateOAuthConfig(auth.oauthConfig, { required: true });
+      break;
+    case "custom_headers":
+      if (!auth.strategy.headers || Object.keys(auth.strategy.headers).length === 0) {
+        throw new Error("auth.strategy.headers must have at least one header");
+      }
+      break;
+    default:
+      throw new Error(`Unknown auth strategy type: ${(auth.strategy as { type: string }).type}`);
+  }
+};
+
+const validateMcpConfig = (config: McpIntegrationConfig) => {
+  if (!config.serverUrl) {
+    throw new Error("serverUrl is required");
+  }
+
+  try {
+    new URL(config.serverUrl);
+  } catch {
+    throw new Error("serverUrl must be a valid URL");
+  }
+
+  if (!config.transport) {
+    throw new Error("transport is required");
+  }
+  if (config.transport !== "sse" && config.transport !== "streamable-http") {
+    throw new Error("transport must be 'sse' or 'streamable-http'");
+  }
+
+  validateAuthBlock(config.auth);
+};
+
+const validateGraphQLConfig = (config: GraphQLIntegrationConfig) => {
+  if (!config.endpoint) {
+    throw new Error("endpoint is required");
+  }
+
+  try {
+    new URL(config.endpoint);
+  } catch {
+    throw new Error("endpoint must be a valid URL");
+  }
+
+  validateAuthBlock(config.auth);
+};
+
+const validateIntegrationConfig = (config: IntegrationConfig) => {
+  switch (config.type) {
+    case "oauth2":
+      validateOAuth2Config(config);
+      break;
+    case "mcp":
+      validateMcpConfig(config);
+      break;
+    case "graphql":
+      validateGraphQLConfig(config);
+      break;
+    default:
+      throw new Error(`Unsupported config type: ${(config as { type: string }).type}`);
+  }
+};
+
+// =============================================================================
+// Public Config (secrets stripped)
+// =============================================================================
+
+type PublicOAuth2Config = Omit<OAuth2IntegrationConfig, "clientSecret">;
+type PublicMcpConfig = Omit<McpIntegrationConfig, "auth"> & {
+  auth: Omit<AuthBlock, "apiKey" | "oauthConfig"> & {
+    oauthConfig?: Omit<OAuthConfig, "clientSecret">;
+  };
+};
+type PublicGraphQLConfig = Omit<GraphQLIntegrationConfig, "auth"> & {
+  auth: Omit<AuthBlock, "apiKey" | "oauthConfig"> & {
+    oauthConfig?: Omit<OAuthConfig, "clientSecret">;
+  };
+};
+
+export type PublicIntegrationConfig =
+  | PublicOAuth2Config
+  | PublicMcpConfig
+  | PublicGraphQLConfig;
+
+/**
+ * Returns a sanitized version of the config without secrets.
+ */
+export const getPublicIntegrationConfig = (
+  config: IntegrationConfig
+): PublicIntegrationConfig => {
   if (config.type === "oauth2") {
     const { clientSecret: _clientSecret, ...rest } = config;
     return rest;
-  } else if (config.type === "mcp") {
-    const { apiKey: _apiKey, ...rest } = config;
-    return rest;
   }
-  // Fallback for unknown types - return as-is (shouldn't happen with proper typing)
-  return config as Omit<OAuth2AuthConfig, "clientSecret">;
+
+  if (config.type === "mcp" || config.type === "graphql") {
+    const { auth, ...rest } = config;
+    const { apiKey: _apiKey, oauthConfig, ...authRest } = auth;
+
+    const publicAuth: PublicMcpConfig["auth"] = { ...authRest };
+    if (oauthConfig) {
+      const { clientSecret: _clientSecret, ...oauthRest } = oauthConfig;
+      publicAuth.oauthConfig = oauthRest;
+    }
+
+    return { ...rest, auth: publicAuth } as PublicMcpConfig | PublicGraphQLConfig;
+  }
+
+  return config as PublicIntegrationConfig;
 };
+
+// Legacy export name for backward compatibility
+export const getPublicIntegrationAuthConfig = getPublicIntegrationConfig;
+
+// =============================================================================
+// CRUD Operations
+// =============================================================================
 
 export type CreateIntegrationRequest = {
   organizationId: string;
   provider: IntegrationProvider;
   name: string;
   description?: string;
-  authConfig: IntegrationAuthConfig;
+  authConfig: IntegrationConfig;
   visibility?: IntegrationVisibility;
 };
 
@@ -228,7 +296,7 @@ export type UpdateIntegrationRequest = {
   id: string;
   organizationId: string;
   name?: string;
-  authConfig?: Partial<IntegrationAuthConfig>;
+  authConfig?: Partial<IntegrationConfig>;
   enabled?: boolean;
 };
 
@@ -239,7 +307,7 @@ export const createIntegration = async (
     throw new Error(`Invalid provider: ${params.provider}`);
   }
 
-  validateIntegrationAuthConfig(params.authConfig);
+  validateIntegrationConfig(params.authConfig);
   const id = nanoid();
   const now = new Date().toISOString();
   const visibility = params.visibility ?? "private";
@@ -351,8 +419,8 @@ export const updateIntegration = async (
     const mergedConfig = {
       ...existing.authConfig,
       ...params.authConfig,
-    } as IntegrationAuthConfig;
-    validateIntegrationAuthConfig(mergedConfig);
+    } as IntegrationConfig;
+    validateIntegrationConfig(mergedConfig);
     updateValues.authConfig = encrypt(JSON.stringify(mergedConfig));
   }
 
@@ -380,18 +448,20 @@ export const deleteIntegration = async (id: string, organizationId: string): Pro
   return (result?.numDeletedRows ?? 0n) > 0n;
 };
 
-// dynamic integrations
+// =============================================================================
+// Dynamic Integrations
+// =============================================================================
 
 export type CreateDynamicIntegrationRequest = {
   organizationId: string;
   name: string;
-  authConfig: McpAuthConfig;
+  authConfig: McpIntegrationConfig;
 };
 
 export const createDynamicIntegration = async (
   params: CreateDynamicIntegrationRequest
 ): Promise<IntegrationWithConfig> => {
-  validateMcpAuthConfig(params.authConfig);
+  validateMcpConfig(params.authConfig);
 
   const id = nanoid();
   const now = new Date().toISOString();
@@ -432,7 +502,7 @@ export const createDynamicIntegration = async (
 export const updateDynamicIntegration = async (
   id: string,
   organizationId: string,
-  authConfig: McpAuthConfig
+  authConfig: McpIntegrationConfig
 ): Promise<IntegrationWithConfig | null> => {
   const existing = await getIntegration(id, organizationId);
 
@@ -444,7 +514,7 @@ export const updateDynamicIntegration = async (
     throw new Error("Only dynamic integrations can be updated via this method");
   }
 
-  validateMcpAuthConfig(authConfig);
+  validateMcpConfig(authConfig);
   const now = new Date().toISOString();
   const encryptedAuthConfig = encrypt(JSON.stringify(authConfig));
 
@@ -495,13 +565,12 @@ export const getIntegrationByName = async (
   return mapRowToIntegration(row);
 };
 
-// Global integration functions (first-party registry)
+// =============================================================================
+// Global Integrations (first-party registry)
+// =============================================================================
 
 export type IntegrationVisibilityFilter = "private" | "global" | "all";
 
-/**
- * Get integrations available to an organization with optional visibility filtering.
- */
 export const getAvailableIntegrations = async (
   organizationId: string,
   visibilityFilter: IntegrationVisibilityFilter = "all"
@@ -510,18 +579,15 @@ export const getAvailableIntegrations = async (
 
   switch (visibilityFilter) {
     case "private":
-      // Only org-specific integrations
       query = query
         .where("organizationId", "=", organizationId)
         .where("visibility", "=", "private");
       break;
     case "global":
-      // Only global (first-party registry) integrations
       query = query.where("visibility", "=", "global");
       break;
     case "all":
     default:
-      // Both org-specific and global
       query = query.where((eb) =>
         eb.or([eb("organizationId", "=", organizationId), eb("visibility", "=", "global")])
       );
@@ -529,17 +595,13 @@ export const getAvailableIntegrations = async (
   }
 
   const rows = await query
-    .orderBy("visibility", "asc") // private (org-specific) first, then global
+    .orderBy("visibility", "asc")
     .orderBy("createdAt", "desc")
     .execute();
 
   return rows.map(mapRowToIntegration);
 };
 
-/**
- * Get all global integrations (first-party registry).
- * These are integrations with visibility: "global" that are available to all organizations.
- */
 export const getGlobalIntegrations = async (): Promise<IntegrationWithConfig[]> => {
   const rows = await db
     .selectFrom("integration")
@@ -552,11 +614,6 @@ export const getGlobalIntegrations = async (): Promise<IntegrationWithConfig[]> 
   return rows.map(mapRowToIntegration);
 };
 
-/**
- * Get a global integration by ID.
- * Unlike getIntegration, this doesn't require organizationId since global integrations
- * are available to all organizations.
- */
 export const getGlobalIntegrationById = async (
   id: string
 ): Promise<IntegrationWithConfig | null> => {
@@ -574,28 +631,17 @@ export const getGlobalIntegrationById = async (
   return mapRowToIntegration(row);
 };
 
-/**
- * Get an integration by ID, checking both org-specific and global integrations.
- * This is useful when you have an integration ID but don't know if it's org-specific or global.
- */
 export const getIntegrationOrGlobal = async (
   id: string,
   organizationId: string
 ): Promise<IntegrationWithConfig | null> => {
-  // First try org-specific
   const orgIntegration = await getIntegration(id, organizationId);
   if (orgIntegration) {
     return orgIntegration;
   }
-
-  // Fall back to global
   return getGlobalIntegrationById(id);
 };
 
-/**
- * Set the visibility of an integration.
- * Only superadmins should be able to set visibility to "global".
- */
 export const setIntegrationVisibility = async (
   id: string,
   organizationId: string,
@@ -621,9 +667,6 @@ export const setIntegrationVisibility = async (
   return getIntegration(id, organizationId);
 };
 
-/**
- * Update the description of an integration.
- */
 export const updateIntegrationDescription = async (
   id: string,
   organizationId: string,
@@ -648,3 +691,16 @@ export const updateIntegrationDescription = async (
 
   return getIntegration(id, organizationId);
 };
+
+// =============================================================================
+// Legacy Type Aliases (for gradual migration)
+// =============================================================================
+
+/** @deprecated Use McpIntegrationConfig instead */
+export type McpAuthConfig = McpIntegrationConfig;
+
+/** @deprecated Use GraphQLIntegrationConfig instead */
+export type GraphQLAuthConfig = GraphQLIntegrationConfig;
+
+/** @deprecated Use IntegrationConfig instead */
+export type IntegrationAuthConfig = IntegrationConfig;

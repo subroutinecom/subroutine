@@ -1,5 +1,5 @@
 import type { IntegrationFormData } from "../ProviderSelector";
-import type { IntegrationProviderDefinition, McpAuthStrategy } from "~/types/integration";
+import type { AuthStrategy, IntegrationProviderDefinition } from "~/types/integration";
 
 export type ConfigBuildResult =
   | { success: true; config: string }
@@ -28,22 +28,24 @@ const parseScopeString = (scopes: string): string[] => {
 };
 
 /**
- * Builds the MCP auth strategy from form data
+ * Builds the auth block from form data (same for MCP and GraphQL)
  */
-const buildMcpAuthStrategy = (
+const buildAuthBlock = (
   data: IntegrationFormData
-): { strategy: McpAuthStrategy; oauthConfig?: object } | { error: string } => {
+): { auth: { strategy: AuthStrategy; apiKey?: string; oauthConfig?: object } } | { error: string } => {
   switch (data.authStrategyType) {
     case "none":
-      return { strategy: { type: "none" } };
+      return { auth: { strategy: { type: "none" } } };
 
     case "api_key":
       if (data.apiKeyIsViewerScoped) {
         return {
-          strategy: {
-            type: "api_key",
-            viewerScoped: true,
-            ...(data.apiKeyHeaderName.trim() && { headerName: data.apiKeyHeaderName.trim() }),
+          auth: {
+            strategy: {
+              type: "api_key",
+              viewerScoped: true,
+              ...(data.apiKeyHeaderName.trim() && { headerName: data.apiKeyHeaderName.trim() }),
+            },
           },
         };
       } else {
@@ -51,29 +53,32 @@ const buildMcpAuthStrategy = (
           return { error: "API key is required for organization-level API Key authentication" };
         }
         return {
-          strategy: {
-            type: "api_key",
-            ...(data.apiKeyHeaderName.trim() && { headerName: data.apiKeyHeaderName.trim() }),
+          auth: {
+            strategy: {
+              type: "api_key",
+              ...(data.apiKeyHeaderName.trim() && { headerName: data.apiKeyHeaderName.trim() }),
+            },
+            apiKey: data.apiKey.trim(),
           },
         };
       }
 
-    case "bearer_passthrough": {
+    case "bearer_oauth": {
       // Validate required fields
       if (!data.oauthAuthUrl.trim()) {
-        return { error: "OAuth Authorization URL is required for Bearer Passthrough" };
+        return { error: "OAuth Authorization URL is required for Bearer OAuth" };
       }
       if (!data.oauthTokenUrl.trim()) {
-        return { error: "OAuth Token URL is required for Bearer Passthrough" };
+        return { error: "OAuth Token URL is required for Bearer OAuth" };
       }
       if (!data.clientId.trim()) {
-        return { error: "OAuth Client ID is required for Bearer Passthrough" };
+        return { error: "OAuth Client ID is required for Bearer OAuth" };
       }
       if (!data.clientSecret.trim()) {
-        return { error: "OAuth Client Secret is required for Bearer Passthrough" };
+        return { error: "OAuth Client Secret is required for Bearer OAuth" };
       }
       if (!data.redirectUri.trim()) {
-        return { error: "OAuth Redirect URI is required for Bearer Passthrough" };
+        return { error: "OAuth Redirect URI is required for Bearer OAuth" };
       }
 
       // Validate URLs
@@ -84,20 +89,22 @@ const buildMcpAuthStrategy = (
         return { error: "Invalid OAuth Token URL" };
       }
 
-      const scopes = parseScopeString(data.scopes);
+      const scopes = parseScopeString(data.oauthScopes || data.scopes);
       if (scopes.length === 0) {
-        return { error: "At least one OAuth scope is required for Bearer Passthrough" };
+        return { error: "At least one OAuth scope is required for Bearer OAuth" };
       }
 
       return {
-        strategy: { type: "bearer_passthrough" },
-        oauthConfig: {
-          clientId: data.clientId.trim(),
-          clientSecret: data.clientSecret.trim(),
-          authUrl: data.oauthAuthUrl.trim(),
-          tokenUrl: data.oauthTokenUrl.trim(),
-          redirectUri: data.redirectUri.trim(),
-          scopes,
+        auth: {
+          strategy: { type: "bearer_oauth" },
+          oauthConfig: {
+            clientId: data.clientId.trim(),
+            clientSecret: data.clientSecret.trim(),
+            authUrl: data.oauthAuthUrl.trim(),
+            tokenUrl: data.oauthTokenUrl.trim(),
+            redirectUri: data.redirectUri.trim(),
+            scopes,
+          },
         },
       };
     }
@@ -108,14 +115,14 @@ const buildMcpAuthStrategy = (
         if (Object.keys(headers).length === 0) {
           return { error: "Custom headers must have at least one header" };
         }
-        return { strategy: { type: "custom_headers", headers } };
+        return { auth: { strategy: { type: "custom_headers", headers } } };
       } catch {
         return { error: "Custom headers must be valid JSON" };
       }
     }
 
     default:
-      return { strategy: { type: "none" } };
+      return { auth: { strategy: { type: "none" } } };
   }
 };
 
@@ -131,22 +138,17 @@ export const buildMcpConfig = (data: IntegrationFormData): ConfigBuildResult => 
     return { success: false, error: "Invalid server URL" };
   }
 
-  // Build auth strategy
-  const strategyResult = buildMcpAuthStrategy(data);
-  if ("error" in strategyResult) {
-    return { success: false, error: strategyResult.error };
+  // Build auth block
+  const authResult = buildAuthBlock(data);
+  if ("error" in authResult) {
+    return { success: false, error: authResult.error };
   }
 
   const config = {
     type: "mcp" as const,
     serverUrl: data.serverUrl.trim(),
     transport: data.transport,
-    authStrategy: strategyResult.strategy,
-    // Only include apiKey for org-level (non-viewer-scoped) API key auth
-    ...(data.authStrategyType === "api_key" &&
-      !data.apiKeyIsViewerScoped &&
-      data.apiKey.trim() && { apiKey: data.apiKey.trim() }),
-    ...(strategyResult.oauthConfig && { oauthConfig: strategyResult.oauthConfig }),
+    auth: authResult.auth,
   };
 
   return { success: true, config: JSON.stringify(config) };
@@ -182,6 +184,33 @@ export const buildOAuth2Config = (
 };
 
 /**
+ * Builds the GraphQL integration config
+ */
+export const buildGraphQLConfig = (data: IntegrationFormData): ConfigBuildResult => {
+  // Validate endpoint
+  if (!data.graphqlEndpoint.trim()) {
+    return { success: false, error: "GraphQL endpoint is required" };
+  }
+  if (!isValidUrl(data.graphqlEndpoint.trim())) {
+    return { success: false, error: "Invalid GraphQL endpoint URL" };
+  }
+
+  // Build auth block
+  const authResult = buildAuthBlock(data);
+  if ("error" in authResult) {
+    return { success: false, error: authResult.error };
+  }
+
+  const config = {
+    type: "graphql" as const,
+    endpoint: data.graphqlEndpoint.trim(),
+    auth: authResult.auth,
+  };
+
+  return { success: true, config: JSON.stringify(config) };
+};
+
+/**
  * Builds the integration config based on provider type
  */
 export const buildIntegrationConfig = (
@@ -192,6 +221,8 @@ export const buildIntegrationConfig = (
     return buildMcpConfig(data);
   } else if (definition.authType === "oauth2") {
     return buildOAuth2Config(data, definition);
+  } else if (definition.authType === "graphql") {
+    return buildGraphQLConfig(data);
   } else {
     return { success: false, error: "Selected provider is not configured properly" };
   }

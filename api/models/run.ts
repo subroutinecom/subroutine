@@ -2,13 +2,24 @@ import { nanoid } from "nanoid";
 import { getConfig } from "../config/loader.ts";
 import { db } from "../db/index.ts";
 import { getProviderDefinition, type IntegrationProvider } from "../integrations/providers.ts";
-import type { SandboxMcpConfig } from "../integrations/providers/types.ts";
+import type {
+  AuthStrategy,
+  SandboxGraphQLConfig,
+  SandboxMcpConfig,
+} from "../integrations/providers/types.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
 import { getLogger } from "../utils/logger.ts";
-import type { ConnectedAccountCredentials } from "./connected-account.ts";
+import type {
+  ConnectedAccountWithCredentials,
+  ConnectedAccountCredentials,
+} from "./connected-account.ts";
 import { getConnectedAccountsByViewer } from "./connected-account.ts";
 import { IntegrationAuthRequiredError } from "./errors.ts";
-import type { McpAuthConfig } from "./integration.ts";
+import type {
+  GraphQLIntegrationConfig,
+  McpIntegrationConfig,
+  OAuthConfig,
+} from "./integration.ts";
 import { getIntegration } from "./integration.ts";
 import { generatePatLinkUrl } from "./pat-link.ts";
 import { getSubroutine } from "./subroutine.ts";
@@ -49,19 +60,201 @@ type SandboxIntegrationDefinition = {
   account?: SandboxIntegrationAccount;
   /** MCP-specific configuration. Present when authConfig.type is "mcp". */
   mcpConfig?: SandboxMcpConfig;
+  /** GraphQL-specific configuration. Present when authConfig.type is "graphql". */
+  graphqlConfig?: SandboxGraphQLConfig;
 };
 
 /**
- * Converts McpAuthConfig to SandboxMcpConfig for the sandbox worker.
+ * Converts McpIntegrationConfig to SandboxMcpConfig for the sandbox worker.
  */
-const buildMcpConfig = (authConfig: McpAuthConfig): SandboxMcpConfig => {
+const buildMcpConfig = (config: McpIntegrationConfig): SandboxMcpConfig => {
   return {
-    serverUrl: authConfig.serverUrl,
-    transport: authConfig.transport,
-    authStrategy: authConfig.authStrategy,
-    apiKey: authConfig.apiKey,
-    // accessToken will be populated from connected account if bearer_passthrough
+    serverUrl: config.serverUrl,
+    transport: config.transport,
+    authStrategy: config.auth.strategy,
+    apiKey: config.auth.apiKey,
+    // accessToken will be populated from connected account if bearer_oauth
   };
+};
+
+/**
+ * Builds auth headers from an AuthStrategy.
+ * Used for GraphQL (and future REST) integrations.
+ */
+const buildAuthHeaders = (
+  auth: AuthStrategy,
+  opts: { apiKey?: string; accessToken?: string }
+): Record<string, string> => {
+  switch (auth.type) {
+    case "none":
+      return {};
+    case "api_key": {
+      const key = auth.viewerScoped ? opts.accessToken : opts.apiKey;
+      if (!key) {
+        throw new Error("API key is required but not provided");
+      }
+      const headerName = auth.headerName ?? "Authorization";
+      // If using Authorization header, format as Bearer token
+      if (headerName.toLowerCase() === "authorization") {
+        return { [headerName]: `Bearer ${key}` };
+      }
+      return { [headerName]: key };
+    }
+    case "bearer_oauth": {
+      if (!opts.accessToken) {
+        throw new Error("Access token is required for bearer_oauth auth strategy");
+      }
+      return { Authorization: `Bearer ${opts.accessToken}` };
+    }
+    case "custom_headers":
+      return auth.headers;
+    default: {
+      // TypeScript exhaustiveness check
+      const _exhaustive: never = auth;
+      throw new Error(`Unknown auth strategy type: ${JSON.stringify(_exhaustive)}`);
+    }
+  }
+};
+
+/**
+ * Converts GraphQLIntegrationConfig to SandboxGraphQLConfig for the sandbox worker.
+ */
+const buildGraphQLConfig = (
+  config: GraphQLIntegrationConfig,
+  opts: { accessToken?: string }
+): SandboxGraphQLConfig => {
+  const authHeaders = buildAuthHeaders(config.auth.strategy, {
+    apiKey: config.auth.apiKey,
+    accessToken: opts.accessToken,
+  });
+
+  return {
+    endpoint: config.endpoint,
+    authHeaders,
+  };
+};
+
+// ============================================================================
+// Viewer Credential Resolution (Protocol-Agnostic)
+// ============================================================================
+
+/**
+ * Determines what kind of viewer credentials are needed based on auth strategy.
+ */
+type ViewerCredentialRequirement =
+  | { type: "none" }
+  | { type: "oauth" }
+  | { type: "pat" };
+
+const getViewerCredentialRequirement = (
+  authStrategy: AuthStrategy
+): ViewerCredentialRequirement => {
+  switch (authStrategy.type) {
+    case "bearer_oauth":
+      return { type: "oauth" };
+    case "api_key":
+      return authStrategy.viewerScoped ? { type: "pat" } : { type: "none" };
+    case "none":
+    case "custom_headers":
+      return { type: "none" };
+    default: {
+      // TypeScript exhaustiveness check
+      const _exhaustive: never = authStrategy;
+      throw new Error(`Unknown auth strategy type: ${JSON.stringify(_exhaustive)}`);
+    }
+  }
+};
+
+/**
+ * Resolves viewer credentials for an integration.
+ * Throws IntegrationAuthRequiredError if credentials are needed but not available.
+ *
+ * @returns The access token if credentials were resolved, undefined if not needed.
+ */
+const resolveViewerCredentials = async (params: {
+  integrationId: string;
+  integrationName: string;
+  provider: IntegrationProvider;
+  authStrategy: AuthStrategy;
+  oauthConfig?: OAuthConfig;
+  metadata?: Record<string, unknown>;
+  connectedAccount?: ConnectedAccountWithCredentials;
+  viewerId: string;
+  organizationId: string;
+}): Promise<{ accessToken?: string; account?: ConnectedAccountWithCredentials }> => {
+  const requirement = getViewerCredentialRequirement(params.authStrategy);
+
+  if (requirement.type === "none") {
+    return {};
+  }
+
+  const { connectedAccount } = params;
+
+  if (requirement.type === "oauth") {
+    if (!connectedAccount) {
+      if (!params.oauthConfig) {
+        throw new Error(
+          `Integration ${params.integrationName} is configured for ${params.authStrategy.type} but missing OAuth configuration`
+        );
+      }
+
+      const auth = await generateAuthorizationUrl({
+        integrationId: params.integrationId,
+        organizationId: params.organizationId,
+        viewerId: params.viewerId,
+      });
+
+      throw new IntegrationAuthRequiredError({
+        viewerId: params.viewerId,
+        requirements: [
+          {
+            integrationId: params.integrationId,
+            integrationName: params.integrationName,
+            provider: params.provider,
+            authorizationUrl: auth.url,
+            state: auth.state,
+          },
+        ],
+      });
+    }
+
+    return {
+      accessToken: connectedAccount.credentials.accessToken,
+      account: connectedAccount,
+    };
+  }
+
+  if (requirement.type === "pat") {
+    if (!connectedAccount) {
+      const patLink = await generatePatLinkUrl({
+        integrationId: params.integrationId,
+        viewerId: params.viewerId,
+        organizationId: params.organizationId,
+      });
+
+      throw new IntegrationAuthRequiredError({
+        viewerId: params.viewerId,
+        requirements: [
+          {
+            integrationId: params.integrationId,
+            integrationName: params.integrationName,
+            provider: params.provider,
+            authorizationUrl: patLink.url,
+            state: "",
+            patLinkUrl: patLink.url,
+            authInstructions: params.metadata?.authInstructions as string | undefined,
+          },
+        ],
+      });
+    }
+
+    return {
+      accessToken: connectedAccount.credentials.accessToken,
+      account: connectedAccount,
+    };
+  }
+
+  return {};
 };
 
 const requiresViewerScopedAccount = (provider: IntegrationProvider): boolean => {
@@ -172,117 +365,87 @@ const buildSandboxIntegrations = async (params: {
     // Handle MCP integrations
     if (authConfig.type === "mcp") {
       logger.info(
-        `[buildSandboxIntegrations] MCP integration, authStrategy: ${authConfig.authStrategy.type}`
+        `[buildSandboxIntegrations] MCP integration, authStrategy: ${authConfig.auth.strategy.type}`
       );
+
+      // Resolve viewer credentials (throws if auth required but not available)
+      const connectedAccount = connectedAccountsMap.get(integrationId);
+      const { accessToken, account } = await resolveViewerCredentials({
+        integrationId,
+        integrationName: integration.name,
+        provider,
+        authStrategy: authConfig.auth.strategy,
+        oauthConfig: authConfig.auth.oauthConfig,
+        metadata: authConfig.metadata,
+        connectedAccount,
+        viewerId: params.viewerId,
+        organizationId: params.organizationId,
+      });
+
+      // Build MCP config with resolved credentials
       const mcpConfig = buildMcpConfig(authConfig);
-
-      // For bearer_passthrough, we need the viewer's connected account
-      if (authConfig.authStrategy.type === "bearer_passthrough") {
-        const connectedAccount = connectedAccountsMap.get(integrationId);
-        logger.info(`Connected account found: ${!!connectedAccount}`);
-        if (!connectedAccount) {
-          // MCP with bearer_passthrough requires OAuth config for user authentication
-          if (!authConfig.oauthConfig) {
-            throw new Error(
-              `MCP integration ${integration.name} is configured for bearer_passthrough but missing OAuth configuration`
-            );
-          }
-
-          // Generate authorization URL and throw proper error so client can redirect
-          const auth = await generateAuthorizationUrl({
-            integrationId,
-            organizationId: params.organizationId,
-            viewerId: params.viewerId,
-          });
-
-          throw new IntegrationAuthRequiredError({
-            viewerId: params.viewerId,
-            requirements: [
-              {
-                integrationId,
-                integrationName: integration.name,
-                provider,
-                authorizationUrl: auth.url,
-                state: auth.state,
-              },
-            ],
-          });
-        }
-
-        // Pass the access token to the MCP config
-        mcpConfig.accessToken = connectedAccount.credentials.accessToken;
-
-        integrations.push({
-          id: integration.id,
-          provider,
-          name: integration.name,
-          authConfig: authConfig as unknown as Record<string, unknown>,
-          mcpConfig,
-          account: {
-            id: connectedAccount.id,
-            viewerId: connectedAccount.viewerId,
-            accountIdentifier: connectedAccount.accountIdentifier,
-            credentials: connectedAccount.credentials,
-          },
-        });
-      } else if (
-        authConfig.authStrategy.type === "api_key" &&
-        authConfig.authStrategy.viewerScoped
-      ) {
-        // Viewer-scoped api_key - user provides their own PAT
-        const connectedAccount = connectedAccountsMap.get(integrationId);
-        logger.info(`Connected account found: ${!!connectedAccount}`);
-        if (!connectedAccount) {
-          // Generate PAT link for user to provide their API key
-          const metadata = authConfig.metadata || {};
-          const patLink = await generatePatLinkUrl({
-            integrationId,
-            viewerId: params.viewerId,
-            organizationId: params.organizationId,
-          });
-
-          throw new IntegrationAuthRequiredError({
-            viewerId: params.viewerId,
-            requirements: [
-              {
-                integrationId,
-                integrationName: integration.name,
-                provider,
-                authorizationUrl: patLink.url,
-                state: "",
-                patLinkUrl: patLink.url,
-                authInstructions: metadata.authInstructions as string | undefined,
-              },
-            ],
-          });
-        }
-
-        // Set the apiKey from the connected account's accessToken
-        mcpConfig.apiKey = connectedAccount.credentials.accessToken;
-
-        integrations.push({
-          id: integration.id,
-          provider,
-          name: integration.name,
-          authConfig: authConfig as unknown as Record<string, unknown>,
-          mcpConfig,
-          account: {
-            id: connectedAccount.id,
-            viewerId: connectedAccount.viewerId,
-            accountIdentifier: connectedAccount.accountIdentifier,
-            credentials: connectedAccount.credentials,
-          },
-        });
-      } else {
-        // Non-viewer-scoped MCP (none, api_key without viewerScoped, custom_headers)
-        integrations.push({
-          id: integration.id,
-          provider,
-          name: integration.name,
-          authConfig: authConfig as unknown as Record<string, unknown>,
-          mcpConfig,
-        });
+      if (authConfig.auth.strategy.type === "bearer_oauth") {
+        mcpConfig.accessToken = accessToken;
+      } else if (authConfig.auth.strategy.type === "api_key" && authConfig.auth.strategy.viewerScoped) {
+        mcpConfig.apiKey = accessToken;
       }
+
+      integrations.push({
+        id: integration.id,
+        provider,
+        name: integration.name,
+        authConfig: authConfig as unknown as Record<string, unknown>,
+        mcpConfig,
+        ...(account && {
+          account: {
+            id: account.id,
+            viewerId: account.viewerId,
+            accountIdentifier: account.accountIdentifier,
+            credentials: account.credentials,
+          },
+        }),
+      });
+      continue;
+    }
+
+    // Handle GraphQL integrations
+    if (authConfig.type === "graphql") {
+      logger.info(
+        `[buildSandboxIntegrations] GraphQL integration, authStrategy: ${authConfig.auth.strategy.type}`
+      );
+
+      // Resolve viewer credentials (throws if auth required but not available)
+      const connectedAccount = connectedAccountsMap.get(integrationId);
+      const { accessToken, account } = await resolveViewerCredentials({
+        integrationId,
+        integrationName: integration.name,
+        provider,
+        authStrategy: authConfig.auth.strategy,
+        oauthConfig: authConfig.auth.oauthConfig,
+        metadata: authConfig.metadata,
+        connectedAccount,
+        viewerId: params.viewerId,
+        organizationId: params.organizationId,
+      });
+
+      // Build GraphQL config with resolved credentials
+      const graphqlConfig = buildGraphQLConfig(authConfig, { accessToken });
+
+      integrations.push({
+        id: integration.id,
+        provider,
+        name: integration.name,
+        authConfig: authConfig as unknown as Record<string, unknown>,
+        graphqlConfig,
+        ...(account && {
+          account: {
+            id: account.id,
+            viewerId: account.viewerId,
+            accountIdentifier: account.accountIdentifier,
+            credentials: account.credentials,
+          },
+        }),
+      });
       continue;
     }
 

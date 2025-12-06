@@ -1,6 +1,6 @@
 import type { McpContext } from "../utils/types";
 import type { AuthRequirement } from "../../models/errors";
-import { getIntegrationOrGlobal, type McpAuthConfig } from "../../models/integration";
+import { getIntegrationOrGlobal, type McpIntegrationConfig } from "../../models/integration";
 import { getConnectedAccountByViewer } from "../../models/connected-account";
 import { listMcpTools as listMcpToolsUtil } from "../../utils/mcp-client";
 import { generateAuthorizationUrl } from "../../services/oauth";
@@ -10,11 +10,11 @@ import type { IntegrationProvider } from "../../integrations/providers";
 /**
  * Checks if an MCP auth strategy requires viewer-scoped authentication.
  */
-export const requiresViewerAuth = (config: McpAuthConfig): boolean => {
-  if (config.authStrategy.type === "bearer_passthrough") {
+export const requiresViewerAuth = (config: McpIntegrationConfig): boolean => {
+  if (config.auth.strategy.type === "bearer_oauth") {
     return true;
   }
-  if (config.authStrategy.type === "api_key" && config.authStrategy.viewerScoped) {
+  if (config.auth.strategy.type === "api_key" && config.auth.strategy.viewerScoped) {
     return true;
   }
   return false;
@@ -56,7 +56,7 @@ export const handleListMcpTools = async (
     };
   }
 
-  const mcpConfig = integration.authConfig;
+  const mcpConfig = integration.authConfig as McpIntegrationConfig;
 
   // Check if viewer auth is required
   if (requiresViewerAuth(mcpConfig)) {
@@ -68,7 +68,7 @@ export const handleListMcpTools = async (
 
     if (!connectedAccount) {
       // No connected account - capture auth requirement
-      if (mcpConfig.authStrategy.type === "bearer_passthrough" && mcpConfig.oauthConfig) {
+      if (mcpConfig.auth.strategy.type === "bearer_oauth" && mcpConfig.auth.oauthConfig) {
         const auth = await generateAuthorizationUrl({
           integrationId,
           organizationId: mcpContext.organizationId,
@@ -85,7 +85,7 @@ export const handleListMcpTools = async (
             state: auth.state,
           });
         }
-      } else if (mcpConfig.authStrategy.type === "api_key" && mcpConfig.authStrategy.viewerScoped) {
+      } else if (mcpConfig.auth.strategy.type === "api_key" && mcpConfig.auth.strategy.viewerScoped) {
         // viewerScoped api_key - generate PAT link
         if (!capturedAuthRequirements.some((r) => r.integrationId === integrationId)) {
           const patLink = await generatePatLinkUrl({

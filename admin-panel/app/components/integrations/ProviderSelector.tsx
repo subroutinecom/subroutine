@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, Github, Mail, Plug, Server } from "lucide-react";
+import { Check, ChevronDown, Github, Mail, Plug, Server, Waypoints, Calendar } from "lucide-react";
 import type { Control } from "react-hook-form";
 import { Controller } from "react-hook-form";
 import type { IntegrationProvider, IntegrationProviderDefinition } from "~/types/integration";
@@ -7,23 +7,27 @@ import type { IntegrationProvider, IntegrationProviderDefinition } from "~/types
 export type IntegrationFormData = {
   provider: IntegrationProvider;
   name: string;
-  // OAuth2 fields (also used for MCP bearer_passthrough)
+  // OAuth2 fields (also used for MCP/GraphQL bearer_oauth)
   clientId: string;
   clientSecret: string;
   scopes: string;
   redirectUri: string;
   // OAuth URLs (for OAuth2 providers, these come from provider definition)
-  // For MCP bearer_passthrough, user must provide these
+  // For MCP/GraphQL bearer_oauth, user must provide these
   oauthAuthUrl: string;
   oauthTokenUrl: string;
+  oauthScopes: string;
   // MCP fields
   serverUrl: string;
   transport: "sse" | "streamable-http";
-  authStrategyType: "none" | "api_key" | "bearer_passthrough" | "custom_headers";
+  // Unified auth strategy type (same for MCP and GraphQL)
+  authStrategyType: "none" | "api_key" | "bearer_oauth" | "custom_headers";
   apiKey: string;
   apiKeyHeaderName: string;
   apiKeyIsViewerScoped: boolean;
   customHeaders: string;
+  // GraphQL fields
+  graphqlEndpoint: string;
 };
 
 interface ProviderSelectorProps {
@@ -38,8 +42,12 @@ const getProviderIcon = (provider: IntegrationProvider) => {
       return <Github size={20} />;
     case "gmail":
       return <Mail size={20} />;
+    case "calendar":
+      return <Calendar size={20} />;
     case "mcp":
       return <Server size={20} />;
+    case "graphql":
+      return <Waypoints size={20} />;
     default:
       return <Plug size={20} />;
   }

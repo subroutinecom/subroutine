@@ -64,7 +64,9 @@
     "npm:google-auth-library@^10.5.0": "10.5.0",
     "npm:googleapis@134": "134.0.0",
     "npm:graphql-request@^7.3.3": "7.3.5_graphql@16.12.0",
+    "npm:graphql-request@^7.3.5": "7.3.5_graphql@16.12.0",
     "npm:graphql-tag@^2.12.6": "2.12.6_graphql@16.12.0",
+    "npm:graphql-yoga@^5.10.13": "5.16.2_graphql@16.12.0",
     "npm:graphql-yoga@^5.16.2": "5.16.2_graphql@16.12.0",
     "npm:graphql@^16.12.0": "16.12.0",
     "npm:hono@^4.10.4": "4.10.7",
@@ -6409,9 +6411,11 @@
       },
       "sandbox": {
         "dependencies": [
+          "npm:@graphql-typed-document-node/core@^3.2.0",
           "npm:@modelcontextprotocol/sdk@^1.21.0",
           "npm:@types/node@*",
           "npm:googleapis@134",
+          "npm:graphql-request@^7.3.5",
           "npm:hono@^4.10.4"
         ]
       },
@@ -6431,6 +6435,7 @@
           "npm:fetch-cookie@^3.1.0",
           "npm:graphql-request@^7.3.3",
           "npm:graphql-tag@^2.12.6",
+          "npm:graphql-yoga@^5.10.13",
           "npm:tough-cookie@6",
           "npm:ts-morph@26",
           "npm:zod-to-json-schema@^3.25.0",

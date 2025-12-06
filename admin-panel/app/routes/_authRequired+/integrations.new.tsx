@@ -9,6 +9,7 @@ import type { IntegrationProviderDefinition } from "~/types/integration";
 import {
   type IntegrationFormData,
   buildIntegrationConfig,
+  GraphQLFormFields,
   McpFormFields,
   OAuthFormFields,
   ProviderSelector,
@@ -109,6 +110,7 @@ export default function NewIntegrationPage() {
     watchedRedirectUri,
     watchedApiKeyIsViewerScoped,
     isMcpProvider,
+    isGraphQLProvider,
     getProviderDefinition,
     handleSelectAuthMethod,
     applyDiscoveryResult,
@@ -291,8 +293,19 @@ export default function NewIntegrationPage() {
             />
           )}
 
+          {/* GraphQL-specific fields */}
+          {isGraphQLProvider && (
+            <GraphQLFormFields
+              register={register}
+              errors={errors}
+              watchedAuthStrategy={watchedAuthStrategy}
+              watchedApiKeyIsViewerScoped={watchedApiKeyIsViewerScoped}
+              redirectUri={watchedRedirectUri}
+            />
+          )}
+
           {/* OAuth2-specific fields */}
-          {!isMcpProvider && <OAuthFormFields register={register} errors={errors} />}
+          {!isMcpProvider && !isGraphQLProvider && <OAuthFormFields register={register} errors={errors} />}
 
           <div className="border-t border-base-300 pt-6"></div>
 

@@ -8,11 +8,11 @@ import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { createGraphqlClient } from "~/lib/graphql-client";
 import type {
-  IntegrationAuthConfig,
-  McpAuthConfig,
-  McpAuthStrategy,
+  IntegrationConfig,
+  McpIntegrationConfig,
+  AuthStrategy,
   McpTransport,
-  OAuth2AuthConfig,
+  OAuth2IntegrationConfig,
 } from "~/types/integration";
 import { useAdminConfig } from "~/hooks/use-admin-config";
 
@@ -63,10 +63,10 @@ interface IntegrationResponse {
 }
 
 interface ParsedIntegration extends Omit<IntegrationResponse, "authConfig"> {
-  authConfig: IntegrationAuthConfig;
+  authConfig: IntegrationConfig;
 }
 
-type McpAuthStrategyType = "none" | "api_key" | "bearer_passthrough" | "custom_headers";
+type AuthStrategyType = "none" | "api_key" | "bearer_oauth" | "custom_headers";
 
 type IntegrationFormData = {
   name: string;
@@ -79,7 +79,7 @@ type IntegrationFormData = {
   // MCP fields
   serverUrl: string;
   transport: McpTransport;
-  authStrategyType: McpAuthStrategyType;
+  authStrategyType: AuthStrategyType;
   apiKey: string;
   apiKeyHeaderName: string;
   customHeaders: string;
@@ -136,7 +136,7 @@ export default function EditIntegrationPage() {
         }>(GET_INTEGRATION_QUERY, { id: integrationId });
         const parsed: ParsedIntegration = {
           ...data.integration,
-          authConfig: JSON.parse(data.integration.authConfig) as IntegrationAuthConfig,
+          authConfig: JSON.parse(data.integration.authConfig) as IntegrationConfig,
         };
         setIntegration(parsed);
 
@@ -147,21 +147,21 @@ export default function EditIntegrationPage() {
 
         if (parsed.authConfig.type === "mcp") {
           // MCP integration
-          const mcpConfig = parsed.authConfig as McpAuthConfig;
+          const mcpConfig = parsed.authConfig as McpIntegrationConfig;
           reset({
             name: parsed.name,
             enabled: parsed.enabled,
             serverUrl: mcpConfig.serverUrl,
             transport: mcpConfig.transport,
-            authStrategyType: mcpConfig.authStrategy.type as McpAuthStrategyType,
+            authStrategyType: mcpConfig.auth.strategy.type as AuthStrategyType,
             apiKey: "",
             apiKeyHeaderName:
-              mcpConfig.authStrategy.type === "api_key"
-                ? mcpConfig.authStrategy.headerName || ""
+              mcpConfig.auth.strategy.type === "api_key"
+                ? mcpConfig.auth.strategy.headerName || ""
                 : "",
             customHeaders:
-              mcpConfig.authStrategy.type === "custom_headers"
-                ? JSON.stringify(mcpConfig.authStrategy.headers, null, 2)
+              mcpConfig.auth.strategy.type === "custom_headers"
+                ? JSON.stringify(mcpConfig.auth.strategy.headers, null, 2)
                 : "",
             // Clear OAuth fields
             clientId: "",
@@ -171,7 +171,7 @@ export default function EditIntegrationPage() {
           });
         } else {
           // OAuth2 integration
-          const oauthConfig = parsed.authConfig as OAuth2AuthConfig;
+          const oauthConfig = parsed.authConfig as OAuth2IntegrationConfig;
           reset({
             name: parsed.name,
             enabled: parsed.enabled,
@@ -222,7 +222,7 @@ export default function EditIntegrationPage() {
         }
 
         // Build auth strategy based on type
-        let authStrategy: McpAuthStrategy;
+        let authStrategy: AuthStrategy;
         switch (data.authStrategyType) {
           case "none":
             authStrategy = { type: "none" };
@@ -233,8 +233,8 @@ export default function EditIntegrationPage() {
               ...(data.apiKeyHeaderName.trim() && { headerName: data.apiKeyHeaderName.trim() }),
             };
             break;
-          case "bearer_passthrough":
-            authStrategy = { type: "bearer_passthrough" };
+          case "bearer_oauth":
+            authStrategy = { type: "bearer_oauth" };
             break;
           case "custom_headers":
             try {
@@ -276,7 +276,7 @@ export default function EditIntegrationPage() {
           return;
         }
 
-        const oauthConfig = integration.authConfig as OAuth2AuthConfig;
+        const oauthConfig = integration.authConfig as OAuth2IntegrationConfig;
         const authConfigPayload: Record<string, unknown> = {
           type: "oauth2",
           clientId: data.clientId.trim(),
@@ -458,7 +458,7 @@ export default function EditIntegrationPage() {
                   >
                     <option value="none">No Authentication</option>
                     <option value="api_key">API Key</option>
-                    <option value="bearer_passthrough">Bearer Passthrough (OAuth)</option>
+                    <option value="bearer_oauth">Bearer OAuth</option>
                     <option value="custom_headers">Custom Headers</option>
                   </select>
                 </div>
@@ -503,7 +503,7 @@ export default function EditIntegrationPage() {
                   </>
                 )}
 
-                {watchedAuthStrategy === "bearer_passthrough" && (
+                {watchedAuthStrategy === "bearer_oauth" && (
                   <div className="alert alert-info">
                     <span>
                       Bearer passthrough will use the viewer&apos;s OAuth access token to

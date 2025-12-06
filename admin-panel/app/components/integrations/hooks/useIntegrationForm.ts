@@ -56,6 +56,7 @@ export const useIntegrationForm = ({
       redirectUri: initialRedirectUri,
       oauthAuthUrl: "",
       oauthTokenUrl: "",
+      oauthScopes: "",
       serverUrl: "",
       transport: "streamable-http",
       authStrategyType: "none",
@@ -63,6 +64,7 @@ export const useIntegrationForm = ({
       apiKeyHeaderName: "",
       apiKeyIsViewerScoped: false,
       customHeaders: "",
+      graphqlEndpoint: "",
     },
   });
 
@@ -78,6 +80,7 @@ export const useIntegrationForm = ({
   // Derived state
   const currentDefinition = getProviderDefinition(watchedProvider);
   const isMcpProvider = currentDefinition?.authType === "mcp";
+  const isGraphQLProvider = currentDefinition?.authType === "graphql";
 
   // Track previous provider to detect changes
   const previousProviderRef = useRef<IntegrationProvider>(initialProviderId);
@@ -103,16 +106,33 @@ export const useIntegrationForm = ({
       setValue("customHeaders", "");
       setValue("oauthAuthUrl", "");
       setValue("oauthTokenUrl", "");
+      setValue("oauthScopes", "");
+      setValue("graphqlEndpoint", "");
+    } else if (definition?.authType === "graphql") {
+      // Reset GraphQL fields
+      setValue("graphqlEndpoint", "");
+      setValue("authStrategyType", "none");
+      setValue("apiKey", "");
+      setValue("apiKeyHeaderName", "");
+      setValue("apiKeyIsViewerScoped", false);
+      setValue("customHeaders", "");
+      setValue("oauthAuthUrl", "");
+      setValue("oauthTokenUrl", "");
+      setValue("oauthScopes", "");
+      setValue("clientId", "");
+      setValue("clientSecret", "");
+      setValue("serverUrl", "");
     } else {
       // Reset OAuth fields to provider defaults
       setValue("scopes", (definition?.oauthConfig?.defaultScopes ?? []).join(", "));
       setValue("redirectUri", buildDefaultRedirectUri(definition));
+      setValue("graphqlEndpoint", "");
     }
   }, [watchedProvider, setValue, getProviderDefinition, buildDefaultRedirectUri, onProviderChange]);
 
-  // Auto-fill OAuth fields when user switches to bearer_passthrough after probing
+  // Auto-fill OAuth fields when user switches to bearer_oauth after probing
   useEffect(() => {
-    if (watchedAuthStrategy === "bearer_passthrough" && discoveryResult?.success) {
+    if (watchedAuthStrategy === "bearer_oauth" && discoveryResult?.success) {
       if (discoveryResult.authorizationEndpoint) {
         setValue("oauthAuthUrl", discoveryResult.authorizationEndpoint);
       }
@@ -127,16 +147,16 @@ export const useIntegrationForm = ({
 
   // Handler for auth method selection from discovery panel
   const handleSelectAuthMethod = useCallback(
-    (method: "none" | "api_key" | "bearer_passthrough" | "custom_headers") => {
+    (method: "none" | "api_key" | "bearer_oauth" | "bearer_oauth" | "custom_headers") => {
       setValue("authStrategyType", method);
     },
     [setValue]
   );
 
-  // Apply discovery result to form (called when probing succeeds and auth is already bearer_passthrough)
+  // Apply discovery result to form (called when probing succeeds and auth is already bearer_oauth)
   const applyDiscoveryResult = useCallback(
     (result: McpOAuthDiscoveryResult) => {
-      if (result.success && watchedAuthStrategy === "bearer_passthrough") {
+      if (result.success && watchedAuthStrategy === "bearer_oauth") {
         if (result.authorizationEndpoint) {
           setValue("oauthAuthUrl", result.authorizationEndpoint);
         }
@@ -162,6 +182,7 @@ export const useIntegrationForm = ({
     // Derived state
     currentDefinition,
     isMcpProvider,
+    isGraphQLProvider,
     // Helpers
     getProviderDefinition,
     handleSelectAuthMethod,

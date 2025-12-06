@@ -76,16 +76,30 @@ const extractOAuthConfig = (authConfig: IntegrationAuthConfig): ExtractedOAuthCo
   }
 
   if (authConfig.type === "mcp") {
-    if (authConfig.authStrategy.type !== "bearer_passthrough" || !authConfig.oauthConfig) {
+    if (authConfig.auth.strategy.type !== "bearer_oauth" || !authConfig.auth.oauthConfig) {
       return null;
     }
     return {
-      clientId: authConfig.oauthConfig.clientId,
-      clientSecret: authConfig.oauthConfig.clientSecret,
-      authUrl: authConfig.oauthConfig.authUrl,
-      tokenUrl: authConfig.oauthConfig.tokenUrl,
-      redirectUri: authConfig.oauthConfig.redirectUri,
-      scopes: authConfig.oauthConfig.scopes,
+      clientId: authConfig.auth.oauthConfig.clientId,
+      clientSecret: authConfig.auth.oauthConfig.clientSecret,
+      authUrl: authConfig.auth.oauthConfig.authUrl,
+      tokenUrl: authConfig.auth.oauthConfig.tokenUrl,
+      redirectUri: authConfig.auth.oauthConfig.redirectUri,
+      scopes: authConfig.auth.oauthConfig.scopes,
+    };
+  }
+
+  if (authConfig.type === "graphql") {
+    if (authConfig.auth.strategy.type !== "bearer_oauth" || !authConfig.auth.oauthConfig) {
+      return null;
+    }
+    return {
+      clientId: authConfig.auth.oauthConfig.clientId,
+      clientSecret: authConfig.auth.oauthConfig.clientSecret,
+      authUrl: authConfig.auth.oauthConfig.authUrl,
+      tokenUrl: authConfig.auth.oauthConfig.tokenUrl,
+      redirectUri: authConfig.auth.oauthConfig.redirectUri,
+      scopes: authConfig.auth.oauthConfig.scopes,
     };
   }
 

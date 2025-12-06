@@ -2,7 +2,8 @@ import { CheckCircle2, Key, Search, Shield, UserCheck, XCircle } from "lucide-re
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import type { IntegrationFormData } from "./ProviderSelector";
 
-type McpAuthStrategyType = "none" | "api_key" | "bearer_passthrough" | "custom_headers";
+// MCP uses these strategies, but form includes bearer_oauth for GraphQL so we accept the full type
+type AuthStrategyType = "none" | "api_key" | "bearer_oauth" | "bearer_oauth" | "custom_headers";
 
 export interface McpOAuthDiscoveryResult {
   success: boolean;
@@ -20,13 +21,13 @@ export interface McpOAuthDiscoveryResult {
 interface McpFormFieldsProps {
   register: UseFormRegister<IntegrationFormData>;
   errors: FieldErrors<IntegrationFormData>;
-  watchedAuthStrategy: McpAuthStrategyType;
+  watchedAuthStrategy: AuthStrategyType;
   watchedApiKeyIsViewerScoped?: boolean;
   serverUrl?: string;
   onProbeServer?: () => void;
   isProbing?: boolean;
   discoveryResult?: McpOAuthDiscoveryResult | null;
-  onSelectAuthMethod?: (method: McpAuthStrategyType) => void;
+  onSelectAuthMethod?: (method: AuthStrategyType) => void;
   redirectUri?: string;
 }
 
@@ -148,21 +149,21 @@ export const McpFormFields = ({
                   {/* OAuth Option */}
                   <button
                     type="button"
-                    onClick={() => onSelectAuthMethod?.("bearer_passthrough")}
+                    onClick={() => onSelectAuthMethod?.("bearer_oauth")}
                     className={`group p-4 rounded-lg text-left
                       border transition-all duration-200 cursor-pointer
                       ${
-                        watchedAuthStrategy === "bearer_passthrough"
+                        watchedAuthStrategy === "bearer_oauth"
                           ? "bg-cyan-500/10 border-cyan-500/40"
                           : "bg-base-100/50 border-base-content/10 hover:border-cyan-500/30 hover:bg-cyan-500/5"
                       }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <UserCheck
-                        className={`w-4 h-4 ${watchedAuthStrategy === "bearer_passthrough" ? "text-cyan-400" : "text-cyan-400/70"}`}
+                        className={`w-4 h-4 ${watchedAuthStrategy === "bearer_oauth" ? "text-cyan-400" : "text-cyan-400/70"}`}
                       />
                       <span className="font-medium text-sm">Bearer Passthrough</span>
-                      {watchedAuthStrategy === "bearer_passthrough" && (
+                      {watchedAuthStrategy === "bearer_oauth" && (
                         <CheckCircle2 className="w-4 h-4 text-cyan-400 ml-auto" />
                       )}
                     </div>
@@ -239,7 +240,7 @@ export const McpFormFields = ({
                 )}
 
                 {/* Auto-fill notification */}
-                {watchedAuthStrategy === "bearer_passthrough" && (
+                {watchedAuthStrategy === "bearer_oauth" && (
                   <div
                     className="mt-4 flex items-center gap-2 text-sm text-emerald-400
                     bg-emerald-500/10 px-3 py-2 rounded-lg border border-emerald-500/20"
@@ -315,7 +316,7 @@ export const McpFormFields = ({
         >
           <option value="none">No Authentication</option>
           <option value="api_key">API Key</option>
-          <option value="bearer_passthrough">Bearer Passthrough (OAuth)</option>
+          <option value="bearer_oauth">Bearer OAuth</option>
           <option value="custom_headers">Custom Headers</option>
         </select>
         <p className="text-sm text-base-content/60">How to authenticate with the MCP server</p>
@@ -403,7 +404,7 @@ export const McpFormFields = ({
         </>
       )}
 
-      {watchedAuthStrategy === "bearer_passthrough" && (
+      {watchedAuthStrategy === "bearer_oauth" && (
         <>
           <div className="alert bg-base-200 border-base-300 mb-2">
             <span className="text-sm">

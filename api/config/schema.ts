@@ -19,7 +19,7 @@ export const rateLimitRuleSchema = z.object({
 });
 
 export const rateLimitConfigSchema = z.object({
-  enabled: z.boolean().default(true),
+  enabled: z.boolean().default(false),
   patLinkGet: rateLimitRuleSchema.default({ windowMs: 60000, limit: 30 }),
   patLinkSubmit: rateLimitRuleSchema.default({ windowMs: 60000, limit: 5 }),
 });

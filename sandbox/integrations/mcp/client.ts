@@ -44,10 +44,10 @@ export const buildAuthHeaders = (config: SandboxMcpConfig): Record<string, strin
       break;
     }
 
-    case "bearer_passthrough": {
+    case "bearer_oauth": {
       if (!config.accessToken) {
         throw new Error(
-          "MCP integration with bearer_passthrough auth strategy requires accessToken"
+          "MCP integration with bearer_oauth auth strategy requires accessToken"
         );
       }
       headers["Authorization"] = `Bearer ${config.accessToken}`;

@@ -60,14 +60,13 @@ export const clientLoader = async () => {
 };
 
 // Types for YAML schema
-interface McpAuthStrategy {
-  type: "none" | "api_key" | "bearer_passthrough";
+interface YamlAuthStrategy {
+  type: "none" | "api_key" | "bearer_oauth";
   headerName?: string;
-  apiKey?: string;
-  isViewerScoped?: boolean;
+  viewerScoped?: boolean;
 }
 
-interface McpOAuthConfig {
+interface YamlOAuthConfig {
   clientId: string;
   clientSecret: string;
   authUrl: string;
@@ -76,17 +75,22 @@ interface McpOAuthConfig {
   scopes: string[];
 }
 
-interface McpIntegrationConfig {
+interface YamlAuthBlock {
+  strategy: YamlAuthStrategy;
+  apiKey?: string;
+  oauthConfig?: YamlOAuthConfig;
+}
+
+interface McpIntegrationYamlConfig {
   provider: "mcp";
   name: string;
   description?: string;
   serverUrl: string;
   transport?: "sse" | "streamable-http";
-  authStrategy: McpAuthStrategy;
-  oauthConfig?: McpOAuthConfig;
+  auth: YamlAuthBlock;
 }
 
-interface OAuth2IntegrationConfig {
+interface OAuth2YamlConfig {
   provider: "github" | "gmail" | "calendar";
   name: string;
   description?: string;
@@ -98,10 +102,10 @@ interface OAuth2IntegrationConfig {
   scopes: string[];
 }
 
-type IntegrationConfig = McpIntegrationConfig | OAuth2IntegrationConfig;
+type YamlIntegrationConfig = McpIntegrationYamlConfig | OAuth2YamlConfig;
 
 interface YamlSchema {
-  integrations: IntegrationConfig[];
+  integrations: YamlIntegrationConfig[];
 }
 
 interface ImportResult {
@@ -112,7 +116,7 @@ interface ImportResult {
 }
 
 // Validation functions
-const validateMcpIntegration = (config: McpIntegrationConfig, index: number): string[] => {
+const validateMcpIntegration = (config: McpIntegrationYamlConfig, index: number): string[] => {
   const errors: string[] = [];
   const prefix = `integrations[${index}]`;
 
@@ -125,39 +129,43 @@ const validateMcpIntegration = (config: McpIntegrationConfig, index: number): st
   if (config.transport && !["sse", "streamable-http"].includes(config.transport)) {
     errors.push(`${prefix}.transport must be 'sse' or 'streamable-http'`);
   }
-  if (!config.authStrategy || typeof config.authStrategy !== "object") {
-    errors.push(`${prefix}.authStrategy is required and must be an object`);
+  if (!config.auth || typeof config.auth !== "object") {
+    errors.push(`${prefix}.auth is required and must be an object`);
   } else {
-    const validTypes = ["none", "api_key", "bearer_passthrough"];
-    if (!validTypes.includes(config.authStrategy.type)) {
-      errors.push(`${prefix}.authStrategy.type must be one of: ${validTypes.join(", ")}`);
-    }
-    if (config.authStrategy.type === "api_key") {
-      if (!config.authStrategy.isViewerScoped && !config.authStrategy.apiKey) {
-        errors.push(`${prefix}.authStrategy.apiKey is required for non-viewer-scoped api_key auth`);
+    if (!config.auth.strategy || typeof config.auth.strategy !== "object") {
+      errors.push(`${prefix}.auth.strategy is required and must be an object`);
+    } else {
+      const validTypes = ["none", "api_key", "bearer_oauth"];
+      if (!validTypes.includes(config.auth.strategy.type)) {
+        errors.push(`${prefix}.auth.strategy.type must be one of: ${validTypes.join(", ")}`);
       }
-    }
-    if (config.authStrategy.type === "bearer_passthrough") {
-      if (!config.oauthConfig) {
-        errors.push(`${prefix}.oauthConfig is required for bearer_passthrough auth strategy`);
-      } else {
-        if (!config.oauthConfig.clientId) {
-          errors.push(`${prefix}.oauthConfig.clientId is required`);
+      if (config.auth.strategy.type === "api_key") {
+        if (!config.auth.strategy.viewerScoped && !config.auth.apiKey) {
+          errors.push(`${prefix}.auth.apiKey is required for non-viewer-scoped api_key auth`);
         }
-        if (!config.oauthConfig.clientSecret) {
-          errors.push(`${prefix}.oauthConfig.clientSecret is required`);
-        }
-        if (!config.oauthConfig.authUrl) {
-          errors.push(`${prefix}.oauthConfig.authUrl is required`);
-        }
-        if (!config.oauthConfig.tokenUrl) {
-          errors.push(`${prefix}.oauthConfig.tokenUrl is required`);
-        }
-        if (!config.oauthConfig.redirectUri) {
-          errors.push(`${prefix}.oauthConfig.redirectUri is required`);
-        }
-        if (!Array.isArray(config.oauthConfig.scopes)) {
-          errors.push(`${prefix}.oauthConfig.scopes must be an array`);
+      }
+      if (config.auth.strategy.type === "bearer_oauth") {
+        if (!config.auth.oauthConfig) {
+          errors.push(`${prefix}.auth.oauthConfig is required for bearer_oauth auth strategy`);
+        } else {
+          if (!config.auth.oauthConfig.clientId) {
+            errors.push(`${prefix}.auth.oauthConfig.clientId is required`);
+          }
+          if (!config.auth.oauthConfig.clientSecret) {
+            errors.push(`${prefix}.auth.oauthConfig.clientSecret is required`);
+          }
+          if (!config.auth.oauthConfig.authUrl) {
+            errors.push(`${prefix}.auth.oauthConfig.authUrl is required`);
+          }
+          if (!config.auth.oauthConfig.tokenUrl) {
+            errors.push(`${prefix}.auth.oauthConfig.tokenUrl is required`);
+          }
+          if (!config.auth.oauthConfig.redirectUri) {
+            errors.push(`${prefix}.auth.oauthConfig.redirectUri is required`);
+          }
+          if (!Array.isArray(config.auth.oauthConfig.scopes)) {
+            errors.push(`${prefix}.auth.oauthConfig.scopes must be an array`);
+          }
         }
       }
     }
@@ -166,7 +174,7 @@ const validateMcpIntegration = (config: McpIntegrationConfig, index: number): st
   return errors;
 };
 
-const validateOAuth2Integration = (config: OAuth2IntegrationConfig, index: number): string[] => {
+const validateOAuth2Integration = (config: OAuth2YamlConfig, index: number): string[] => {
   const errors: string[] = [];
   const prefix = `integrations[${index}]`;
 
@@ -228,10 +236,10 @@ const validateYaml = (data: unknown): { valid: boolean; errors: string[]; data?:
     }
 
     if (config.provider === "mcp") {
-      errors.push(...validateMcpIntegration(config as unknown as McpIntegrationConfig, index));
+      errors.push(...validateMcpIntegration(config as unknown as McpIntegrationYamlConfig, index));
     } else {
       errors.push(
-        ...validateOAuth2Integration(config as unknown as OAuth2IntegrationConfig, index)
+        ...validateOAuth2Integration(config as unknown as OAuth2YamlConfig, index)
       );
     }
   });
@@ -243,21 +251,18 @@ const validateYaml = (data: unknown): { valid: boolean; errors: string[]; data?:
   return { valid: true, errors: [], data: schema as unknown as YamlSchema };
 };
 
-const buildAuthConfig = (config: IntegrationConfig): string => {
+const buildAuthConfig = (config: YamlIntegrationConfig): string => {
   if (config.provider === "mcp") {
-    const mcpConfig = config as McpIntegrationConfig;
+    const mcpConfig = config as McpIntegrationYamlConfig;
     const authConfig: Record<string, unknown> = {
       type: "mcp",
       serverUrl: mcpConfig.serverUrl,
       transport: mcpConfig.transport || "streamable-http",
-      authStrategy: mcpConfig.authStrategy,
+      auth: mcpConfig.auth,
     };
-    if (mcpConfig.oauthConfig) {
-      authConfig.oauthConfig = mcpConfig.oauthConfig;
-    }
     return JSON.stringify(authConfig);
   } else {
-    const oauthConfig = config as OAuth2IntegrationConfig;
+    const oauthConfig = config as OAuth2YamlConfig;
     return JSON.stringify({
       type: "oauth2",
       clientId: oauthConfig.clientId,
@@ -706,7 +711,7 @@ integrations:
     serverUrl: "https://mcp.github.example.com"
     transport: http
     authStrategy:
-      type: bearer_passthrough
+      type: bearer_oauth
     oauthConfig:
       clientId: "your-client-id"
       clientSecret: "your-client-secret"

@@ -738,10 +738,12 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
       type: "mcp",
       serverUrl: "https://api.example.com/mcp",
       transport: "streamable-http",
-      authStrategy: {
-        type: "api_key",
-        viewerScoped: true,
-        headerName: "Authorization",
+      auth: {
+        strategy: {
+          type: "api_key",
+          viewerScoped: true,
+          headerName: "Authorization",
+        },
       },
     };
 
@@ -761,8 +763,8 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     const returnedAuthConfig = JSON.parse(createResult.createIntegration.authConfig);
     expect(returnedAuthConfig.type).toBe("mcp");
     expect(returnedAuthConfig.serverUrl).toBe("https://api.example.com/mcp");
-    expect(returnedAuthConfig.authStrategy.type).toBe("api_key");
-    expect(returnedAuthConfig.authStrategy.viewerScoped).toBe(true);
+    expect(returnedAuthConfig.auth.strategy.type).toBe("api_key");
+    expect(returnedAuthConfig.auth.strategy.viewerScoped).toBe(true);
     // No apiKey should be present since it's viewer-scoped
     expect(returnedAuthConfig.apiKey).toBeUndefined();
   });
@@ -791,9 +793,11 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
       type: "mcp",
       serverUrl: "https://api.example.com/mcp",
       transport: "streamable-http",
-      authStrategy: {
-        type: "api_key",
-        // viewerScoped is false/undefined, so apiKey is required
+      auth: {
+        strategy: {
+          type: "api_key",
+          // viewerScoped is false/undefined, so apiKey is required
+        },
       },
     };
 
@@ -806,7 +810,456 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
       throw new Error("Should have thrown error");
     } catch (error: any) {
       expect(error.response.errors[0].message).toContain(
-        "authConfig.apiKey is required when using org-level api_key auth strategy"
+        "auth.apiKey is required when using org-level api_key auth strategy"
+      );
+    }
+  });
+
+  // ============================================================================
+  // GraphQL Integration Provider Tests
+  // ============================================================================
+
+  it("should create GraphQL integration with no auth", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      endpoint: "https://api.example.com/graphql",
+      auth: { strategy: { type: "none" } },
+    };
+
+    const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
+      provider: "graphql",
+      name: "Public GraphQL API",
+      authConfig: JSON.stringify(authConfig),
+    });
+
+    expect(createResult.createIntegration).toBeDefined();
+    expect(createResult.createIntegration.id).toBeDefined();
+    expect(createResult.createIntegration.provider).toBe("graphql");
+    expect(createResult.createIntegration.name).toBe("Public GraphQL API");
+    expect(createResult.createIntegration.enabled).toBe(true);
+
+    const returnedAuthConfig = JSON.parse(createResult.createIntegration.authConfig);
+    expect(returnedAuthConfig.type).toBe("graphql");
+    expect(returnedAuthConfig.endpoint).toBe("https://api.example.com/graphql");
+    expect(returnedAuthConfig.auth.strategy.type).toBe("none");
+  });
+
+  it("should create GraphQL integration with org-level API key", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      endpoint: "https://api.example.com/graphql",
+      auth: {
+        strategy: {
+          type: "api_key",
+          headerName: "X-API-Key",
+        },
+        apiKey: "org-level-api-key-12345",
+      },
+    };
+
+    const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
+      provider: "graphql",
+      name: "GraphQL with Org API Key",
+      authConfig: JSON.stringify(authConfig),
+    });
+
+    expect(createResult.createIntegration).toBeDefined();
+    expect(createResult.createIntegration.provider).toBe("graphql");
+
+    const returnedAuthConfig = JSON.parse(createResult.createIntegration.authConfig);
+    expect(returnedAuthConfig.type).toBe("graphql");
+    expect(returnedAuthConfig.auth.strategy.type).toBe("api_key");
+    expect(returnedAuthConfig.auth.strategy.headerName).toBe("X-API-Key");
+    // API key should NOT be returned (encrypted/redacted)
+    expect(returnedAuthConfig.apiKey).toBeUndefined();
+  });
+
+  it("should create GraphQL integration with viewer-scoped PAT", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      endpoint: "https://api.example.com/graphql",
+      auth: {
+        strategy: {
+          type: "api_key",
+          viewerScoped: true,
+          headerName: "Authorization",
+        },
+        // No apiKey - viewers will provide their own PAT
+      },
+    };
+
+    const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
+      provider: "graphql",
+      name: "GraphQL with Viewer PAT",
+      authConfig: JSON.stringify(authConfig),
+    });
+
+    expect(createResult.createIntegration).toBeDefined();
+    expect(createResult.createIntegration.provider).toBe("graphql");
+
+    const returnedAuthConfig = JSON.parse(createResult.createIntegration.authConfig);
+    expect(returnedAuthConfig.type).toBe("graphql");
+    expect(returnedAuthConfig.auth.strategy.type).toBe("api_key");
+    expect(returnedAuthConfig.auth.strategy.viewerScoped).toBe(true);
+    expect(returnedAuthConfig.apiKey).toBeUndefined();
+  });
+
+  it("should create GraphQL integration with bearer_oauth", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      endpoint: "https://api.example.com/graphql",
+      auth: {
+        strategy: { type: "bearer_oauth" },
+        oauthConfig: {
+          clientId: "oauth-client-id",
+          clientSecret: "oauth-client-secret",
+          authUrl: "https://auth.example.com/authorize",
+          tokenUrl: "https://auth.example.com/token",
+          redirectUri: "http://localhost:3002/api/oauth/callback",
+          scopes: ["read", "write"],
+        },
+      },
+    };
+
+    const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
+      provider: "graphql",
+      name: "GraphQL with OAuth",
+      authConfig: JSON.stringify(authConfig),
+    });
+
+    expect(createResult.createIntegration).toBeDefined();
+    expect(createResult.createIntegration.provider).toBe("graphql");
+
+    const returnedAuthConfig = JSON.parse(createResult.createIntegration.authConfig);
+    expect(returnedAuthConfig.type).toBe("graphql");
+    expect(returnedAuthConfig.auth.strategy.type).toBe("bearer_oauth");
+    expect(returnedAuthConfig.auth.oauthConfig).toBeDefined();
+    expect(returnedAuthConfig.auth.oauthConfig.clientId).toBe("oauth-client-id");
+    // Client secret should NOT be returned
+    expect(returnedAuthConfig.auth.oauthConfig.clientSecret).toBeUndefined();
+  });
+
+  it("should create GraphQL integration with custom headers", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      endpoint: "https://api.example.com/graphql",
+      auth: {
+        strategy: {
+          type: "custom_headers",
+          headers: {
+            "X-Custom-Auth": "custom-value",
+            "X-Tenant-ID": "tenant-123",
+          },
+        },
+      },
+    };
+
+    const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
+      provider: "graphql",
+      name: "GraphQL with Custom Headers",
+      authConfig: JSON.stringify(authConfig),
+    });
+
+    expect(createResult.createIntegration).toBeDefined();
+    expect(createResult.createIntegration.provider).toBe("graphql");
+
+    const returnedAuthConfig = JSON.parse(createResult.createIntegration.authConfig);
+    expect(returnedAuthConfig.type).toBe("graphql");
+    expect(returnedAuthConfig.auth.strategy.type).toBe("custom_headers");
+    expect(returnedAuthConfig.auth.strategy.headers).toBeDefined();
+  });
+
+  it("should reject GraphQL integration with missing endpoint", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      // Missing endpoint
+      auth: { strategy: { type: "none" } },
+    };
+
+    try {
+      await graphqlClient.request(CREATE_INTEGRATION, {
+        provider: "graphql",
+        name: "Invalid GraphQL Integration",
+        authConfig: JSON.stringify(authConfig),
+      });
+      throw new Error("Should have thrown error");
+    } catch (error: any) {
+      expect(error.response.errors[0].message).toContain("endpoint is required");
+    }
+  });
+
+  it("should reject GraphQL integration with invalid endpoint URL", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      endpoint: "not-a-valid-url",
+      auth: { strategy: { type: "none" } },
+    };
+
+    try {
+      await graphqlClient.request(CREATE_INTEGRATION, {
+        provider: "graphql",
+        name: "Invalid GraphQL Integration",
+        authConfig: JSON.stringify(authConfig),
+      });
+      throw new Error("Should have thrown error");
+    } catch (error: any) {
+      expect(error.response.errors[0].message).toContain("must be a valid URL");
+    }
+  });
+
+  it("should reject GraphQL org-level api_key without apiKey field", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      endpoint: "https://api.example.com/graphql",
+      auth: {
+        strategy: {
+          type: "api_key",
+          // viewerScoped is false/undefined, so apiKey is required
+        },
+        // Missing apiKey field
+      },
+    };
+
+    try {
+      await graphqlClient.request(CREATE_INTEGRATION, {
+        provider: "graphql",
+        name: "Invalid GraphQL Integration",
+        authConfig: JSON.stringify(authConfig),
+      });
+      throw new Error("Should have thrown error");
+    } catch (error: any) {
+      expect(error.response.errors[0].message).toContain(
+        "auth.apiKey is required when using org-level api_key auth strategy"
+      );
+    }
+  });
+
+  it("should reject GraphQL bearer_oauth without oauthConfig", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      endpoint: "https://api.example.com/graphql",
+      auth: {
+        strategy: { type: "bearer_oauth" },
+        // Missing oauthConfig
+      },
+    };
+
+    try {
+      await graphqlClient.request(CREATE_INTEGRATION, {
+        provider: "graphql",
+        name: "Invalid GraphQL Integration",
+        authConfig: JSON.stringify(authConfig),
+      });
+      throw new Error("Should have thrown error");
+    } catch (error: any) {
+      expect(error.response.errors[0].message).toContain(
+        "auth.oauthConfig is required when using bearer_oauth auth strategy"
+      );
+    }
+  });
+
+  it("should reject GraphQL custom_headers without headers", async () => {
+    const { client: authClient, cookieJar } = createTestAuthClientWithJar();
+
+    const email = generateTestEmail();
+    const orgName = generateOrgName();
+    const password = "TestPassword123!";
+
+    await authClient.signUp.email({ email, password, name: "Test User" });
+    await authClient.signIn.email({ email, password });
+
+    const org = await authClient.organization.create({
+      name: orgName,
+      slug: generateSlug(orgName),
+    });
+
+    await authClient.organization.setActive({ organizationId: org.data!.id });
+
+    const graphqlClient = createGraphQLClient(cookieJar);
+
+    const authConfig = {
+      type: "graphql",
+      endpoint: "https://api.example.com/graphql",
+      auth: {
+        strategy: {
+          type: "custom_headers",
+          headers: {}, // Empty headers
+        },
+      },
+    };
+
+    try {
+      await graphqlClient.request(CREATE_INTEGRATION, {
+        provider: "graphql",
+        name: "Invalid GraphQL Integration",
+        authConfig: JSON.stringify(authConfig),
+      });
+      throw new Error("Should have thrown error");
+    } catch (error: any) {
+      expect(error.response.errors[0].message).toContain(
+        "auth.strategy.headers must have at least one header"
       );
     }
   });
