@@ -130,7 +130,7 @@ export default function NewIntegrationPage() {
   // Handle probe server
   const handleProbeServer = async () => {
     setServerError(null);
-    const result = await probeServer(watchedServerUrl);
+    const result = await probeServer(watchedServerUrl ?? "");
     if (result) {
       applyDiscoveryResult(result);
     }
@@ -215,7 +215,6 @@ export default function NewIntegrationPage() {
           <ProviderSelector
             control={control}
             providerDefinitions={providerDefinitions}
-            getProviderDefinition={getProviderDefinition}
           />
 
           <div className="space-y-3">
@@ -280,7 +279,7 @@ export default function NewIntegrationPage() {
           {/* MCP-specific fields */}
           {isMcpProvider && (
             <McpFormFields
-              register={register}
+              register={register as Parameters<typeof McpFormFields>[0]["register"]}
               errors={errors}
               watchedAuthStrategy={watchedAuthStrategy}
               watchedApiKeyIsViewerScoped={watchedApiKeyIsViewerScoped}
@@ -296,7 +295,7 @@ export default function NewIntegrationPage() {
           {/* GraphQL-specific fields */}
           {isGraphQLProvider && (
             <GraphQLFormFields
-              register={register}
+              register={register as Parameters<typeof GraphQLFormFields>[0]["register"]}
               errors={errors}
               watchedAuthStrategy={watchedAuthStrategy}
               watchedApiKeyIsViewerScoped={watchedApiKeyIsViewerScoped}
@@ -305,7 +304,9 @@ export default function NewIntegrationPage() {
           )}
 
           {/* OAuth2-specific fields */}
-          {!isMcpProvider && !isGraphQLProvider && <OAuthFormFields register={register} errors={errors} />}
+          {!isMcpProvider && !isGraphQLProvider && (
+            <OAuthFormFields register={register as Parameters<typeof OAuthFormFields>[0]["register"]} errors={errors} redirectUri={watchedRedirectUri} />
+          )}
 
           <div className="border-t border-base-300 pt-6"></div>
 
