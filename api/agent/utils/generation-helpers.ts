@@ -107,10 +107,10 @@ const codeUsesIntegration = (code: string, integrationName: string): boolean => 
     code.includes(`getMcpClient("${integrationName}")`) ||
     code.includes(`getMcpClient('${integrationName}')`);
 
-  // GraphQL: import from "subroutine:integration/name" or graphql from integration
+  // GraphQL: getGraphQLClient("name") or getGraphQLClient('name')
   const usesGraphQL =
-    code.includes(`subroutine:integration/${integrationName}`) ||
-    code.includes(`"${integrationName}"`) && code.includes("graphql");
+    code.includes(`getGraphQLClient("${integrationName}")`) ||
+    code.includes(`getGraphQLClient('${integrationName}')`);
 
   return usesMcp || usesGraphQL;
 };

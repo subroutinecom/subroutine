@@ -167,12 +167,15 @@ USAGE:
 GRAPHQL INTEGRATIONS:
 Available integration names: ${validNames}
 
+CRITICAL - getGraphQLClient REQUIREMENTS:
+1. The argument MUST be one of the exact integration names listed above: ${validNames}
+2. You MUST await the call - getGraphQLClient returns a Promise
+3. DO NOT invent or guess integration names - only use the names listed above
+
 USAGE:
 1. Call inspectIntegration({ integrationName: "${exampleName}" }) to get the GraphQL schema
-2. Use the subroutine SDK's graphql client:
-
-import { graphql } from "subroutine:integration/${exampleName}";
-const result = await graphql(\`query { ... }\`, { variables: { ... } });
+2. const client = await integrations.getGraphQLClient("${exampleName}");
+3. const result = await client.request(\`query { ... }\`, { variables: { ... } });
 
 IMPORTANT: Your GraphQL queries MUST be valid against the schema returned by inspectIntegration.
 `;

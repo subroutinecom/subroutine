@@ -7,7 +7,6 @@
 import {
   getIntrospectionQuery,
   buildClientSchema,
-  buildSchema,
   printSchema,
   type IntrospectionQuery,
 } from "graphql";
@@ -122,21 +121,3 @@ export const introspectSchema = async (
   }
 };
 
-/**
- * Validates that a string is valid GraphQL SDL.
- * Used when users manually provide a schema instead of introspection.
- *
- * @param sdl - The SDL string to validate
- * @returns true if valid, or an error message if invalid
- */
-export const validateSchemaSDL = (sdl: string): { valid: true } | { valid: false; error: string } => {
-  try {
-    buildSchema(sdl);
-    return { valid: true };
-  } catch (err) {
-    return {
-      valid: false,
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
-};

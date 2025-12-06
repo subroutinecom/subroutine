@@ -20,7 +20,7 @@ type ConfigWithAuth = McpIntegrationConfig | GraphQLIntegrationConfig;
  * Checks if an auth block requires viewer-scoped authentication.
  * Works for both MCP and GraphQL integrations.
  */
-export const requiresViewerAuth = (auth: AuthBlock): boolean => {
+const requiresViewerAuth = (auth: AuthBlock): boolean => {
   if (auth.strategy.type === "bearer_oauth") {
     return true;
   }
@@ -67,7 +67,7 @@ const buildAuthHeaders = (auth: AuthBlock, accessToken?: string): Record<string,
  * Captures an auth requirement for an integration that needs viewer authentication.
  * Returns the auth requirement that was captured.
  */
-export const captureAuthRequirement = async (
+const captureAuthRequirement = async (
   integration: IntegrationWithConfig,
   auth: AuthBlock,
   mcpContext: McpContext,

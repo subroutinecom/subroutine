@@ -1,4 +1,4 @@
-import type { SourceFile, CallExpression, Node } from "ts-morph";
+import type { SourceFile, CallExpression, Node, VariableDeclaration } from "ts-morph";
 import { SyntaxKind } from "ts-morph";
 import type { ValidationError, ValidationContext } from "../types";
 import { buildSchema, parse, validate, Source } from "graphql";
@@ -40,12 +40,13 @@ const validateGraphqlOperation = (
 /**
  * Validates GraphQL queries in generated code against their respective schemas.
  *
- * This rule:
- * 1. Finds imports from "subroutine:integration/NAME" that import `graphql`
- * 2. Tracks the mapping of imported function name → integration name
- * 3. Finds all calls to those imported graphql functions
- * 4. Extracts the query string from the first argument
- * 5. Validates each query against the correct schema from context
+ * This rule handles the pattern:
+ *   const client = await integrations.getGraphQLClient("my-api");
+ *   const result = await client.request(`query { ... }`);
+ *
+ * It:
+ * 1. Finds getGraphQLClient("name") calls and tracks variable → integration name
+ * 2. Finds client.request(query) calls and validates the query against the schema
  */
 export const validateGraphqlQueries = (
   sourceFile: SourceFile,
@@ -64,48 +65,71 @@ export const validateGraphqlQueries = (
     schemaByName.set(integration.name, integration.schema);
   }
 
-  // Find all imports from subroutine:integration/* and track graphql function aliases
-  // Maps: local function name → integration name
-  const graphqlFunctionToIntegration = new Map<string, string>();
+  // Track variable names that hold GraphQL clients: variable name → integration name
+  const clientVariableToIntegration = new Map<string, string>();
 
-  for (const importDecl of sourceFile.getImportDeclarations()) {
-    const moduleSpecifier = importDecl.getModuleSpecifierValue();
+  // First pass: find all getGraphQLClient("name") calls and track the variables
+  sourceFile.forEachDescendant((node: Node) => {
+    // Look for variable declarations like: const client = await integrations.getGraphQLClient("name")
+    if (node.getKind() === SyntaxKind.VariableDeclaration) {
+      const varDecl = node as VariableDeclaration;
+      const initializer = varDecl.getInitializer();
+      if (!initializer) return;
 
-    // Check if this is a subroutine integration import
-    const match = moduleSpecifier.match(/^subroutine:integration\/(.+)$/);
-    if (!match) continue;
-
-    const integrationName = match[1];
-
-    // Check if this integration has a schema we can validate against
-    if (!schemaByName.has(integrationName)) continue;
-
-    // Find the `graphql` named import (might be aliased)
-    for (const namedImport of importDecl.getNamedImports()) {
-      const importedName = namedImport.getName();
-      if (importedName === "graphql") {
-        // Get the local name (alias or original)
-        const localName = namedImport.getAliasNode()?.getText() ?? importedName;
-        graphqlFunctionToIntegration.set(localName, integrationName);
+      // Handle await expressions
+      let callExpr: CallExpression | undefined;
+      if (initializer.getKind() === SyntaxKind.AwaitExpression) {
+        const awaitExpr = initializer.getFirstChildByKind(SyntaxKind.CallExpression);
+        if (awaitExpr) callExpr = awaitExpr as CallExpression;
+      } else if (initializer.getKind() === SyntaxKind.CallExpression) {
+        callExpr = initializer as CallExpression;
       }
-    }
-  }
 
-  // If no graphql imports found, nothing to validate
-  if (graphqlFunctionToIntegration.size === 0) {
+      if (!callExpr) return;
+
+      // Check if this is a getGraphQLClient call
+      const exprText = callExpr.getExpression().getText();
+      if (!exprText.endsWith("getGraphQLClient")) return;
+
+      // Get the integration name from the first argument
+      const args = callExpr.getArguments();
+      if (args.length === 0) return;
+
+      const nameArg = args[0];
+      const integrationName = extractStringLiteral(nameArg);
+      if (!integrationName) return;
+
+      // Track this variable
+      const varName = varDecl.getName();
+      clientVariableToIntegration.set(varName, integrationName);
+    }
+  });
+
+  // If no GraphQL clients found, nothing to validate
+  if (clientVariableToIntegration.size === 0) {
     return errors;
   }
 
-  // Find all call expressions in the file
+  // Second pass: find all client.request(query) calls and validate
   sourceFile.forEachDescendant((node: Node) => {
     if (node.getKind() !== SyntaxKind.CallExpression) return;
 
     const callExpr = node as CallExpression;
     const expression = callExpr.getExpression();
 
-    // Check if this is a call to one of our tracked graphql functions
-    const calledName = expression.getText();
-    const integrationName = graphqlFunctionToIntegration.get(calledName);
+    // Check for pattern: someVar.request(...)
+    if (expression.getKind() !== SyntaxKind.PropertyAccessExpression) return;
+
+    const propAccess = expression;
+    const propName = propAccess.getLastChild()?.getText();
+    if (propName !== "request") return;
+
+    // Get the object being called on (e.g., "client" in "client.request")
+    const objectExpr = propAccess.getFirstChild();
+    if (!objectExpr) return;
+
+    const objectName = objectExpr.getText();
+    const integrationName = clientVariableToIntegration.get(objectName);
     if (!integrationName) return;
 
     // Get the schema for this integration
@@ -117,7 +141,7 @@ export const validateGraphqlQueries = (
     if (args.length === 0) {
       errors.push({
         rule: "validate-graphql-queries",
-        message: `GraphQL call to "${integrationName}" is missing the query argument`,
+        message: `GraphQL request to "${integrationName}" is missing the query argument`,
         line: callExpr.getStartLineNumber(),
       });
       return;
@@ -149,11 +173,23 @@ export const validateGraphqlQueries = (
 };
 
 /**
+ * Extracts a string literal value from a node.
+ * Returns null if the node is not a string literal.
+ */
+const extractStringLiteral = (node: Node): string | null => {
+  if (node.getKind() === SyntaxKind.StringLiteral) {
+    const text = node.getText();
+    // Remove quotes
+    return text.slice(1, -1);
+  }
+  return null;
+};
+
+/**
  * Extracts the query string from a GraphQL call argument.
  * Handles:
- * - Template literals: graphql(`query { ... }`)
- * - String literals: graphql("query { ... }")
- * - Tagged template literals with variables (extracts static parts)
+ * - Template literals: client.request(`query { ... }`)
+ * - String literals: client.request("query { ... }")
  *
  * Returns null if the query cannot be statically extracted.
  */
@@ -170,8 +206,7 @@ const extractQueryString = (node: Node): string | null => {
     }
 
     // For TemplateExpression with substitutions, we can't fully validate
-    // but we could try to validate the structure
-    // For now, skip these as they're dynamic
+    // as they're dynamic
     return null;
   }
 

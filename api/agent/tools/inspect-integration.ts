@@ -83,9 +83,11 @@ Call this BEFORE writing code to understand what the integration can do.`,
             type: "mcp",
             integrationName: integration.name,
             tools: result.tools,
-            usage: `This is an MCP integration. Use the subroutine SDK's callTool() to invoke tools:
-import { callTool } from "subroutine:integration/${integration.name}";
-const result = await callTool("toolName", { param: "value" });`,
+            usage: `This is an MCP integration. Use integrations.getMcpClient() to get a client:
+
+const client = await integrations.getMcpClient("${integration.name}");
+const result = await client.callTool({ name: "toolName", arguments: { param: "value" } });
+const data = JSON.parse(result.content[0]?.text || "{}");`,
           };
         }
         return { success: false, error: result.error ?? "Unknown error" };
@@ -101,9 +103,10 @@ const result = await callTool("toolName", { param: "value" });`,
             integrationName: integration.name,
             schema: result.schema,
             schemaFetchedAt: result.schemaFetchedAt!,
-            usage: `This is a GraphQL integration. Use the subroutine SDK's graphql client:
-import { graphql } from "subroutine:integration/${integration.name}";
-const result = await graphql(\`query { ... }\`, { variables });
+            usage: `This is a GraphQL integration. Use integrations.getGraphQLClient() to get a client:
+
+const client = await integrations.getGraphQLClient("${integration.name}");
+const result = await client.request(\`query { ... }\`, { variables });
 
 IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
           };
