@@ -1,12 +1,15 @@
-// Re-export shared MCP types
+// Re-export shared integration types
 export type {
-  McpAuthStrategy,
   McpTransport,
   SandboxMcpConfig,
-} from "../../../packages/shared-types/mcp";
+  SandboxGraphQLConfig,
+  AuthStrategy,
+  AuthBlock,
+  OAuthConfig,
+} from "../../../packages/shared-types/integration";
 
 // Import for local use
-import type { McpAuthStrategy, McpTransport } from "../../../packages/shared-types/mcp";
+import type { McpTransport, AuthStrategy } from "../../../packages/shared-types/integration";
 
 export interface OAuthTokenResponse {
   access_token: string;
@@ -23,6 +26,11 @@ export interface OAuthHandlers {
   fetchAccountIdentifier: (accessToken: string) => Promise<string>;
 }
 
+/**
+ * Provider definition types.
+ * These are templates that define how each provider type works.
+ * Note: "auth" here is a misnomer - for MCP/GraphQL it contains protocol + auth config.
+ */
 export type AuthStrategyDefinition =
   | {
       type: "oauth2";
@@ -42,10 +50,27 @@ export type AuthStrategyDefinition =
       type: "mcp";
       serverUrl: string;
       transport: McpTransport;
-      authStrategy: McpAuthStrategy;
+      authStrategy: AuthStrategy;
       /**
-       * For bearer_passthrough, we need OAuth config to authenticate users.
-       * This is optional - only needed when authStrategy is bearer_passthrough.
+       * For bearer_oauth, we need OAuth config to authenticate users.
+       * This is optional - only needed when authStrategy is bearer_oauth.
+       */
+      oauthConfig?: {
+        authUrl: string;
+        tokenUrl: string;
+        defaultScopes: string[];
+        requiredScopes?: string[];
+        defaultRedirectPath?: string;
+        handlers?: OAuthHandlers;
+      };
+    }
+  | {
+      type: "graphql";
+      endpoint: string;
+      authStrategy: AuthStrategy;
+      /**
+       * For bearer_oauth, we need OAuth config to authenticate users.
+       * This is optional - only needed when authStrategy is bearer_oauth.
        */
       oauthConfig?: {
         authUrl: string;

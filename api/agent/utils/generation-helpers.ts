@@ -1,14 +1,16 @@
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../../models/errors.ts";
 import { getLogger } from "../../utils/logger.ts";
-import type { McpIntegrationInfo } from "../prompts/index.ts";
+import type { IntegrationInfo } from "../prompts/index.ts";
 import {
   createGetGlobalIntegrations,
   createGetOrganizationIntegrations,
 } from "../tools/discovery.ts";
+import { createListIntegrations } from "../tools/list-integrations.ts";
 import {
-  createListMcpToolsDiscovery,
-  createListMcpToolsProvided,
-} from "../tools/list-mcp-tools.ts";
+  createFindIntegrationProvided,
+  createFindIntegrationDiscovery,
+} from "../tools/find-integration.ts";
+import { createInspectIntegration } from "../tools/inspect-integration.ts";
 import { createManageMcpIntegration } from "../tools/manage-integration.ts";
 import { createWriteCodeTool } from "../tools/write-code.ts";
 import type { McpContext, SubroutineCapture } from "./types.ts";
@@ -16,7 +18,8 @@ const logger = getLogger("api/agent/utils/generation-helpers.ts", "warn");
 
 export type ToolCreationOptions = {
   mcpContext?: McpContext;
-  mcpIntegrations?: McpIntegrationInfo[];
+  /** Integrations provided to the agent (MCP or GraphQL) */
+  integrations?: IntegrationInfo[];
   needsImmediateInputs?: boolean;
 };
 
@@ -30,29 +33,39 @@ export const createAgentTools = (
     writeCode: createWriteCodeTool(onCapture, {
       needsImmediateInputs: options.needsImmediateInputs,
       mcpContext: options.mcpContext,
-      mcpIntegrations: options.mcpIntegrations,
+      integrations: options.integrations,
     }),
   };
 
   if (options.mcpContext) {
     const mcpContext = options.mcpContext;
-    const hasProvidedIntegrations = options.mcpIntegrations && options.mcpIntegrations.length > 0;
+    const providedIntegrations = options.integrations ?? [];
+    const hasProvidedIntegrations = providedIntegrations.length > 0;
+
+    // inspectIntegration is available in both modes (unified)
+    tools.inspectIntegration = createInspectIntegration(
+      mcpContext,
+      capturedAuthRequirements,
+      usedIntegrationIds
+    );
 
     if (hasProvidedIntegrations) {
-      tools.listMcpTools = createListMcpToolsProvided(
-        mcpContext,
-        capturedAuthRequirements,
-        usedIntegrationIds
-      );
+      // Provided mode: integrations were explicitly passed
+      logger.debug(`Provided mode - ${providedIntegrations.length} integration(s)`);
+
+      // Pre-populate the name→id map so inspectIntegration works
+      for (const integration of providedIntegrations) {
+        mcpContext.integrationNameToId.set(integration.name, integration.id);
+      }
+
+      tools.listIntegrations = createListIntegrations(providedIntegrations);
+      tools.findIntegration = createFindIntegrationProvided(mcpContext, providedIntegrations);
     } else {
+      // Discovery mode: agent must discover integrations
       logger.debug(`Discovery mode enabled - adding discovery tools`);
       tools.getOrganizationIntegrations = createGetOrganizationIntegrations(mcpContext);
       tools.getGlobalIntegrations = createGetGlobalIntegrations(mcpContext);
-      tools.listMcpTools = createListMcpToolsDiscovery(
-        mcpContext,
-        capturedAuthRequirements,
-        usedIntegrationIds
-      );
+      tools.findIntegration = createFindIntegrationDiscovery(mcpContext);
       tools.manageMcpIntegration = createManageMcpIntegration(mcpContext, usedIntegrationIds);
     }
   }
@@ -85,6 +98,23 @@ export const logGenerationSteps = (steps: any[]) => {
   }
 };
 
+/**
+ * Checks if code uses a given integration (MCP or GraphQL).
+ */
+const codeUsesIntegration = (code: string, integrationName: string): boolean => {
+  // MCP: getMcpClient("name") or getMcpClient('name')
+  const usesMcp =
+    code.includes(`getMcpClient("${integrationName}")`) ||
+    code.includes(`getMcpClient('${integrationName}')`);
+
+  // GraphQL: getGraphQLClient("name") or getGraphQLClient('name')
+  const usesGraphQL =
+    code.includes(`getGraphQLClient("${integrationName}")`) ||
+    code.includes(`getGraphQLClient('${integrationName}')`);
+
+  return usesMcp || usesGraphQL;
+};
+
 export const checkAuthRequirements = (
   capturedResult: SubroutineCapture | null,
   capturedAuthRequirements: AuthRequirement[],
@@ -108,9 +138,7 @@ export const checkAuthRequirements = (
   const { code } = capturedResult;
   if (capturedAuthRequirements.length > 0) {
     const relevantAuthRequirements = capturedAuthRequirements.filter((req) => {
-      const usesIntegration =
-        code.includes(`getMcpClient("${req.integrationName}")`) ||
-        code.includes(`getMcpClient('${req.integrationName}')`);
+      const usesIntegration = codeUsesIntegration(code, req.integrationName);
       logger.debug(
         `[generateCode] Auth requirement for "${req.integrationName}" - used in code: ${usesIntegration}`
       );
@@ -145,7 +173,7 @@ export const determineUsedIntegrations = (
   // Filter usedIntegrationIds to only include integrations actually referenced in the code
   const actuallyUsedIds = new Set<string>();
   for (const [name, id] of mcpContext?.integrationNameToId ?? new Map()) {
-    if (code.includes(`getMcpClient("${name}")`) || code.includes(`getMcpClient('${name}')`)) {
+    if (codeUsesIntegration(code, name)) {
       actuallyUsedIds.add(id);
       logger.debug(`Integration "${name}" (${id}) is used in generated code`);
     }

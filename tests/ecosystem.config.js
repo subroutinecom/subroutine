@@ -12,5 +12,17 @@ module.exports = {
         NODE_ENV: "development",
       },
     },
+    {
+      name: "graphql-test-server",
+      script: "deno",
+      args: "run --allow-net --allow-env graphql-test-server/server.ts",
+      autorestart: true,
+      watch: ["graphql-test-server/*.ts"],
+      ignore_watch: ["node_modules", ".git"],
+      env: {
+        NODE_ENV: "development",
+        PORT: "3457",
+      },
+    },
   ],
 };

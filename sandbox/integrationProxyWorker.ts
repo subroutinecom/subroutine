@@ -8,6 +8,7 @@ import {
 } from "./integrations/calendar/mod";
 import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
 import { createMcpClient } from "./integrations/mcp/mod";
+import { createGraphQLClient, type GraphQLClient } from "./integrations/graphql/mod";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { CalendarAPI } from "./integrations/calendar/types";
 import type { GmailAPI } from "./integrations/gmail/types";
@@ -173,10 +174,57 @@ const buildServerForIntegrations = async (
     });
   }
 
+  // Store GraphQL clients by integration name
+  const graphqlClients = new Map<string, GraphQLClient>();
+  const graphqlErrors = new Map<string, Error>();
+
+  const graphqlIntegrations = integrations.filter((integration) => integration.graphqlConfig);
+  console.log(`[IntegrationProxy] Found ${graphqlIntegrations.length} GraphQL integrations`);
+
+  // Create GraphQL clients
+  for (const integration of graphqlIntegrations) {
+    try {
+      const client = createGraphQLClient(integration.graphqlConfig!);
+      graphqlClients.set(integration.name, client);
+      console.log(`[IntegrationProxy] GraphQL client '${integration.name}' created`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      graphqlErrors.set(
+        integration.name,
+        new Error(`Failed to create GraphQL client '${integration.name}': ${errorMessage}`)
+      );
+      console.error(`[IntegrationProxy] GraphQL '${integration.name}' failed: ${errorMessage}`);
+    }
+  }
+
+  // Register a single getGraphQLClient getter that returns GraphQL clients by name
+  if (graphqlClients.size > 0 || graphqlErrors.size > 0) {
+    server.register("getGraphQLClient", (name: unknown) => {
+      const integrationName = String(name);
+
+      // Check if there was a creation error
+      const creationError = graphqlErrors.get(integrationName);
+      if (creationError) {
+        throw creationError;
+      }
+
+      // Get the client
+      const client = graphqlClients.get(integrationName);
+      if (!client) {
+        const availableNames = [...graphqlClients.keys()].join(", ") || "none";
+        throw new Error(
+          `GraphQL integration '${integrationName}' not found. Available: ${availableNames}`
+        );
+      }
+
+      return client as unknown as object;
+    });
+  }
+
   // Handle traditional OAuth-based integrations
   await Promise.all(
     integrations
-      .filter((integration) => !integration.mcpConfig)
+      .filter((integration) => !integration.mcpConfig && !integration.graphqlConfig)
       .map(async (integration) => {
         switch (integration.provider) {
           case "gmail": {

@@ -1,7 +1,14 @@
-// Re-export shared MCP types
-export type { McpAuthStrategy, McpTransport, SandboxMcpConfig } from "../packages/shared-types/mcp";
+// Re-export shared integration types
+export type {
+  McpTransport,
+  SandboxMcpConfig,
+  SandboxGraphQLConfig,
+  AuthStrategy,
+  AuthBlock,
+  OAuthConfig,
+} from "../packages/shared-types/integration";
 
-import type { SandboxMcpConfig } from "../packages/shared-types/mcp";
+import type { SandboxMcpConfig, SandboxGraphQLConfig } from "../packages/shared-types/integration";
 
 export interface SandboxIntegrationCredentialsMetadata {
   providerAccountIdentifier?: string;
@@ -31,4 +38,6 @@ export interface SandboxIntegrationPayload {
   account?: SandboxIntegrationAccountPayload;
   /** MCP-specific configuration. Present when provider is an MCP integration. */
   mcpConfig?: SandboxMcpConfig;
+  /** GraphQL-specific configuration. Present when provider is a GraphQL integration. */
+  graphqlConfig?: SandboxGraphQLConfig;
 }

@@ -6,7 +6,7 @@ import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { createGraphqlClient } from "~/lib/graphql-client";
-import type { IntegrationAuthConfig, McpAuthConfig, OAuth2AuthConfig } from "~/types/integration";
+import type { IntegrationConfig, McpIntegrationConfig, OAuth2IntegrationConfig } from "~/types/integration";
 import { format } from "date-fns";
 import { fetchAdminConfig } from "~/lib/admin-config";
 import { useAdminConfig } from "~/hooks/use-admin-config";
@@ -69,7 +69,7 @@ interface IntegrationResponse {
 }
 
 interface ParsedIntegration extends Omit<IntegrationResponse, "authConfig"> {
-  authConfig: IntegrationAuthConfig;
+  authConfig: IntegrationConfig;
 }
 
 interface ConnectedAccountResponse {
@@ -103,7 +103,7 @@ export const clientLoader = async ({ params }: { params: { integrationId: string
 
   const integration = {
     ...integrationData.integration,
-    authConfig: JSON.parse(integrationData.integration.authConfig) as IntegrationAuthConfig,
+    authConfig: JSON.parse(integrationData.integration.authConfig) as IntegrationConfig,
   };
 
   return {
@@ -274,14 +274,14 @@ export default function IntegrationDetailPage() {
                 <div>
                   <label className="text-sm text-base-content/70">Server URL</label>
                   <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
-                    {(integration.authConfig as McpAuthConfig).serverUrl}
+                    {(integration.authConfig as McpIntegrationConfig).serverUrl}
                   </code>
                 </div>
 
                 <div>
                   <label className="text-sm text-base-content/70">Transport</label>
                   <p className="font-medium mt-1 capitalize">
-                    {(integration.authConfig as McpAuthConfig).transport === "streamable-http"
+                    {(integration.authConfig as McpIntegrationConfig).transport === "streamable-http"
                       ? "Streamable HTTP"
                       : "SSE (Server-Sent Events)"}
                   </p>
@@ -291,7 +291,7 @@ export default function IntegrationDetailPage() {
                   <label className="text-sm text-base-content/70">Authentication</label>
                   <div className="mt-1">
                     <span className="badge badge-ghost capitalize">
-                      {(integration.authConfig as McpAuthConfig).authStrategy.type.replace(
+                      {(integration.authConfig as McpIntegrationConfig).auth.strategy.type.replace(
                         "_",
                         " "
                       )}
@@ -299,13 +299,13 @@ export default function IntegrationDetailPage() {
                   </div>
                 </div>
 
-                {(integration.authConfig as McpAuthConfig).authStrategy.type === "api_key" &&
-                  (integration.authConfig as McpAuthConfig).authStrategy.type === "api_key" && (
+                {(integration.authConfig as McpIntegrationConfig).auth.strategy.type === "api_key" &&
+                  (integration.authConfig as McpIntegrationConfig).auth.strategy.type === "api_key" && (
                     <div>
                       <label className="text-sm text-base-content/70">Header Name</label>
                       <p className="font-medium mt-1">
                         {(
-                          (integration.authConfig as McpAuthConfig).authStrategy as {
+                          (integration.authConfig as McpIntegrationConfig).auth.strategy as {
                             type: "api_key";
                             headerName?: string;
                           }
@@ -324,21 +324,21 @@ export default function IntegrationDetailPage() {
                 <div>
                   <label className="text-sm text-base-content/70">Client ID</label>
                   <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
-                    {(integration.authConfig as OAuth2AuthConfig).clientId}
+                    {(integration.authConfig as OAuth2IntegrationConfig).clientId}
                   </code>
                 </div>
 
                 <div>
                   <label className="text-sm text-base-content/70">Redirect URI</label>
                   <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
-                    {(integration.authConfig as OAuth2AuthConfig).redirectUri}
+                    {(integration.authConfig as OAuth2IntegrationConfig).redirectUri}
                   </code>
                 </div>
 
                 <div>
                   <label className="text-sm text-base-content/70">Scopes</label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {(integration.authConfig as OAuth2AuthConfig).scopes.map((scope: string) => (
+                    {(integration.authConfig as OAuth2IntegrationConfig).scopes.map((scope: string) => (
                       <span key={scope} className="badge badge-sm badge-ghost">
                         {scope}
                       </span>
@@ -349,14 +349,14 @@ export default function IntegrationDetailPage() {
                 <div>
                   <label className="text-sm text-base-content/70">Auth URL</label>
                   <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
-                    {(integration.authConfig as OAuth2AuthConfig).authUrl}
+                    {(integration.authConfig as OAuth2IntegrationConfig).authUrl}
                   </code>
                 </div>
 
                 <div>
                   <label className="text-sm text-base-content/70">Token URL</label>
                   <code className="block bg-base-200 px-3 py-2 rounded mt-1 text-xs break-all">
-                    {(integration.authConfig as OAuth2AuthConfig).tokenUrl}
+                    {(integration.authConfig as OAuth2IntegrationConfig).tokenUrl}
                   </code>
                 </div>
               </div>

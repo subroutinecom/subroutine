@@ -1,6 +1,7 @@
 import { rateLimiter } from "@hono-rate-limiter/hono-rate-limiter";
 import { cors } from "@hono/hono/cors";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import type { Context } from "@hono/hono";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createYoga } from "graphql-yoga";
@@ -314,19 +315,25 @@ const initialize = async () => {
     );
   };
 
-  const patLinkGetLimiter = rateLimiter({
-    windowMs: config.rateLimit?.patLinkGet?.windowMs ?? 60000,
-    limit: config.rateLimit?.patLinkGet?.limit ?? 30,
-    standardHeaders: "draft-6",
-    keyGenerator: getClientIp,
-  });
+  const rateLimitEnabled = config.rateLimit?.enabled ?? true;
 
-  const patLinkSubmitLimiter = rateLimiter({
-    windowMs: config.rateLimit?.patLinkSubmit?.windowMs ?? 60000,
-    limit: config.rateLimit?.patLinkSubmit?.limit ?? 5,
-    standardHeaders: "draft-6",
-    keyGenerator: getClientIp,
-  });
+  const patLinkGetLimiter = rateLimitEnabled
+    ? rateLimiter({
+        windowMs: config.rateLimit?.patLinkGet?.windowMs ?? 60000,
+        limit: config.rateLimit?.patLinkGet?.limit ?? 30,
+        standardHeaders: "draft-6",
+        keyGenerator: getClientIp,
+      })
+    : async (_c: Context, next: () => Promise<void>) => next();
+
+  const patLinkSubmitLimiter = rateLimitEnabled
+    ? rateLimiter({
+        windowMs: config.rateLimit?.patLinkSubmit?.windowMs ?? 60000,
+        limit: config.rateLimit?.patLinkSubmit?.limit ?? 5,
+        standardHeaders: "draft-6",
+        keyGenerator: getClientIp,
+      })
+    : async (_c: Context, next: () => Promise<void>) => next();
 
   // GET /api/pat-link/:id - Get PAT link info (public)
   // @ts-expect-error - hono-rate-limiter types have minor incompatibility with local Hono types
@@ -409,7 +416,8 @@ const initialize = async () => {
       let body: {
         request: string;
         needsImmediateInputs?: boolean;
-        integrations?: string[];
+        /** First-party integrations like gmail, google_calendar */
+        firstPartyIntegrations?: string[];
       };
 
       try {
@@ -432,7 +440,7 @@ const initialize = async () => {
 
       const result = await generateCode(model, body.request, {
         needsImmediateInputs: body.needsImmediateInputs,
-        integrations: body.integrations,
+        firstPartyIntegrations: body.firstPartyIntegrations,
       });
 
       return c.json(result);

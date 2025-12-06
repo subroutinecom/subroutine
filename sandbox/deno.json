@@ -1,6 +1,9 @@
 {
   "imports": {
+    "@graphql-typed-document-node/core": "npm:@graphql-typed-document-node/core@^3.2.0",
     "@subroutine/integration-types": "../packages/integration-types/mod.ts",
+    "graphql": "npm:graphql@^16.12.0",
+    "graphql-request": "npm:graphql-request@^7.3.5",
     "hono": "npm:hono@^4.10.4",
     "googleapis": "npm:googleapis@^134.0.0",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0"

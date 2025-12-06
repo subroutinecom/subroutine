@@ -1,168 +1,122 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useForm } from "react-hook-form";
-import type { IntegrationFormData } from "../ProviderSelector";
-import type { IntegrationProvider, IntegrationProviderDefinition } from "~/types/integration";
-import type { McpOAuthDiscoveryResult } from "../McpFormFields";
-import { useAdminConfig } from "~/hooks/use-admin-config";
+import { useEffect, useCallback } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import type { IntegrationProviderDefinition } from "~/types/integration";
+import type { IntegrationFormData, McpDiscoveryResult, McpDiscoveryAuthMethod, AuthStrategyType } from "../types";
 
 interface UseIntegrationFormOptions {
   providerDefinitions: IntegrationProviderDefinition[];
-  discoveryResult: McpOAuthDiscoveryResult | null;
+  discoveryResult?: McpDiscoveryResult | null;
+  initialData?: Partial<IntegrationFormData>;
   onProviderChange?: () => void;
 }
 
-export const useIntegrationForm = ({
-  providerDefinitions,
-  discoveryResult,
-  onProviderChange,
-}: UseIntegrationFormOptions) => {
-  const { redirectBase } = useAdminConfig();
+export const useIntegrationForm = (options: UseIntegrationFormOptions) => {
+  const { providerDefinitions, initialData, onProviderChange } = options;
 
-  // Helper to get provider definition
-  const getProviderDefinition = useCallback(
-    (id: IntegrationProvider) => providerDefinitions.find((provider) => provider.id === id),
-    [providerDefinitions]
-  );
-
-  // Helper to build redirect URI
-  const buildDefaultRedirectUri = useCallback(
-    (definition?: IntegrationProviderDefinition) => {
-      const redirectPath = definition?.oauthConfig?.defaultRedirectPath ?? "/api/oauth/callback";
-      if (redirectPath.startsWith("http://") || redirectPath.startsWith("https://")) {
-        return redirectPath;
-      }
-      return `${redirectBase}${redirectPath}`;
-    },
-    [redirectBase]
-  );
-
-  // Initial values
-  const initialProviderId = useMemo<IntegrationProvider>(() => {
-    return (providerDefinitions[0]?.id as IntegrationProvider) ?? "gmail";
-  }, [providerDefinitions]);
-
-  const initialDefinition = getProviderDefinition(initialProviderId);
-  const initialScopes = initialDefinition?.oauthConfig?.defaultScopes ?? [];
-  const initialRedirectUri = buildDefaultRedirectUri(initialDefinition);
-
-  // Form setup
   const form = useForm<IntegrationFormData>({
     defaultValues: {
-      provider: initialProviderId,
-      name: "",
-      clientId: "",
-      clientSecret: "",
-      scopes: initialScopes.join(", "),
-      redirectUri: initialRedirectUri,
-      oauthAuthUrl: "",
-      oauthTokenUrl: "",
-      serverUrl: "",
-      transport: "streamable-http",
-      authStrategyType: "none",
-      apiKey: "",
-      apiKeyHeaderName: "",
-      apiKeyIsViewerScoped: false,
-      customHeaders: "",
+      provider: initialData?.provider ?? providerDefinitions[0]?.id ?? "",
+      name: initialData?.name ?? "",
+      serverUrl: initialData?.serverUrl ?? "",
+      transport: initialData?.transport ?? "sse",
+      endpoint: initialData?.endpoint ?? "",
+      authStrategy: initialData?.authStrategy ?? "none",
+      apiKey: initialData?.apiKey ?? "",
+      apiKeyHeaderName: initialData?.apiKeyHeaderName ?? "X-API-Key",
+      apiKeyIsViewerScoped: initialData?.apiKeyIsViewerScoped ?? false,
+      oauthClientId: initialData?.oauthClientId ?? "",
+      oauthClientSecret: initialData?.oauthClientSecret ?? "",
+      oauthAuthUrl: initialData?.oauthAuthUrl ?? "",
+      oauthTokenUrl: initialData?.oauthTokenUrl ?? "",
+      oauthRedirectUri: initialData?.oauthRedirectUri ?? "",
+      oauthScopes: initialData?.oauthScopes ?? "",
+      customHeaders: initialData?.customHeaders ?? "{}",
     },
   });
 
-  const { setValue, watch } = form;
+  const { control, setValue } = form;
 
-  // Watched values
-  const watchedProvider = watch("provider");
-  const watchedAuthStrategy = watch("authStrategyType");
-  const watchedServerUrl = watch("serverUrl");
-  const watchedRedirectUri = watch("redirectUri");
-  const watchedApiKeyIsViewerScoped = watch("apiKeyIsViewerScoped");
+  // Watch key fields
+  const watchedProvider = useWatch({ control, name: "provider" });
+  const watchedAuthStrategy = useWatch({ control, name: "authStrategy" });
+  const watchedServerUrl = useWatch({ control, name: "serverUrl" });
+  const watchedRedirectUri = useWatch({ control, name: "oauthRedirectUri" });
+  const watchedApiKeyIsViewerScoped = useWatch({ control, name: "apiKeyIsViewerScoped" });
 
-  // Derived state
-  const currentDefinition = getProviderDefinition(watchedProvider);
-  const isMcpProvider = currentDefinition?.authType === "mcp";
+  // Get provider definition
+  const getProviderDefinition = useCallback(
+    (providerId: string) => providerDefinitions.find((p) => p.id === providerId),
+    [providerDefinitions]
+  );
 
-  // Track previous provider to detect changes
-  const previousProviderRef = useRef<IntegrationProvider>(initialProviderId);
+  const currentProvider = getProviderDefinition(watchedProvider);
+  const isMcpProvider = currentProvider?.authType === "mcp";
+  const isGraphQLProvider = currentProvider?.authType === "graphql";
+  const isOAuthProvider = currentProvider?.authType === "oauth2";
 
-  // Reset form fields when provider changes
+  // Handle provider change - reset auth-related fields
   useEffect(() => {
-    if (watchedProvider === previousProviderRef.current) {
-      return;
+    if (!currentProvider) return;
+
+    // Set defaults based on provider type
+    if (isMcpProvider && currentProvider.mcpConfig) {
+      setValue("serverUrl", currentProvider.mcpConfig.serverUrl || "");
+      setValue("transport", currentProvider.mcpConfig.transport || "sse");
+
+      // Set auth strategy from provider config
+      const authType = currentProvider.mcpConfig.auth?.strategy?.type ?? "none";
+      setValue("authStrategy", authType as AuthStrategyType);
+    } else if (isGraphQLProvider && currentProvider.graphqlConfig) {
+      setValue("endpoint", currentProvider.graphqlConfig.endpoint || "");
+
+      // Set auth strategy from provider config
+      const authType = currentProvider.graphqlConfig.auth?.strategy?.type ?? "none";
+      setValue("authStrategy", authType as AuthStrategyType);
+    } else if (isOAuthProvider && currentProvider.oauthConfig) {
+      setValue("oauthAuthUrl", currentProvider.oauthConfig.authUrl || "");
+      setValue("oauthTokenUrl", currentProvider.oauthConfig.tokenUrl || "");
+      setValue("oauthScopes", currentProvider.oauthConfig.defaultScopes?.join(" ") || "");
+      setValue("authStrategy", "bearer_oauth");
     }
-    previousProviderRef.current = watchedProvider;
 
     onProviderChange?.();
+  }, [watchedProvider, currentProvider, isMcpProvider, isGraphQLProvider, isOAuthProvider, setValue, onProviderChange]);
 
-    const definition = getProviderDefinition(watchedProvider);
-    if (definition?.authType === "mcp") {
-      // Reset MCP fields
-      setValue("serverUrl", "");
-      setValue("transport", "streamable-http");
-      setValue("authStrategyType", "none");
-      setValue("apiKey", "");
-      setValue("apiKeyHeaderName", "");
-      setValue("apiKeyIsViewerScoped", false);
-      setValue("customHeaders", "");
-      setValue("oauthAuthUrl", "");
-      setValue("oauthTokenUrl", "");
-    } else {
-      // Reset OAuth fields to provider defaults
-      setValue("scopes", (definition?.oauthConfig?.defaultScopes ?? []).join(", "));
-      setValue("redirectUri", buildDefaultRedirectUri(definition));
-    }
-  }, [watchedProvider, setValue, getProviderDefinition, buildDefaultRedirectUri, onProviderChange]);
-
-  // Auto-fill OAuth fields when user switches to bearer_passthrough after probing
-  useEffect(() => {
-    if (watchedAuthStrategy === "bearer_passthrough" && discoveryResult?.success) {
-      if (discoveryResult.authorizationEndpoint) {
-        setValue("oauthAuthUrl", discoveryResult.authorizationEndpoint);
-      }
-      if (discoveryResult.tokenEndpoint) {
-        setValue("oauthTokenUrl", discoveryResult.tokenEndpoint);
-      }
-      if (discoveryResult.scopesSupported && discoveryResult.scopesSupported.length > 0) {
-        setValue("scopes", discoveryResult.scopesSupported.join(", "));
-      }
-    }
-  }, [watchedAuthStrategy, discoveryResult, setValue]);
-
-  // Handler for auth method selection from discovery panel
+  // Handle auth strategy selection from discovery
   const handleSelectAuthMethod = useCallback(
-    (method: "none" | "api_key" | "bearer_passthrough" | "custom_headers") => {
-      setValue("authStrategyType", method);
+    (method: McpDiscoveryAuthMethod) => {
+      setValue("authStrategy", method.type as AuthStrategyType);
+
+      if (method.type === "bearer_oauth" && method.oauth) {
+        setValue("oauthAuthUrl", method.oauth.authorizationUrl);
+        setValue("oauthTokenUrl", method.oauth.tokenUrl);
+        setValue("oauthScopes", method.oauth.scopes?.join(" ") ?? "");
+      }
     },
     [setValue]
   );
 
-  // Apply discovery result to form (called when probing succeeds and auth is already bearer_passthrough)
+  // Apply discovery result
   const applyDiscoveryResult = useCallback(
-    (result: McpOAuthDiscoveryResult) => {
-      if (result.success && watchedAuthStrategy === "bearer_passthrough") {
-        if (result.authorizationEndpoint) {
-          setValue("oauthAuthUrl", result.authorizationEndpoint);
-        }
-        if (result.tokenEndpoint) {
-          setValue("oauthTokenUrl", result.tokenEndpoint);
-        }
-        if (result.scopesSupported && result.scopesSupported.length > 0) {
-          setValue("scopes", result.scopesSupported.join(", "));
-        }
+    (result: McpDiscoveryResult) => {
+      if (result.authMethods && result.authMethods.length > 0) {
+        const firstMethod = result.authMethods[0];
+        handleSelectAuthMethod(firstMethod);
       }
     },
-    [watchedAuthStrategy, setValue]
+    [handleSelectAuthMethod]
   );
 
   return {
     form,
-    // Watched values
     watchedProvider,
     watchedAuthStrategy,
     watchedServerUrl,
     watchedRedirectUri,
     watchedApiKeyIsViewerScoped,
-    // Derived state
-    currentDefinition,
     isMcpProvider,
-    // Helpers
+    isGraphQLProvider,
+    isOAuthProvider,
     getProviderDefinition,
     handleSelectAuthMethod,
     applyDiscoveryResult,

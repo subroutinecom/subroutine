@@ -9,7 +9,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { McpAuthConfig } from "../models/integration";
+import type { McpIntegrationConfig } from "../models/integration";
 
 export interface McpToolInfo {
   name: string;
@@ -22,23 +22,27 @@ const DEFAULT_TIMEOUT_MS = 30000;
 /**
  * Builds HTTP headers for MCP server authentication based on the auth strategy.
  */
-const buildAuthHeaders = (config: McpAuthConfig, accessToken?: string): Record<string, string> => {
+const buildAuthHeaders = (
+  config: McpIntegrationConfig,
+  accessToken?: string
+): Record<string, string> => {
   const headers: Record<string, string> = {};
+  const auth = config.auth;
 
-  switch (config.authStrategy.type) {
+  switch (auth.strategy.type) {
     case "none":
       // No auth headers needed
       break;
 
     case "api_key": {
-      if (config.authStrategy.viewerScoped) {
+      if (auth.strategy.viewerScoped) {
         // Viewer-scoped PAT - token comes from connected account
         if (!accessToken) {
           throw new Error(
             "MCP integration with viewer-scoped api_key requires user's access token"
           );
         }
-        const headerName = config.authStrategy.headerName ?? "Authorization";
+        const headerName = auth.strategy.headerName ?? "Authorization";
         if (headerName.toLowerCase() === "authorization") {
           headers[headerName] = `Bearer ${accessToken}`;
         } else {
@@ -46,23 +50,23 @@ const buildAuthHeaders = (config: McpAuthConfig, accessToken?: string): Record<s
         }
       } else {
         // Org-level API key
-        if (!config.apiKey) {
+        if (!auth.apiKey) {
           throw new Error("MCP integration with api_key auth strategy requires apiKey");
         }
-        const headerName = config.authStrategy.headerName ?? "Authorization";
+        const headerName = auth.strategy.headerName ?? "Authorization";
         if (headerName.toLowerCase() === "authorization") {
-          headers[headerName] = `Bearer ${config.apiKey}`;
+          headers[headerName] = `Bearer ${auth.apiKey}`;
         } else {
-          headers[headerName] = config.apiKey;
+          headers[headerName] = auth.apiKey;
         }
       }
       break;
     }
 
-    case "bearer_passthrough": {
+    case "bearer_oauth": {
       if (!accessToken) {
         throw new Error(
-          "MCP integration with bearer_passthrough auth strategy requires accessToken"
+          "MCP integration with bearer_oauth auth strategy requires accessToken"
         );
       }
       headers["Authorization"] = `Bearer ${accessToken}`;
@@ -70,12 +74,12 @@ const buildAuthHeaders = (config: McpAuthConfig, accessToken?: string): Record<s
     }
 
     case "custom_headers": {
-      Object.assign(headers, config.authStrategy.headers);
+      Object.assign(headers, auth.strategy.headers);
       break;
     }
 
     default: {
-      const _exhaustive: never = config.authStrategy;
+      const _exhaustive: never = auth.strategy;
       throw new Error(`Unknown auth strategy: ${JSON.stringify(_exhaustive)}`);
     }
   }
@@ -87,7 +91,7 @@ const buildAuthHeaders = (config: McpAuthConfig, accessToken?: string): Record<s
  * Creates a transport for connecting to an MCP server.
  */
 const createTransport = (
-  config: McpAuthConfig,
+  config: McpIntegrationConfig,
   headers: Record<string, string>
 ): SSEClientTransport | StreamableHTTPClientTransport => {
   const url = new URL(config.serverUrl);
@@ -113,14 +117,14 @@ const createTransport = (
 /**
  * Lists available tools from an MCP server.
  *
- * @param config - MCP auth configuration from the integration
- * @param accessToken - User's access token (required for bearer_passthrough and viewerScoped api_key)
+ * @param config - MCP integration configuration
+ * @param accessToken - User's access token (required for bearer_oauth and viewerScoped api_key)
  * @param timeoutMs - Connection timeout in milliseconds (default: 30000)
  * @returns Array of tool definitions
  * @throws Error if connection fails or times out
  */
 export const listMcpTools = async (
-  config: McpAuthConfig,
+  config: McpIntegrationConfig,
   accessToken?: string,
   timeoutMs: number = DEFAULT_TIMEOUT_MS
 ): Promise<McpToolInfo[]> => {

@@ -15,13 +15,13 @@
 import type { LanguageModel } from "ai";
 import { generateText } from "ai";
 import { z } from "zod";
-import type { McpAuthStrategy, McpTransport } from "../integrations/providers.ts";
+import type { AuthStrategy, McpTransport } from "../integrations/providers.ts";
 import {
   createDynamicIntegration,
   getIntegration,
   getIntegrationByName,
   updateDynamicIntegration,
-  type McpAuthConfig,
+  type McpIntegrationConfig,
 } from "../models/integration.ts";
 import { listMcpTools } from "../utils/mcp-client.ts";
 import { createModel, getWebSearchTools } from "./utils/providers.ts";
@@ -131,11 +131,11 @@ const testMcpConnection = async (
   }
 
   try {
-    const config: McpAuthConfig = {
+    const config: McpIntegrationConfig = {
       type: "mcp",
       serverUrl,
       transport,
-      authStrategy: { type: "none" },
+      auth: { strategy: { type: "none" } },
     };
 
     const tools = await listMcpTools(config, undefined, 15000); // 15s timeout for testing
@@ -211,22 +211,22 @@ const buildTools = (params: McpIntegratorParams) => {
           };
         }
 
-        let authStrategy: McpAuthStrategy;
+        let strategy: AuthStrategy;
         if (authType === "none") {
-          authStrategy = { type: "none" };
+          strategy = { type: "none" };
         } else {
-          authStrategy = {
+          strategy = {
             type: "api_key",
             viewerScoped,
             headerName: authHeaderName,
           };
         }
 
-        const authConfig: McpAuthConfig = {
+        const authConfig: McpIntegrationConfig = {
           type: "mcp",
           serverUrl,
           transport,
-          authStrategy,
+          auth: { strategy },
         };
 
         try {
@@ -281,19 +281,22 @@ const buildTools = (params: McpIntegratorParams) => {
           return { success: false, error: "Not an MCP integration" };
         }
 
-        const newConfig: McpAuthConfig = {
-          ...existing.authConfig,
-          serverUrl: serverUrl ?? existing.authConfig.serverUrl,
-          transport: transport ?? existing.authConfig.transport,
+        const existingConfig = existing.authConfig as McpIntegrationConfig;
+        const newConfig: McpIntegrationConfig = {
+          ...existingConfig,
+          serverUrl: serverUrl ?? existingConfig.serverUrl,
+          transport: transport ?? existingConfig.transport,
         };
 
         if (authType !== undefined) {
           if (authType === "none") {
-            newConfig.authStrategy = { type: "none" };
+            newConfig.auth = { strategy: { type: "none" } };
           } else {
-            newConfig.authStrategy = {
-              type: "api_key",
-              viewerScoped: viewerScoped ?? true,
+            newConfig.auth = {
+              strategy: {
+                type: "api_key",
+                viewerScoped: viewerScoped ?? true,
+              },
             };
           }
         }

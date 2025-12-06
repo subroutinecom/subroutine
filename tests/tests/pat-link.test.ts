@@ -86,10 +86,12 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
       type: "mcp",
       serverUrl: "https://api.example.com/mcp",
       transport: "streamable-http",
-      authStrategy: {
-        type: "api_key",
-        viewerScoped: true,
-        headerName: "Authorization",
+      auth: {
+        strategy: {
+          type: "api_key",
+          viewerScoped: true,
+          headerName: "Authorization",
+        },
       },
       metadata: {
         authInstructions: "Please enter your API key from Settings > API Keys",
@@ -172,9 +174,11 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
       type: "mcp",
       serverUrl: "https://api.example.com/mcp",
       transport: "streamable-http",
-      authStrategy: {
-        type: "api_key",
-        viewerScoped: true,
+      auth: {
+        strategy: {
+          type: "api_key",
+          viewerScoped: true,
+        },
       },
     };
 
@@ -237,9 +241,11 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
       type: "mcp",
       serverUrl: "https://api.example.com/mcp",
       transport: "streamable-http",
-      authStrategy: {
-        type: "api_key",
-        viewerScoped: true,
+      auth: {
+        strategy: {
+          type: "api_key",
+          viewerScoped: true,
+        },
       },
     };
 
@@ -326,9 +332,11 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
       type: "mcp",
       serverUrl: "https://api.example.com/mcp",
       transport: "streamable-http",
-      authStrategy: {
-        type: "api_key",
-        viewerScoped: true,
+      auth: {
+        strategy: {
+          type: "api_key",
+          viewerScoped: true,
+        },
       },
     };
 

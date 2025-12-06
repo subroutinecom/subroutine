@@ -58,7 +58,11 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
   // Code validation endpoint - validates subroutine code without generating
   // Placed in non-authenticated endpoints for testing purposes
   app.post("/tests/validate-code", async (c) => {
-    let body: { code?: string; mcpIntegrationNames?: string[] };
+    let body: {
+      code?: string;
+      mcpIntegrationNames?: string[];
+      graphqlIntegrations?: Array<{ name: string; schema: string }>;
+    };
     try {
       body = await c.req.json();
     } catch {
@@ -85,10 +89,14 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
       );
     }
 
-    // Build context for validation if mcpIntegrationNames is provided
-    const context = body.mcpIntegrationNames
-      ? { mcpIntegrationNames: body.mcpIntegrationNames }
-      : undefined;
+    // Build context for validation
+    const context =
+      body.mcpIntegrationNames || body.graphqlIntegrations
+        ? {
+            mcpIntegrationNames: body.mcpIntegrationNames,
+            graphqlIntegrations: body.graphqlIntegrations,
+          }
+        : undefined;
 
     const result = await validateCode(body.code, context);
 

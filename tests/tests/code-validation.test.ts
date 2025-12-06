@@ -15,8 +15,14 @@ type ValidationResult = {
   errors: ValidationError[];
 };
 
+type GraphQLIntegrationSchema = {
+  name: string;
+  schema: string;
+};
+
 type ValidationContext = {
   mcpIntegrationNames?: string[];
+  graphqlIntegrations?: GraphQLIntegrationSchema[];
 };
 
 const validateCode = async (
@@ -28,7 +34,11 @@ const validateCode = async (
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ code, mcpIntegrationNames: context?.mcpIntegrationNames }),
+    body: JSON.stringify({
+      code,
+      mcpIntegrationNames: context?.mcpIntegrationNames,
+      graphqlIntegrations: context?.graphqlIntegrations,
+    }),
   });
 
   if (!response.ok) {
@@ -740,6 +750,234 @@ describe("AST-based Code Validation", () => {
       const result = await validateCode(code);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThanOrEqual(4);
+    });
+  });
+
+  describe("validate-graphql-queries", () => {
+    const testSchema = `
+      type Query {
+        user(id: ID!): User
+        users(limit: Int): [User!]!
+      }
+
+      type User {
+        id: ID!
+        name: String!
+        email: String!
+      }
+    `;
+
+    it("accepts valid GraphQL query", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getGraphQLClient("my-api");
+          const result = await client.request(\`query { users { id name } }\`);
+          return { data: result };
+        }
+      `;
+      const result = await validateCode(code, {
+        graphqlIntegrations: [{ name: "my-api", schema: testSchema }],
+      });
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toHaveLength(0);
+    });
+
+    it("rejects invalid field in GraphQL query", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getGraphQLClient("my-api");
+          const result = await client.request(\`query { users { id nonExistentField } }\`);
+          return { data: result };
+        }
+      `;
+      const result = await validateCode(code, {
+        graphqlIntegrations: [{ name: "my-api", schema: testSchema }],
+      });
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toBe(true);
+      expect(
+        result.errors.some((e: ValidationError) => e.message.includes("nonExistentField"))
+      ).toBe(true);
+    });
+
+    it("rejects invalid query type in GraphQL query", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getGraphQLClient("my-api");
+          const result = await client.request(\`query { nonExistentQuery { id } }\`);
+          return { data: result };
+        }
+      `;
+      const result = await validateCode(code, {
+        graphqlIntegrations: [{ name: "my-api", schema: testSchema }],
+      });
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toBe(true);
+    });
+
+    it("validates against correct schema when multiple integrations", async () => {
+      const otherSchema = `
+        type Query {
+          products: [Product!]!
+        }
+        type Product {
+          id: ID!
+          title: String!
+        }
+      `;
+      const code = `
+        type Inputs = {};
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const userClient = await integrations.getGraphQLClient("users-api");
+          const productClient = await integrations.getGraphQLClient("products-api");
+          const users = await userClient.request(\`query { users { id name } }\`);
+          const products = await productClient.request(\`query { products { id title } }\`);
+          return { data: { users, products } };
+        }
+      `;
+      const result = await validateCode(code, {
+        graphqlIntegrations: [
+          { name: "users-api", schema: testSchema },
+          { name: "products-api", schema: otherSchema },
+        ],
+      });
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toHaveLength(0);
+    });
+
+    it("catches query using wrong schema fields", async () => {
+      const otherSchema = `
+        type Query {
+          products: [Product!]!
+        }
+        type Product {
+          id: ID!
+          title: String!
+        }
+      `;
+      const code = `
+        type Inputs = {};
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getGraphQLClient("products-api");
+          // Using users field from wrong schema
+          const result = await client.request(\`query { users { id } }\`);
+          return { data: result };
+        }
+      `;
+      const result = await validateCode(code, {
+        graphqlIntegrations: [{ name: "products-api", schema: otherSchema }],
+      });
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toBe(true);
+    });
+
+    it("skips validation when no graphql context provided", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getGraphQLClient("any-api");
+          const result = await client.request(\`query { anything { goes } }\`);
+          return { data: result };
+        }
+      `;
+      // No graphqlIntegrations in context
+      const result = await validateCode(code);
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toHaveLength(0);
+    });
+
+    it("skips validation for dynamic queries (variables)", async () => {
+      const code = `
+        type Inputs = { query: string };
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getGraphQLClient("my-api");
+          const result = await client.request(inputs.query);
+          return { data: result };
+        }
+      `;
+      const result = await validateCode(code, {
+        graphqlIntegrations: [{ name: "my-api", schema: testSchema }],
+      });
+      // Dynamic queries can't be validated at compile time
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toHaveLength(0);
+    });
+
+    it("validates string literal queries", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getGraphQLClient("my-api");
+          const result = await client.request("query { users { id invalidField } }");
+          return { data: result };
+        }
+      `;
+      const result = await validateCode(code, {
+        graphqlIntegrations: [{ name: "my-api", schema: testSchema }],
+      });
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toBe(true);
+    });
+
+    it("validates query with arguments", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getGraphQLClient("my-api");
+          const result = await client.request(\`query { user(id: "123") { id name email } }\`);
+          return { data: result };
+        }
+      `;
+      const result = await validateCode(code, {
+        graphqlIntegrations: [{ name: "my-api", schema: testSchema }],
+      });
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toHaveLength(0);
+    });
+
+    it("catches missing required argument", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = { data: unknown };
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          const client = await integrations.getGraphQLClient("my-api");
+          // user requires id argument
+          const result = await client.request(\`query { user { id name } }\`);
+          return { data: result };
+        }
+      `;
+      const result = await validateCode(code, {
+        graphqlIntegrations: [{ name: "my-api", schema: testSchema }],
+      });
+      expect(result.valid).toBe(false);
+      expect(
+        result.errors.some((e: ValidationError) => e.rule === "validate-graphql-queries")
+      ).toBe(true);
     });
   });
 });

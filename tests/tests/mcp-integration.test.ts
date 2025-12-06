@@ -86,10 +86,10 @@ const executeTypescript = async (
   };
 };
 
-type McpAuthStrategy =
+type AuthStrategy =
   | { type: "none" }
   | { type: "api_key"; headerName?: string }
-  | { type: "bearer_passthrough" };
+  | { type: "bearer_oauth" };
 
 /**
  * Creates an MCP integration payload for testing.
@@ -97,7 +97,7 @@ type McpAuthStrategy =
 const createMcpIntegrationPayload = (options: {
   name: string;
   serverUrl: string;
-  authStrategy: McpAuthStrategy;
+  authStrategy: AuthStrategy;
   apiKey?: string;
   accessToken?: string;
 }) => {
@@ -110,8 +110,10 @@ const createMcpIntegrationPayload = (options: {
         type: "mcp",
         serverUrl: options.serverUrl,
         transport: "streamable-http",
-        authStrategy: options.authStrategy,
-        apiKey: options.apiKey,
+        auth: {
+          strategy: options.authStrategy,
+          apiKey: options.apiKey,
+        },
       },
       mcpConfig: {
         serverUrl: options.serverUrl,
@@ -325,7 +327,7 @@ describe("MCP Integration Tests", () => {
       const payload = createMcpIntegrationPayload({
         name: "test-mcp-oauth",
         serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
-        authStrategy: { type: "bearer_passthrough" },
+        authStrategy: { type: "bearer_oauth" },
         accessToken: VIEWER_ACCESS_TOKEN,
       });
 
@@ -351,7 +353,7 @@ describe("MCP Integration Tests", () => {
       const payload = createMcpIntegrationPayload({
         name: "test-mcp-oauth",
         serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
-        authStrategy: { type: "bearer_passthrough" },
+        authStrategy: { type: "bearer_oauth" },
         accessToken: VIEWER_ACCESS_TOKEN,
       });
 
@@ -379,7 +381,7 @@ describe("MCP Integration Tests", () => {
       const payload = createMcpIntegrationPayload({
         name: "test-mcp-oauth-notoken",
         serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
-        authStrategy: { type: "bearer_passthrough" },
+        authStrategy: { type: "bearer_oauth" },
         // No accessToken provided - simulating a viewer without connected account
       });
 
@@ -399,7 +401,7 @@ describe("MCP Integration Tests", () => {
 
       const data = result.result as { error: boolean; message?: string };
       expect(data.error).toBe(true);
-      // The error should mention bearer_passthrough requiring accessToken
+      // The error should mention bearer_oauth requiring accessToken
       expect(data.message).toContain("accessToken");
     });
 
@@ -411,14 +413,14 @@ describe("MCP Integration Tests", () => {
       const payload1 = createMcpIntegrationPayload({
         name: "test-mcp-viewer1",
         serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
-        authStrategy: { type: "bearer_passthrough" },
+        authStrategy: { type: "bearer_oauth" },
         accessToken: viewer1Token,
       });
 
       const payload2 = createMcpIntegrationPayload({
         name: "test-mcp-viewer2",
         serverUrl: `http://${MCP_SERVER_HOST_FOR_SANDBOX}:${TEST_MCP_PORT}/mcp`,
-        authStrategy: { type: "bearer_passthrough" },
+        authStrategy: { type: "bearer_oauth" },
         accessToken: viewer2Token,
       });
 
