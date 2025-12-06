@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 import { createModel, generateCode, type McpContext } from "../agent/index.ts";
-import type { McpIntegrationInfo } from "../agent/prompts/index.ts";
+import type { IntegrationInfo } from "../agent/prompts/index.ts";
 import { Capability } from "../agent/utils/types.ts";
 import { db } from "../db/index.ts";
 import { generateMockCode } from "../mocks.ts";
@@ -34,38 +34,40 @@ export type GenerateSubroutineRequest = {
 };
 
 /**
- * Builds MCP integration info for the code generation prompt.
- * This only retrieves basic identifying info (name, id) for MCP integrations.
+ * Builds integration info for the code generation prompt.
+ * This retrieves basic identifying info (name, id, type) for MCP and GraphQL integrations.
  *
- * Auth checking and tool discovery now happens lazily during code generation
- * via the listMcpTools agent tool in core.ts.
+ * Auth checking and capability discovery happens lazily during code generation
+ * via the inspectIntegration agent tool.
  */
-const buildMcpIntegrationInfo = async (
+const buildIntegrationInfo = async (
   organizationId: string,
   integrationIds: string[]
-): Promise<{ mcpIntegrations: McpIntegrationInfo[]; nameToId: Map<string, string> }> => {
+): Promise<{ integrations: IntegrationInfo[]; nameToId: Map<string, string> }> => {
   if (integrationIds.length === 0) {
-    return { mcpIntegrations: [], nameToId: new Map() };
+    return { integrations: [], nameToId: new Map() };
   }
 
-  const mcpIntegrations: McpIntegrationInfo[] = [];
+  const integrations: IntegrationInfo[] = [];
   const nameToId = new Map<string, string>();
 
   for (const integrationId of integrationIds) {
     const integration = await getIntegration(integrationId, organizationId);
     if (!integration) continue;
 
-    // Only include MCP integrations
-    if (integration.authConfig.type !== "mcp") continue;
+    // Only include MCP and GraphQL integrations
+    const configType = integration.authConfig.type;
+    if (configType !== "mcp" && configType !== "graphql") continue;
 
-    mcpIntegrations.push({
+    integrations.push({
       id: integrationId,
       name: integration.name,
+      type: configType,
     });
     nameToId.set(integration.name, integrationId);
   }
 
-  return { mcpIntegrations, nameToId };
+  return { integrations, nameToId };
 };
 
 export const generateSubroutine = async (
@@ -108,16 +110,16 @@ export const generateSubroutine = async (
       throw new Error("No model provider configured. Check config.yaml for AI model settings.");
     }
 
-    // Build MCP integration info for the prompt (just names and IDs)
-    // Auth checking and tool discovery now happens lazily via the listMcpTools agent tool
-    const { mcpIntegrations, nameToId } = await buildMcpIntegrationInfo(
+    // Build integration info for the prompt (just names, IDs, and types)
+    // Auth checking and capability discovery happens lazily via the inspectIntegration agent tool
+    const { integrations, nameToId } = await buildIntegrationInfo(
       params.organizationId,
       resolvedIntegrationIds
     );
 
-    // Build MCP context for the agent to use when calling listMcpTools
+    // Build context for the agent to use when calling inspectIntegration
     // ALWAYS provide mcpContext - in discovery mode (no integrations), the agent needs
-    // access to listAvailableIntegrations and manageMcpIntegration tools
+    // access to getOrganizationIntegrations and getGlobalIntegrations tools
     const mcpContext: McpContext = {
       organizationId: params.organizationId,
       viewerId: params.viewerId,
@@ -126,8 +128,8 @@ export const generateSubroutine = async (
 
     const result = await generateCode(model, params.request, {
       needsImmediateInputs: params.needsImmediateInputs ?? false,
-      integrations: params.integrations ?? [],
-      mcpIntegrations,
+      firstPartyIntegrations: params.integrations ?? [],
+      integrations,
       mcpContext,
     });
 

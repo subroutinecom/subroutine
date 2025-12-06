@@ -9,6 +9,7 @@ import { noFetchCalls } from "./no-fetch-calls";
 import { requireMcpClientAccess } from "./require-mcp-client-access";
 import { requireAwaitMcpClient } from "./require-await-mcp-client";
 import { validateMcpIntegrationName } from "./validate-mcp-integration-name";
+import { validateGraphqlQueries } from "./validate-graphql-queries";
 
 export const rules: ValidationRule[] = [
   requireExportMain,
@@ -21,6 +22,7 @@ export const rules: ValidationRule[] = [
   requireMcpClientAccess,
   requireAwaitMcpClient,
   validateMcpIntegrationName,
+  validateGraphqlQueries,
 ];
 
 export {
@@ -34,4 +36,5 @@ export {
   requireMcpClientAccess,
   requireAwaitMcpClient,
   validateMcpIntegrationName,
+  validateGraphqlQueries,
 };

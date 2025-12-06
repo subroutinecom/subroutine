@@ -10,6 +10,7 @@ import type {
 import type { OAuthConfig } from "../../packages/shared-types/integration";
 import { isValidProvider } from "../integrations/providers.ts";
 import { decrypt, encrypt } from "../utils/encryption.ts";
+import { introspectSchema } from "../integrations/introspection.ts";
 
 // Re-export for convenience
 export type { AuthStrategy, AuthBlock, OAuthConfig };
@@ -49,6 +50,10 @@ export interface GraphQLIntegrationConfig {
   type: "graphql";
   endpoint: string;
   auth: AuthBlock;
+  /** GraphQL schema in SDL format (fetched via introspection) */
+  schema?: string;
+  /** Timestamp when the schema was last fetched */
+  schemaFetchedAt?: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -690,6 +695,140 @@ export const updateIntegrationDescription = async (
     .execute();
 
   return getIntegration(id, organizationId);
+};
+
+// =============================================================================
+// Schema Introspection
+// =============================================================================
+
+/**
+ * Builds auth headers for a GraphQL integration based on its auth strategy.
+ * Used for introspection requests.
+ */
+const buildAuthHeadersForGraphQL = (config: GraphQLIntegrationConfig): Record<string, string> => {
+  const headers: Record<string, string> = {};
+  const { auth } = config;
+
+  switch (auth.strategy.type) {
+    case "none":
+      // No auth headers
+      break;
+    case "api_key":
+      if (auth.apiKey) {
+        const headerName = auth.strategy.headerName ?? "Authorization";
+        const value = headerName.toLowerCase() === "authorization"
+          ? `Bearer ${auth.apiKey}`
+          : auth.apiKey;
+        headers[headerName] = value;
+      }
+      break;
+    case "custom_headers":
+      Object.assign(headers, auth.strategy.headers);
+      break;
+    case "bearer_oauth":
+      // OAuth requires a token which we don't have during introspection
+      // Introspection will need to be done without auth or with a different mechanism
+      break;
+  }
+
+  return headers;
+};
+
+/**
+ * Result type for introspection operations.
+ */
+export type IntrospectIntegrationResult =
+  | { ok: true; schema: string; fetchedAt: number }
+  | { ok: false; error: string; code: string };
+
+/**
+ * Introspect the schema for a GraphQL integration and store it.
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @returns The introspection result
+ */
+export const introspectAndStoreSchema = async (
+  id: string,
+  organizationId: string
+): Promise<IntrospectIntegrationResult> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration) {
+    return { ok: false, error: "Integration not found", code: "NOT_FOUND" };
+  }
+
+  if (integration.authConfig.type !== "graphql") {
+    return { ok: false, error: "Integration is not a GraphQL integration", code: "INVALID_TYPE" };
+  }
+
+  const config = integration.authConfig;
+  const headers = buildAuthHeadersForGraphQL(config);
+
+  const result = await introspectSchema(config.endpoint, headers);
+
+  if (!result.ok) {
+    return { ok: false, error: result.error.message, code: result.error.code };
+  }
+
+  // Update the integration with the schema
+  const updatedConfig: GraphQLIntegrationConfig = {
+    ...config,
+    schema: result.result.schema,
+    schemaFetchedAt: result.result.fetchedAt,
+  };
+
+  const now = new Date().toISOString();
+  const encryptedAuthConfig = encrypt(JSON.stringify(updatedConfig));
+
+  await db
+    .updateTable("integration")
+    .set({
+      authConfig: encryptedAuthConfig,
+      updatedAt: now,
+    })
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .execute();
+
+  return {
+    ok: true,
+    schema: result.result.schema,
+    fetchedAt: result.result.fetchedAt,
+  };
+};
+
+/**
+ * Get the stored schema for a GraphQL integration.
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @returns The schema SDL and fetch timestamp, or null if not available
+ */
+export const getIntegrationSchema = async (
+  id: string,
+  organizationId: string
+): Promise<{ schema: string; fetchedAt: number } | null> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration) {
+    return null;
+  }
+
+  if (integration.authConfig.type !== "graphql") {
+    return null;
+  }
+
+  const config = integration.authConfig;
+
+  if (!config.schema) {
+    return null;
+  }
+
+  return {
+    schema: config.schema,
+    fetchedAt: config.schemaFetchedAt ?? 0,
+  };
 };
 
 // =============================================================================

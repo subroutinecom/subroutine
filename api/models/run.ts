@@ -131,6 +131,8 @@ const buildGraphQLConfig = (
   return {
     endpoint: config.endpoint,
     authHeaders,
+    schema: config.schema,
+    schemaFetchedAt: config.schemaFetchedAt,
   };
 };
 

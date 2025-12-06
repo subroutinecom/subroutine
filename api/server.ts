@@ -416,7 +416,8 @@ const initialize = async () => {
       let body: {
         request: string;
         needsImmediateInputs?: boolean;
-        integrations?: string[];
+        /** First-party integrations like gmail, google_calendar */
+        firstPartyIntegrations?: string[];
       };
 
       try {
@@ -439,7 +440,7 @@ const initialize = async () => {
 
       const result = await generateCode(model, body.request, {
         needsImmediateInputs: body.needsImmediateInputs,
-        integrations: body.integrations,
+        firstPartyIntegrations: body.firstPartyIntegrations,
       });
 
       return c.json(result);

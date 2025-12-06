@@ -74,4 +74,8 @@ export interface SandboxGraphQLConfig {
   endpoint: string;
   /** Pre-computed auth headers based on auth strategy */
   authHeaders: Record<string, string>;
+  /** GraphQL schema in SDL format (fetched via introspection) */
+  schema?: string;
+  /** Timestamp when the schema was last fetched */
+  schemaFetchedAt?: number;
 }

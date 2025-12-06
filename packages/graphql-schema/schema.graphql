@@ -82,6 +82,14 @@ type IntegrationProviderOAuthConfig {
   tokenUrl: String
 }
 
+type IntegrationSchemaResult {
+  code: String
+  error: String
+  fetchedAt: Int
+  schema: String
+  success: Boolean
+}
+
 type McpAuthStrategy {
   headerName: String
   headers: String
@@ -129,6 +137,10 @@ type Mutation {
   deleteApiKey(id: String!): Boolean
   deleteConnectedAccount(id: String!): Boolean
   deleteIntegration(id: String!): Boolean
+  """
+  Introspect a GraphQL endpoint and store the schema. Only works for GraphQL integrations with appropriate auth configured.
+  """
+  introspectIntegrationSchema(integrationId: String!): IntegrationSchemaResult
   """Set integration visibility (superadmin only for 'global')"""
   setIntegrationVisibility(
     id: String!
@@ -161,6 +173,8 @@ type Query {
   discoverMcpOAuth(serverUrl: String!): McpOAuthDiscoveryResult
   integration(id: String!): Integration
   integrationProviders: [IntegrationProviderDefinition!]
+  """Get the stored GraphQL schema for a GraphQL integration"""
+  integrationSchema(integrationId: String!): StoredSchema
   """
   Get integrations with optional visibility filter. Filter: 'private' (org-specific only), 'global' (registry only), 'all' or omit for both.
   """
@@ -168,6 +182,14 @@ type Query {
     """Filter by visibility: 'private', 'global', or 'all' (default)"""
     visibility: String
   ): [Integration!]
+  """
+  Introspect a GraphQL endpoint to verify connectivity and fetch schema. Used during integration creation to validate the endpoint.
+  """
+  introspectGraphQLEndpoint(
+    endpoint: String!
+    """JSON string of headers to include in the request"""
+    headers: String
+  ): IntegrationSchemaResult
   """Check if the current organization has superadmin privileges"""
   isSuperadmin: Boolean
   ping: String
@@ -179,4 +201,9 @@ type SlugValidationResult {
   available: Boolean
   error: String
   valid: Boolean
+}
+
+type StoredSchema {
+  fetchedAt: Int
+  schema: String
 }

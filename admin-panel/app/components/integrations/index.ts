@@ -1,5 +1,10 @@
 // Types
-export type { IntegrationFormData, AuthStrategyType, McpDiscoveryResult, McpDiscoveryAuthMethod } from "./types";
+export type {
+  IntegrationFormData,
+  AuthStrategyType,
+  McpDiscoveryResult,
+  McpDiscoveryAuthMethod,
+} from "./types";
 
 // Components
 export { ProviderSelector } from "./ProviderSelector";

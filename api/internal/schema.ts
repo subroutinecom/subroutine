@@ -19,6 +19,8 @@ import {
   getAvailableIntegrations,
   setIntegrationVisibility,
   updateIntegrationDescription,
+  introspectAndStoreSchema,
+  getIntegrationSchema,
 } from "../models/integration.ts";
 import { isSuperadminOrg } from "../utils/superadmin.ts";
 import {
@@ -264,6 +266,50 @@ McpOAuthDiscoveryResultType.implement({
   }),
 });
 
+// GraphQL Schema Introspection Result Type
+type IntrospectionResultModel =
+  | { success: true; schema: string; fetchedAt: number }
+  | { success: false; error: string; code: string };
+
+const IntegrationSchemaResultType =
+  builder.objectRef<IntrospectionResultModel>("IntegrationSchemaResult");
+
+IntegrationSchemaResultType.implement({
+  fields: (t) => ({
+    success: t.boolean({
+      resolve: (parent) => parent.success,
+    }),
+    schema: t.string({
+      nullable: true,
+      resolve: (parent) => (parent.success ? parent.schema : null),
+    }),
+    fetchedAt: t.int({
+      nullable: true,
+      resolve: (parent) => (parent.success ? parent.fetchedAt : null),
+    }),
+    error: t.string({
+      nullable: true,
+      resolve: (parent) => (!parent.success ? parent.error : null),
+    }),
+    code: t.string({
+      nullable: true,
+      resolve: (parent) => (!parent.success ? parent.code : null),
+    }),
+  }),
+});
+
+// Stored Schema Type
+const StoredSchemaType = builder.objectRef<{ schema: string; fetchedAt: number }>("StoredSchema");
+
+StoredSchemaType.implement({
+  fields: (t) => ({
+    schema: t.exposeString("schema"),
+    fetchedAt: t.int({
+      resolve: (parent) => parent.fetchedAt,
+    }),
+  }),
+});
+
 builder.queryType({
   fields: (t) => ({
     ping: t.string({
@@ -367,6 +413,50 @@ builder.queryType({
       },
       resolve: async (_parent, args) => {
         return validateSlug(args.slug);
+      },
+    }),
+    introspectGraphQLEndpoint: t.field({
+      type: IntegrationSchemaResultType,
+      description:
+        "Introspect a GraphQL endpoint to verify connectivity and fetch schema. " +
+        "Used during integration creation to validate the endpoint.",
+      args: {
+        endpoint: t.arg.string({ required: true }),
+        headers: t.arg.string({
+          required: false,
+          description: "JSON string of headers to include in the request",
+        }),
+      },
+      resolve: async (_parent, args) => {
+        const { introspectSchema } = await import("../integrations/introspection.ts");
+        const headers = args.headers ? JSON.parse(args.headers) : {};
+
+        const result = await introspectSchema(args.endpoint, headers);
+
+        if (result.ok) {
+          return {
+            success: true as const,
+            schema: result.result.schema,
+            fetchedAt: result.result.fetchedAt,
+          };
+        } else {
+          return {
+            success: false as const,
+            error: result.error.message,
+            code: result.error.code,
+          };
+        }
+      },
+    }),
+    integrationSchema: t.field({
+      type: StoredSchemaType,
+      nullable: true,
+      description: "Get the stored GraphQL schema for a GraphQL integration",
+      args: {
+        integrationId: t.arg.string({ required: true }),
+      },
+      resolve: async (_parent, args, ctx) => {
+        return getIntegrationSchema(args.integrationId, ctx.session.activeOrganizationId);
       },
     }),
   }),
@@ -596,6 +686,35 @@ builder.mutationType({
       },
       resolve: async (_parent, args, ctx) => {
         return deleteConnectedAccount(args.id, ctx.session.activeOrganizationId);
+      },
+    }),
+    introspectIntegrationSchema: t.field({
+      type: IntegrationSchemaResultType,
+      description:
+        "Introspect a GraphQL endpoint and store the schema. " +
+        "Only works for GraphQL integrations with appropriate auth configured.",
+      args: {
+        integrationId: t.arg.string({ required: true }),
+      },
+      resolve: async (_parent, args, ctx) => {
+        const result = await introspectAndStoreSchema(
+          args.integrationId,
+          ctx.session.activeOrganizationId
+        );
+
+        if (result.ok) {
+          return {
+            success: true as const,
+            schema: result.schema,
+            fetchedAt: result.fetchedAt,
+          };
+        } else {
+          return {
+            success: false as const,
+            error: result.error,
+            code: result.code,
+          };
+        }
       },
     }),
   }),

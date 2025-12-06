@@ -1,28 +1,87 @@
 import { z } from "zod";
-import { getAvailableIntegrations } from "../../models/integration.ts";
+import {
+  getAvailableIntegrations,
+  getIntegrationOrGlobal,
+  type GraphQLIntegrationConfig,
+} from "../../models/integration.ts";
 import { getLogger } from "../../utils/logger.ts";
-import type { McpIntegrationInfo } from "../prompts/index.ts";
+import type { IntegrationInfo } from "../prompts/index.ts";
 import type { McpContext, SubroutineCapture } from "../utils/types.ts";
 import { validateCode } from "../validation/validator.ts";
+import type { GraphQLIntegrationSchema, ValidationContext } from "../validation/types.ts";
 const logger = getLogger("api/agent/tools/write-code.ts", "debug");
 
 type GenerateSubroutineOptions = {
   needsImmediateInputs?: boolean;
   mcpContext?: McpContext;
-  // specific integrations to use - this is for provided mode, not discovery mode
-  mcpIntegrations?: McpIntegrationInfo[];
+  /** Specific integrations to use (MCP or GraphQL) - for provided mode, not discovery mode */
+  integrations?: IntegrationInfo[];
 };
 
-const buildValidationContext = async (options?: GenerateSubroutineOptions) => {
-  if (options?.mcpIntegrations?.length) {
-    return { mcpIntegrationNames: options.mcpIntegrations.map((i) => i.name) };
+const buildValidationContext = async (
+  options?: GenerateSubroutineOptions
+): Promise<ValidationContext | undefined> => {
+  if (options?.integrations?.length && options.mcpContext) {
+    // Provided mode: fetch schemas for GraphQL integrations
+    const mcpNames = options.integrations.filter((i) => i.type === "mcp").map((i) => i.name);
+
+    // For GraphQL integrations, fetch the full integration to get the schema
+    const graphqlIntegrations: GraphQLIntegrationSchema[] = [];
+    for (const integration of options.integrations.filter((i) => i.type === "graphql")) {
+      const fullIntegration = await getIntegrationOrGlobal(
+        integration.id,
+        options.mcpContext.organizationId
+      );
+      if (fullIntegration?.authConfig.type === "graphql") {
+        const config = fullIntegration.authConfig as GraphQLIntegrationConfig;
+        if (config.schema) {
+          graphqlIntegrations.push({
+            name: integration.name,
+            schema: config.schema,
+          });
+          logger.debug(`Found schema for GraphQL integration "${integration.name}"`);
+        } else {
+          logger.debug(`No schema cached for GraphQL integration "${integration.name}"`);
+        }
+      }
+    }
+
+    return {
+      mcpIntegrationNames: mcpNames.length > 0 ? mcpNames : undefined,
+      graphqlIntegrations: graphqlIntegrations.length > 0 ? graphqlIntegrations : undefined,
+    };
   }
 
   if (options?.mcpContext) {
+    // Discovery mode: fetch all available integrations
     const integrations = await getAvailableIntegrations(options.mcpContext.organizationId, "all");
-    const mcpIntegrations = integrations.filter((i) => i.enabled && i.authConfig.type === "mcp");
-    if (mcpIntegrations.length > 0) {
-      return { mcpIntegrationNames: mcpIntegrations.map((i) => i.name) };
+    const enabledIntegrations = integrations.filter(
+      (i) => i.enabled && (i.authConfig.type === "mcp" || i.authConfig.type === "graphql")
+    );
+
+    if (enabledIntegrations.length > 0) {
+      const mcpNames = enabledIntegrations
+        .filter((i) => i.authConfig.type === "mcp")
+        .map((i) => i.name);
+
+      // Extract GraphQL integrations with their schemas
+      const graphqlIntegrations: GraphQLIntegrationSchema[] = [];
+      for (const integration of enabledIntegrations.filter(
+        (i) => i.authConfig.type === "graphql"
+      )) {
+        const config = integration.authConfig as GraphQLIntegrationConfig;
+        if (config.schema) {
+          graphqlIntegrations.push({
+            name: integration.name,
+            schema: config.schema,
+          });
+        }
+      }
+
+      return {
+        mcpIntegrationNames: mcpNames.length > 0 ? mcpNames : undefined,
+        graphqlIntegrations: graphqlIntegrations.length > 0 ? graphqlIntegrations : undefined,
+      };
     }
   }
 

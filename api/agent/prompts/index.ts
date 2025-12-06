@@ -8,9 +8,10 @@ type IntegrationDocs = {
   docsUrl?: string;
 };
 
-export type McpIntegrationInfo = {
+export type IntegrationInfo = {
   id: string;
   name: string;
+  type: "mcp" | "graphql";
 };
 
 let integrationTypesCache: string | null = null;
@@ -28,7 +29,7 @@ const getIntegrationTypesContent = (): string => {
   }
 };
 
-const getIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
+const getStandardIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
   switch (integrationId) {
     case "gmail":
       return {
@@ -64,18 +65,18 @@ const newEvent = await calendar.events.insert({
  * Generates documentation for when integrations ARE provided.
  * Agent must use the provided integrations.
  */
-const getProvidedIntegrationsDocs = (integrationNames: string[]): string => {
-  const namesList = integrationNames.map((n) => `"${n}"`).join(", ");
+const getProvidedIntegrationsDocs = (integrations: IntegrationInfo[]): string => {
+  const namesList = integrations.map((i) => `"${i.name}" (${i.type})`).join(", ");
 
   return `
 AVAILABLE INTEGRATIONS: ${namesList}
 
 You MUST use these integrations to fulfill the user's request.
-1. Call listMcpTools({ integrationName: "name" }) to discover what tools each integration provides
-2. Write code that uses integrations.getMcpClient("name") to access the integration
-3. Use client.callTool() to call the discovered tools
+1. Call inspectIntegration({ integrationName: "name" }) to discover what each integration provides
+2. For MCP integrations: The response includes available tools - use getMcpClient() and callTool()
+3. For GraphQL integrations: The response includes the schema - use graphql() from the SDK
 
-DO NOT generate code that assumes tools exist - always call listMcpTools first to see what's available.
+DO NOT generate code that assumes capabilities exist - always call inspectIntegration first.
 `;
 };
 
@@ -89,36 +90,42 @@ INTEGRATION DISCOVERY MODE:
 No integrations were provided. You must discover what's available.
 
 REQUIRED STEPS when the user's request needs an external service (GitHub, Slack, database, etc.):
-1. FIRST call listAvailableIntegrations() to see what's configured
-2. If the service you need IS listed -> call listMcpTools to see its tools, then write code
-3. If the service you need is NOT listed -> call manageMcpIntegration({ need: "service-name" }) to set it up
+1. FIRST call getOrganizationIntegrations() to see organization-specific integrations
+2. If not found, call getGlobalIntegrations() to check the first-party registry
+3. Call inspectIntegration({ integrationName: "name" }) to see what the integration provides
+   - For MCP: Returns available tools
+   - For GraphQL: Returns the schema
+4. If no integration exists, call manageMcpIntegration({ need: "service-name" }) as a last resort
 
-DO NOT skip step 1. DO NOT assume any integrations exist.
-DO NOT generate code with getMcpClient() until you've confirmed the integration exists.
+DO NOT skip discovery. DO NOT assume any integrations exist.
+DO NOT generate code until you've confirmed the integration exists via inspectIntegration.
 
 Example flow for "get my GitHub PRs":
-1. Call listAvailableIntegrations() -> returns { integrations: [] } (empty)
-2. Call manageMcpIntegration({ need: "github" }) → sets up GitHub integration
-3. If authRequired: "api_key" -> tell user they need to provide credentials
-4. If authRequired: "none" -> call listMcpTools({ integrationName: "github" }) to see tools
-5. NOW write code using the discovered tools
+1. Call getOrganizationIntegrations() -> check for GitHub integration
+2. If not found, call getGlobalIntegrations() -> find GitHub in registry
+3. Call inspectIntegration({ integrationName: "github" }) -> discover tools or schema
+4. NOW write code using the discovered capabilities
 `;
 };
 
 /**
- * Generates documentation for MCP integrations.
- * MCP integrations use the standard MCP client interface with listTools() and callTool().
+ * Generates documentation for integrations (MCP and GraphQL).
  *
- * IMPORTANT: This now only lists integration names. The agent must use the listMcpTools
- * tool to discover what tools each integration offers.
+ * IMPORTANT: The agent must use inspectIntegration to discover what each integration offers.
  */
-const getMcpIntegrationDocs = (mcpIntegrations: McpIntegrationInfo[]): string => {
-  if (mcpIntegrations.length === 0) return "";
+const getIntegrationDocs = (integrations: IntegrationInfo[]): string => {
+  if (integrations.length === 0) return "";
 
-  const validNames = mcpIntegrations.map((mcp) => `"${mcp.name}"`).join(", ");
-  const exampleName = mcpIntegrations[0]?.name || "my-mcp-server";
+  const mcpIntegrations = integrations.filter((i) => i.type === "mcp");
+  const graphqlIntegrations = integrations.filter((i) => i.type === "graphql");
 
-  return `
+  let docs = "";
+
+  if (mcpIntegrations.length > 0) {
+    const validNames = mcpIntegrations.map((i) => `"${i.name}"`).join(", ");
+    const exampleName = mcpIntegrations[0]?.name || "my-mcp-server";
+
+    docs += `
 MCP INTEGRATIONS:
 Available integration names: ${validNames}
 
@@ -132,37 +139,61 @@ CRITICAL - getMcpClient REQUIREMENTS:
   const client = await integrations.getMcpClient("some-other-name"); // Wrong - not in available list!
 
 USAGE:
-1. Call listMcpTools({ integrationName: "${exampleName}" }) to discover tools
+1. Call inspectIntegration({ integrationName: "${exampleName}" }) to discover tools
 2. const client = await integrations.getMcpClient("${exampleName}");  // Use exact name from Available list
 3. const result = await client.callTool({ name: "tool_name", arguments: {...} });
 4. const data = JSON.parse(result.content[0]?.text || "{}");
 `;
+  }
+
+  if (graphqlIntegrations.length > 0) {
+    const validNames = graphqlIntegrations.map((i) => `"${i.name}"`).join(", ");
+    const exampleName = graphqlIntegrations[0]?.name || "my-graphql-api";
+
+    docs += `
+GRAPHQL INTEGRATIONS:
+Available integration names: ${validNames}
+
+USAGE:
+1. Call inspectIntegration({ integrationName: "${exampleName}" }) to get the GraphQL schema
+2. Use the subroutine SDK's graphql client:
+
+import { graphql } from "subroutine:integration/${exampleName}";
+const result = await graphql(\`query { ... }\`, { variables: { ... } });
+
+IMPORTANT: Your GraphQL queries MUST be valid against the schema returned by inspectIntegration.
+`;
+  }
+
+  return docs;
 };
 
 export type SystemPromptOptions = {
+  /** First-party integrations with dedicated libraries (Gmail, Calendar, etc.) */
   integrations?: string[];
-  mcpIntegrations?: McpIntegrationInfo[];
+  /** Configurable integrations (MCP servers or GraphQL endpoints) */
+  providedIntegrations?: IntegrationInfo[];
 };
 
 export const SYSTEM_PROMPT = (options: SystemPromptOptions | string[] = {}): string => {
   // Support legacy array-only signature
-  const { integrations = [], mcpIntegrations = [] } = Array.isArray(options)
-    ? { integrations: options, mcpIntegrations: [] }
+  const { integrations = [], providedIntegrations = [] } = Array.isArray(options)
+    ? { integrations: options, providedIntegrations: [] }
     : options;
 
-  const integrationDocs = integrations
-    .map((id) => getIntegrationDocs(id))
+  const standardDocs = integrations
+    .map((id) => getStandardIntegrationDocs(id))
     .filter((doc): doc is IntegrationDocs => doc !== null);
 
-  const hasStandardIntegrations = integrationDocs.length > 0;
-  const hasMcpIntegrations = mcpIntegrations.length > 0;
-  const hasAnyIntegrations = hasStandardIntegrations || hasMcpIntegrations;
+  const hasStandardIntegrations = standardDocs.length > 0;
+  const hasProvidedIntegrations = providedIntegrations.length > 0;
+  const hasAnyIntegrations = hasStandardIntegrations || hasProvidedIntegrations;
 
   const typeDefinitions = getIntegrationTypesContent();
   let integrationsSection = "";
 
   if (hasStandardIntegrations) {
-    const integrationsList = integrationDocs
+    const integrationsList = standardDocs
       .map((doc, idx) => {
         let entry = `${idx + 1}. ${doc.id} (use integrations.${doc.functionName}())\n${doc.usageExample}`;
         if (doc.docsUrl) {
@@ -173,21 +204,21 @@ export const SYSTEM_PROMPT = (options: SystemPromptOptions | string[] = {}): str
       .join("\n\n");
 
     integrationsSection = `
-BUILT-IN INTEGRATIONS (NOT MCP):
+BUILT-IN INTEGRATIONS (NOT MCP/GraphQL):
 These are direct API integrations with known interfaces. Use the specific getter functions.
-Do NOT use getMcpClient() or listMcpTools for these - they have dedicated methods.
+Do NOT use getMcpClient() or inspectIntegration for these - they have dedicated methods.
 
 Available integrations:
 ${integrationsList}
 `;
   }
 
-  if (hasMcpIntegrations) {
+  if (hasProvidedIntegrations) {
     // Provided mode: integrations were explicitly passed
-    integrationsSection += getMcpIntegrationDocs(mcpIntegrations);
-    integrationsSection += getProvidedIntegrationsDocs(mcpIntegrations.map((mcp) => mcp.name));
+    integrationsSection += getIntegrationDocs(providedIntegrations);
+    integrationsSection += getProvidedIntegrationsDocs(providedIntegrations);
   } else {
-    // Discovery mode: no MCP integrations provided, agent must discover
+    // Discovery mode: no integrations provided, agent must discover
     integrationsSection += getDiscoveryModeDocs();
   }
 
@@ -200,12 +231,12 @@ SANDBOX RESTRICTIONS:
 - ALL external API calls MUST go through the "integrations" object
 - The integrations provide REAL access to external services - use them!
 - DO NOT mock or simulate external data - the integrations return real data`;
-  } else if (hasMcpIntegrations === false) {
+  } else if (!hasProvidedIntegrations) {
     // Discovery mode - integrations can be set up
     sandboxRestrictions = `
 SANDBOX RESTRICTIONS:
 - You CANNOT use fetch(), XMLHttpRequest, or direct HTTP calls - they will fail
-- ALL external API calls MUST go through MCP integrations
+- ALL external API calls MUST go through integrations (MCP or GraphQL)
 - Use the discovery tools to find or set up integrations before generating code
 - DO NOT mock or simulate external data - use real integrations`;
   } else {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLoaderData } from "react-router";
 import {
+  Database,
   Github,
   Globe,
   Mail,
@@ -17,7 +18,7 @@ import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { createGraphqlClient } from "~/lib/graphql-client";
-import type { IntegrationConfig, McpIntegrationConfig, OAuth2IntegrationConfig } from "~/types/integration";
+import type { IntegrationConfig, McpIntegrationConfig, OAuth2IntegrationConfig, GraphQLIntegrationConfig } from "~/types/integration";
 import { useAdminConfig } from "~/hooks/use-admin-config";
 import { useMemo } from "react";
 import { fetchAdminConfig } from "~/lib/admin-config";
@@ -126,6 +127,8 @@ const getProviderIcon = (provider: string) => {
       return <Mail size={20} />;
     case "mcp":
       return <Server size={20} />;
+    case "graphql":
+      return <Database size={20} />;
     default:
       return null;
   }
@@ -247,6 +250,17 @@ export default function IntegrationsPage() {
                 </span>
               </div>
             </div>
+          ) : integration.authConfig.type === "graphql" ? (
+            <div className="space-y-1">
+              <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70 block max-w-xs truncate">
+                {(integration.authConfig as GraphQLIntegrationConfig).endpoint}
+              </code>
+              <div className="flex gap-1.5 flex-wrap">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300 capitalize">
+                  {(integration.authConfig as GraphQLIntegrationConfig).auth.strategy.type.replace("_", " ")}
+                </span>
+              </div>
+            </div>
           ) : (
             <div className="space-y-1">
               <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70 block max-w-xs truncate">
@@ -254,7 +268,7 @@ export default function IntegrationsPage() {
               </code>
               <div className="flex gap-1.5 flex-wrap max-w-xs">
                 {(integration.authConfig as OAuth2IntegrationConfig).scopes
-                  .slice(0, 3)
+                  ?.slice(0, 3)
                   .map((scope: string) => (
                     <span
                       key={scope}
@@ -263,7 +277,7 @@ export default function IntegrationsPage() {
                       {scope}
                     </span>
                   ))}
-                {(integration.authConfig as OAuth2IntegrationConfig).scopes.length > 3 && (
+                {(integration.authConfig as OAuth2IntegrationConfig).scopes?.length > 3 && (
                   <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/60 border border-base-300">
                     +{(integration.authConfig as OAuth2IntegrationConfig).scopes.length - 3} more
                   </span>

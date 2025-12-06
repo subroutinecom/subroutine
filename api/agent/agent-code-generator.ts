@@ -5,7 +5,7 @@ import { getLogger } from "../utils/logger.ts";
 import {
   CODE_GENERATION_USER_PROMPT,
   SYSTEM_PROMPT,
-  type McpIntegrationInfo,
+  type IntegrationInfo,
 } from "./prompts/index.ts";
 import {
   checkAuthRequirements,
@@ -20,9 +20,11 @@ const MAX_ITERATIONS = 5;
 
 type GenerateCodeOptions = {
   needsImmediateInputs?: boolean;
-  integrations?: string[];
-  mcpIntegrations?: McpIntegrationInfo[];
-  /** Context for MCP tool discovery - required if mcpIntegrations is non-empty */
+  /** First-party integrations with dedicated libraries (Gmail, Calendar, etc.) */
+  firstPartyIntegrations?: string[];
+  /** Configurable integrations (MCP servers or GraphQL endpoints) */
+  integrations?: IntegrationInfo[];
+  /** Context for integration discovery - required if integrations is non-empty */
   mcpContext?: McpContext;
 };
 
@@ -36,7 +38,7 @@ export const generateCode = async (
   );
   logger.debug(`Request: "${request}"`);
   logger.debug(
-    `Options: mcpIntegrations=${options?.mcpIntegrations?.length ?? 0}, hasContext=${!!options?.mcpContext}`
+    `Options: integrations=${options?.integrations?.length ?? 0}, hasContext=${!!options?.mcpContext}`
   );
 
   try {
@@ -51,7 +53,7 @@ export const generateCode = async (
     // 1. Setup Tools
     const tools = createAgentTools(onCapture, capturedAuthRequirements, usedIntegrationIds, {
       mcpContext: options?.mcpContext,
-      mcpIntegrations: options?.mcpIntegrations,
+      integrations: options?.integrations,
       needsImmediateInputs: options?.needsImmediateInputs,
     });
 
@@ -62,8 +64,8 @@ export const generateCode = async (
     const result = streamText({
       model,
       system: SYSTEM_PROMPT({
-        integrations: options?.integrations ?? [],
-        mcpIntegrations: options?.mcpIntegrations ?? [],
+        integrations: options?.firstPartyIntegrations ?? [],
+        providedIntegrations: options?.integrations ?? [],
       }),
       prompt: CODE_GENERATION_USER_PROMPT(request, {
         needsImmediateInputs: options?.needsImmediateInputs ?? false,
