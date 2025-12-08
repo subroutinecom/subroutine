@@ -89,6 +89,7 @@
     "npm:react-router@^7.9.2": "7.9.6_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:react@^18.3.1": "18.3.1",
     "npm:react@^19.1.1": "19.2.0",
+    "npm:redis@^5.10.0": "5.10.0_@redis+client@5.10.0",
     "npm:remix-flat-routes@~0.8.5": "0.8.5",
     "npm:tailwindcss@^4.1.13": "4.1.17",
     "npm:theme-change@^2.5.0": "2.5.0",
@@ -1911,6 +1912,36 @@
       ],
       "bin": true
     },
+    "@redis/bloom@5.10.0_@redis+client@5.10.0": {
+      "integrity": "sha512-doIF37ob+l47n0rkpRNgU8n4iacBlKM9xLiP1LtTZTvz8TloJB8qx/MgvhMhKdYG+CvCY2aPBnN2706izFn/4A==",
+      "dependencies": [
+        "@redis/client"
+      ]
+    },
+    "@redis/client@5.10.0": {
+      "integrity": "sha512-JXmM4XCoso6C75Mr3lhKA3eNxSzkYi3nCzxDIKY+YOszYsJjuKbFgVtguVPbLMOttN4iu2fXoc2BGhdnYhIOxA==",
+      "dependencies": [
+        "cluster-key-slot"
+      ]
+    },
+    "@redis/json@5.10.0_@redis+client@5.10.0": {
+      "integrity": "sha512-B2G8XlOmTPUuZtD44EMGbtoepQG34RCDXLZbjrtON1Djet0t5Ri7/YPXvL9aomXqP8lLTreaprtyLKF4tmXEEA==",
+      "dependencies": [
+        "@redis/client"
+      ]
+    },
+    "@redis/search@5.10.0_@redis+client@5.10.0": {
+      "integrity": "sha512-3SVcPswoSfp2HnmWbAGUzlbUPn7fOohVu2weUQ0S+EMiQi8jwjL+aN2p6V3TI65eNfVsJ8vyPvqWklm6H6esmg==",
+      "dependencies": [
+        "@redis/client"
+      ]
+    },
+    "@redis/time-series@5.10.0_@redis+client@5.10.0": {
+      "integrity": "sha512-cPkpddXH5kc/SdRhF0YG0qtjL+noqFT0AcHbQ6axhsPsO7iqPi1cjxgdkE9TNeKiBUUdCaU1DbqkR/LzbzPBhg==",
+      "dependencies": [
+        "@redis/client"
+      ]
+    },
     "@remix-run/node-fetch-server@0.9.0": {
       "integrity": "sha512-SoLMv7dbH+njWzXnOY6fI08dFMI5+/dQ+vY3n8RnnbdG7MdJEgiP28Xj/xWlnRnED/aB6SFw56Zop+LbmaaKqA=="
     },
@@ -2784,6 +2815,9 @@
         "strip-ansi@6.0.1",
         "wrap-ansi@7.0.0"
       ]
+    },
+    "cluster-key-slot@1.1.2": {
+      "integrity": "sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA=="
     },
     "code-block-writer@13.0.3": {
       "integrity": "sha512-Oofo0pq3IKnsFtuHqSF7TqBfr71aeyZDVJ0HpmqB7FBM2qEigL0iPONSCZSO9pE9dZTAxANe5XHG9Uy0YMv8cg=="
@@ -4903,6 +4937,16 @@
         "resolve"
       ]
     },
+    "redis@5.10.0_@redis+client@5.10.0": {
+      "integrity": "sha512-0/Y+7IEiTgVGPrLFKy8oAEArSyEJkU0zvgV5xyi9NzNQ+SLZmyFbUsWIbgPcd4UdUh00opXGKlXJwMmsis5Byw==",
+      "dependencies": [
+        "@redis/bloom",
+        "@redis/client",
+        "@redis/json",
+        "@redis/search",
+        "@redis/time-series"
+      ]
+    },
     "reflect-metadata@0.2.2": {
       "integrity": "sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q=="
     },
@@ -5826,6 +5870,7 @@
       "npm:lru-cache@^11.2.4",
       "npm:openapi-types@^12.1.3",
       "npm:prettier@^3.6.2",
+      "npm:redis@^5.10.0",
       "npm:theme-change@^2.5.0",
       "npm:ts-morph@26",
       "npm:typescript-eslint@^8.46.3",
@@ -5909,6 +5954,7 @@
           "npm:react-dom@^18.3.1",
           "npm:react-router-dom@^6.28.0",
           "npm:react@^18.3.1",
+          "npm:redis@^5.10.0",
           "npm:ts-morph@26",
           "npm:typescript-eslint@^8.46.3",
           "npm:winston@^3.13.0",
@@ -5932,6 +5978,7 @@
           "npm:graphql@^16.12.0",
           "npm:hono@^4.10.4",
           "npm:lru-cache@^10.2.0",
+          "npm:redis@^5.10.0",
           "npm:ts-morph@^27.0.2",
           "npm:zod@^3.24.1"
         ]

@@ -16,6 +16,7 @@ module.exports = {
 
       env: {
         NODE_ENV: IS_BUILD ? "production" : "development",
+        REDIS_HOST: process.env.REDIS_HOST || "redis.subroutine.internal",
       },
     },
     ...(IS_BUILD
