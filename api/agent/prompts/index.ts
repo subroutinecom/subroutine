@@ -33,6 +33,23 @@ const getIntegrationTypesContent = (): string => {
   }
 };
 
+const validationRules = (() => {
+  try {
+    const currentDir = dirname(fileURLToPath(import.meta.url));
+    const rulesDir = resolve(currentDir, "../validation/rules");
+    const rules: string[] = [];
+
+    for (const entry of Deno.readDirSync(rulesDir)) {
+      if (entry.isFile && entry.name.endsWith(".ts") && entry.name !== "index.ts") {
+        rules.push(entry.name.replace(".ts", ""));
+      }
+    }
+    return rules.sort();
+  } catch {
+    return [];
+  }
+})();
+
 const getStandardIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
   switch (integrationId) {
     case "gmail":
@@ -260,19 +277,14 @@ ${standardDocs
     ? `${getIntegrationDocs(providedIntegrations)}${getProvidedIntegrationsDocs(providedIntegrations)}`
     : getDiscoveryModeDocs();
 
-  const sandboxRestrictions = hasAnyIntegrations
-    ? `
-SANDBOX RESTRICTIONS:
-- You CANNOT use fetch(), XMLHttpRequest, or direct HTTP calls - they will fail
-- ALL external API calls MUST go through the "integrations" object
-- The integrations provide REAL access to external services - use them!
-- DO NOT mock or simulate external data - the integrations return real data`
-    : `
-SANDBOX RESTRICTIONS:
-- You CANNOT use fetch(), XMLHttpRequest, or direct HTTP calls - they will fail
-- ALL external API calls MUST go through integrations (MCP or GraphQL)
-- Use the discovery tools to find or set up integrations before generating code
-- DO NOT mock or simulate external data - use real integrations`;
+  const rules = validationRules;
+  const sandboxRestrictions = `
+SYSTEM CONSTRAINTS:
+The following is a list of eslint rules which will run against your code. These will cause an error if violated.
+${rules.map((r: string) => `- ${r}`).join("\n")}
+
+${hasAnyIntegrations ? "NOTE: Integrations provide REAL data. Do not mock." : "NOTE: Use discovery tools to find real integrations."}
+`;
 
   return `You are an expert TypeScript code generator that creates FULLY WORKING subroutines.
 
