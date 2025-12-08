@@ -108,6 +108,10 @@ Call this BEFORE writing code to understand what the integration can do.`,
           );
           if (result.success && result.tools) {
             usedIntegrationIds.add(mockIntegration.id);
+            console.log(
+              `[InspectIntegration] MCP Result for ${mockIntegration.name}:`,
+              JSON.stringify(result.tools, null, 2)
+            );
             return {
               success: true,
               type: "mcp",
@@ -129,6 +133,7 @@ const data = JSON.parse(result.content[0]?.text || "{}");`,
           );
           if (result.success && result.schema) {
             usedIntegrationIds.add(mockIntegration.id);
+            console.log(`[InspectIntegration] GraphQL Schema for ${mockIntegration.name}:`, result.schema);
             return {
               success: true,
               type: "graphql",
@@ -161,6 +166,10 @@ IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
         const result = await handleInspectMcp(integration, mcpContext, capturedAuthRequirements);
         if (result.success && result.tools) {
           usedIntegrationIds.add(integration.id);
+          console.log(
+            `[InspectIntegration] MCP Result for ${integration.name}:`,
+            JSON.stringify(result.tools, null, 2)
+          );
           return {
             success: true,
             type: "mcp",
@@ -184,6 +193,7 @@ const data = JSON.parse(result.content[0]?.text || "{}");`,
         );
         if (result.success && result.schema) {
           usedIntegrationIds.add(integration.id);
+          console.log(`[InspectIntegration] GraphQL Schema for ${integration.name}:`, result.schema);
           return {
             success: true,
             type: "graphql",
@@ -205,6 +215,10 @@ IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
         const result = await handleInspectOpenAPI(integration, mcpContext, capturedAuthRequirements);
         if (result.success && result.operations) {
           usedIntegrationIds.add(integration.id);
+          console.log(
+            `[InspectIntegration] OpenAPI Operations for ${integration.name}:`,
+            JSON.stringify(result.operations, null, 2)
+          );
           return {
             success: true,
             type: "openapi",

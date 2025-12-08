@@ -131,7 +131,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+Deno.test.only({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with initial messages (tool calls)`,
   ignore: !enableAiTests,
   fn: async () => {

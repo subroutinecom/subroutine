@@ -49,7 +49,7 @@ app.post("/test/executeTypescript", async (c) => {
       return c.json(result);
     } else {
       console.log(`[Sandbox] Execution failed: ${result.error}`);
-      // console.log(`[Sandbox] Original source code:\n${code}`);
+      console.log(`[Sandbox] Original source code:\n${code}`);
       return c.json(result, 400);
     }
   } catch (error) {
