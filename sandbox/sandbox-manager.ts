@@ -35,6 +35,7 @@ export class SandboxManager {
       integrations?: SandboxIntegrationPayload[];
       timeoutMs?: number;
       inputs?: Record<string, unknown>;
+      runId?: string;
     }
   ): Promise<ExecutionResult> {
     const timeout = options?.timeoutMs ?? this.defaultTimeout;
@@ -110,6 +111,7 @@ export class SandboxManager {
             type: "execute",
             code: transformedCode,
             id: executionId,
+            runId: options?.runId,
             contentType: "application/typescript",
             inputs: options?.inputs,
           } as ExecuteMessage);

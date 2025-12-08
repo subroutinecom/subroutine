@@ -54,7 +54,8 @@ function makeRequest(
 
 async function executeTypescript(
   code: string,
-  inputs?: Record<string, unknown>
+  inputs?: Record<string, unknown>,
+  runId?: string
 ): Promise<{ status: number; result: ExecutionResult }> {
   // Prepend zod import to the code
   const fullCode = `import { z } from "zod";\n${code}`;
@@ -66,7 +67,7 @@ async function executeTypescript(
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ code: fullCode, inputs })
+    JSON.stringify({ code: fullCode, inputs, runId })
   );
 
   return {

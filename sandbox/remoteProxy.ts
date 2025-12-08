@@ -5,6 +5,11 @@ export type CallRequest = {
   readonly action: "call";
   readonly path: Path;
   readonly args: readonly unknown[];
+  readonly metadata?: {
+    runId?: string;
+    latestMarkerId?: string;
+    [key: string]: unknown;
+  };
 };
 
 export type CallResponse =
@@ -150,9 +155,11 @@ export class RemoteProxyServer<T extends object = object> {
 export class RemoteProxyClient<T extends object = object> {
   #transport: Transport;
   #instanceCache: Map<string, unknown> = new Map();
+  #metadataGetter?: () => Record<string, unknown>;
 
-  constructor(transport: Transport) {
+  constructor(transport: Transport, metadataGetter?: () => Record<string, unknown>) {
     this.#transport = transport;
+    this.#metadataGetter = metadataGetter;
   }
 
   getProxy<API = T>(): Remote<API> {
@@ -168,7 +175,8 @@ export class RemoteProxyClient<T extends object = object> {
         },
         apply: async (_t, _thisArg, argList) => {
           const id = genId();
-          const req: CallRequest = { id, action: "call", path, args: [...argList] };
+          const metadata = this.#metadataGetter ? this.#metadataGetter() : undefined;
+          const req: CallRequest = { id, action: "call", path, args: [...argList], metadata };
           // Enforce JSON serialization across the wire
           const wireReq = JSON.stringify(req);
           const jsonReq = JSON.parse(wireReq) as CallRequest;
@@ -209,7 +217,8 @@ export class RemoteProxyClient<T extends object = object> {
           },
           apply: async (_t, _thisArg, argList) => {
             const id = genId();
-            const req: CallRequest = { id, action: "call", path, args: [...argList] };
+            const metadata = this.#metadataGetter ? this.#metadataGetter() : undefined;
+            const req: CallRequest = { id, action: "call", path, args: [...argList], metadata };
             // Enforce JSON serialization across the wire
             const wireReq = JSON.stringify(req);
             const jsonReq = JSON.parse(wireReq) as CallRequest;
@@ -283,8 +292,9 @@ export class MessagePortTransport implements Transport {
 }
 
 export const createMessagePortClient = <T extends object>(
-  port: MessagePort
+  port: MessagePort,
+  metadataGetter?: () => Record<string, unknown>
 ): RemoteProxyClient<T> => {
   const transport = new MessagePortTransport(port);
-  return new RemoteProxyClient<T>(transport);
+  return new RemoteProxyClient<T>(transport, metadataGetter);
 };

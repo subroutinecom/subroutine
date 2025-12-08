@@ -17,7 +17,7 @@ app.post("/test/executeTypescript", async (c) => {
   const requestStart = Date.now();
   try {
     const body = await c.req.json();
-    const { code, integrations, timeoutMs, inputs } = body;
+    const { code, integrations, timeoutMs, inputs, runId } = body;
 
     console.log(
       `[Sandbox] Received executeTypescript request, timeoutMs: ${timeoutMs ?? "default"}`
@@ -37,6 +37,7 @@ app.post("/test/executeTypescript", async (c) => {
       integrations: Array.isArray(integrations) ? integrations : undefined,
       timeoutMs: typeof timeoutMs === "number" ? timeoutMs : undefined,
       inputs: typeof inputs === "object" ? inputs : undefined,
+      runId: typeof runId === "string" ? runId : undefined,
     });
 
     const elapsed = Date.now() - requestStart;

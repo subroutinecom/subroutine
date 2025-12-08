@@ -3,9 +3,15 @@
 import { createMessagePortClient, type Remote } from "./remoteProxy";
 import type { Integrations } from "@subroutine/integration-types";
 
+// Store the integrations client (it's a Remote proxy)
+let integrations: Remote<Integrations> | undefined = undefined;
+let latestMarkerHash: string | undefined = undefined;
+let currentRunId: string | undefined = undefined;
+
 // Define global pmarker function for code tracing
 // deno-lint-ignore no-explicit-any
-(globalThis as any).pmarker = (_hash: string) => {
+(globalThis as any).pmarker = (hash: string) => {
+  latestMarkerHash = hash;
   // Used for code execution tracing/hashing
   // console.log(`[pmarker] ${hash}`);
 };
@@ -19,14 +25,12 @@ export interface ExecuteMessage {
   type: "execute";
   code: string;
   id: string;
+  runId?: string;
   contentType?: string;
   inputs?: Record<string, unknown>;
 }
 
 type WorkerMessage = ExecuteMessage | ConnectMessage;
-
-// Store the integrations client (it's a Remote proxy)
-let integrations: Remote<Integrations> | undefined = undefined;
 
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const { type } = event.data;
@@ -38,7 +42,10 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       const port = ports[0];
 
       // Create integration proxy client using the MessagePort
-      const client = createMessagePortClient<Integrations>(port);
+      const client = createMessagePortClient<Integrations>(port, () => ({
+        runId: currentRunId,
+        latestMarkerId: latestMarkerHash,
+      }));
       integrations = client.getProxy<Integrations>();
 
       // Expose integrations globally so user code can access them
@@ -54,9 +61,13 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     const {
       code,
       id,
+      runId,
       contentType = "application/typescript",
       inputs = {},
     } = event.data as ExecuteMessage;
+
+    currentRunId = runId;
+
     try {
       // Use dynamic import with data URL - Deno will transpile TypeScript automatically
       const moduleUrl = `data:${contentType};base64,${btoa(code)}`;
