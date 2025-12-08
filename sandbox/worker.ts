@@ -6,12 +6,14 @@ import type { Integrations } from "@subroutine/integration-types";
 // Store the integrations client (it's a Remote proxy)
 let integrations: Remote<Integrations> | undefined = undefined;
 let latestMarkerHash: string | undefined = undefined;
+let pmarkerCounter = 0;
 let currentRunId: string | undefined = undefined;
 
 // Define global pmarker function for code tracing
 // deno-lint-ignore no-explicit-any
 (globalThis as any).pmarker = (hash: string) => {
   latestMarkerHash = hash;
+  pmarkerCounter = 0;
   // Used for code execution tracing/hashing
   // console.log(`[pmarker] ${hash}`);
 };
@@ -53,6 +55,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       const client = createMessagePortClient<Integrations>(port, () => ({
         runId: currentRunId,
         latestMarkerId: latestMarkerHash,
+        pmarkerCounter: pmarkerCounter++,
       }));
       integrations = client.getProxy<Integrations>();
 

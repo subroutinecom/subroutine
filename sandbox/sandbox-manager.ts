@@ -99,6 +99,7 @@ export class SandboxManager {
       {
         runId?: string;
         latestMarkerId?: string;
+        pmarkerCounter?: number;
         canonicalPath: readonly string[];
         args: readonly unknown[];
       }
@@ -110,7 +111,7 @@ export class SandboxManager {
 
       (async () => {
         const req = wireMsg.payload;
-        const { runId, latestMarkerId } = req.metadata || {};
+        const { runId, latestMarkerId, pmarkerCounter } = req.metadata || {};
 
         // Canonicalize path for caching (remove non-deterministic instance ID)
         let canonicalPath = req.path;
@@ -125,9 +126,10 @@ export class SandboxManager {
           runId &&
           latestMarkerId &&
           typeof runId === "string" &&
-          typeof latestMarkerId === "string"
+          typeof latestMarkerId === "string" &&
+          typeof pmarkerCounter === "number"
         ) {
-          const hashInput = JSON.stringify({ path: canonicalPath, args: req.args });
+          const hashInput = JSON.stringify({ path: canonicalPath, args: req.args, counter: pmarkerCounter });
           const argsHash = createHash("sha256").update(hashInput).digest("hex");
           const cacheKey = `${latestMarkerId}:${argsHash}`;
 
@@ -147,6 +149,7 @@ export class SandboxManager {
         pendingRequests.set(req.id, {
           runId: typeof runId === "string" ? runId : undefined,
           latestMarkerId: typeof latestMarkerId === "string" ? latestMarkerId : undefined,
+          pmarkerCounter: typeof pmarkerCounter === "number" ? pmarkerCounter : undefined,
           canonicalPath,
           args: req.args,
         });
@@ -165,10 +168,10 @@ export class SandboxManager {
 
       if (meta) {
         pendingRequests.delete(res.id);
-        const { runId, latestMarkerId, canonicalPath, args } = meta;
+        const { runId, latestMarkerId, pmarkerCounter, canonicalPath, args } = meta;
 
-        if (runId && latestMarkerId && res.ok) {
-          const hashInput = JSON.stringify({ path: canonicalPath, args });
+        if (runId && latestMarkerId && typeof pmarkerCounter === "number" && res.ok) {
+          const hashInput = JSON.stringify({ path: canonicalPath, args, counter: pmarkerCounter });
           const argsHash = createHash("sha256").update(hashInput).digest("hex");
           const cacheKey = `${latestMarkerId}:${argsHash}`;
 
