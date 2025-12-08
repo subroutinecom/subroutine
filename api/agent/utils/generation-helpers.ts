@@ -16,6 +16,8 @@ import { createWriteCodeTool } from "../tools/write-code.ts";
 import type { McpContext, SubroutineCapture } from "./types.ts";
 const logger = getLogger("api/agent/utils/generation-helpers.ts", "debug");
 
+const logFilter = (k: string, v: unknown) => (k === "providerMetadata" ? "<truncated>" : v);
+
 export type ToolCreationOptions = {
   mcpContext?: McpContext;
   /** Integrations provided to the agent (MCP or GraphQL) */
@@ -83,14 +85,14 @@ export const logGenerationSteps = (steps: any[]) => {
       for (const tc of step.toolCalls) {
         const args = "args" in tc ? tc.args : {};
         logger.debug(`  - Tool call: ${tc.toolName}`);
-        logger.debug(`    Args: ${JSON.stringify(args, null, 2)}`);
+        logger.debug(`    Args: ${JSON.stringify(args, logFilter, 2)}`);
       }
     }
     if (step.toolResults && step.toolResults.length > 0) {
       for (const tr of step.toolResults) {
         logger.debug(`  - Tool result: ${tr.toolName}`);
         const resultData = "result" in tr ? tr.result : tr;
-        logger.debug(`    Result: ${JSON.stringify(resultData, null, 2)}`);
+        logger.debug(`    Result: ${JSON.stringify(resultData, logFilter, 2)}`);
       }
     }
     if (step.text) {
