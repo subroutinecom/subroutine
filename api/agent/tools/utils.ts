@@ -6,6 +6,9 @@ import {
   type GraphQLIntegrationConfig,
   type OpenAPIIntegrationConfig,
   type IntegrationWithConfig,
+  storeMcpToolsOnIntegration,
+  storeGraphQLSchemaOnIntegration,
+  storeOpenAPISpecOnIntegration,
 } from "../../models/integration";
 import { getConnectedAccountByViewer } from "../../models/connected-account";
 import { listMcpTools as listMcpToolsUtil } from "../../utils/mcp-client";
@@ -15,6 +18,9 @@ import { generateAuthorizationUrl } from "../../services/oauth";
 import { generatePatLinkUrl } from "../../models/pat-link";
 import type { IntegrationProvider } from "../../integrations/providers";
 import { buildAuthHeadersFromBlock } from "../../integrations/auth-utils";
+import { getLogger } from "../../utils/logger";
+
+const logger = getLogger("api/agent/tools/utils.ts");
 
 // Type for configs that have an auth block (MCP, GraphQL, OpenAPI)
 type ConfigWithAuth = McpIntegrationConfig | GraphQLIntegrationConfig | OpenAPIIntegrationConfig;
@@ -95,14 +101,21 @@ const captureAuthRequirement = async (
   return null;
 };
 
+/** Options for inspect handlers */
+export interface InspectOptions {
+  forceRefresh?: boolean;
+}
+
 /**
  * Handles MCP tool inspection.
- * Checks auth and returns tools if authorized, or captures auth requirement.
+ * Checks cache first, then auth, and returns tools if authorized.
+ * Stores tools after successful fetch for future cache hits.
  */
 export const handleInspectMcp = async (
   integration: IntegrationWithConfig,
   mcpContext: McpContext,
-  capturedAuthRequirements: AuthRequirement[]
+  capturedAuthRequirements: AuthRequirement[],
+  options?: InspectOptions
 ): Promise<{
   success: boolean;
   type: "mcp";
@@ -110,6 +123,11 @@ export const handleInspectMcp = async (
   error?: string;
 }> => {
   const mcpConfig = integration.authConfig as McpIntegrationConfig;
+
+  // Check cache first (unless forceRefresh is requested)
+  if (!options?.forceRefresh && mcpConfig.tools && mcpConfig.toolsFetchedAt) {
+    return { success: true, type: "mcp", tools: mcpConfig.tools };
+  }
 
   // Check if viewer auth is required
   if (requiresViewerAuth(mcpConfig.auth)) {
@@ -133,6 +151,12 @@ export const handleInspectMcp = async (
     // Have connected account - list tools with user's token
     try {
       const tools = await listMcpToolsUtil(mcpConfig, connectedAccount.credentials.accessToken);
+
+      // Store tools for future cache hits (fire-and-forget)
+      storeMcpToolsOnIntegration(integration.id, mcpContext.organizationId, tools).catch((err) =>
+        logger.warn("Failed to cache MCP tools", { integrationId: integration.id, error: err })
+      );
+
       return { success: true, type: "mcp", tools };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -146,6 +170,12 @@ export const handleInspectMcp = async (
     // No viewer auth needed (none, org-level api_key, custom_headers)
     try {
       const tools = await listMcpToolsUtil(mcpConfig);
+
+      // Store tools for future cache hits (fire-and-forget)
+      storeMcpToolsOnIntegration(integration.id, mcpContext.organizationId, tools).catch((err) =>
+        logger.warn("Failed to cache MCP tools", { integrationId: integration.id, error: err })
+      );
+
       return { success: true, type: "mcp", tools };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -160,12 +190,14 @@ export const handleInspectMcp = async (
 
 /**
  * Handles GraphQL schema inspection.
- * Checks auth and returns schema if authorized, or captures auth requirement.
+ * Checks cache first, then auth, and returns schema if authorized.
+ * Stores schema after successful introspection for future cache hits.
  */
 export const handleInspectGraphQL = async (
   integration: IntegrationWithConfig,
   mcpContext: McpContext,
-  capturedAuthRequirements: AuthRequirement[]
+  capturedAuthRequirements: AuthRequirement[],
+  options?: InspectOptions
 ): Promise<{
   success: boolean;
   type: "graphql";
@@ -174,6 +206,16 @@ export const handleInspectGraphQL = async (
   error?: string;
 }> => {
   const graphqlConfig = integration.authConfig as GraphQLIntegrationConfig;
+
+  // Check cache first (unless forceRefresh is requested)
+  if (!options?.forceRefresh && graphqlConfig.schema && graphqlConfig.schemaFetchedAt) {
+    return {
+      success: true,
+      type: "graphql",
+      schema: graphqlConfig.schema,
+      schemaFetchedAt: graphqlConfig.schemaFetchedAt,
+    };
+  }
 
   // Check if viewer auth is required
   if (requiresViewerAuth(graphqlConfig.auth)) {
@@ -200,6 +242,16 @@ export const handleInspectGraphQL = async (
     try {
       const result = await introspectSchema(graphqlConfig.endpoint, headers);
       if (result.ok) {
+        // Store schema for future cache hits (fire-and-forget)
+        storeGraphQLSchemaOnIntegration(
+          integration.id,
+          mcpContext.organizationId,
+          result.result.schema,
+          result.result.fetchedAt
+        ).catch((err) =>
+          logger.warn("Failed to cache GraphQL schema", { integrationId: integration.id, error: err })
+        );
+
         return {
           success: true,
           type: "graphql",
@@ -228,6 +280,16 @@ export const handleInspectGraphQL = async (
     try {
       const result = await introspectSchema(graphqlConfig.endpoint, headers);
       if (result.ok) {
+        // Store schema for future cache hits (fire-and-forget)
+        storeGraphQLSchemaOnIntegration(
+          integration.id,
+          mcpContext.organizationId,
+          result.result.schema,
+          result.result.fetchedAt
+        ).catch((err) =>
+          logger.warn("Failed to cache GraphQL schema", { integrationId: integration.id, error: err })
+        );
+
         return {
           success: true,
           type: "graphql",
@@ -254,12 +316,14 @@ export const handleInspectGraphQL = async (
 
 /**
  * Handles OpenAPI spec inspection.
- * Checks auth and returns spec if authorized, or captures auth requirement.
+ * Checks cache first, then auth, and returns spec if authorized.
+ * Stores spec after successful fetch for future cache hits.
  */
 export const handleInspectOpenAPI = async (
   integration: IntegrationWithConfig,
   mcpContext: McpContext,
-  capturedAuthRequirements: AuthRequirement[]
+  capturedAuthRequirements: AuthRequirement[],
+  options?: InspectOptions
 ): Promise<{
   success: boolean;
   type: "openapi";
@@ -271,7 +335,13 @@ export const handleInspectOpenAPI = async (
 }> => {
   const openapiConfig = integration.authConfig as OpenAPIIntegrationConfig;
 
-  if (openapiConfig.spec && openapiConfig.specVersion && openapiConfig.specFetchedAt) {
+  // Check cache first (unless forceRefresh is requested)
+  if (
+    !options?.forceRefresh &&
+    openapiConfig.spec &&
+    openapiConfig.specVersion &&
+    openapiConfig.specFetchedAt
+  ) {
     const result = await parseOpenAPISpec(openapiConfig.spec);
     if (result.ok) {
       return {
@@ -319,6 +389,17 @@ export const handleInspectOpenAPI = async (
     try {
       const result = await fetchOpenAPISpec(openapiConfig.specUrl, headers);
       if (result.ok) {
+        // Store spec for future cache hits (fire-and-forget)
+        storeOpenAPISpecOnIntegration(
+          integration.id,
+          mcpContext.organizationId,
+          result.result.spec,
+          result.result.version,
+          result.result.fetchedAt
+        ).catch((err) =>
+          logger.warn("Failed to cache OpenAPI spec", { integrationId: integration.id, error: err })
+        );
+
         return {
           success: true,
           type: "openapi",
@@ -352,6 +433,17 @@ export const handleInspectOpenAPI = async (
     try {
       const result = await fetchOpenAPISpec(openapiConfig.specUrl, headers);
       if (result.ok) {
+        // Store spec for future cache hits (fire-and-forget)
+        storeOpenAPISpecOnIntegration(
+          integration.id,
+          mcpContext.organizationId,
+          result.result.spec,
+          result.result.version,
+          result.result.fetchedAt
+        ).catch((err) =>
+          logger.warn("Failed to cache OpenAPI spec", { integrationId: integration.id, error: err })
+        );
+
         return {
           success: true,
           type: "openapi",
