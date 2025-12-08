@@ -1,5 +1,6 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
+import { executeTypescript } from "../fixtures/sandbox-execution.ts";
 
 /**
  * GraphQL Integration Tests
@@ -19,72 +20,7 @@ const GRAPHQL_SERVER_HOST_FOR_TESTS = "localhost";
 const GRAPHQL_SERVER_HOST_FOR_SANDBOX = "tests";
 const TEST_API_KEY = "test-secret-api-key-12345";
 
-interface ExecutionResult {
-  success: boolean;
-  result?: unknown;
-  error?: string;
-}
 
-interface TestResponse {
-  status: number;
-  data: string;
-}
-
-const makeRequest = (
-  options: {
-    hostname: string;
-    port?: number;
-    path: string;
-    method?: string;
-    headers?: HeadersInit;
-  },
-  data?: string
-): Promise<TestResponse> => {
-  return new Promise((resolve, reject) => {
-    const url = new URL(`http://${options.hostname}`);
-    if (options.port) {
-      url.port = options.port.toString();
-    }
-    url.pathname = options.path;
-
-    const req = new Request(url, {
-      method: options.method || "GET",
-      headers: options.headers,
-      body: data,
-    });
-
-    fetch(req)
-      .then(async (res) => {
-        const body = await res.text();
-        resolve({ status: res.status, data: body });
-      })
-      .catch((error) => {
-        reject(error);
-      });
-  });
-};
-
-const executeTypescript = async (
-  code: string,
-  integrations?: unknown
-): Promise<{ status: number; result: ExecutionResult }> => {
-  const wrappedCode = "\nexport default async function() {\n  " + code + "\n}\n";
-
-  const response = await makeRequest(
-    {
-      hostname: "sandbox",
-      path: "/test/executeTypescript",
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    },
-    JSON.stringify({ code: wrappedCode, integrations })
-  );
-
-  return {
-    status: response.status,
-    result: JSON.parse(response.data),
-  };
-};
 
 type AuthStrategy =
   | { type: "none" }
@@ -109,9 +45,7 @@ const createGraphQLIntegrationPayload = (options: {
     case "none":
       break;
     case "api_key": {
-      const key = options.authStrategy.viewerScoped
-        ? options.accessToken
-        : options.apiKey;
+      const key = options.authStrategy.viewerScoped ? options.accessToken : options.apiKey;
       if (key) {
         const headerName = options.authStrategy.headerName ?? "Authorization";
         if (headerName.toLowerCase() === "authorization") {
@@ -178,16 +112,18 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        const result = await client.request(\`
-          query Echo($message: String!) {
-            echo(message: $message)
-          }
-        \`, { message: "Hello from sandbox!" });
-        return result;
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          const result = await client.request(\`
+            query Echo($message: String!) {
+              echo(message: $message)
+            }
+          \`, { message: "Hello from sandbox!" });
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -204,20 +140,22 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        const result = await client.request(\`
-          query Add($a: Int!, $b: Int!) {
-            add(a: $a, b: $b) {
-              result
-              a
-              b
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          const result = await client.request(\`
+            query Add($a: Int!, $b: Int!) {
+              add(a: $a, b: $b) {
+                result
+                a
+                b
+              }
             }
-          }
-        \`, { a: 5, b: 7 });
-        return result;
+          \`, { a: 5, b: 7 });
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -236,16 +174,18 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        const result = await client.request(\`
-          query Concat($strings: [String!]!, $separator: String) {
-            concat(strings: $strings, separator: $separator)
-          }
-        \`, { strings: ["Hello", "World", "GraphQL"], separator: " " });
-        return result;
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          const result = await client.request(\`
+            query Concat($strings: [String!]!, $separator: String) {
+              concat(strings: $strings, separator: $separator)
+            }
+          \`, { strings: ["Hello", "World", "GraphQL"], separator: " " });
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -262,21 +202,23 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        const result = await client.request(\`
-          mutation CreateItem($name: String!, $value: Int!) {
-            createItem(name: $name, value: $value) {
-              id
-              name
-              value
-              createdAt
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          const result = await client.request(\`
+            mutation CreateItem($name: String!, $value: Int!) {
+              createItem(name: $name, value: $value) {
+                id
+                name
+                value
+                createdAt
+              }
             }
-          }
-        \`, { name: "Test Item", value: 42 });
-        return result;
+          \`, { name: "Test Item", value: 42 });
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -295,21 +237,23 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        const result = await client.request(\`
-          query {
-            getAuthInfo {
-              hasAuth
-              authType
-              tokenPrefix
-              tokenLength
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          const result = await client.request(\`
+            query {
+              getAuthInfo {
+                hasAuth
+                authType
+                tokenPrefix
+                tokenLength
+              }
             }
-          }
-        \`);
-        return result;
+          \`);
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -329,22 +273,24 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        const result = await client.request(\`
-          query {
-            getAuthInfo {
-              hasAuth
-              customHeaders {
-                name
-                value
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          const result = await client.request(\`
+            query {
+              getAuthInfo {
+                hasAuth
+                customHeaders {
+                  name
+                  value
+                }
               }
             }
-          }
-        \`);
-        return result;
+          \`);
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -372,21 +318,23 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        const result = await client.request(\`
-          query {
-            getAuthInfo {
-              hasAuth
-              authType
-              tokenPrefix
-              tokenLength
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          const result = await client.request(\`
+            query {
+              getAuthInfo {
+                hasAuth
+                authType
+                tokenPrefix
+                tokenLength
+              }
             }
-          }
-        \`);
-        return result;
+          \`);
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -416,21 +364,23 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        const result = await client.request(\`
-          query {
-            getAuthInfo {
-              hasAuth
-              authType
-              tokenPrefix
-              tokenLength
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          const result = await client.request(\`
+            query {
+              getAuthInfo {
+                hasAuth
+                authType
+                tokenPrefix
+                tokenLength
+              }
             }
-          }
-        \`);
-        return result;
+          \`);
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -465,22 +415,24 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        const result = await client.request(\`
-          query {
-            getAuthInfo {
-              hasAuth
-              customHeaders {
-                name
-                value
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          const result = await client.request(\`
+            query {
+              getAuthInfo {
+                hasAuth
+                customHeaders {
+                  name
+                  value
+                }
               }
             }
-          }
-        \`);
-        return result;
+          \`);
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -516,20 +468,22 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
 
       // Query a non-existent field
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        try {
-          await client.request(\`
-            query {
-              nonExistentField
-            }
-          \`);
-          return { error: "Should have thrown" };
-        } catch (e) {
-          return { error: e.message, hasError: true };
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          try {
+            await client.request(\`
+              query {
+                nonExistentField
+              }
+            \`);
+            return { error: "Should have thrown" };
+          } catch (e) {
+            return { error: e.message, hasError: true };
+          }
         }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -547,16 +501,18 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("test-graphql");
-        try {
-          await client.request(\`query { echo(message: "test") }\`);
-          return { error: "Should have thrown" };
-        } catch (e) {
-          return { error: e.message, hasError: true };
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("test-graphql");
+          try {
+            await client.request(\`query { echo(message: "test") }\`);
+            return { error: "Should have thrown" };
+          } catch (e) {
+            return { error: e.message, hasError: true };
+          }
         }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -575,16 +531,18 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        const client = await integrations.getGraphQLClient("my-custom-graphql-api");
-        const result = await client.request(\`
-          query Greet($name: String!, $excited: Boolean) {
-            greet(name: $name, excited: $excited)
-          }
-        \`, { name: "GraphQL", excited: true });
-        return result;
+        export default async function(inputs, { integrations }) {
+          const client = await integrations.getGraphQLClient("my-custom-graphql-api");
+          const result = await client.request(\`
+            query Greet($name: String!, $excited: Boolean) {
+              greet(name: $name, excited: $excited)
+            }
+          \`, { name: "GraphQL", excited: true });
+          return result;
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -601,15 +559,17 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       });
 
       const code = `
-        try {
-          await integrations.getGraphQLClient("nonexistent-graphql");
-          return { error: "Should have thrown" };
-        } catch (e) {
-          return { error: e.message, hasError: true };
+        export default async function(inputs, { integrations }) {
+          try {
+            await integrations.getGraphQLClient("nonexistent-graphql");
+            return { error: "Should have thrown" };
+          } catch (e) {
+            return { error: e.message, hasError: true };
+          }
         }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
@@ -638,18 +598,20 @@ describe("GraphQL Integration Tests", { sanitizeOps: false, sanitizeResources: f
       ];
 
       const code = `
-        const client1 = await integrations.getGraphQLClient("graphql-api-1");
-        const client2 = await integrations.getGraphQLClient("graphql-api-2");
+        export default async function(inputs, { integrations }) {
+          const client1 = await integrations.getGraphQLClient("graphql-api-1");
+          const client2 = await integrations.getGraphQLClient("graphql-api-2");
 
-        const [result1, result2] = await Promise.all([
-          client1.request(\`query { echo(message: "from api 1") }\`),
-          client2.request(\`query { getAuthInfo { customHeaders { name value } } }\`),
-        ]);
+          const [result1, result2] = await Promise.all([
+            client1.request(\`query { echo(message: "from api 1") }\`),
+            client2.request(\`query { getAuthInfo { customHeaders { name value } } }\`),
+          ]);
 
-        return { result1, result2 };
+          return { result1, result2 };
+        }
       `;
 
-      const { status, result } = await executeTypescript(code, payload);
+      const { status, result } = await executeTypescript(code, { integrations: payload });
 
       expect(status).toBe(200);
       expect(result.success).toBe(true);
