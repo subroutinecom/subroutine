@@ -1,83 +1,17 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
+import { executeTypescript } from "../fixtures/sandbox-execution.ts";
 
-const MOCK_HEADERS: Record<string, string> = {
-  "x-use-mock": "true",
-};
 
-interface TestResponse {
-  status: number;
-  data: string;
-}
-
-interface ExecutionResult {
-  success: boolean;
-  result?: unknown;
-  error?: string;
-}
-
-const makeRequest = (
-  options: {
-    hostname: string;
-    port?: number;
-    path: string;
-    method?: string;
-    headers?: HeadersInit;
-  },
-  data?: string
-): Promise<TestResponse> => {
-  return new Promise((resolve, reject) => {
-    const url = new URL(`http://${options.hostname}`);
-    if (options.port) {
-      url.port = options.port.toString();
-    }
-    url.pathname = options.path;
-
-    const req = new Request(url, {
-      method: options.method || "GET",
-      headers: options.headers,
-      body: data,
-    });
-
-    fetch(req)
-      .then(async (res) => {
-        const body = await res.text();
-        resolve({ status: res.status, data: body });
-      })
-      .catch((error) => {
-        reject(error);
-      });
-  });
-};
-
-const executeTypescript = async (
-  code: string,
-  integrations?: unknown
-): Promise<{ status: number; result: ExecutionResult }> => {
-  const wrappedCode = "\nexport default async function() {\n  " + code + "\n}\n";
-
-  const response = await makeRequest(
-    {
-      hostname: "sandbox",
-      path: "/test/executeTypescript",
-      method: "POST",
-      headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
-    },
-    JSON.stringify({ code: wrappedCode, integrations })
-  );
-
-  return {
-    status: response.status,
-    result: JSON.parse(response.data),
-  };
-};
 
 describe("Sandbox Integration Proxy - Two Worker Setup", () => {
   describe("Basic Integration Proxy Communication", () => {
     it("should establish MessageChannel connection between workers", async () => {
       const code = `
-        // If integrations is available, the MessageChannel is connected
-        return typeof integrations !== "undefined";
+        export default async function(inputs, { integrations }) {
+          // If integrations is available, the MessageChannel is connected
+          return typeof integrations !== "undefined";
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -88,9 +22,11 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
     it("should access ping integration through integration proxy worker", async () => {
       const code = `
-        const ping = await integrations.getPing();
-        const response = await ping.ping("Test message");
-        return response;
+        export default async function(inputs, { integrations }) {
+          const ping = await integrations.getPing();
+          const response = await ping.ping("Test message");
+          return response;
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -133,10 +69,12 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
     it("should expose only provided integrations when payload supplied", async () => {
       const code = `
-        const gmail = await integrations.getGmail();
-        return typeof gmail.labels?.list === "function";
+        export default async function(inputs, { integrations }) {
+          const gmail = await integrations.getGmail();
+          return typeof gmail.labels?.list === "function";
+        }
       `;
-      const { status, result } = await executeTypescript(code, gmailIntegrationPayload);
+      const { status, result } = await executeTypescript(code, { integrations: gmailIntegrationPayload });
 
       expect(status, "HTTP status is 200").toBe(200);
       expect(result.success, "Execution should succeed").toBe(true);
@@ -145,14 +83,16 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
     it("should block integrations not provided in payload", async () => {
       const code = `
-        try {
-          await integrations.getS3();
-          return "unexpected-success";
-        } catch (error) {
-          return (error as Error).message;
+        export default async function(inputs, { integrations }) {
+          try {
+            await integrations.getS3();
+            return "unexpected-success";
+          } catch (error) {
+            return (error as Error).message;
+          }
         }
       `;
-      const { status, result } = await executeTypescript(code, gmailIntegrationPayload);
+      const { status, result } = await executeTypescript(code, { integrations: gmailIntegrationPayload });
 
       expect(status, "HTTP status is 200").toBe(200);
       expect(result.success, "Execution should succeed").toBe(true);
@@ -164,19 +104,21 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
   describe("Singleton Behavior", () => {
     it("should return same Gmail instance on multiple calls", async () => {
       const code = `
-        const gmail1 = await integrations.getGmail();
-        const gmail2 = await integrations.getGmail();
+        export default async function(inputs, { integrations }) {
+          const gmail1 = await integrations.getGmail();
+          const gmail2 = await integrations.getGmail();
 
-        const result1 = await gmail1.users.labels.list({ userId: "me" });
-        const result2 = await gmail2.users.labels.list({ userId: "me" });
-        const labels1 = result1.data.labels?.map(l => l.name) || [];
-        const labels2 = result2.data.labels?.map(l => l.name) || [];
+          const result1 = await gmail1.users.labels.list({ userId: "me" });
+          const result2 = await gmail2.users.labels.list({ userId: "me" });
+          const labels1 = result1.data.labels?.map(l => l.name) || [];
+          const labels2 = result2.data.labels?.map(l => l.name) || [];
 
-        return {
-          labels1,
-          labels2,
-          areEqual: JSON.stringify(labels1) === JSON.stringify(labels2)
-        };
+          return {
+            labels1,
+            labels2,
+            areEqual: JSON.stringify(labels1) === JSON.stringify(labels2)
+          };
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -190,17 +132,19 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
     it("should return same S3 instance on multiple calls", async () => {
       const code = `
-        const s3a = await integrations.getS3();
-        const s3b = await integrations.getS3();
+        export default async function(inputs, { integrations }) {
+          const s3a = await integrations.getS3();
+          const s3b = await integrations.getS3();
 
-        const bucketsA = await s3a.listBuckets();
-        const bucketsB = await s3b.listBuckets();
+          const bucketsA = await s3a.listBuckets();
+          const bucketsB = await s3b.listBuckets();
 
-        return {
-          bucketsA: bucketsA.buckets,
-          bucketsB: bucketsB.buckets,
-          areEqual: JSON.stringify(bucketsA) === JSON.stringify(bucketsB)
-        };
+          return {
+            bucketsA: bucketsA.buckets,
+            bucketsB: bucketsB.buckets,
+            areEqual: JSON.stringify(bucketsA) === JSON.stringify(bucketsB)
+          };
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -216,9 +160,11 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
   describe("Nested Method Calls", () => {
     it("should support nested object access via integration proxy", async () => {
       const code = `
-        const gmail = await integrations.getGmail();
-        const result = await gmail.users.labels.list({ userId: "me" });
-        return result.data.labels?.map(l => l.name) || [];
+        export default async function(inputs, { integrations }) {
+          const gmail = await integrations.getGmail();
+          const result = await gmail.users.labels.list({ userId: "me" });
+          return result.data.labels?.map(l => l.name) || [];
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -232,14 +178,16 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
     it("should handle different user IDs in Gmail labels", async () => {
       const code = `
-        const gmail = await integrations.getGmail();
-        const meLabels = await gmail.users.labels.list({ userId: "me" });
-        const otherLabels = await gmail.users.labels.list({ userId: "other" });
+        export default async function(inputs, { integrations }) {
+          const gmail = await integrations.getGmail();
+          const meLabels = await gmail.users.labels.list({ userId: "me" });
+          const otherLabels = await gmail.users.labels.list({ userId: "other" });
 
-        return {
-          meLabels: meLabels.data.labels?.map(l => l.name) || [],
-          otherLabels: otherLabels.data.labels?.map(l => l.name) || []
-        };
+          return {
+            meLabels: meLabels.data.labels?.map(l => l.name) || [],
+            otherLabels: otherLabels.data.labels?.map(l => l.name) || []
+          };
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -254,22 +202,24 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
   describe("Multiple Integration Types", () => {
     it("should access all integration types in single execution", async () => {
       const code = `
-        const gmail = await integrations.getGmail();
-        const s3 = await integrations.getS3();
-        const github = await integrations.getGithub();
-        const ping = await integrations.getPing();
+        export default async function(inputs, { integrations }) {
+          const gmail = await integrations.getGmail();
+          const s3 = await integrations.getS3();
+          const github = await integrations.getGithub();
+          const ping = await integrations.getPing();
 
-        const gmailLabels = await gmail.users.labels.list({ userId: "me" });
-        const s3Buckets = await s3.listBuckets();
-        const githubUser = await github.me();
-        const pingResponse = await ping.ping("multi-test");
+          const gmailLabels = await gmail.users.labels.list({ userId: "me" });
+          const s3Buckets = await s3.listBuckets();
+          const githubUser = await github.me();
+          const pingResponse = await ping.ping("multi-test");
 
-        return {
-          gmail: gmailLabels.data.labels?.map(l => l.name) || [],
-          s3: s3Buckets.buckets,
-          github: githubUser.login,
-          ping: pingResponse.echo
-        };
+          return {
+            gmail: gmailLabels.data.labels?.map(l => l.name) || [],
+            s3: s3Buckets.buckets,
+            github: githubUser.login,
+            ping: pingResponse.echo
+          };
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -291,19 +241,21 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
   describe("Concurrent Integration Proxy Calls", () => {
     it("should handle concurrent calls to same integration", async () => {
       const code = `
-        const ping = await integrations.getPing();
+        export default async function(inputs, { integrations }) {
+          const ping = await integrations.getPing();
 
-        // Make multiple concurrent calls
-        const results = await Promise.all([
-          ping.ping("call-1"),
-          ping.ping("call-2"),
-          ping.ping("call-3")
-        ]);
+          // Make multiple concurrent calls
+          const results = await Promise.all([
+            ping.ping("call-1"),
+            ping.ping("call-2"),
+            ping.ping("call-3")
+          ]);
 
-        return {
-          echos: results.map(r => r.echo),
-          allHaveTimestamps: results.every(r => typeof r.timestamp === "number")
-        };
+          return {
+            echos: results.map(r => r.echo),
+            allHaveTimestamps: results.every(r => typeof r.timestamp === "number")
+          };
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -316,23 +268,25 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
     it("should handle concurrent calls to different integrations", async () => {
       const code = `
-        const [gmail, s3, github] = await Promise.all([
-          integrations.getGmail(),
-          integrations.getS3(),
-          integrations.getGithub()
-        ]);
+        export default async function(inputs, { integrations }) {
+          const [gmail, s3, github] = await Promise.all([
+            integrations.getGmail(),
+            integrations.getS3(),
+            integrations.getGithub()
+          ]);
 
-        const [labels, buckets, user] = await Promise.all([
-          gmail.users.labels.list({ userId: "me" }),
-          s3.listBuckets(),
-          github.me()
-        ]);
+          const [labels, buckets, user] = await Promise.all([
+            gmail.users.labels.list({ userId: "me" }),
+            s3.listBuckets(),
+            github.me()
+          ]);
 
-        return {
-          labels: labels.data.labels?.map(l => l.name) || [],
-          buckets: buckets.buckets,
-          user: user.login
-        };
+          return {
+            labels: labels.data.labels?.map(l => l.name) || [],
+            buckets: buckets.buckets,
+            user: user.login
+          };
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -348,12 +302,14 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
   describe("Error Handling", () => {
     it("should handle errors when accessing undefined integration", async () => {
       const code = `
-        try {
-          // Try to access a non-existent integration
-          const fake = await integrations.getFake();
-          return { error: false, result: fake };
-        } catch (error) {
-          return { error: true, message: error.message };
+        export default async function(inputs, { integrations }) {
+          try {
+            // Try to access a non-existent integration
+            const fake = await integrations.getFake();
+            return { error: false, result: fake };
+          } catch (error) {
+            return { error: true, message: error.message };
+          }
         }
       `;
       const { status, result } = await executeTypescript(code);
@@ -367,13 +323,15 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
     it("should handle errors in integration method calls", async () => {
       const code = `
-        try {
-          const ping = await integrations.getPing();
-          // ping.ping expects a string, but we'll call a non-existent method
-          const result = await ping.nonExistentMethod();
-          return { error: false, result };
-        } catch (error) {
-          return { error: true, message: error.message };
+        export default async function(inputs, { integrations }) {
+          try {
+            const ping = await integrations.getPing();
+            // ping.ping expects a string, but we'll call a non-existent method
+            const result = await ping.nonExistentMethod();
+            return { error: false, result };
+          } catch (error) {
+            return { error: true, message: error.message };
+          }
         }
       `;
       const { status, result } = await executeTypescript(code);
@@ -388,17 +346,19 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
   describe("Data Serialization", () => {
     it("should properly serialize complex objects across workers", async () => {
       const code = `
-        const ping = await integrations.getPing();
-        const result = await ping.ping("complex test");
+        export default async function(inputs, { integrations }) {
+          const ping = await integrations.getPing();
+          const result = await ping.ping("complex test");
 
-        return {
-          echo: result.echo,
-          timestamp: result.timestamp,
-          echoType: typeof result.echo,
-          timestampType: typeof result.timestamp,
-          isObject: typeof result === "object",
-          hasExpectedKeys: "echo" in result && "timestamp" in result
-        };
+          return {
+            echo: result.echo,
+            timestamp: result.timestamp,
+            echoType: typeof result.echo,
+            timestampType: typeof result.timestamp,
+            isObject: typeof result === "object",
+            hasExpectedKeys: "echo" in result && "timestamp" in result
+          };
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -421,16 +381,18 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
     it("should handle arrays in RPC responses", async () => {
       const code = `
-        const gmail = await integrations.getGmail();
-        const result = await gmail.users.labels.list({ userId: "me" });
-        const labels = result.data.labels?.map(l => l.name) || [];
+        export default async function(inputs, { integrations }) {
+          const gmail = await integrations.getGmail();
+          const result = await gmail.users.labels.list({ userId: "me" });
+          const labels = result.data.labels?.map(l => l.name) || [];
 
-        return {
-          labels,
-          isArray: Array.isArray(labels),
-          length: labels.length,
-          first: labels[0]
-        };
+          return {
+            labels,
+            isArray: Array.isArray(labels),
+            length: labels.length,
+            first: labels[0]
+          };
+        }
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -452,23 +414,25 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
   describe("Worker Isolation", () => {
     it("should execute user code in isolated worker", async () => {
       const code = `
-        // User code should not have access to file system
-        let hasFileAccess = true;
-        try {
-          await Deno.readTextFile('/etc/passwd');
-        } catch (error) {
-          hasFileAccess = false;
+        export default async function(inputs, { integrations }) {
+          // User code should not have access to file system
+          let hasFileAccess = true;
+          try {
+            await Deno.readTextFile('/etc/passwd');
+          } catch (error) {
+            hasFileAccess = false;
+          }
+
+          // But should have access to integrations
+          const ping = await integrations.getPing();
+          const pingResponse = await ping.ping("isolation test");
+
+          return {
+            hasFileAccess,
+            hasIntegrationAccess: !!pingResponse.echo,
+            pingEcho: pingResponse.echo
+          };
         }
-
-        // But should have access to integrations
-        const ping = await integrations.getPing();
-        const pingResponse = await ping.ping("isolation test");
-
-        return {
-          hasFileAccess,
-          hasIntegrationAccess: !!pingResponse.echo,
-          pingEcho: pingResponse.echo
-        };
       `;
       const { status, result } = await executeTypescript(code);
 
@@ -486,16 +450,18 @@ describe("Sandbox Integration Proxy - Two Worker Setup", () => {
 
     it("should execute RPC worker in isolated environment", async () => {
       const code = `
-        // RPC worker also has no permissions, but provides integrations
-        const github = await integrations.getGithub();
-        const user = await github.me();
+        export default async function(inputs, { integrations }) {
+          // RPC worker also has no permissions, but provides integrations
+          const github = await integrations.getGithub();
+          const user = await github.me();
 
-        // This works because RPC worker provides the integration
-        // not because it has network access
-        return {
-          login: user.login,
-          isValidResponse: typeof user.login === "string"
-        };
+          // This works because RPC worker provides the integration
+          // not because it has network access
+          return {
+            login: user.login,
+            isValidResponse: typeof user.login === "string"
+          };
+        }
       `;
       const { status, result } = await executeTypescript(code);
 

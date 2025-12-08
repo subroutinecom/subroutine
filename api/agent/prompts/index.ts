@@ -279,7 +279,7 @@ ALWAYS use tools to discover/setup integrations BEFORE generating code that uses
 TECHNICAL REQUIREMENTS:
 1. Start your code with: import type { Integrations } from "@subroutine/integration-types";
 2. Define TypeScript interfaces for Inputs and Outputs based on the schemas
-3. Export an async function called "main" with signature: export async function main(inputs: Inputs, integrations: Integrations): Promise<Outputs>
+3. Export an async function called "main" with signature: export async function main(inputs: Inputs, context: { integrations: Integrations }): Promise<Outputs>
 4. Code must be clean, efficient, and production-ready TypeScript
 5. Handle edge cases with proper validation and error messages
 6. Use the actual types you define - no any types
@@ -302,7 +302,7 @@ import type { Integrations } from "@subroutine/integration-types";
 type Inputs = { x?: number; y?: number };
 type Outputs = { result: number; calculation: string };
 
-export async function main(inputs: Inputs, integrations: Integrations): Promise<Outputs> {
+export async function main(inputs: Inputs, { integrations }: { integrations: Integrations }): Promise<Outputs> {
   const x = inputs.x ?? 0;
   const y = inputs.y ?? 0;
   return { result: x + y, calculation: \`\${x} + \${y} = \${x + y}\` };
@@ -316,7 +316,7 @@ import type { Integrations } from "@subroutine/integration-types";
 type Inputs = { maxResults?: number };
 type Outputs = { messageCount: number; messages: Array<{ id: string; threadId: string }> };
 
-export async function main(inputs: Inputs, integrations: Integrations): Promise<Outputs> {
+export async function main(inputs: Inputs, { integrations }: { integrations: Integrations }): Promise<Outputs> {
   const gmail = await integrations.getGmail();
   const response = await gmail.users.messages.list({
     userId: "me",

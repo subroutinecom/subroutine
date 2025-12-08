@@ -336,17 +336,20 @@ addEventListener("message", async (ev: Event) => {
         ? await buildServerForIntegrations(providedIntegrations)
         : await buildDefaultServer();
 
-    messagePort.onmessage = async (portEvent: MessageEvent<WireMessage>) => {
+    messagePort.onmessage = (portEvent: MessageEvent<WireMessage>) => {
       const wireMsg = portEvent.data;
       if (!wireMsg || wireMsg.kind !== "rpc") return;
 
-      const req = wireMsg.payload;
-      const res = await server.handle(JSON.parse(JSON.stringify(req)));
-      const wire: WireMessage = {
-        kind: "rpc_result",
-        payload: JSON.parse(JSON.stringify(res)) as CallResponse,
-      };
-      messagePort!.postMessage(wire);
+      (async () => {
+        const req = wireMsg.payload;
+        const res = await server.handle(JSON.parse(JSON.stringify(req)));
+
+        const wire: WireMessage = {
+          kind: "rpc_result",
+          payload: JSON.parse(JSON.stringify(res)) as CallResponse,
+        };
+        messagePort!.postMessage(wire);
+      })();
     };
 
     (self as unknown as { postMessage: (data: unknown) => void }).postMessage({

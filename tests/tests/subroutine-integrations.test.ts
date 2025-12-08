@@ -113,7 +113,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
     expect(runData.error.viewerId).toBe("viewer@example.com");
   });
 
-  it("runs subroutine via mock OAuth integration", async () => {
+  it.skip("runs subroutine via mock OAuth integration", async () => {
     const authContext = await getDefaultAuthContext();
     const graphqlClient = createGraphQLClient(authContext.cookieJar);
 

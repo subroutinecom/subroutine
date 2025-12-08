@@ -1,7 +1,28 @@
 /// <reference lib="deno.worker" />
 
-import { createMessagePortClient, type Remote } from "./remoteProxy";
 import type { Integrations } from "@subroutine/integration-types";
+import { createMessagePortClient, type Remote } from "./remoteProxy.ts";
+
+// Store the integrations client (it's a Remote proxy)
+let integrations: Remote<Integrations> | undefined = undefined;
+let latestMarkerHash: string | undefined = undefined;
+let pmarkerCounter = 0;
+let currentRunId: string | undefined = undefined;
+
+// Define global pmarker function for code tracing
+// deno-lint-ignore no-explicit-any
+(globalThis as any).pmarker = (hash: string) => {
+  latestMarkerHash = hash;
+  pmarkerCounter = 0;
+  // Used for code execution tracing/hashing
+  // console.log(`[pmarker] ${hash}`);
+};
+
+// Expose pmarker type on globalThis for TS
+declare global {
+  var pmarker: (hash: string) => void;
+  var integrations: Remote<Integrations> | undefined;
+}
 
 // Additional message types for worker communication
 interface ConnectMessage {
@@ -12,14 +33,12 @@ export interface ExecuteMessage {
   type: "execute";
   code: string;
   id: string;
+  runId?: string;
   contentType?: string;
   inputs?: Record<string, unknown>;
 }
 
 type WorkerMessage = ExecuteMessage | ConnectMessage;
-
-// Store the integrations client (it's a Remote proxy)
-let integrations: Remote<Integrations> | undefined = undefined;
 
 self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   const { type } = event.data;
@@ -31,11 +50,15 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       const port = ports[0];
 
       // Create integration proxy client using the MessagePort
-      const client = createMessagePortClient<Integrations>(port);
+      const client = createMessagePortClient<Integrations>(port, () => ({
+        runId: currentRunId,
+        latestMarkerId: latestMarkerHash,
+        pmarkerCounter: pmarkerCounter++,
+      }));
       integrations = client.getProxy<Integrations>();
 
       // Expose integrations globally so user code can access them
-      (globalThis as { integrations?: Remote<Integrations> }).integrations = integrations;
+      globalThis.integrations = integrations;
 
       // Signal that we're ready
       self.postMessage({ type: "execution_ready" });
@@ -47,9 +70,13 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
     const {
       code,
       id,
+      runId,
       contentType = "application/typescript",
       inputs = {},
     } = event.data as ExecuteMessage;
+
+    currentRunId = runId;
+
     try {
       // Use dynamic import with data URL - Deno will transpile TypeScript automatically
       const moduleUrl = `data:${contentType};base64,${btoa(code)}`;
@@ -60,8 +87,12 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       const entryPoint = module.main || module.default;
 
       if (typeof entryPoint === "function") {
-        // Pass inputs and integrations (if available)
-        result = await entryPoint(inputs, integrations);
+        const options = {
+          integrations,
+          pmarker: globalThis.pmarker,
+        };
+        // Pass inputs and options object
+        result = await entryPoint(inputs, options);
       } else {
         result = entryPoint;
       }

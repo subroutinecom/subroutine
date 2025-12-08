@@ -6,7 +6,9 @@
     "graphql-request": "npm:graphql-request@^7.3.5",
     "hono": "npm:hono@^4.10.4",
     "googleapis": "npm:googleapis@^134.0.0",
+    "lru-cache": "npm:lru-cache@^10.2.0",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
+    "ts-morph": "npm:ts-morph@^27.0.2",
     "zod": "npm:zod@^3.24.1"
   },
   "compilerOptions": {

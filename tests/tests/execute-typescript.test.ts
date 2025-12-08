@@ -15,6 +15,7 @@ interface ExecutionResult {
   success: boolean;
   result?: unknown;
   error?: string;
+  code?: string;
 }
 
 function makeRequest(
@@ -53,7 +54,8 @@ function makeRequest(
 
 async function executeTypescript(
   code: string,
-  inputs?: Record<string, unknown>
+  inputs?: Record<string, unknown>,
+  runId?: string
 ): Promise<{ status: number; result: ExecutionResult }> {
   // Prepend zod import to the code
   const fullCode = `import { z } from "zod";\n${code}`;
@@ -65,7 +67,7 @@ async function executeTypescript(
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
     },
-    JSON.stringify({ code: fullCode, inputs })
+    JSON.stringify({ code: fullCode, inputs, runId })
   );
 
   return {
@@ -89,7 +91,7 @@ describe("Sandbox", () => {
 
   it("execute TypeScript with inputs", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({ value: z.number() });
       const { value } = InputSchema.parse(inputs);
       return { result: value * 2 };
@@ -104,7 +106,7 @@ describe("Sandbox", () => {
 
   it("fails validation with invalid inputs", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({ value: z.number() });
       const { value } = InputSchema.parse(inputs);
       return { result: value * 2 };
@@ -122,7 +124,7 @@ describe("Sandbox", () => {
 
   it("execute simple TypeScript code", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({}); // No inputs expected
       InputSchema.parse(inputs);
       return 42;
@@ -137,7 +139,7 @@ describe("Sandbox", () => {
 
   it("execute TypeScript with string return", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       return 'Hello, World!';
@@ -152,7 +154,7 @@ describe("Sandbox", () => {
 
   it("execute TypeScript with object return", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       const obj = { name: 'test', value: 123, nested: { key: 'value' } };
@@ -172,7 +174,7 @@ describe("Sandbox", () => {
 
   it("execute TypeScript with array operations", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       const arr = [1, 2, 3, 4, 5];
@@ -188,7 +190,7 @@ describe("Sandbox", () => {
 
   it("execute async TypeScript code", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -204,7 +206,7 @@ describe("Sandbox", () => {
 
   it("handle TypeScript syntax errors", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       return this is not valid syntax;
     }
     `;
@@ -219,7 +221,7 @@ describe("Sandbox", () => {
 
   it("handle runtime errors", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const obj = null;
       return obj.property;
     }
@@ -233,7 +235,7 @@ describe("Sandbox", () => {
 
   it("sandbox isolation - file system access denied", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       try {
@@ -253,7 +255,7 @@ describe("Sandbox", () => {
 
   it("sandbox isolation - network access denied", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       try {
@@ -273,7 +275,7 @@ describe("Sandbox", () => {
 
   it("sandbox isolation - env access denied", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       try {
@@ -293,7 +295,7 @@ describe("Sandbox", () => {
 
   it("execute JavaScript with arrow functions", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({ a: z.number(), b: z.number() });
       const safeInputs = InputSchema.parse(inputs);
       const add = (a, b) => a + b;
@@ -309,7 +311,7 @@ describe("Sandbox", () => {
 
   it("execute complex JavaScript logic", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const UserSchema = z.object({ name: z.string(), age: z.number() });
       const InputSchema = z.object({ users: z.array(UserSchema) });
       const { users } = InputSchema.parse(inputs);
@@ -336,7 +338,7 @@ describe("Sandbox", () => {
   // Integration RPC tests
   it("ping integration via RPC worker", async () => {
     const code = `
-      export default async function(inputs, integrations) {
+      export default async function(inputs, { integrations }) {
         const InputSchema = z.object({ message: z.string() });
         const { message } = InputSchema.parse(inputs);
         const ping = await integrations.getPing();
@@ -357,7 +359,7 @@ describe("Sandbox", () => {
 
   it("gmail integration via RPC worker", async () => {
     const code = `
-      export default async function(inputs, integrations) {
+      export default async function(inputs, { integrations }) {
         const InputSchema = z.object({ userId: z.string() });
         const { userId } = InputSchema.parse(inputs);
         const gmail = await integrations.getGmail();
@@ -378,7 +380,7 @@ describe("Sandbox", () => {
 
   it("s3 integration via RPC worker", async () => {
     const code = `
-      export default async function(inputs, integrations) {
+      export default async function(inputs, { integrations }) {
         const InputSchema = z.object({});
         InputSchema.parse(inputs);
         const s3 = await integrations.getS3();
@@ -398,7 +400,7 @@ describe("Sandbox", () => {
 
   it("github integration via RPC worker", async () => {
     const code = `
-      export default async function(inputs, integrations) {
+      export default async function(inputs, { integrations }) {
         const InputSchema = z.object({});
         InputSchema.parse(inputs);
         const github = await integrations.getGithub();
@@ -411,5 +413,73 @@ describe("Sandbox", () => {
     expect(status, "HTTP status is 200").toBe(200);
     expect(result.success, "Result should indicate success").toBe(true);
     expect((result.result as { login: string }).login, "Should return login").toBe("octocat");
+  });
+
+  it("post-tsmorph transformed code is deterministic", async () => {
+    const code = `
+    export default async function(inputs, { integrations }) {
+      const InputSchema = z.object({ value: z.number() });
+      const { value } = InputSchema.parse(inputs);
+      return { result: value * 2 };
+    }
+    `;
+    const response1 = await executeTypescript(code, { value: 10 });
+    const response2 = await executeTypescript(code, { value: 10 });
+
+    expect(response1.status).toBe(200);
+    expect(response1.result.success).toBe(true);
+    expect(response1.result.code).toBeDefined();
+
+    expect(response2.status).toBe(200);
+    expect(response2.result.success).toBe(true);
+    expect(response2.result.code).toBeDefined();
+
+    expect(response1.result.code).toBe(response2.result.code);
+  });
+
+  it("pmarkers stay the same with a shared code prefix and change after the code changes", async () => {
+    const code1 = `
+    export default async function(inputs, { integrations }) {
+      await new Promise(r => setTimeout(r, 10));
+      await new Promise(r => setTimeout(r, 10));
+      return 'done';
+    }
+    `;
+
+    const code2 = `
+    export default async function(inputs, { integrations }) {
+      await new Promise(r => setTimeout(r, 20));
+      await new Promise(r => setTimeout(r, 10));
+      return 'done';
+    }
+    `;
+
+    const response1 = await executeTypescript(code1, {});
+    const response2 = await executeTypescript(code2, {});
+
+    expect(response1.status).toBe(200);
+    expect(response2.status).toBe(200);
+
+    const getPmarkers = (code: string) => {
+      const match = code.matchAll(/pmarker\('([a-f0-9]+)'\)/g);
+      return Array.from(match).map((m) => m[1]);
+    };
+
+    const pmarkers1 = getPmarkers(response1.result.code || "");
+    const pmarkers2 = getPmarkers(response2.result.code || "");
+    console.log("pmarkers1", response1.result.code || "", pmarkers1);
+    console.log("pmarkers2", response2.result.code || "", pmarkers2);
+
+    expect(pmarkers1.length).toBe(2);
+    expect(pmarkers2.length).toBe(2);
+
+    // The first await is physically at the same location relative to start,
+    // and the code before it is identical (imports + function signature + indentation).
+    // So the first pmarker should be the same.
+    expect(pmarkers1[0], "First pmarker should be identical").toBe(pmarkers2[0]);
+
+    // The second await has different code preceding it (setTimeout 10 vs 20).
+    // So the second pmarker should be different.
+    expect(pmarkers1[1], "Second pmarker should be divergent").not.toBe(pmarkers2[1]);
   });
 });

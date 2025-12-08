@@ -68,7 +68,7 @@ run_deno_tests() {
     cmd+=(tests)
   fi
 
-  cmd+=("--allow-net" "--allow-env" "--allow-read" "--sloppy-imports" "--unstable-worker-options")
+  cmd+=("--allow-net" "--allow-env" "--allow-read" "--sloppy-imports" "--unstable-worker-options" "--fail-fast")
 
   if [ "$watch_mode" = "1" ]; then
     cmd+=("--watch")

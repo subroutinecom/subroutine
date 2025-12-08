@@ -5,6 +5,11 @@ export type CallRequest = {
   readonly action: "call";
   readonly path: Path;
   readonly args: readonly unknown[];
+  readonly metadata?: {
+    runId?: string;
+    latestMarkerId?: string;
+    [key: string]: unknown;
+  };
 };
 
 export type CallResponse =
@@ -150,9 +155,11 @@ export class RemoteProxyServer<T extends object = object> {
 export class RemoteProxyClient<T extends object = object> {
   #transport: Transport;
   #instanceCache: Map<string, unknown> = new Map();
+  #metadataGetter?: () => Record<string, unknown>;
 
-  constructor(transport: Transport) {
+  constructor(transport: Transport, metadataGetter?: () => Record<string, unknown>) {
     this.#transport = transport;
+    this.#metadataGetter = metadataGetter;
   }
 
   getProxy<API = T>(): Remote<API> {
@@ -168,7 +175,8 @@ export class RemoteProxyClient<T extends object = object> {
         },
         apply: async (_t, _thisArg, argList) => {
           const id = genId();
-          const req: CallRequest = { id, action: "call", path, args: [...argList] };
+          const metadata = this.#metadataGetter ? this.#metadataGetter() : undefined;
+          const req: CallRequest = { id, action: "call", path, args: [...argList], metadata };
           // Enforce JSON serialization across the wire
           const wireReq = JSON.stringify(req);
           const jsonReq = JSON.parse(wireReq) as CallRequest;
@@ -185,9 +193,14 @@ export class RemoteProxyClient<T extends object = object> {
           if (ref && typeof ref === "object" && typeof ref.__remote_instance__ === "string") {
             const instanceId = ref.__remote_instance__;
             const cached = this.#instanceCache.get(instanceId);
-            if (cached) return cached;
+            if (cached) {
+              console.log("Cache hit for instance:", instanceId);
+              return cached;
+            }
             const inst = makeInstance(instanceId);
-            this.#instanceCache.set(instanceId, inst);
+            if (!cached) {
+              this.#instanceCache.set(instanceId, inst);
+            }
             return inst;
           }
           return out;
@@ -209,7 +222,8 @@ export class RemoteProxyClient<T extends object = object> {
           },
           apply: async (_t, _thisArg, argList) => {
             const id = genId();
-            const req: CallRequest = { id, action: "call", path, args: [...argList] };
+            const metadata = this.#metadataGetter ? this.#metadataGetter() : undefined;
+            const req: CallRequest = { id, action: "call", path, args: [...argList], metadata };
             // Enforce JSON serialization across the wire
             const wireReq = JSON.stringify(req);
             const jsonReq = JSON.parse(wireReq) as CallRequest;
@@ -228,7 +242,9 @@ export class RemoteProxyClient<T extends object = object> {
               const cached = this.#instanceCache.get(nestedId);
               if (cached) return cached;
               const nested = makeInstance(nestedId);
-              this.#instanceCache.set(nestedId, nested);
+              if (!cached) {
+                this.#instanceCache.set(nestedId, nested);
+              }
               return nested;
             }
             return out;
@@ -243,7 +259,7 @@ export class RemoteProxyClient<T extends object = object> {
 }
 
 // MessagePort-based transport for MessageChannel communication
-type WireMessage =
+export type WireMessage =
   | { kind: "rpc"; payload: CallRequest }
   | {
       kind: "rpc_result";
@@ -283,8 +299,9 @@ export class MessagePortTransport implements Transport {
 }
 
 export const createMessagePortClient = <T extends object>(
-  port: MessagePort
+  port: MessagePort,
+  metadataGetter?: () => Record<string, unknown>
 ): RemoteProxyClient<T> => {
   const transport = new MessagePortTransport(port);
-  return new RemoteProxyClient<T>(transport);
+  return new RemoteProxyClient<T>(transport, metadataGetter);
 };
