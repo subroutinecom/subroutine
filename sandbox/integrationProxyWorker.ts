@@ -14,7 +14,6 @@ import { createMcpClient } from "./integrations/mcp/mod.ts";
 import { RemoteProxyServer, type CallRequest, type CallResponse } from "./remoteProxy.ts";
 import type { SandboxIntegrationPayload } from "./types.ts";
 
-
 interface S3API {
   listBuckets(): { buckets: string[] };
 }
@@ -343,20 +342,13 @@ addEventListener("message", async (ev: Event) => {
 
       (async () => {
         const req = wireMsg.payload;
-        const { runId, latestMarkerId } = req.metadata || {};
-
-
-
         const res = await server.handle(JSON.parse(JSON.stringify(req)));
 
-
-
-
-      const wire: WireMessage = {
-        kind: "rpc_result",
-        payload: JSON.parse(JSON.stringify(res)) as CallResponse,
-      };
-      messagePort!.postMessage(wire);
+        const wire: WireMessage = {
+          kind: "rpc_result",
+          payload: JSON.parse(JSON.stringify(res)) as CallResponse,
+        };
+        messagePort!.postMessage(wire);
       })();
     };
 

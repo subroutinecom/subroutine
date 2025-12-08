@@ -1,9 +1,9 @@
-import type { SandboxIntegrationPayload } from "./types.ts";
-import { applyTransforms } from "./transforms/index.ts";
-import type { ExecuteMessage } from "./worker.ts";
 import { createHash } from "node:crypto";
 import { RunCacheManager } from "./memory-cache.ts";
-import { RemoteProxyServer, type WireMessage, type CallRequest, type CallResponse } from "./remoteProxy.ts";
+import { RemoteProxyServer, type WireMessage } from "./remoteProxy.ts";
+import { applyTransforms } from "./transforms/index.ts";
+import type { SandboxIntegrationPayload } from "./types.ts";
+import type { ExecuteMessage } from "./worker.ts";
 
 const MAX_CACHE_SIZE_BYTES = 5 * 1024 * 1024;
 
@@ -115,10 +115,7 @@ export class SandboxManager {
 
         // Canonicalize path for caching (remove non-deterministic instance ID)
         let canonicalPath = req.path;
-        if (
-          canonicalPath[0] === RemoteProxyServer.INSTANCE_PREFIX &&
-          canonicalPath.length >= 2
-        ) {
+        if (canonicalPath[0] === RemoteProxyServer.INSTANCE_PREFIX && canonicalPath.length >= 2) {
           canonicalPath = canonicalPath.slice(2);
         }
 
@@ -129,7 +126,11 @@ export class SandboxManager {
           typeof latestMarkerId === "string" &&
           typeof pmarkerCounter === "number"
         ) {
-          const hashInput = JSON.stringify({ path: canonicalPath, args: req.args, counter: pmarkerCounter });
+          const hashInput = JSON.stringify({
+            path: canonicalPath,
+            args: req.args,
+            counter: pmarkerCounter,
+          });
           const argsHash = createHash("sha256").update(hashInput).digest("hex");
           const cacheKey = `${latestMarkerId}:${argsHash}`;
 
