@@ -5,12 +5,12 @@ import {
   createGetGlobalIntegrations,
   createGetOrganizationIntegrations,
 } from "../tools/discovery.ts";
-import { createListIntegrations } from "../tools/list-integrations.ts";
 import {
-  createFindIntegrationProvided,
   createFindIntegrationDiscovery,
+  createFindIntegrationProvided,
 } from "../tools/find-integration.ts";
 import { createInspectIntegration } from "../tools/inspect-integration.ts";
+import { createListIntegrations } from "../tools/list-integrations.ts";
 import { createManageMcpIntegration } from "../tools/manage-integration.ts";
 import { createWriteCodeTool } from "../tools/write-code.ts";
 import type { McpContext, SubroutineCapture } from "./types.ts";
@@ -46,7 +46,8 @@ export const createAgentTools = (
     tools.inspectIntegration = createInspectIntegration(
       mcpContext,
       capturedAuthRequirements,
-      usedIntegrationIds
+      usedIntegrationIds,
+      options.integrations // Pass provided integrations to allow mock handling
     );
 
     if (hasProvidedIntegrations) {
