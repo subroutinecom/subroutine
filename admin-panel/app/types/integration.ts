@@ -1,30 +1,12 @@
-export type IntegrationProvider = "gmail" | "github" | "mock_oauth" | "mcp" | "graphql" | "calendar";
+import type { AuthBlock, AuthStrategy } from "../../../packages/shared-types/integration";
+export type { AuthBlock, AuthStrategy, OAuthConfig } from "../../../packages/shared-types/integration";
+
+export type IntegrationProvider = "gmail" | "github" | "mock_oauth" | "mcp" | "graphql" | "openapi" | "calendar";
 
 export type McpTransport = "sse" | "streamable-http";
 
 // Unified auth strategy - same for MCP, GraphQL, and future protocols
-export type AuthStrategy =
-  | { type: "none" }
-  | { type: "api_key"; headerName?: string; viewerScoped?: boolean }
-  | { type: "bearer_oauth" }
-  | { type: "custom_headers"; headers: Record<string, string> };
-
-// OAuth configuration for bearer_oauth strategy
-export interface OAuthConfig {
-  clientId: string;
-  clientSecret: string;
-  authUrl: string;
-  tokenUrl: string;
-  redirectUri: string;
-  scopes: string[];
-}
-
-// Auth block - same structure for all protocols
-export interface AuthBlock {
-  strategy: AuthStrategy;
-  apiKey?: string;
-  oauthConfig?: OAuthConfig;
-}
+export type AuthStrategyType = AuthStrategy["type"];
 
 // MCP integration config
 export interface McpIntegrationConfig {
@@ -43,6 +25,18 @@ export interface GraphQLIntegrationConfig {
   metadata?: Record<string, unknown>;
 }
 
+// OpenAPI integration config
+export interface OpenAPIIntegrationConfig {
+  type: "openapi";
+  baseUrl: string;
+  specUrl?: string;
+  auth: AuthBlock;
+  spec?: string;
+  specVersion?: "3.0" | "3.1";
+  specFetchedAt?: number;
+  metadata?: Record<string, unknown>;
+}
+
 // OAuth2 native integration config (Gmail, GitHub, etc.)
 export interface OAuth2IntegrationConfig {
   type: "oauth2";
@@ -55,7 +49,7 @@ export interface OAuth2IntegrationConfig {
   metadata?: Record<string, unknown>;
 }
 
-export type IntegrationConfig = OAuth2IntegrationConfig | McpIntegrationConfig | GraphQLIntegrationConfig;
+export type IntegrationConfig = OAuth2IntegrationConfig | McpIntegrationConfig | GraphQLIntegrationConfig | OpenAPIIntegrationConfig;
 
 export interface Integration {
   id: string;
@@ -68,7 +62,7 @@ export interface Integration {
   updatedAt: string;
 }
 
-export type IntegrationProviderAuthType = "oauth2" | "custom" | "mcp" | "graphql";
+export type IntegrationProviderAuthType = "oauth2" | "custom" | "mcp" | "graphql" | "openapi";
 
 export interface OAuthIntegrationProviderConfig {
   authUrl: string;
@@ -89,6 +83,12 @@ export interface GraphQLProviderConfig {
   auth: AuthBlock;
 }
 
+export interface OpenAPIProviderConfig {
+  baseUrl: string;
+  specUrl?: string;
+  auth: AuthBlock;
+}
+
 export interface IntegrationProviderDefinition {
   id: IntegrationProvider;
   name: string;
@@ -98,6 +98,7 @@ export interface IntegrationProviderDefinition {
   oauthConfig?: OAuthIntegrationProviderConfig | null;
   mcpConfig?: McpProviderConfig | null;
   graphqlConfig?: GraphQLProviderConfig | null;
+  openapiConfig?: OpenAPIProviderConfig | null;
 }
 
 export type ConnectedAccountStatus = "active" | "expired" | "revoked" | "error";

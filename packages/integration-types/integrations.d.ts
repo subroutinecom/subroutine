@@ -22,6 +22,12 @@ export interface Integrations {
 
   /** Get GitHub API client */
   getGithub(): Promise<GithubClient>;
+
+  /** Get a GraphQL client by integration name */
+  getGraphQLClient(name: string): Promise<GraphQLClient>;
+
+  /** Get an OpenAPI client by integration name */
+  getOpenAPIClient(name: string): Promise<OpenAPIClient>;
 }
 
 // ============================================================================
@@ -94,6 +100,32 @@ interface McpToolResult {
     | { type: "resource"; resource: { uri: string; mimeType?: string; text?: string } }
   >;
   isError?: boolean;
+}
+
+// ============================================================================
+// GraphQL Client (minimal subset used by subroutines)
+// ============================================================================
+
+export interface GraphQLClient {
+  request<TData = unknown, TVariables extends Record<string, unknown> = Record<string, unknown>>(
+    query: string,
+    variables?: TVariables,
+  ): Promise<TData>;
+}
+
+// ============================================================================
+// OpenAPI Client (minimal subset used by subroutines)
+// ============================================================================
+
+export interface OpenAPIClient {
+  request<T = unknown>(
+    method: string,
+    path: string,
+    params?: Record<string, unknown>,
+    body?: unknown,
+  ): Promise<T>;
+  getOperations(): Array<{ method: string; path: string; summary?: string }>;
+  getOperation(method: string, path: string): { method: string; path: string; summary?: string } | null;
 }
 
 // ============================================================================

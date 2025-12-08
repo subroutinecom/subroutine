@@ -1,16 +1,17 @@
-import type { ValidationRule } from "../types.ts";
-import { noCtxUsage } from "./no-ctx-usage.ts";
-import { noFetchCalls } from "./no-fetch-calls.ts";
-import { noNestedImports } from "./no-nested-imports.ts";
-import { requireAsyncMain } from "./require-async-main.ts";
-import { requireAwaitMcpClient } from "./require-await-mcp-client.ts";
-import { requireExportMain } from "./require-export-main.ts";
-import { requireInputsType } from "./require-inputs-type.ts";
-import { requireMcpClientAccess } from "./require-mcp-client-access.ts";
-import { requireOutputsType } from "./require-outputs-type.ts";
-import { requireReturnInMain } from "./require-return-in-main.ts";
-import { validateGraphqlQueries } from "./validate-graphql-queries.ts";
-import { validateMcpIntegrationName } from "./validate-mcp-integration-name.ts";
+import type { ValidationRule } from "../types";
+import { noCtxUsage } from "./no-ctx-usage";
+import { noFetchCalls } from "./no-fetch-calls";
+import { noNestedImports } from "./no-nested-imports";
+import { requireAsyncMain } from "./require-async-main";
+import { requireAwaitMcpClient } from "./require-await-mcp-client";
+import { requireExportMain } from "./require-export-main";
+import { requireInputsType } from "./require-inputs-type";
+import { requireMcpClientAccess } from "./require-mcp-client-access";
+import { requireOutputsType } from "./require-outputs-type";
+import { requireReturnInMain } from "./require-return-in-main";
+import { validateGraphqlQueries } from "./validate-graphql-queries";
+import { validateMcpIntegrationName } from "./validate-mcp-integration-name";
+import { validateOpenAPICalls } from "./validate-openapi-calls";
 
 export const rules: ValidationRule[] = [
   requireExportMain,
@@ -25,6 +26,7 @@ export const rules: ValidationRule[] = [
   validateMcpIntegrationName,
   validateGraphqlQueries,
   noNestedImports,
+  validateOpenAPICalls,
 ];
 
 export {
@@ -40,4 +42,5 @@ export {
   requireReturnInMain,
   validateGraphqlQueries,
   validateMcpIntegrationName,
+  validateOpenAPICalls,
 };

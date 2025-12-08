@@ -5,13 +5,14 @@ import {
   createCalendarClient,
   type CalendarConfig,
   type CalendarTokens,
-} from "./integrations/calendar/mod.ts";
-import type { CalendarAPI } from "./integrations/calendar/types.ts";
-import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod.ts";
-import type { GmailAPI } from "./integrations/gmail/types.ts";
-import { createGraphQLClient, type GraphQLClient } from "./integrations/graphql/mod.ts";
-import { createMcpClient } from "./integrations/mcp/mod.ts";
-import { RemoteProxyServer, type CallRequest, type CallResponse } from "./remoteProxy.ts";
+} from "./integrations/calendar/mod";
+import type { CalendarAPI } from "./integrations/calendar/types";
+import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
+import type { GmailAPI } from "./integrations/gmail/types";
+import { createGraphQLClient, type GraphQLClient } from "./integrations/graphql/mod";
+import { createMcpClient } from "./integrations/mcp/mod";
+import { createOpenAPIClient, type OpenAPIClient } from "./integrations/openapi/mod";
+import { RemoteProxyServer, type CallRequest, type CallResponse } from "./remoteProxy";
 import type { SandboxIntegrationPayload } from "./types.ts";
 
 interface S3API {
@@ -221,10 +222,52 @@ const buildServerForIntegrations = async (
     });
   }
 
+  const openapiClients = new Map<string, OpenAPIClient>();
+  const openapiErrors = new Map<string, Error>();
+
+  const openapiIntegrations = integrations.filter((integration) => integration.openapiConfig);
+  console.log(`[IntegrationProxy] Found ${openapiIntegrations.length} OpenAPI integrations`);
+
+  for (const integration of openapiIntegrations) {
+    try {
+      const client = createOpenAPIClient(integration.openapiConfig!);
+      openapiClients.set(integration.name, client);
+      console.log(`[IntegrationProxy] OpenAPI client '${integration.name}' created`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      openapiErrors.set(
+        integration.name,
+        new Error(`Failed to create OpenAPI client '${integration.name}': ${errorMessage}`)
+      );
+      console.error(`[IntegrationProxy] OpenAPI '${integration.name}' failed: ${errorMessage}`);
+    }
+  }
+
+  if (openapiClients.size > 0 || openapiErrors.size > 0) {
+    server.register("getOpenAPIClient", (name: unknown) => {
+      const integrationName = String(name);
+
+      const creationError = openapiErrors.get(integrationName);
+      if (creationError) {
+        throw creationError;
+      }
+
+      const client = openapiClients.get(integrationName);
+      if (!client) {
+        const availableNames = [...openapiClients.keys()].join(", ") || "none";
+        throw new Error(
+          `OpenAPI integration '${integrationName}' not found. Available: ${availableNames}`
+        );
+      }
+
+      return client as unknown as object;
+    });
+  }
+
   // Handle traditional OAuth-based integrations
   await Promise.all(
     integrations
-      .filter((integration) => !integration.mcpConfig && !integration.graphqlConfig)
+      .filter((integration) => !integration.mcpConfig && !integration.graphqlConfig && !integration.openapiConfig)
       .map((integration) => {
         switch (integration.provider) {
           case "gmail": {

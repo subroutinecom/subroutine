@@ -3,6 +3,7 @@ export type {
   McpTransport,
   SandboxMcpConfig,
   SandboxGraphQLConfig,
+  SandboxOpenAPIConfig,
   AuthStrategy,
   AuthBlock,
   OAuthConfig,
@@ -67,6 +68,23 @@ export type AuthStrategyDefinition =
   | {
       type: "graphql";
       endpoint: string;
+      authStrategy: AuthStrategy;
+      /**
+       * For bearer_oauth, we need OAuth config to authenticate users.
+       * This is optional - only needed when authStrategy is bearer_oauth.
+       */
+      oauthConfig?: {
+        authUrl: string;
+        tokenUrl: string;
+        defaultScopes: string[];
+        requiredScopes?: string[];
+        defaultRedirectPath?: string;
+        handlers?: OAuthHandlers;
+      };
+    }
+  | {
+      type: "openapi";
+      baseUrl: string;
       authStrategy: AuthStrategy;
       /**
        * For bearer_oauth, we need OAuth config to authenticate users.

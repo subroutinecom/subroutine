@@ -4,17 +4,20 @@ import type { AuthBlock } from "../../integrations/providers";
 import {
   type McpIntegrationConfig,
   type GraphQLIntegrationConfig,
+  type OpenAPIIntegrationConfig,
   type IntegrationWithConfig,
 } from "../../models/integration";
 import { getConnectedAccountByViewer } from "../../models/connected-account";
 import { listMcpTools as listMcpToolsUtil } from "../../utils/mcp-client";
 import { introspectSchema } from "../../integrations/introspection";
+import { fetchOpenAPISpec, parseOpenAPISpec } from "../../integrations/openapi-introspection";
 import { generateAuthorizationUrl } from "../../services/oauth";
 import { generatePatLinkUrl } from "../../models/pat-link";
 import type { IntegrationProvider } from "../../integrations/providers";
+import { buildAuthHeadersFromBlock } from "../../integrations/auth-utils";
 
-// Type for configs that have an auth block (MCP and GraphQL)
-type ConfigWithAuth = McpIntegrationConfig | GraphQLIntegrationConfig;
+// Type for configs that have an auth block (MCP, GraphQL, OpenAPI)
+type ConfigWithAuth = McpIntegrationConfig | GraphQLIntegrationConfig | OpenAPIIntegrationConfig;
 
 /**
  * Checks if an auth block requires viewer-scoped authentication.
@@ -28,39 +31,6 @@ const requiresViewerAuth = (auth: AuthBlock): boolean => {
     return true;
   }
   return false;
-};
-
-/**
- * Builds auth headers from an auth block and optional access token.
- */
-const buildAuthHeaders = (auth: AuthBlock, accessToken?: string): Record<string, string> => {
-  const headers: Record<string, string> = {};
-
-  switch (auth.strategy.type) {
-    case "bearer_oauth":
-      if (accessToken) {
-        headers["Authorization"] = `Bearer ${accessToken}`;
-      }
-      break;
-    case "api_key":
-      if (!auth.strategy.viewerScoped && auth.apiKey) {
-        const headerName = auth.strategy.headerName ?? "Authorization";
-        headers[headerName] = auth.apiKey;
-      } else if (auth.strategy.viewerScoped && accessToken) {
-        // For viewerScoped API keys, the "accessToken" is actually the user's API key
-        const headerName = auth.strategy.headerName ?? "Authorization";
-        headers[headerName] = accessToken;
-      }
-      break;
-    case "custom_headers":
-      if (auth.strategy.headers) {
-        Object.assign(headers, auth.strategy.headers);
-      }
-      break;
-    // "none" - no headers needed
-  }
-
-  return headers;
 };
 
 /**
@@ -225,7 +195,7 @@ export const handleInspectGraphQL = async (
     }
 
     // Have connected account - introspect with user's token
-    const headers = buildAuthHeaders(graphqlConfig.auth, connectedAccount.credentials.accessToken);
+    const headers = buildAuthHeadersFromBlock(graphqlConfig.auth, connectedAccount.credentials.accessToken);
 
     try {
       const result = await introspectSchema(graphqlConfig.endpoint, headers);
@@ -253,7 +223,7 @@ export const handleInspectGraphQL = async (
     }
   } else {
     // No viewer auth needed (none, org-level api_key, custom_headers)
-    const headers = buildAuthHeaders(graphqlConfig.auth);
+    const headers = buildAuthHeadersFromBlock(graphqlConfig.auth);
 
     try {
       const result = await introspectSchema(graphqlConfig.endpoint, headers);
@@ -282,3 +252,132 @@ export const handleInspectGraphQL = async (
   }
 };
 
+/**
+ * Handles OpenAPI spec inspection.
+ * Checks auth and returns spec if authorized, or captures auth requirement.
+ */
+export const handleInspectOpenAPI = async (
+  integration: IntegrationWithConfig,
+  mcpContext: McpContext,
+  capturedAuthRequirements: AuthRequirement[]
+): Promise<{
+  success: boolean;
+  type: "openapi";
+  spec?: string;
+  specVersion?: "3.0" | "3.1";
+  specFetchedAt?: number;
+  operations?: Array<{ method: string; path: string; summary?: string }>;
+  error?: string;
+}> => {
+  const openapiConfig = integration.authConfig as OpenAPIIntegrationConfig;
+
+  if (openapiConfig.spec && openapiConfig.specVersion && openapiConfig.specFetchedAt) {
+    const result = await parseOpenAPISpec(openapiConfig.spec);
+    if (result.ok) {
+      return {
+        success: true,
+        type: "openapi",
+        spec: result.result.spec,
+        specVersion: result.result.version,
+        specFetchedAt: openapiConfig.specFetchedAt,
+        operations: result.result.operations.map((op) => ({
+          method: op.method,
+          path: op.path,
+          summary: op.summary,
+        })),
+      };
+    }
+  }
+
+  if (!openapiConfig.specUrl) {
+    return {
+      success: false,
+      type: "openapi",
+      error: `Integration "${integration.name}" has no OpenAPI spec URL configured and no cached spec.`,
+    };
+  }
+
+  if (requiresViewerAuth(openapiConfig.auth)) {
+    const connectedAccount = await getConnectedAccountByViewer(
+      mcpContext.viewerId,
+      integration.id,
+      mcpContext.organizationId
+    );
+
+    if (!connectedAccount) {
+      await captureAuthRequirement(integration, openapiConfig.auth, mcpContext, capturedAuthRequirements);
+
+      return {
+        success: false,
+        type: "openapi",
+        error: `Integration "${integration.name}" requires user authorization. The user will be prompted to authenticate.`,
+      };
+    }
+
+    const headers = buildAuthHeadersFromBlock(openapiConfig.auth, connectedAccount.credentials.accessToken);
+
+    try {
+      const result = await fetchOpenAPISpec(openapiConfig.specUrl, headers);
+      if (result.ok) {
+        return {
+          success: true,
+          type: "openapi",
+          spec: result.result.spec,
+          specVersion: result.result.version,
+          specFetchedAt: result.result.fetchedAt,
+          operations: result.result.operations.map((op) => ({
+            method: op.method,
+            path: op.path,
+            summary: op.summary,
+          })),
+        };
+      } else {
+        return {
+          success: false,
+          type: "openapi",
+          error: `Failed to fetch OpenAPI spec: ${result.error.message} (${result.error.code})`,
+        };
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      return {
+        success: false,
+        type: "openapi",
+        error: `Failed to fetch OpenAPI spec from "${integration.name}": ${message}`,
+      };
+    }
+  } else {
+    const headers = buildAuthHeadersFromBlock(openapiConfig.auth);
+
+    try {
+      const result = await fetchOpenAPISpec(openapiConfig.specUrl, headers);
+      if (result.ok) {
+        return {
+          success: true,
+          type: "openapi",
+          spec: result.result.spec,
+          specVersion: result.result.version,
+          specFetchedAt: result.result.fetchedAt,
+          operations: result.result.operations.map((op) => ({
+            method: op.method,
+            path: op.path,
+            summary: op.summary,
+          })),
+        };
+      } else {
+        return {
+          success: false,
+          type: "openapi",
+          error: `Failed to fetch OpenAPI spec: ${result.error.message} (${result.error.code})`,
+        };
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      return {
+        success: false,
+        type: "openapi",
+        error: `Failed to fetch OpenAPI spec from "${integration.name}": ${message}`,
+      };
+    }
+  }
+};

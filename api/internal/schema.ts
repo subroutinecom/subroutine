@@ -21,6 +21,8 @@ import {
   updateIntegrationDescription,
   introspectAndStoreSchema,
   getIntegrationSchema,
+  introspectAndStoreOpenAPISpec,
+  getOpenAPIIntegrationSpec,
 } from "../models/integration.ts";
 import { isSuperadminOrg } from "../utils/superadmin.ts";
 import {
@@ -202,6 +204,21 @@ McpIntegrationConfigType.implement({
   }),
 });
 
+// OpenAPI Provider Config Type
+const OpenAPIIntegrationConfigType = builder.objectRef<
+  Extract<IntegrationDefinition["auth"], { type: "openapi" }>
+>("IntegrationProviderOpenAPIConfig");
+
+OpenAPIIntegrationConfigType.implement({
+  fields: (t) => ({
+    baseUrl: t.exposeString("baseUrl"),
+    authStrategy: t.field({
+      type: McpAuthStrategyType,
+      resolve: (parent) => parent.authStrategy,
+    }),
+  }),
+});
+
 const IntegrationProviderDefinitionType = builder.objectRef<IntegrationDefinition>(
   "IntegrationProviderDefinition"
 );
@@ -226,6 +243,11 @@ IntegrationProviderDefinitionType.implement({
       type: McpIntegrationConfigType,
       nullable: true,
       resolve: (parent) => (parent.auth.type === "mcp" ? parent.auth : null),
+    }),
+    openapiConfig: t.field({
+      type: OpenAPIIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => (parent.auth.type === "openapi" ? parent.auth : null),
     }),
   }),
 });
@@ -306,6 +328,84 @@ StoredSchemaType.implement({
     schema: t.exposeString("schema"),
     fetchedAt: t.int({
       resolve: (parent) => parent.fetchedAt,
+    }),
+  }),
+});
+
+// OpenAPI Operation Type
+const OpenAPIOperationType = builder.objectRef<{
+  method: string;
+  path: string;
+  summary?: string;
+}>("OpenAPIOperation");
+
+OpenAPIOperationType.implement({
+  fields: (t) => ({
+    method: t.exposeString("method"),
+    path: t.exposeString("path"),
+    summary: t.exposeString("summary", { nullable: true }),
+  }),
+});
+
+// OpenAPI Introspection Result Type
+type OpenAPIIntrospectionResultModel =
+  | { success: true; spec: string; version: "3.0" | "3.1"; fetchedAt: number; operations: Array<{ method: string; path: string; summary?: string }> }
+  | { success: false; error: string; code: string };
+
+const OpenAPIIntrospectionResultType =
+  builder.objectRef<OpenAPIIntrospectionResultModel>("OpenAPIIntrospectionResult");
+
+OpenAPIIntrospectionResultType.implement({
+  fields: (t) => ({
+    success: t.boolean({
+      resolve: (parent) => parent.success,
+    }),
+    spec: t.string({
+      nullable: true,
+      resolve: (parent) => (parent.success ? parent.spec : null),
+    }),
+    version: t.string({
+      nullable: true,
+      resolve: (parent) => (parent.success ? parent.version : null),
+    }),
+    fetchedAt: t.int({
+      nullable: true,
+      resolve: (parent) => (parent.success ? parent.fetchedAt : null),
+    }),
+    operations: t.field({
+      type: [OpenAPIOperationType],
+      nullable: true,
+      resolve: (parent) => (parent.success ? parent.operations : null),
+    }),
+    error: t.string({
+      nullable: true,
+      resolve: (parent) => (!parent.success ? parent.error : null),
+    }),
+    code: t.string({
+      nullable: true,
+      resolve: (parent) => (!parent.success ? parent.code : null),
+    }),
+  }),
+});
+
+// Stored OpenAPI Spec Type
+const StoredOpenAPISpecType = builder.objectRef<{
+  spec: string;
+  version: "3.0" | "3.1";
+  fetchedAt: number;
+  operations: Array<{ method: string; path: string; summary?: string }>;
+}>("StoredOpenAPISpec");
+
+StoredOpenAPISpecType.implement({
+  fields: (t) => ({
+    spec: t.exposeString("spec"),
+    version: t.exposeString("version"),
+    fetchedAt: t.int({
+      resolve: (parent) => parent.fetchedAt,
+    }),
+    operations: t.field({
+      type: [OpenAPIOperationType],
+      resolve: (parent) => parent.operations,
     }),
   }),
 });
@@ -457,6 +557,56 @@ builder.queryType({
       },
       resolve: async (_parent, args, ctx) => {
         return getIntegrationSchema(args.integrationId, ctx.session.activeOrganizationId);
+      },
+    }),
+    introspectOpenAPIEndpoint: t.field({
+      type: OpenAPIIntrospectionResultType,
+      description:
+        "Introspect an OpenAPI endpoint to verify connectivity and fetch spec. " +
+        "Used during integration creation to validate the endpoint.",
+      args: {
+        specUrl: t.arg.string({ required: true }),
+        headers: t.arg.string({
+          required: false,
+          description: "JSON string of headers to include in the request",
+        }),
+      },
+      resolve: async (_parent, args) => {
+        const { fetchOpenAPISpec } = await import("../integrations/openapi-introspection.ts");
+        const headers = args.headers ? JSON.parse(args.headers) : {};
+
+        const result = await fetchOpenAPISpec(args.specUrl, headers);
+
+        if (result.ok) {
+          return {
+            success: true as const,
+            spec: result.result.spec,
+            version: result.result.version,
+            fetchedAt: result.result.fetchedAt,
+            operations: result.result.operations.map((op) => ({
+              method: op.method,
+              path: op.path,
+              summary: op.summary,
+            })),
+          };
+        } else {
+          return {
+            success: false as const,
+            error: result.error.message,
+            code: result.error.code,
+          };
+        }
+      },
+    }),
+    integrationOpenAPISpec: t.field({
+      type: StoredOpenAPISpecType,
+      nullable: true,
+      description: "Get the stored OpenAPI spec for an OpenAPI integration",
+      args: {
+        integrationId: t.arg.string({ required: true }),
+      },
+      resolve: async (_parent, args, ctx) => {
+        return getOpenAPIIntegrationSpec(args.integrationId, ctx.session.activeOrganizationId);
       },
     }),
   }),
@@ -707,6 +857,41 @@ builder.mutationType({
             success: true as const,
             schema: result.schema,
             fetchedAt: result.fetchedAt,
+          };
+        } else {
+          return {
+            success: false as const,
+            error: result.error,
+            code: result.code,
+          };
+        }
+      },
+    }),
+    introspectIntegrationOpenAPISpec: t.field({
+      type: OpenAPIIntrospectionResultType,
+      description:
+        "Fetch an OpenAPI spec and store it for an integration. " +
+        "Only works for OpenAPI integrations with specUrl configured.",
+      args: {
+        integrationId: t.arg.string({ required: true }),
+      },
+      resolve: async (_parent, args, ctx) => {
+        const result = await introspectAndStoreOpenAPISpec(
+          args.integrationId,
+          ctx.session.activeOrganizationId
+        );
+
+        if (result.ok) {
+          return {
+            success: true as const,
+            spec: result.spec,
+            version: result.version,
+            fetchedAt: result.fetchedAt,
+            operations: result.operations.map((op) => ({
+              method: op.method,
+              path: op.path,
+              summary: op.summary,
+            })),
           };
         } else {
           return {

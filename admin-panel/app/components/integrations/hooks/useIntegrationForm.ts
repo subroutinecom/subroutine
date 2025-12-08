@@ -20,6 +20,8 @@ export const useIntegrationForm = (options: UseIntegrationFormOptions) => {
       serverUrl: initialData?.serverUrl ?? "",
       transport: initialData?.transport ?? "sse",
       endpoint: initialData?.endpoint ?? "",
+      baseUrl: initialData?.baseUrl ?? "",
+      specUrl: initialData?.specUrl ?? "",
       authStrategy: initialData?.authStrategy ?? "none",
       apiKey: initialData?.apiKey ?? "",
       apiKeyHeaderName: initialData?.apiKeyHeaderName ?? "X-API-Key",
@@ -52,6 +54,7 @@ export const useIntegrationForm = (options: UseIntegrationFormOptions) => {
   const currentProvider = getProviderDefinition(watchedProvider);
   const isMcpProvider = currentProvider?.authType === "mcp";
   const isGraphQLProvider = currentProvider?.authType === "graphql";
+  const isOpenAPIProvider = currentProvider?.authType === "openapi";
   const isOAuthProvider = currentProvider?.authType === "oauth2";
 
   // Handle provider change - reset auth-related fields
@@ -72,6 +75,13 @@ export const useIntegrationForm = (options: UseIntegrationFormOptions) => {
       // Set auth strategy from provider config
       const authType = currentProvider.graphqlConfig.auth?.strategy?.type ?? "none";
       setValue("authStrategy", authType as AuthStrategyType);
+    } else if (isOpenAPIProvider && currentProvider.openapiConfig) {
+      setValue("baseUrl", currentProvider.openapiConfig.baseUrl || "");
+      setValue("specUrl", currentProvider.openapiConfig.specUrl || "");
+
+      // Set auth strategy from provider config
+      const authType = currentProvider.openapiConfig.auth?.strategy?.type ?? "none";
+      setValue("authStrategy", authType as AuthStrategyType);
     } else if (isOAuthProvider && currentProvider.oauthConfig) {
       setValue("oauthAuthUrl", currentProvider.oauthConfig.authUrl || "");
       setValue("oauthTokenUrl", currentProvider.oauthConfig.tokenUrl || "");
@@ -80,7 +90,7 @@ export const useIntegrationForm = (options: UseIntegrationFormOptions) => {
     }
 
     onProviderChange?.();
-  }, [watchedProvider, currentProvider, isMcpProvider, isGraphQLProvider, isOAuthProvider, setValue, onProviderChange]);
+  }, [watchedProvider, currentProvider, isMcpProvider, isGraphQLProvider, isOpenAPIProvider, isOAuthProvider, setValue, onProviderChange]);
 
   // Handle auth strategy selection from discovery
   const handleSelectAuthMethod = useCallback(
@@ -116,6 +126,7 @@ export const useIntegrationForm = (options: UseIntegrationFormOptions) => {
     watchedApiKeyIsViewerScoped,
     isMcpProvider,
     isGraphQLProvider,
+    isOpenAPIProvider,
     isOAuthProvider,
     getProviderDefinition,
     handleSelectAuthMethod,

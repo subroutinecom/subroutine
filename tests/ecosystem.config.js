@@ -24,5 +24,17 @@ module.exports = {
         PORT: "3457",
       },
     },
+    {
+      name: "openapi-test-server",
+      script: "deno",
+      args: "run --allow-net --allow-env openapi-test-server/server.ts",
+      autorestart: true,
+      watch: ["openapi-test-server/*.ts"],
+      ignore_watch: ["node_modules", ".git"],
+      env: {
+        NODE_ENV: "development",
+        PORT: "3458",
+      },
+    },
   ],
 };

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { AuthRequirement } from "../../models/errors.ts";
-import { getIntegrationOrGlobal } from "../../models/integration.ts";
-import type { McpContext } from "../utils/types.ts";
-import { handleInspectGraphQL, handleInspectMcp } from "./utils.ts";
+import type { AuthRequirement } from "../../models/errors";
+import { getIntegrationOrGlobal } from "../../models/integration";
+import type { McpContext } from "../utils/types";
+import { handleInspectGraphQL, handleInspectMcp, handleInspectOpenAPI } from "./utils";
 
 /**
  * Result type for inspectIntegration tool.
@@ -22,6 +22,15 @@ type InspectResult =
       integrationName: string;
       schema: string;
       schemaFetchedAt: number;
+      usage: string;
+    }
+  | {
+      success: true;
+      type: "openapi";
+      integrationName: string;
+      specVersion: "3.0" | "3.1";
+      specFetchedAt: number;
+      operations: Array<{ method: string; path: string; summary?: string }>;
       usage: string;
     }
   | {
@@ -54,6 +63,7 @@ export const createInspectIntegration = (
 
 For MCP integrations: Returns the list of available tools and their input schemas.
 For GraphQL integrations: Returns the GraphQL schema (SDL) for generating queries.
+For OpenAPI integrations: Returns the list of available operations (method + path) for making REST API calls.
 
 The integration must be found first (via listIntegrations or findIntegration).
 Call this BEFORE writing code to understand what the integration can do.`,
@@ -186,6 +196,36 @@ const client = await integrations.getGraphQLClient("${integration.name}");
 const result = await client.request(\`query { ... }\`, { variables });
 
 IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
+          };
+        }
+        return { success: false, error: result.error ?? "Unknown error" };
+      }
+
+      if (integration.authConfig.type === "openapi") {
+        const result = await handleInspectOpenAPI(integration, mcpContext, capturedAuthRequirements);
+        if (result.success && result.operations) {
+          usedIntegrationIds.add(integration.id);
+          return {
+            success: true,
+            type: "openapi",
+            integrationName: integration.name,
+            specVersion: result.specVersion!,
+            specFetchedAt: result.specFetchedAt!,
+            operations: result.operations,
+            usage: `This is an OpenAPI/REST integration. Use integrations.getOpenAPIClient() to get a client:
+
+const client = await integrations.getOpenAPIClient("${integration.name}");
+
+// GET request with path parameter
+const user = await client.request("GET", "/users/{userId}", { userId: "123" });
+
+// GET request with query parameters
+const users = await client.request("GET", "/users", { limit: 10, offset: 0 });
+
+// POST request with body
+const created = await client.request("POST", "/users", {}, { name: "John", email: "john@example.com" });
+
+IMPORTANT: The method and path must match one of the operations listed above.`,
           };
         }
         return { success: false, error: result.error ?? "Unknown error" };

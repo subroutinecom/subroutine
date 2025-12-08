@@ -62,6 +62,7 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
       code?: string;
       mcpIntegrationNames?: string[];
       graphqlIntegrations?: Array<{ name: string; schema: string }>;
+      openapiIntegrations?: Array<{ name: string; spec: string; operations: Array<{ method: string; path: string }> }>;
     };
     try {
       body = await c.req.json();
@@ -91,10 +92,11 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
 
     // Build context for validation
     const context =
-      body.mcpIntegrationNames || body.graphqlIntegrations
+      body.mcpIntegrationNames || body.graphqlIntegrations || body.openapiIntegrations
         ? {
             mcpIntegrationNames: body.mcpIntegrationNames,
             graphqlIntegrations: body.graphqlIntegrations,
+            openapiIntegrations: body.openapiIntegrations,
           }
         : undefined;
 

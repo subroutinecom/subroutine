@@ -20,9 +20,16 @@ type GraphQLIntegrationSchema = {
   schema: string;
 };
 
+type OpenAPIIntegrationSchema = {
+  name: string;
+  spec: string;
+  operations: Array<{ method: string; path: string }>;
+};
+
 type ValidationContext = {
   mcpIntegrationNames?: string[];
   graphqlIntegrations?: GraphQLIntegrationSchema[];
+  openapiIntegrations?: OpenAPIIntegrationSchema[];
 };
 
 const validateCode = async (
@@ -38,6 +45,7 @@ const validateCode = async (
       code,
       mcpIntegrationNames: context?.mcpIntegrationNames,
       graphqlIntegrations: context?.graphqlIntegrations,
+      openapiIntegrations: context?.openapiIntegrations,
     }),
   });
 
@@ -63,6 +71,37 @@ describe("AST-based Code Validation", () => {
   describe("validateCode", () => {
     it("accepts valid code", async () => {
       const result = await validateCode(validCode);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("accepts GraphQL and OpenAPI integrations when declared", async () => {
+      const code = `
+        import type { Integrations } from "@subroutine/integration-types";
+
+        type Inputs = {};
+        type Outputs = { ok: boolean };
+
+        export async function main(_inputs: Inputs, integrations: Integrations): Promise<Outputs> {
+          const gql = await integrations.getGraphQLClient("gql");
+          const data = await gql.request<{ hello: string }>("query { hello }");
+
+          const rest = await integrations.getOpenAPIClient("rest");
+          const users = await rest.request("GET", "/users");
+
+          return { ok: Boolean(data) && Boolean(users) };
+        }
+      `;
+
+      const result = await validateCode(code, {
+        graphqlIntegrations: [
+          { name: "gql", schema: "type Query { hello: String }" },
+        ],
+        openapiIntegrations: [
+          { name: "rest", spec: "{}", operations: [{ method: "GET", path: "/users" }] },
+        ],
+      });
+
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });

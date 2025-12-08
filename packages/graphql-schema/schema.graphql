@@ -65,6 +65,7 @@ type IntegrationProviderDefinition {
   mcpConfig: IntegrationProviderMcpConfig
   name: String
   oauthConfig: IntegrationProviderOAuthConfig
+  openapiConfig: IntegrationProviderOpenAPIConfig
   viewerScoped: Boolean
 }
 
@@ -80,6 +81,11 @@ type IntegrationProviderOAuthConfig {
   defaultScopes: [String!]
   requiredScopes: [String!]
   tokenUrl: String
+}
+
+type IntegrationProviderOpenAPIConfig {
+  authStrategy: McpAuthStrategy
+  baseUrl: String
 }
 
 type IntegrationSchemaResult {
@@ -138,6 +144,10 @@ type Mutation {
   deleteConnectedAccount(id: String!): Boolean
   deleteIntegration(id: String!): Boolean
   """
+  Fetch an OpenAPI spec and store it for an integration. Only works for OpenAPI integrations with specUrl configured.
+  """
+  introspectIntegrationOpenAPISpec(integrationId: String!): OpenAPIIntrospectionResult
+  """
   Introspect a GraphQL endpoint and store the schema. Only works for GraphQL integrations with appropriate auth configured.
   """
   introspectIntegrationSchema(integrationId: String!): IntegrationSchemaResult
@@ -164,6 +174,22 @@ type Mutation {
   updateIntegrationDescription(description: String, id: String!): Integration
 }
 
+type OpenAPIIntrospectionResult {
+  code: String
+  error: String
+  fetchedAt: Int
+  operations: [OpenAPIOperation!]
+  spec: String
+  success: Boolean
+  version: String
+}
+
+type OpenAPIOperation {
+  method: String
+  path: String
+  summary: String
+}
+
 type Query {
   apiKey(id: String!): ApiKey
   apiKeys: [ApiKey!]
@@ -172,6 +198,8 @@ type Query {
   connectedAccountsByIntegration(integrationId: String!): [ConnectedAccount!]
   discoverMcpOAuth(serverUrl: String!): McpOAuthDiscoveryResult
   integration(id: String!): Integration
+  """Get the stored OpenAPI spec for an OpenAPI integration"""
+  integrationOpenAPISpec(integrationId: String!): StoredOpenAPISpec
   integrationProviders: [IntegrationProviderDefinition!]
   """Get the stored GraphQL schema for a GraphQL integration"""
   integrationSchema(integrationId: String!): StoredSchema
@@ -190,6 +218,14 @@ type Query {
     """JSON string of headers to include in the request"""
     headers: String
   ): IntegrationSchemaResult
+  """
+  Introspect an OpenAPI endpoint to verify connectivity and fetch spec. Used during integration creation to validate the endpoint.
+  """
+  introspectOpenAPIEndpoint(
+    """JSON string of headers to include in the request"""
+    headers: String
+    specUrl: String!
+  ): OpenAPIIntrospectionResult
   """Check if the current organization has superadmin privileges"""
   isSuperadmin: Boolean
   ping: String
@@ -201,6 +237,13 @@ type SlugValidationResult {
   available: Boolean
   error: String
   valid: Boolean
+}
+
+type StoredOpenAPISpec {
+  fetchedAt: Int
+  operations: [OpenAPIOperation!]
+  spec: String
+  version: String
 }
 
 type StoredSchema {

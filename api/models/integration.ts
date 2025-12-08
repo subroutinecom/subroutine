@@ -11,6 +11,8 @@ import type { OAuthConfig } from "../../packages/shared-types/integration";
 import { isValidProvider } from "../integrations/providers.ts";
 import { decrypt, encrypt } from "../utils/encryption.ts";
 import { introspectSchema } from "../integrations/introspection.ts";
+import { buildAuthHeadersFromBlock } from "../integrations/auth-utils.ts";
+import { validateExternalUrl } from "../integrations/url-validation.ts";
 
 // Re-export for convenience
 export type { AuthStrategy, AuthBlock, OAuthConfig };
@@ -58,6 +60,26 @@ export interface GraphQLIntegrationConfig {
 }
 
 /**
+ * OpenAPI integration config.
+ * Protocol-specific fields + a dedicated auth block.
+ */
+export interface OpenAPIIntegrationConfig {
+  type: "openapi";
+  /** Base URL of the API (e.g., "https://api.example.com/v1") */
+  baseUrl: string;
+  /** URL to fetch the OpenAPI spec from (optional - can be uploaded directly) */
+  specUrl?: string;
+  auth: AuthBlock;
+  /** OpenAPI specification as JSON string */
+  spec?: string;
+  /** Detected OpenAPI version */
+  specVersion?: "3.0" | "3.1";
+  /** Timestamp when the spec was last fetched */
+  specFetchedAt?: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Union type for all integration configurations.
  * The `type` field identifies the protocol, and `auth` (when present)
  * is a standardized block for authentication - orthogonal to protocol.
@@ -65,7 +87,8 @@ export interface GraphQLIntegrationConfig {
 export type IntegrationConfig =
   | OAuth2IntegrationConfig
   | McpIntegrationConfig
-  | GraphQLIntegrationConfig;
+  | GraphQLIntegrationConfig
+  | OpenAPIIntegrationConfig;
 
 export type IntegrationStatus = "static" | "dynamic";
 export type IntegrationVisibility = "private" | "global";
@@ -187,10 +210,10 @@ const validateMcpConfig = (config: McpIntegrationConfig) => {
     throw new Error("serverUrl is required");
   }
 
-  try {
-    new URL(config.serverUrl);
-  } catch {
-    throw new Error("serverUrl must be a valid URL");
+  // Validate serverUrl format and check for SSRF
+  const urlValidation = validateExternalUrl(config.serverUrl);
+  if (!urlValidation.valid) {
+    throw new Error(`serverUrl: ${urlValidation.error}`);
   }
 
   if (!config.transport) {
@@ -208,10 +231,32 @@ const validateGraphQLConfig = (config: GraphQLIntegrationConfig) => {
     throw new Error("endpoint is required");
   }
 
-  try {
-    new URL(config.endpoint);
-  } catch {
-    throw new Error("endpoint must be a valid URL");
+  // Validate endpoint format and check for SSRF
+  const urlValidation = validateExternalUrl(config.endpoint);
+  if (!urlValidation.valid) {
+    throw new Error(`endpoint: ${urlValidation.error}`);
+  }
+
+  validateAuthBlock(config.auth);
+};
+
+const validateOpenAPIConfig = (config: OpenAPIIntegrationConfig) => {
+  if (!config.baseUrl) {
+    throw new Error("baseUrl is required");
+  }
+
+  // Validate baseUrl format and check for SSRF
+  const baseUrlValidation = validateExternalUrl(config.baseUrl);
+  if (!baseUrlValidation.valid) {
+    throw new Error(`baseUrl: ${baseUrlValidation.error}`);
+  }
+
+  // Validate specUrl if provided
+  if (config.specUrl) {
+    const specUrlValidation = validateExternalUrl(config.specUrl);
+    if (!specUrlValidation.valid) {
+      throw new Error(`specUrl: ${specUrlValidation.error}`);
+    }
   }
 
   validateAuthBlock(config.auth);
@@ -227,6 +272,9 @@ const validateIntegrationConfig = (config: IntegrationConfig) => {
       break;
     case "graphql":
       validateGraphQLConfig(config);
+      break;
+    case "openapi":
+      validateOpenAPIConfig(config);
       break;
     default:
       throw new Error(`Unsupported config type: ${(config as { type: string }).type}`);
@@ -248,11 +296,17 @@ type PublicGraphQLConfig = Omit<GraphQLIntegrationConfig, "auth"> & {
     oauthConfig?: Omit<OAuthConfig, "clientSecret">;
   };
 };
+type PublicOpenAPIConfig = Omit<OpenAPIIntegrationConfig, "auth"> & {
+  auth: Omit<AuthBlock, "apiKey" | "oauthConfig"> & {
+    oauthConfig?: Omit<OAuthConfig, "clientSecret">;
+  };
+};
 
 export type PublicIntegrationConfig =
   | PublicOAuth2Config
   | PublicMcpConfig
-  | PublicGraphQLConfig;
+  | PublicGraphQLConfig
+  | PublicOpenAPIConfig;
 
 /**
  * Returns a sanitized version of the config without secrets.
@@ -265,7 +319,7 @@ export const getPublicIntegrationConfig = (
     return rest;
   }
 
-  if (config.type === "mcp" || config.type === "graphql") {
+  if (config.type === "mcp" || config.type === "graphql" || config.type === "openapi") {
     const { auth, ...rest } = config;
     const { apiKey: _apiKey, oauthConfig, ...authRest } = auth;
 
@@ -275,7 +329,16 @@ export const getPublicIntegrationConfig = (
       publicAuth.oauthConfig = oauthRest;
     }
 
-    return { ...rest, auth: publicAuth } as PublicMcpConfig | PublicGraphQLConfig;
+    // Redact custom_headers values - they may contain secrets like API keys
+    if (publicAuth.strategy.type === "custom_headers" && publicAuth.strategy.headers) {
+      const redactedHeaders: Record<string, string> = {};
+      for (const key of Object.keys(publicAuth.strategy.headers)) {
+        redactedHeaders[key] = "[REDACTED]";
+      }
+      publicAuth.strategy = { ...publicAuth.strategy, headers: redactedHeaders };
+    }
+
+    return { ...rest, auth: publicAuth } as PublicMcpConfig | PublicGraphQLConfig | PublicOpenAPIConfig;
   }
 
   return config as PublicIntegrationConfig;
@@ -702,39 +765,6 @@ export const updateIntegrationDescription = async (
 // =============================================================================
 
 /**
- * Builds auth headers for a GraphQL integration based on its auth strategy.
- * Used for introspection requests.
- */
-const buildAuthHeadersForGraphQL = (config: GraphQLIntegrationConfig): Record<string, string> => {
-  const headers: Record<string, string> = {};
-  const { auth } = config;
-
-  switch (auth.strategy.type) {
-    case "none":
-      // No auth headers
-      break;
-    case "api_key":
-      if (auth.apiKey) {
-        const headerName = auth.strategy.headerName ?? "Authorization";
-        const value = headerName.toLowerCase() === "authorization"
-          ? `Bearer ${auth.apiKey}`
-          : auth.apiKey;
-        headers[headerName] = value;
-      }
-      break;
-    case "custom_headers":
-      Object.assign(headers, auth.strategy.headers);
-      break;
-    case "bearer_oauth":
-      // OAuth requires a token which we don't have during introspection
-      // Introspection will need to be done without auth or with a different mechanism
-      break;
-  }
-
-  return headers;
-};
-
-/**
  * Result type for introspection operations.
  */
 export type IntrospectIntegrationResult =
@@ -763,7 +793,7 @@ export const introspectAndStoreSchema = async (
   }
 
   const config = integration.authConfig;
-  const headers = buildAuthHeadersForGraphQL(config);
+  const headers = buildAuthHeadersFromBlock(config.auth);
 
   const result = await introspectSchema(config.endpoint, headers);
 
@@ -828,6 +858,219 @@ export const getIntegrationSchema = async (
   return {
     schema: config.schema,
     fetchedAt: config.schemaFetchedAt ?? 0,
+  };
+};
+
+// =============================================================================
+// OpenAPI Introspection
+// =============================================================================
+
+/**
+ * Result type for OpenAPI introspection operations.
+ */
+export type IntrospectOpenAPIResult =
+  | {
+      ok: true;
+      spec: string;
+      version: "3.0" | "3.1";
+      title?: string;
+      baseUrl?: string;
+      operationCount: number;
+      operations: Array<{ method: string; path: string; summary?: string }>;
+      fetchedAt: number;
+    }
+  | { ok: false; error: string; code: string };
+
+/**
+ * Introspect the OpenAPI spec for an integration and store it.
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @returns The introspection result
+ */
+export const introspectAndStoreOpenAPISpec = async (
+  id: string,
+  organizationId: string
+): Promise<IntrospectOpenAPIResult> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration) {
+    return { ok: false, error: "Integration not found", code: "NOT_FOUND" };
+  }
+
+  if (integration.authConfig.type !== "openapi") {
+    return { ok: false, error: "Integration is not an OpenAPI integration", code: "INVALID_TYPE" };
+  }
+
+  const config = integration.authConfig;
+
+  if (!config.specUrl) {
+    return { ok: false, error: "No spec URL configured for this integration", code: "NO_SPEC_URL" };
+  }
+
+  const headers = buildAuthHeadersFromBlock(config.auth);
+
+  // Import dynamically to avoid circular dependency
+  const { fetchOpenAPISpec } = await import("../integrations/openapi-introspection.ts");
+  const result = await fetchOpenAPISpec(config.specUrl, headers);
+
+  if (!result.ok) {
+    return { ok: false, error: result.error.message, code: result.error.code };
+  }
+
+  // Update the integration with the spec
+  const updatedConfig: OpenAPIIntegrationConfig = {
+    ...config,
+    spec: result.result.spec,
+    specVersion: result.result.version,
+    specFetchedAt: result.result.fetchedAt,
+  };
+
+  const now = new Date().toISOString();
+  const encryptedAuthConfig = encrypt(JSON.stringify(updatedConfig));
+
+  await db
+    .updateTable("integration")
+    .set({
+      authConfig: encryptedAuthConfig,
+      updatedAt: now,
+    })
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .execute();
+
+  return {
+    ok: true,
+    spec: result.result.spec,
+    version: result.result.version,
+    title: result.result.title,
+    baseUrl: result.result.baseUrl,
+    operationCount: result.result.operations.length,
+    operations: result.result.operations.map((op) => ({
+      method: op.method,
+      path: op.path,
+      summary: op.summary,
+    })),
+    fetchedAt: result.result.fetchedAt,
+  };
+};
+
+/**
+ * Store an OpenAPI spec directly (for uploaded specs).
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @param specContent - The OpenAPI spec as a string (JSON or YAML)
+ * @returns The introspection result
+ */
+export const storeOpenAPISpec = async (
+  id: string,
+  organizationId: string,
+  specContent: string
+): Promise<IntrospectOpenAPIResult> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration) {
+    return { ok: false, error: "Integration not found", code: "NOT_FOUND" };
+  }
+
+  if (integration.authConfig.type !== "openapi") {
+    return { ok: false, error: "Integration is not an OpenAPI integration", code: "INVALID_TYPE" };
+  }
+
+  const config = integration.authConfig;
+
+  // Import dynamically to avoid circular dependency
+  const { parseOpenAPISpec } = await import("../integrations/openapi-introspection.ts");
+  const result = await parseOpenAPISpec(specContent);
+
+  if (!result.ok) {
+    return { ok: false, error: result.error.message, code: result.error.code };
+  }
+
+  // Update the integration with the spec
+  const updatedConfig: OpenAPIIntegrationConfig = {
+    ...config,
+    spec: result.result.spec,
+    specVersion: result.result.version,
+    specFetchedAt: result.result.fetchedAt,
+  };
+
+  const now = new Date().toISOString();
+  const encryptedAuthConfig = encrypt(JSON.stringify(updatedConfig));
+
+  await db
+    .updateTable("integration")
+    .set({
+      authConfig: encryptedAuthConfig,
+      updatedAt: now,
+    })
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .execute();
+
+  return {
+    ok: true,
+    spec: result.result.spec,
+    version: result.result.version,
+    title: result.result.title,
+    baseUrl: result.result.baseUrl,
+    operationCount: result.result.operations.length,
+    operations: result.result.operations.map((op) => ({
+      method: op.method,
+      path: op.path,
+      summary: op.summary,
+    })),
+    fetchedAt: result.result.fetchedAt,
+  };
+};
+
+/**
+ * Get the stored OpenAPI spec for an integration.
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @returns The spec and metadata, or null if not available
+ */
+export const getOpenAPIIntegrationSpec = async (
+  id: string,
+  organizationId: string
+): Promise<{
+  spec: string;
+  version: "3.0" | "3.1";
+  fetchedAt: number;
+  operations: Array<{ method: string; path: string; summary?: string }>;
+} | null> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration) {
+    return null;
+  }
+
+  if (integration.authConfig.type !== "openapi") {
+    return null;
+  }
+
+  const config = integration.authConfig;
+
+  if (!config.spec || !config.specVersion) {
+    return null;
+  }
+
+  // Parse operations from the spec (import dynamically to avoid circular dependency)
+  const { parseOpenAPISpec } = await import("../integrations/openapi-introspection.ts");
+  const parseResult = await parseOpenAPISpec(config.spec);
+  const operations = parseResult.ok ? parseResult.result.operations : [];
+
+  return {
+    spec: config.spec,
+    version: config.specVersion,
+    fetchedAt: config.specFetchedAt ?? 0,
+    operations: operations.map((op: { method: string; path: string; summary?: string }) => ({
+      method: op.method,
+      path: op.path,
+      summary: op.summary,
+    })),
   };
 };
 

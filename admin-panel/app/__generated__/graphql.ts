@@ -82,6 +82,7 @@ export type IntegrationProviderDefinition = {
   mcpConfig?: Maybe<IntegrationProviderMcpConfig>;
   name?: Maybe<Scalars['String']['output']>;
   oauthConfig?: Maybe<IntegrationProviderOAuthConfig>;
+  openapiConfig?: Maybe<IntegrationProviderOpenApiConfig>;
   viewerScoped?: Maybe<Scalars['Boolean']['output']>;
 };
 
@@ -99,6 +100,12 @@ export type IntegrationProviderOAuthConfig = {
   defaultScopes?: Maybe<Array<Scalars['String']['output']>>;
   requiredScopes?: Maybe<Array<Scalars['String']['output']>>;
   tokenUrl?: Maybe<Scalars['String']['output']>;
+};
+
+export type IntegrationProviderOpenApiConfig = {
+  __typename?: 'IntegrationProviderOpenAPIConfig';
+  authStrategy?: Maybe<McpAuthStrategy>;
+  baseUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export type IntegrationSchemaResult = {
@@ -139,6 +146,8 @@ export type Mutation = {
   deleteApiKey?: Maybe<Scalars['Boolean']['output']>;
   deleteConnectedAccount?: Maybe<Scalars['Boolean']['output']>;
   deleteIntegration?: Maybe<Scalars['Boolean']['output']>;
+  /** Fetch an OpenAPI spec and store it for an integration. Only works for OpenAPI integrations with specUrl configured. */
+  introspectIntegrationOpenAPISpec?: Maybe<OpenApiIntrospectionResult>;
   /** Introspect a GraphQL endpoint and store the schema. Only works for GraphQL integrations with appropriate auth configured. */
   introspectIntegrationSchema?: Maybe<IntegrationSchemaResult>;
   /** Set integration visibility (superadmin only for 'global') */
@@ -189,6 +198,11 @@ export type MutationDeleteIntegrationArgs = {
 };
 
 
+export type MutationIntrospectIntegrationOpenApiSpecArgs = {
+  integrationId: Scalars['String']['input'];
+};
+
+
 export type MutationIntrospectIntegrationSchemaArgs = {
   integrationId: Scalars['String']['input'];
 };
@@ -220,6 +234,24 @@ export type MutationUpdateIntegrationDescriptionArgs = {
   id: Scalars['String']['input'];
 };
 
+export type OpenApiIntrospectionResult = {
+  __typename?: 'OpenAPIIntrospectionResult';
+  code?: Maybe<Scalars['String']['output']>;
+  error?: Maybe<Scalars['String']['output']>;
+  fetchedAt?: Maybe<Scalars['Int']['output']>;
+  operations?: Maybe<Array<OpenApiOperation>>;
+  spec?: Maybe<Scalars['String']['output']>;
+  success?: Maybe<Scalars['Boolean']['output']>;
+  version?: Maybe<Scalars['String']['output']>;
+};
+
+export type OpenApiOperation = {
+  __typename?: 'OpenAPIOperation';
+  method?: Maybe<Scalars['String']['output']>;
+  path?: Maybe<Scalars['String']['output']>;
+  summary?: Maybe<Scalars['String']['output']>;
+};
+
 export type Query = {
   __typename?: 'Query';
   apiKey?: Maybe<ApiKey>;
@@ -229,6 +261,8 @@ export type Query = {
   connectedAccountsByIntegration?: Maybe<Array<ConnectedAccount>>;
   discoverMcpOAuth?: Maybe<McpOAuthDiscoveryResult>;
   integration?: Maybe<Integration>;
+  /** Get the stored OpenAPI spec for an OpenAPI integration */
+  integrationOpenAPISpec?: Maybe<StoredOpenApiSpec>;
   integrationProviders?: Maybe<Array<IntegrationProviderDefinition>>;
   /** Get the stored GraphQL schema for a GraphQL integration */
   integrationSchema?: Maybe<StoredSchema>;
@@ -236,6 +270,8 @@ export type Query = {
   integrations?: Maybe<Array<Integration>>;
   /** Introspect a GraphQL endpoint to verify connectivity and fetch schema. Used during integration creation to validate the endpoint. */
   introspectGraphQLEndpoint?: Maybe<IntegrationSchemaResult>;
+  /** Introspect an OpenAPI endpoint to verify connectivity and fetch spec. Used during integration creation to validate the endpoint. */
+  introspectOpenAPIEndpoint?: Maybe<OpenApiIntrospectionResult>;
   /** Check if the current organization has superadmin privileges */
   isSuperadmin?: Maybe<Scalars['Boolean']['output']>;
   ping?: Maybe<Scalars['String']['output']>;
@@ -269,6 +305,11 @@ export type QueryIntegrationArgs = {
 };
 
 
+export type QueryIntegrationOpenApiSpecArgs = {
+  integrationId: Scalars['String']['input'];
+};
+
+
 export type QueryIntegrationSchemaArgs = {
   integrationId: Scalars['String']['input'];
 };
@@ -285,6 +326,12 @@ export type QueryIntrospectGraphQlEndpointArgs = {
 };
 
 
+export type QueryIntrospectOpenApiEndpointArgs = {
+  headers?: InputMaybe<Scalars['String']['input']>;
+  specUrl: Scalars['String']['input'];
+};
+
+
 export type QueryValidateSlugArgs = {
   slug: Scalars['String']['input'];
 };
@@ -294,6 +341,14 @@ export type SlugValidationResult = {
   available?: Maybe<Scalars['Boolean']['output']>;
   error?: Maybe<Scalars['String']['output']>;
   valid?: Maybe<Scalars['Boolean']['output']>;
+};
+
+export type StoredOpenApiSpec = {
+  __typename?: 'StoredOpenAPISpec';
+  fetchedAt?: Maybe<Scalars['Int']['output']>;
+  operations?: Maybe<Array<OpenApiOperation>>;
+  spec?: Maybe<Scalars['String']['output']>;
+  version?: Maybe<Scalars['String']['output']>;
 };
 
 export type StoredSchema = {
@@ -377,7 +432,7 @@ export type ToggleIntegrationEnabledMutation = { __typename?: 'Mutation', update
 export type IntegrationProvidersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type IntegrationProvidersQuery = { __typename?: 'Query', isSuperadmin?: boolean | null, integrationProviders?: Array<{ __typename?: 'IntegrationProviderDefinition', id?: string | null, name?: string | null, description?: string | null, viewerScoped?: boolean | null, authType?: string | null, oauthConfig?: { __typename?: 'IntegrationProviderOAuthConfig', authUrl?: string | null, tokenUrl?: string | null, defaultScopes?: Array<string> | null, requiredScopes?: Array<string> | null, defaultRedirectPath?: string | null } | null, mcpConfig?: { __typename?: 'IntegrationProviderMcpConfig', serverUrl?: string | null, transport?: string | null, authStrategy?: { __typename?: 'McpAuthStrategy', type?: string | null, headerName?: string | null, headers?: string | null } | null } | null }> | null };
+export type IntegrationProvidersQuery = { __typename?: 'Query', isSuperadmin?: boolean | null, integrationProviders?: Array<{ __typename?: 'IntegrationProviderDefinition', id?: string | null, name?: string | null, description?: string | null, viewerScoped?: boolean | null, authType?: string | null, oauthConfig?: { __typename?: 'IntegrationProviderOAuthConfig', authUrl?: string | null, tokenUrl?: string | null, defaultScopes?: Array<string> | null, requiredScopes?: Array<string> | null, defaultRedirectPath?: string | null } | null, mcpConfig?: { __typename?: 'IntegrationProviderMcpConfig', serverUrl?: string | null, transport?: string | null, authStrategy?: { __typename?: 'McpAuthStrategy', type?: string | null, headerName?: string | null, headers?: string | null } | null } | null, openapiConfig?: { __typename?: 'IntegrationProviderOpenAPIConfig', baseUrl?: string | null, authStrategy?: { __typename?: 'McpAuthStrategy', type?: string | null, headerName?: string | null, headers?: string | null } | null } | null }> | null };
 
 export type CreateIntegrationMutationVariables = Exact<{
   provider: Scalars['String']['input'];
@@ -429,7 +484,7 @@ export const GetIntegrationForEditDocument = {"kind":"Document","definitions":[{
 export const UpdateIntegrationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateIntegration"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"authConfig"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"enabled"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateIntegration"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}},{"kind":"Argument","name":{"kind":"Name","value":"authConfig"},"value":{"kind":"Variable","name":{"kind":"Name","value":"authConfig"}}},{"kind":"Argument","name":{"kind":"Name","value":"enabled"},"value":{"kind":"Variable","name":{"kind":"Name","value":"enabled"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}}]}}]}}]} as unknown as DocumentNode<UpdateIntegrationMutation, UpdateIntegrationMutationVariables>;
 export const GetIntegrationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetIntegrations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","alias":{"kind":"Name","value":"orgIntegrations"},"name":{"kind":"Name","value":"integrations"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"visibility"},"value":{"kind":"StringValue","value":"private","block":false}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"organizationId"}},{"kind":"Field","name":{"kind":"Name","value":"provider"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"authConfig"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"visibility"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","alias":{"kind":"Name","value":"globalIntegrations"},"name":{"kind":"Name","value":"integrations"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"visibility"},"value":{"kind":"StringValue","value":"global","block":false}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"organizationId"}},{"kind":"Field","name":{"kind":"Name","value":"provider"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"authConfig"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}},{"kind":"Field","name":{"kind":"Name","value":"visibility"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"isSuperadmin"}}]}}]} as unknown as DocumentNode<GetIntegrationsQuery, GetIntegrationsQueryVariables>;
 export const ToggleIntegrationEnabledDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ToggleIntegrationEnabled"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"enabled"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"Boolean"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateIntegration"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"enabled"},"value":{"kind":"Variable","name":{"kind":"Name","value":"enabled"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}}]}}]}}]} as unknown as DocumentNode<ToggleIntegrationEnabledMutation, ToggleIntegrationEnabledMutationVariables>;
-export const IntegrationProvidersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"IntegrationProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"integrationProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"viewerScoped"}},{"kind":"Field","name":{"kind":"Name","value":"authType"}},{"kind":"Field","name":{"kind":"Name","value":"oauthConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"authUrl"}},{"kind":"Field","name":{"kind":"Name","value":"tokenUrl"}},{"kind":"Field","name":{"kind":"Name","value":"defaultScopes"}},{"kind":"Field","name":{"kind":"Name","value":"requiredScopes"}},{"kind":"Field","name":{"kind":"Name","value":"defaultRedirectPath"}}]}},{"kind":"Field","name":{"kind":"Name","value":"mcpConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"serverUrl"}},{"kind":"Field","name":{"kind":"Name","value":"transport"}},{"kind":"Field","name":{"kind":"Name","value":"authStrategy"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"headerName"}},{"kind":"Field","name":{"kind":"Name","value":"headers"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"isSuperadmin"}}]}}]} as unknown as DocumentNode<IntegrationProvidersQuery, IntegrationProvidersQueryVariables>;
+export const IntegrationProvidersDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"IntegrationProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"integrationProviders"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"viewerScoped"}},{"kind":"Field","name":{"kind":"Name","value":"authType"}},{"kind":"Field","name":{"kind":"Name","value":"oauthConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"authUrl"}},{"kind":"Field","name":{"kind":"Name","value":"tokenUrl"}},{"kind":"Field","name":{"kind":"Name","value":"defaultScopes"}},{"kind":"Field","name":{"kind":"Name","value":"requiredScopes"}},{"kind":"Field","name":{"kind":"Name","value":"defaultRedirectPath"}}]}},{"kind":"Field","name":{"kind":"Name","value":"mcpConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"serverUrl"}},{"kind":"Field","name":{"kind":"Name","value":"transport"}},{"kind":"Field","name":{"kind":"Name","value":"authStrategy"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"headerName"}},{"kind":"Field","name":{"kind":"Name","value":"headers"}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"openapiConfig"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"baseUrl"}},{"kind":"Field","name":{"kind":"Name","value":"authStrategy"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"type"}},{"kind":"Field","name":{"kind":"Name","value":"headerName"}},{"kind":"Field","name":{"kind":"Name","value":"headers"}}]}}]}}]}},{"kind":"Field","name":{"kind":"Name","value":"isSuperadmin"}}]}}]} as unknown as DocumentNode<IntegrationProvidersQuery, IntegrationProvidersQueryVariables>;
 export const CreateIntegrationDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateIntegration"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"provider"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"name"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"authConfig"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"description"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"visibility"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createIntegration"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"provider"},"value":{"kind":"Variable","name":{"kind":"Name","value":"provider"}}},{"kind":"Argument","name":{"kind":"Name","value":"name"},"value":{"kind":"Variable","name":{"kind":"Name","value":"name"}}},{"kind":"Argument","name":{"kind":"Name","value":"authConfig"},"value":{"kind":"Variable","name":{"kind":"Name","value":"authConfig"}}},{"kind":"Argument","name":{"kind":"Name","value":"description"},"value":{"kind":"Variable","name":{"kind":"Name","value":"description"}}},{"kind":"Argument","name":{"kind":"Name","value":"visibility"},"value":{"kind":"Variable","name":{"kind":"Name","value":"visibility"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"provider"}},{"kind":"Field","name":{"kind":"Name","value":"name"}}]}}]}}]} as unknown as DocumentNode<CreateIntegrationMutation, CreateIntegrationMutationVariables>;
 export const GetPlaygroundIntegrationsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"GetPlaygroundIntegrations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"integrations"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"name"}},{"kind":"Field","name":{"kind":"Name","value":"provider"}},{"kind":"Field","name":{"kind":"Name","value":"enabled"}}]}}]}}]} as unknown as DocumentNode<GetPlaygroundIntegrationsQuery, GetPlaygroundIntegrationsQueryVariables>;
 export const ValidateSlugDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"ValidateSlug"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"slug"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"validateSlug"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"slug"},"value":{"kind":"Variable","name":{"kind":"Name","value":"slug"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"valid"}},{"kind":"Field","name":{"kind":"Name","value":"error"}},{"kind":"Field","name":{"kind":"Name","value":"available"}}]}}]}}]} as unknown as DocumentNode<ValidateSlugQuery, ValidateSlugQueryVariables>;
