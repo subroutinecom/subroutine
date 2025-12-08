@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { RunCacheManager } from "./memory-cache.ts";
+import { RunCacheManager } from "./run-cache.ts";
 import { RemoteProxyServer, type WireMessage } from "./remoteProxy.ts";
 import { applyTransforms } from "./transforms/index.ts";
 import type { SandboxIntegrationPayload } from "./types.ts";
@@ -134,7 +134,7 @@ export class SandboxManager {
           const argsHash = createHash("sha256").update(hashInput).digest("hex");
           const cacheKey = `${latestMarkerId}:${argsHash}`;
 
-          const cached = RunCacheManager.get(runId, cacheKey);
+          const cached = await RunCacheManager.get(runId, cacheKey);
           if (cached) {
             console.log(`[SandboxManager] Cache HIT for ${cacheKey}`);
             const wire: WireMessage = {
@@ -164,31 +164,33 @@ export class SandboxManager {
       const wireMsg = ev.data;
       if (!wireMsg || wireMsg.kind !== "rpc_result") return;
 
-      const res = wireMsg.payload;
-      const meta = pendingRequests.get(res.id);
+      (async () => {
+        const res = wireMsg.payload;
+        const meta = pendingRequests.get(res.id);
 
-      if (meta) {
-        pendingRequests.delete(res.id);
-        const { runId, latestMarkerId, pmarkerCounter, canonicalPath, args } = meta;
+        if (meta) {
+          pendingRequests.delete(res.id);
+          const { runId, latestMarkerId, pmarkerCounter, canonicalPath, args } = meta;
 
-        if (runId && latestMarkerId && typeof pmarkerCounter === "number" && res.ok) {
-          const hashInput = JSON.stringify({ path: canonicalPath, args, counter: pmarkerCounter });
-          const argsHash = createHash("sha256").update(hashInput).digest("hex");
-          const cacheKey = `${latestMarkerId}:${argsHash}`;
+          if (runId && latestMarkerId && typeof pmarkerCounter === "number" && res.ok) {
+            const hashInput = JSON.stringify({ path: canonicalPath, args, counter: pmarkerCounter });
+            const argsHash = createHash("sha256").update(hashInput).digest("hex");
+            const cacheKey = `${latestMarkerId}:${argsHash}`;
 
-          try {
-            const value = JSON.stringify(res);
-            if (new TextEncoder().encode(value).length <= MAX_CACHE_SIZE_BYTES) {
-              RunCacheManager.set(runId, cacheKey, res);
+            try {
+              const value = JSON.stringify(res);
+              if (new TextEncoder().encode(value).length <= MAX_CACHE_SIZE_BYTES) {
+                await RunCacheManager.set(runId, cacheKey, res);
+              }
+            } catch (e) {
+              console.warn(`[SandboxManager] Cache write error:`, e);
             }
-          } catch (e) {
-            console.warn(`[SandboxManager] Cache write error:`, e);
           }
         }
-      }
 
-      // Forward response to execution worker
-      executionPort.postMessage(wireMsg);
+        // Forward response to execution worker
+        executionPort.postMessage(wireMsg);
+      })();
     };
 
     return new Promise<ExecutionResult>((resolve) => {
