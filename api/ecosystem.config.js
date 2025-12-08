@@ -6,7 +6,9 @@ const apiServerApp = {
   script: "deno",
   args: ["task", "start"],
   autorestart: true,
-  watch: IS_BUILD ? false : ["**/*.tsx", "**/*.ts", "**/*.js", "**/*.json"],
+  watch: IS_BUILD
+    ? false
+    : ["**/*.tsx", "**/*.ts", "**/*.js", "**/*.json", ".env", "../config.yaml"],
   ignore_watch: ["node_modules", ".git"],
   env: {
     NODE_ENV: IS_BUILD ? "production" : "development",

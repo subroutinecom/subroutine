@@ -7,15 +7,17 @@ export const requireInputsType = (
 ): ValidationError[] => {
   const inputsTypeAlias = sourceFile.getTypeAlias("Inputs");
   const inputsInterface = sourceFile.getInterface("Inputs");
+  const inputsClass = sourceFile.getClass("Inputs");
 
-  if (inputsTypeAlias || inputsInterface) {
+  if (inputsTypeAlias || inputsInterface || inputsClass) {
     return [];
   }
 
   return [
     {
       rule: "require-inputs-type",
-      message: "Code must define an Inputs type (type Inputs = {...} or interface Inputs {...})",
+      message:
+        "Code must define an Inputs type (type Inputs = {...}, interface Inputs {...}, class Inputs {...}, or type Inputs = z.infer<...>)",
     },
   ];
 };

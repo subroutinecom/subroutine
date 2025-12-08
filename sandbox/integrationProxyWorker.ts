@@ -1,29 +1,29 @@
 /// <reference lib="deno.worker" />
 
-import { type CallRequest, type CallResponse, RemoteProxyServer } from "./remoteProxy";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import {
   createCalendarClient,
   type CalendarConfig,
   type CalendarTokens,
-} from "./integrations/calendar/mod";
-import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
-import { createMcpClient } from "./integrations/mcp/mod";
-import { createGraphQLClient, type GraphQLClient } from "./integrations/graphql/mod";
-import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import type { CalendarAPI } from "./integrations/calendar/types";
-import type { GmailAPI } from "./integrations/gmail/types";
+} from "./integrations/calendar/mod.ts";
+import type { CalendarAPI } from "./integrations/calendar/types.ts";
+import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod.ts";
+import type { GmailAPI } from "./integrations/gmail/types.ts";
+import { createGraphQLClient, type GraphQLClient } from "./integrations/graphql/mod.ts";
+import { createMcpClient } from "./integrations/mcp/mod.ts";
+import { RemoteProxyServer, type CallRequest, type CallResponse } from "./remoteProxy.ts";
 import type { SandboxIntegrationPayload } from "./types.ts";
 
 interface S3API {
-  listBuckets(): Promise<{ buckets: string[] }>;
+  listBuckets(): { buckets: string[] };
 }
 
 interface GithubAPI {
-  me(): Promise<{ login: string }>;
+  me(): { login: string };
 }
 
 interface PingAPI {
-  ping(message: string): Promise<{ echo: string; timestamp: number }>;
+  ping(message: string): { echo: string; timestamp: number };
 }
 
 type WireMessage =
@@ -38,7 +38,7 @@ const buildDefaultServer = (): RemoteProxyServer<object> => {
   const mockGmail: GmailAPI = {
     users: {
       labels: {
-        list: async (opts: { userId: string }) => ({
+        list: (opts: { userId: string }) => ({
           data: {
             labels:
               opts.userId === "me"
@@ -57,7 +57,7 @@ const buildDefaultServer = (): RemoteProxyServer<object> => {
 
   const mockCalendar: CalendarAPI = {
     calendarList: {
-      list: async () => ({
+      list: () => ({
         data: {
           items: [
             { id: "primary", summary: "Primary Calendar" },
@@ -72,21 +72,21 @@ const buildDefaultServer = (): RemoteProxyServer<object> => {
 
   defaultServer.registerSingleton("getS3", () => {
     const s3: S3API = {
-      listBuckets: async () => ({ buckets: ["photos", "backups"] }),
+      listBuckets: () => ({ buckets: ["photos", "backups"] }),
     };
     return s3 as unknown as object;
   });
 
   defaultServer.registerSingleton("getGithub", () => {
     const gh: GithubAPI = {
-      me: async () => ({ login: "octocat" }),
+      me: () => ({ login: "octocat" }),
     };
     return gh as unknown as object;
   });
 
   defaultServer.registerSingleton("getPing", () => {
     const ping: PingAPI = {
-      ping: async (message: string) => ({
+      ping: (message: string) => ({
         echo: message,
         timestamp: Date.now(),
       }),
@@ -225,7 +225,7 @@ const buildServerForIntegrations = async (
   await Promise.all(
     integrations
       .filter((integration) => !integration.mcpConfig && !integration.graphqlConfig)
-      .map(async (integration) => {
+      .map((integration) => {
         switch (integration.provider) {
           case "gmail": {
             if (!integration.account) {

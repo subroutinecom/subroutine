@@ -1,5 +1,6 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { z } from "zod";
 
 type IntegrationDocs = {
   id: string;
@@ -8,11 +9,13 @@ type IntegrationDocs = {
   docsUrl?: string;
 };
 
-export type IntegrationInfo = {
-  id: string;
-  name: string;
-  type: "mcp" | "graphql";
-};
+export const IntegrationInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(["mcp", "graphql"]),
+});
+
+export type IntegrationInfo = z.infer<typeof IntegrationInfoSchema>;
 
 let integrationTypesCache: string | null = null;
 
@@ -280,6 +283,7 @@ TECHNICAL REQUIREMENTS:
 5. Handle edge cases with proper validation and error messages
 6. Use the actual types you define - no any types
 7. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n8. Use the available integrations to interact with external services" : ""}
+9. You may import "zod" from "zod" if you need runtime validation (e.g. import { z } from "zod";)
 ${sandboxRestrictions}
 ${integrationsSection}
 

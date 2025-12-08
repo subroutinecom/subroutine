@@ -524,17 +524,6 @@ const executeInSandbox = async (
       .where("id", "=", runId)
       .execute();
 
-    const codeToExecute =
-      sourceCode +
-      "\n\n// Export a default function that executes main with inputs and integrations\n" +
-      "export default async function() {\n" +
-      "  const inputs = " +
-      JSON.stringify(inputs ?? {}) +
-      ";\n" +
-      "  const result = await main(inputs, integrations);\n" +
-      "  return result;\n" +
-      "}\n";
-
     const config = await getConfig();
     const sandboxUrl = `${config.internalSandboxUrl}/test/executeTypescript`;
     logger.info(
@@ -546,9 +535,10 @@ const executeInSandbox = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        code: codeToExecute,
+        code: sourceCode,
         integrations,
         timeoutMs,
+        inputs: inputs ?? {},
       }),
     });
     logger.info(

@@ -1,9 +1,9 @@
-import { GraphQLClient as GqlClient, type RequestDocument } from "graphql-request";
-import { print } from "graphql";
 import type { TypedDocumentNode } from "@graphql-typed-document-node/core";
-import type { SandboxGraphQLConfig } from "../../types";
-import { validateOperationCached } from "./validate";
-import type { ValidationError } from "./validate";
+import { print } from "graphql";
+import { GraphQLClient as GqlClient, type RequestDocument } from "graphql-request";
+import type { SandboxGraphQLConfig } from "../../types.ts";
+import type { ValidationError } from "./validate.ts";
+import { validateOperationCached } from "./validate.ts";
 
 export interface GraphQLClientOptions {
   /** Connection timeout in milliseconds (not yet supported, reserved for future use) */
@@ -56,7 +56,7 @@ export interface GraphQLClient {
    */
   request<TData, TVariables extends Record<string, unknown>>(
     document: TypedDocumentNode<TData, TVariables>,
-    variables?: TVariables,
+    variables?: TVariables
   ): Promise<TData>;
 
   /**
@@ -73,7 +73,7 @@ export interface GraphQLClient {
    */
   request<TData = unknown, TVariables extends Record<string, unknown> = Record<string, unknown>>(
     query: string,
-    variables?: TVariables,
+    variables?: TVariables
   ): Promise<TData>;
 }
 
@@ -118,11 +118,9 @@ export const createGraphQLClient = (
       if (shouldValidate && schema) {
         // Convert TypedDocumentNode to string if needed
         const operationString =
-          typeof documentOrQuery === "string"
-            ? documentOrQuery
-            : print(documentOrQuery);
+          typeof documentOrQuery === "string" ? documentOrQuery : print(documentOrQuery);
 
-        const validationResult = validateOperationCached(schema, operationString);
+        const validationResult = await validateOperationCached(schema, operationString);
 
         if (!validationResult.valid) {
           throw new GraphQLValidationError(validationResult.errors);

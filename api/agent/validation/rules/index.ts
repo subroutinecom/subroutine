@@ -1,15 +1,16 @@
-import type { ValidationRule } from "../types";
-import { requireInputsType } from "./require-inputs-type";
-import { requireOutputsType } from "./require-outputs-type";
-import { requireExportMain } from "./require-export-main";
-import { requireAsyncMain } from "./require-async-main";
-import { requireReturnInMain } from "./require-return-in-main";
-import { noCtxUsage } from "./no-ctx-usage";
-import { noFetchCalls } from "./no-fetch-calls";
-import { requireMcpClientAccess } from "./require-mcp-client-access";
-import { requireAwaitMcpClient } from "./require-await-mcp-client";
-import { validateMcpIntegrationName } from "./validate-mcp-integration-name";
-import { validateGraphqlQueries } from "./validate-graphql-queries";
+import type { ValidationRule } from "../types.ts";
+import { noCtxUsage } from "./no-ctx-usage.ts";
+import { noFetchCalls } from "./no-fetch-calls.ts";
+import { noNestedImports } from "./no-nested-imports.ts";
+import { requireAsyncMain } from "./require-async-main.ts";
+import { requireAwaitMcpClient } from "./require-await-mcp-client.ts";
+import { requireExportMain } from "./require-export-main.ts";
+import { requireInputsType } from "./require-inputs-type.ts";
+import { requireMcpClientAccess } from "./require-mcp-client-access.ts";
+import { requireOutputsType } from "./require-outputs-type.ts";
+import { requireReturnInMain } from "./require-return-in-main.ts";
+import { validateGraphqlQueries } from "./validate-graphql-queries.ts";
+import { validateMcpIntegrationName } from "./validate-mcp-integration-name.ts";
 
 export const rules: ValidationRule[] = [
   requireExportMain,
@@ -23,18 +24,20 @@ export const rules: ValidationRule[] = [
   requireAwaitMcpClient,
   validateMcpIntegrationName,
   validateGraphqlQueries,
+  noNestedImports,
 ];
 
 export {
-  requireInputsType,
-  requireOutputsType,
-  requireExportMain,
-  requireAsyncMain,
-  requireReturnInMain,
   noCtxUsage,
   noFetchCalls,
-  requireMcpClientAccess,
+  noNestedImports,
+  requireAsyncMain,
   requireAwaitMcpClient,
-  validateMcpIntegrationName,
+  requireExportMain,
+  requireInputsType,
+  requireMcpClientAccess,
+  requireOutputsType,
+  requireReturnInMain,
   validateGraphqlQueries,
+  validateMcpIntegrationName,
 };

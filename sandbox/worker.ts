@@ -13,6 +13,7 @@ export interface ExecuteMessage {
   code: string;
   id: string;
   contentType?: string;
+  inputs?: Record<string, unknown>;
 }
 
 type WorkerMessage = ExecuteMessage | ConnectMessage;
@@ -43,17 +44,26 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
   }
 
   if (type === "execute") {
-    const { code, id, contentType = "application/typescript" } = event.data as ExecuteMessage;
+    const {
+      code,
+      id,
+      contentType = "application/typescript",
+      inputs = {},
+    } = event.data as ExecuteMessage;
     try {
       // Use dynamic import with data URL - Deno will transpile TypeScript automatically
       const moduleUrl = `data:${contentType};base64,${btoa(code)}`;
       const module = await import(moduleUrl);
 
       let result;
-      if (typeof module.default === "function") {
-        result = await module.default();
+      // Prefer 'main' export, fall back to default
+      const entryPoint = module.main || module.default;
+
+      if (typeof entryPoint === "function") {
+        // Pass inputs and integrations (if available)
+        result = await entryPoint(inputs, integrations);
       } else {
-        result = module.default;
+        result = entryPoint;
       }
 
       self.postMessage({
