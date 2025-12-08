@@ -887,6 +887,46 @@ export const getMcpIntegrationTools = async (
   };
 };
 
+/**
+ * Store tools on an MCP integration (store-only, no fetch).
+ * Used by discovery flow to cache tools after they've already been fetched.
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @param tools - The tools to store
+ */
+export const storeMcpToolsOnIntegration = async (
+  id: string,
+  organizationId: string,
+  tools: McpToolDefinition[]
+): Promise<void> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration || integration.authConfig.type !== "mcp") {
+    return;
+  }
+
+  const config = integration.authConfig;
+  const updatedConfig: McpIntegrationConfig = {
+    ...config,
+    tools,
+    toolsFetchedAt: Date.now(),
+  };
+
+  const now = new Date().toISOString();
+  const encryptedAuthConfig = encrypt(JSON.stringify(updatedConfig));
+
+  await db
+    .updateTable("integration")
+    .set({
+      authConfig: encryptedAuthConfig,
+      updatedAt: now,
+    })
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .execute();
+};
+
 // =============================================================================
 // Schema Introspection (GraphQL)
 // =============================================================================
@@ -986,6 +1026,48 @@ export const getIntegrationSchema = async (
     schema: config.schema,
     fetchedAt: config.schemaFetchedAt ?? 0,
   };
+};
+
+/**
+ * Store schema on a GraphQL integration (store-only, no introspect).
+ * Used by discovery flow to cache schema after it's already been fetched.
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @param schema - The schema SDL to store
+ * @param fetchedAt - Timestamp when schema was fetched
+ */
+export const storeGraphQLSchemaOnIntegration = async (
+  id: string,
+  organizationId: string,
+  schema: string,
+  fetchedAt: number
+): Promise<void> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration || integration.authConfig.type !== "graphql") {
+    return;
+  }
+
+  const config = integration.authConfig;
+  const updatedConfig: GraphQLIntegrationConfig = {
+    ...config,
+    schema,
+    schemaFetchedAt: fetchedAt,
+  };
+
+  const now = new Date().toISOString();
+  const encryptedAuthConfig = encrypt(JSON.stringify(updatedConfig));
+
+  await db
+    .updateTable("integration")
+    .set({
+      authConfig: encryptedAuthConfig,
+      updatedAt: now,
+    })
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .execute();
 };
 
 // =============================================================================
@@ -1199,6 +1281,51 @@ export const getOpenAPIIntegrationSpec = async (
       summary: op.summary,
     })),
   };
+};
+
+/**
+ * Store spec on an OpenAPI integration (store-only, no fetch).
+ * Used by discovery flow to cache spec after it's already been fetched.
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @param spec - The OpenAPI spec JSON string to store
+ * @param version - The OpenAPI version
+ * @param fetchedAt - Timestamp when spec was fetched
+ */
+export const storeOpenAPISpecOnIntegration = async (
+  id: string,
+  organizationId: string,
+  spec: string,
+  version: "3.0" | "3.1",
+  fetchedAt: number
+): Promise<void> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration || integration.authConfig.type !== "openapi") {
+    return;
+  }
+
+  const config = integration.authConfig;
+  const updatedConfig: OpenAPIIntegrationConfig = {
+    ...config,
+    spec,
+    specVersion: version,
+    specFetchedAt: fetchedAt,
+  };
+
+  const now = new Date().toISOString();
+  const encryptedAuthConfig = encrypt(JSON.stringify(updatedConfig));
+
+  await db
+    .updateTable("integration")
+    .set({
+      authConfig: encryptedAuthConfig,
+      updatedAt: now,
+    })
+    .where("id", "=", id)
+    .where("organizationId", "=", organizationId)
+    .execute();
 };
 
 // =============================================================================
