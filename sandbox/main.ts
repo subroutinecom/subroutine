@@ -17,7 +17,7 @@ app.post("/test/executeTypescript", async (c) => {
   const requestStart = Date.now();
   try {
     const body = await c.req.json();
-    const { code, integrations, timeoutMs } = body;
+    const { code, integrations, timeoutMs, inputs } = body;
 
     console.log(
       `[Sandbox] Received executeTypescript request, timeoutMs: ${timeoutMs ?? "default"}`
@@ -36,6 +36,7 @@ app.post("/test/executeTypescript", async (c) => {
     const result = await sandboxManager.executeCode(code, {
       integrations: Array.isArray(integrations) ? integrations : undefined,
       timeoutMs: typeof timeoutMs === "number" ? timeoutMs : undefined,
+      inputs: typeof inputs === "object" ? inputs : undefined,
     });
 
     const elapsed = Date.now() - requestStart;
@@ -46,6 +47,8 @@ app.post("/test/executeTypescript", async (c) => {
     if (result.success) {
       return c.json(result);
     } else {
+      console.log(`[Sandbox] Execution failed: ${result.error}`);
+      // console.log(`[Sandbox] Original source code:\n${code}`);
       return c.json(result, 400);
     }
   } catch (error) {

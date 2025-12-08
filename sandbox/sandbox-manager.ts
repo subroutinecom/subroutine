@@ -29,7 +29,11 @@ export class SandboxManager {
 
   executeCode(
     code: string,
-    options?: { integrations?: SandboxIntegrationPayload[]; timeoutMs?: number }
+    options?: {
+      integrations?: SandboxIntegrationPayload[];
+      timeoutMs?: number;
+      inputs?: Record<string, unknown>;
+    }
   ): Promise<ExecutionResult> {
     const timeout = options?.timeoutMs ?? this.defaultTimeout;
     const executionId = crypto.randomUUID();
@@ -101,6 +105,7 @@ export class SandboxManager {
             code,
             id: executionId,
             contentType: "application/typescript",
+            inputs: options?.inputs,
           } as ExecuteMessage);
         }
       };

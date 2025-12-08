@@ -1,17 +1,18 @@
 import { rateLimiter } from "@hono-rate-limiter/hono-rate-limiter";
+import type { Context } from "@hono/hono";
 import { cors } from "@hono/hono/cors";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import type { Context } from "@hono/hono";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createYoga } from "graphql-yoga";
 import { randomUUID } from "node:crypto";
 import process from "node:process";
-import { createModel } from "./agent/utils/providers.ts";
+import { generateCode, GenerateCodeOptionsSchema } from "./agent/agent-code-generator.ts";
+import { testMockMcpServers } from "./agent/agent-mock-mcp-tester.ts";
 import { coerceToSchema } from "./agent/agent-type-coercer.ts";
+import { createModel } from "./agent/utils/providers.ts";
 import { Capability } from "./agent/utils/types.ts";
 import { auth } from "./auth.ts";
-import { generateCode } from "./agent/agent-code-generator.ts";
 import { getConfig } from "./config/loader.ts";
 import { initializeDatabase } from "./db/index.ts";
 import { buildContext, schema } from "./internal/schema.ts";
@@ -19,19 +20,19 @@ import { createLegacyMcpServer } from "./mcp-legacy-server.ts";
 import { createMcpServer } from "./mcp-server.ts";
 import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
+import { registerMockMcpServers } from "./mock-mcp-servers.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
-import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
 import { getOrganizationBySlug, isUserMemberOfOrganization } from "./models/organization.ts";
+import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
 import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 import { registerAuthenticatedTestEndpoints, registerTestEndpoints } from "./testEndpoints.ts";
 import { registerUiRoutes } from "./ui/server.tsx";
-import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
 import { getLogger } from "./utils/logger.ts";
-const logger = getLogger("api/server.ts");
+import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
+const logger = getLogger("api/server.ts", "warn");
 
 const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";
-
 const initialize = async () => {
   const app = new OpenAPIHono<{ Variables: { auth: AuthContext } }>({
     defaultHook: (result, c) => {
@@ -413,22 +414,21 @@ const initialize = async () => {
 
   if (Deno.env.get("NODE_ENV") !== "production") {
     app.post("/api/dev/generate-code", async (c) => {
-      let body: {
-        request: string;
-        needsImmediateInputs?: boolean;
-        /** First-party integrations like gmail, google_calendar */
-        firstPartyIntegrations?: string[];
-      };
+      const RequestSchema = GenerateCodeOptionsSchema.extend({
+        request: z.string(),
+      });
 
+      let body: z.infer<typeof RequestSchema>;
       try {
-        body = await c.req.json();
-      } catch {
-        return c.json({ success: false, error: "Invalid JSON body" }, 400);
-      }
-
-      if (!body.request || typeof body.request !== "string") {
+        const json = await c.req.json();
+        body = RequestSchema.parse(json);
+      } catch (error) {
+        logger.error("Failed to parse generate code options", error);
         return c.json(
-          { success: false, error: "request field is required and must be a string" },
+          {
+            success: false,
+            error: error instanceof z.ZodError ? error.issues : "Invalid JSON body",
+          },
           400
         );
       }
@@ -437,11 +437,7 @@ const initialize = async () => {
       if (!model) {
         return c.json({ success: false, error: "Failed to create coding model" }, 500);
       }
-
-      const result = await generateCode(model, body.request, {
-        needsImmediateInputs: body.needsImmediateInputs,
-        firstPartyIntegrations: body.firstPartyIntegrations,
-      });
+      const result = await generateCode(model, body.request, body);
 
       return c.json(result);
     });
@@ -480,6 +476,27 @@ const initialize = async () => {
 
       return c.json(result);
     });
+
+    app.post("/api/dev/test-mock-mcp", async (c) => {
+      let body: { prompt?: string } = {};
+      try {
+        body = await c.req.json();
+      } catch {
+        // Ignore JSON parse error, use default prompt
+      }
+
+      const prompt =
+        body.prompt ||
+        "What is the weather in Paris? Do I have any urgent emails? And what is the latest commit on main?";
+
+      const result = await testMockMcpServers(PORT, prompt);
+      if (!result.success) {
+        return c.json(result, 500);
+      }
+      return c.json(result);
+    });
+
+    registerMockMcpServers(app);
   }
 
   app.use("*", authMiddleware);

@@ -232,6 +232,36 @@ describe("AST-based Code Validation", () => {
       ).toHaveLength(0);
     });
 
+    it("accepts class Inputs", async () => {
+      const code = `
+        class Inputs { value: string }
+        type Outputs = {};
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          return {};
+        }
+      `;
+      const result = await validateCode(code);
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "require-inputs-type")
+      ).toHaveLength(0);
+    });
+
+    it("accepts z.infer Inputs", async () => {
+      const code = `
+        import { z } from "zod";
+        const InputsSchema = z.object({ value: z.string() });
+        type Inputs = z.infer<typeof InputsSchema>;
+        type Outputs = {};
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          return {};
+        }
+      `;
+      const result = await validateCode(code);
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "require-inputs-type")
+      ).toHaveLength(0);
+    });
+
     it("rejects missing Inputs type", async () => {
       const code = `
         type Outputs = {};
@@ -266,6 +296,36 @@ describe("AST-based Code Validation", () => {
       const code = `
         type Inputs = {};
         interface Outputs { result: string }
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          return { result: "ok" };
+        }
+      `;
+      const result = await validateCode(code);
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "require-outputs-type")
+      ).toHaveLength(0);
+    });
+
+    it("accepts class Outputs", async () => {
+      const code = `
+        type Inputs = {};
+        class Outputs { result: string }
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          return { result: "ok" };
+        }
+      `;
+      const result = await validateCode(code);
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "require-outputs-type")
+      ).toHaveLength(0);
+    });
+
+    it("accepts z.infer Outputs", async () => {
+      const code = `
+        import { z } from "zod";
+        type Inputs = {};
+        const OutputsSchema = z.object({ result: z.string() });
+        type Outputs = z.infer<typeof OutputsSchema>;
         export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
           return { result: "ok" };
         }
@@ -718,6 +778,40 @@ describe("AST-based Code Validation", () => {
       expect(
         result.errors.filter((e: ValidationError) => e.rule === "validate-mcp-integration-name")
       ).toHaveLength(0);
+    });
+  });
+
+  describe("no-nested-imports", () => {
+    it("accepts top-level imports", async () => {
+      const code = `
+        import { z } from "zod";
+        type Inputs = {};
+        type Outputs = {};
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          return {};
+        }
+      `;
+      const result = await validateCode(code);
+      expect(result.valid).toBe(true);
+      expect(
+        result.errors.filter((e: ValidationError) => e.rule === "no-nested-imports")
+      ).toHaveLength(0);
+    });
+
+    it("rejects import inside function", async () => {
+      const code = `
+        type Inputs = {};
+        type Outputs = {};
+        export async function main(inputs: Inputs, integrations: unknown): Promise<Outputs> {
+          import { z } from "zod";
+          return {};
+        }
+      `;
+      const result = await validateCode(code);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e: ValidationError) => e.rule === "no-nested-imports")).toBe(
+        true
+      );
     });
   });
 

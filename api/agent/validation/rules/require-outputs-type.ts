@@ -7,15 +7,17 @@ export const requireOutputsType = (
 ): ValidationError[] => {
   const outputsTypeAlias = sourceFile.getTypeAlias("Outputs");
   const outputsInterface = sourceFile.getInterface("Outputs");
+  const outputsClass = sourceFile.getClass("Outputs");
 
-  if (outputsTypeAlias || outputsInterface) {
+  if (outputsTypeAlias || outputsInterface || outputsClass) {
     return [];
   }
 
   return [
     {
       rule: "require-outputs-type",
-      message: "Code must define an Outputs type (type Outputs = {...} or interface Outputs {...})",
+      message:
+        "Code must define an Outputs type (type Outputs = {...}, interface Outputs {...}, class Outputs {...}, or type Outputs = z.infer<...>)",
     },
   ];
 };
