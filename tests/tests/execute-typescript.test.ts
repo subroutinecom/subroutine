@@ -90,7 +90,7 @@ describe("Sandbox", () => {
 
   it("execute TypeScript with inputs", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({ value: z.number() });
       const { value } = InputSchema.parse(inputs);
       return { result: value * 2 };
@@ -105,7 +105,7 @@ describe("Sandbox", () => {
 
   it("fails validation with invalid inputs", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({ value: z.number() });
       const { value } = InputSchema.parse(inputs);
       return { result: value * 2 };
@@ -123,7 +123,7 @@ describe("Sandbox", () => {
 
   it("execute simple TypeScript code", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({}); // No inputs expected
       InputSchema.parse(inputs);
       return 42;
@@ -138,7 +138,7 @@ describe("Sandbox", () => {
 
   it("execute TypeScript with string return", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       return 'Hello, World!';
@@ -153,7 +153,7 @@ describe("Sandbox", () => {
 
   it("execute TypeScript with object return", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       const obj = { name: 'test', value: 123, nested: { key: 'value' } };
@@ -173,7 +173,7 @@ describe("Sandbox", () => {
 
   it("execute TypeScript with array operations", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       const arr = [1, 2, 3, 4, 5];
@@ -189,7 +189,7 @@ describe("Sandbox", () => {
 
   it("execute async TypeScript code", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -205,7 +205,7 @@ describe("Sandbox", () => {
 
   it("handle TypeScript syntax errors", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       return this is not valid syntax;
     }
     `;
@@ -220,7 +220,7 @@ describe("Sandbox", () => {
 
   it("handle runtime errors", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const obj = null;
       return obj.property;
     }
@@ -234,7 +234,7 @@ describe("Sandbox", () => {
 
   it("sandbox isolation - file system access denied", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       try {
@@ -254,7 +254,7 @@ describe("Sandbox", () => {
 
   it("sandbox isolation - network access denied", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       try {
@@ -274,7 +274,7 @@ describe("Sandbox", () => {
 
   it("sandbox isolation - env access denied", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({});
       InputSchema.parse(inputs);
       try {
@@ -294,7 +294,7 @@ describe("Sandbox", () => {
 
   it("execute JavaScript with arrow functions", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({ a: z.number(), b: z.number() });
       const safeInputs = InputSchema.parse(inputs);
       const add = (a, b) => a + b;
@@ -310,7 +310,7 @@ describe("Sandbox", () => {
 
   it("execute complex JavaScript logic", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const UserSchema = z.object({ name: z.string(), age: z.number() });
       const InputSchema = z.object({ users: z.array(UserSchema) });
       const { users } = InputSchema.parse(inputs);
@@ -337,7 +337,7 @@ describe("Sandbox", () => {
   // Integration RPC tests
   it("ping integration via RPC worker", async () => {
     const code = `
-      export default async function(inputs, integrations) {
+      export default async function(inputs, { integrations }) {
         const InputSchema = z.object({ message: z.string() });
         const { message } = InputSchema.parse(inputs);
         const ping = await integrations.getPing();
@@ -358,7 +358,7 @@ describe("Sandbox", () => {
 
   it("gmail integration via RPC worker", async () => {
     const code = `
-      export default async function(inputs, integrations) {
+      export default async function(inputs, { integrations }) {
         const InputSchema = z.object({ userId: z.string() });
         const { userId } = InputSchema.parse(inputs);
         const gmail = await integrations.getGmail();
@@ -379,7 +379,7 @@ describe("Sandbox", () => {
 
   it("s3 integration via RPC worker", async () => {
     const code = `
-      export default async function(inputs, integrations) {
+      export default async function(inputs, { integrations }) {
         const InputSchema = z.object({});
         InputSchema.parse(inputs);
         const s3 = await integrations.getS3();
@@ -399,7 +399,7 @@ describe("Sandbox", () => {
 
   it("github integration via RPC worker", async () => {
     const code = `
-      export default async function(inputs, integrations) {
+      export default async function(inputs, { integrations }) {
         const InputSchema = z.object({});
         InputSchema.parse(inputs);
         const github = await integrations.getGithub();
@@ -416,7 +416,7 @@ describe("Sandbox", () => {
 
   it("post-tsmorph transformed code is deterministic", async () => {
     const code = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       const InputSchema = z.object({ value: z.number() });
       const { value } = InputSchema.parse(inputs);
       return { result: value * 2 };
@@ -438,7 +438,7 @@ describe("Sandbox", () => {
 
   it("pmarkers stay the same with a shared code prefix and change after the code changes", async () => {
     const code1 = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       await new Promise(r => setTimeout(r, 10));
       await new Promise(r => setTimeout(r, 10));
       return 'done';
@@ -446,7 +446,7 @@ describe("Sandbox", () => {
     `;
 
     const code2 = `
-    export default async function(inputs, integrations) {
+    export default async function(inputs, { integrations }) {
       await new Promise(r => setTimeout(r, 20));
       await new Promise(r => setTimeout(r, 10));
       return 'done';

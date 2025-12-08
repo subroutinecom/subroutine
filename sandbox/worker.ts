@@ -67,8 +67,12 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       const entryPoint = module.main || module.default;
 
       if (typeof entryPoint === "function") {
-        // Pass inputs and integrations (if available)
-        result = await entryPoint(inputs, integrations);
+        const options = {
+          integrations,
+          pmarker: (globalThis as any).pmarker,
+        };
+        // Pass inputs and options object
+        result = await entryPoint(inputs, options);
       } else {
         result = entryPoint;
       }
