@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { McpContext } from "../utils/types";
-import type { AuthRequirement } from "../../models/errors";
-import { handleInspectMcp, handleInspectGraphQL } from "./utils";
-import { getIntegrationOrGlobal } from "../../models/integration";
+import type { AuthRequirement } from "../../models/errors.ts";
+import { getIntegrationOrGlobal } from "../../models/integration.ts";
+import type { McpContext } from "../utils/types.ts";
+import { handleInspectGraphQL, handleInspectMcp } from "./utils.ts";
 
 /**
  * Result type for inspectIntegration tool.
@@ -41,7 +41,13 @@ type InspectResult =
 export const createInspectIntegration = (
   mcpContext: McpContext,
   capturedAuthRequirements: AuthRequirement[],
-  usedIntegrationIds: Set<string>
+  usedIntegrationIds: Set<string>,
+  providedIntegrations: {
+    name: string;
+    id: string;
+    connectionUrl?: string;
+    type: "mcp" | "graphql";
+  }[] = []
 ) => {
   return {
     description: `Inspect an integration to discover what it provides.
@@ -64,7 +70,74 @@ Call this BEFORE writing code to understand what the integration can do.`,
         };
       }
 
-      // Fetch the full integration
+      // Check if this is a provided integration with a connection URL (Mock/Test mode)
+      const provided = providedIntegrations.find((i) => i.id === integrationId && i.connectionUrl);
+      if (provided && provided.connectionUrl) {
+        // Construct a temporary integration object for the mock server
+        // This bypasses the DB lookup
+        const mockIntegration: any = {
+          id: provided.id,
+          name: provided.name,
+          authConfig: {
+            type: provided.type as "mcp" | "graphql", // Type assertion for safety
+            serverUrl: provided.connectionUrl,
+            endpoint: provided.connectionUrl, // GraphQL uses endpoint
+            auth: {
+              strategy: { type: "none" }, // Mocks usually don't need auth
+            },
+            transport: "streamable-http", // Default for mocks
+          },
+        };
+
+        // Handle based on integration type
+        if (provided.type === "mcp") {
+          const result = await handleInspectMcp(
+            mockIntegration,
+            mcpContext,
+            capturedAuthRequirements
+          );
+          if (result.success && result.tools) {
+            usedIntegrationIds.add(mockIntegration.id);
+            return {
+              success: true,
+              type: "mcp",
+              integrationName: mockIntegration.name,
+              tools: result.tools,
+              usage: `This is an MCP integration. Use integrations.getMcpClient() to get a client:
+
+const client = await integrations.getMcpClient("${mockIntegration.name}");
+const result = await client.callTool({ name: "toolName", arguments: { param: "value" } });
+const data = JSON.parse(result.content[0]?.text || "{}");`,
+            };
+          }
+          return { success: false, error: result.error ?? "Unknown error" };
+        } else if (provided.type === "graphql") {
+          const result = await handleInspectGraphQL(
+            mockIntegration,
+            mcpContext,
+            capturedAuthRequirements
+          );
+          if (result.success && result.schema) {
+            usedIntegrationIds.add(mockIntegration.id);
+            return {
+              success: true,
+              type: "graphql",
+              integrationName: mockIntegration.name,
+              schema: result.schema,
+              schemaFetchedAt: result.schemaFetchedAt!,
+              usage: `This is a GraphQL integration. Use integrations.getGraphQLClient() to get a client:
+
+const client = await integrations.getGraphQLClient("${mockIntegration.name}");
+const result = await client.request(\`query { ... }\`, { variables });
+
+IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
+            };
+          }
+          return { success: false, error: result.error ?? "Unknown error" };
+        }
+      }
+
+      // Fetch the full integration from DB
       const integration = await getIntegrationOrGlobal(integrationId, mcpContext.organizationId);
       if (!integration) {
         return {
@@ -94,7 +167,11 @@ const data = JSON.parse(result.content[0]?.text || "{}");`,
       }
 
       if (integration.authConfig.type === "graphql") {
-        const result = await handleInspectGraphQL(integration, mcpContext, capturedAuthRequirements);
+        const result = await handleInspectGraphQL(
+          integration,
+          mcpContext,
+          capturedAuthRequirements
+        );
         if (result.success && result.schema) {
           usedIntegrationIds.add(integration.id);
           return {

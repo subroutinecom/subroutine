@@ -5,7 +5,8 @@ Deno.test({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API`,
   ignore: !enableAiTests,
   fn: async () => {
-    const response = await fetch("http://api.subroutine.internal/api/dev/generate-code", {
+    const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
+    const response = await fetch(`${API_URL}/api/dev/generate-code`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -52,7 +53,8 @@ Deno.test({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with immediate inputs`,
   ignore: !enableAiTests,
   fn: async () => {
-    const response = await fetch("http://api.subroutine.internal/api/dev/generate-code", {
+    const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
+    const response = await fetch(`${API_URL}/api/dev/generate-code`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -88,7 +90,8 @@ Deno.test({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with initial messages (conversation history)`,
   ignore: !enableAiTests,
   fn: async () => {
-    const response = await fetch("http://api.subroutine.internal/api/dev/generate-code", {
+    const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
+    const response = await fetch(`${API_URL}/api/dev/generate-code`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -132,40 +135,50 @@ Deno.test({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with initial messages (tool calls)`,
   ignore: !enableAiTests,
   fn: async () => {
-    // Simulate a scenario where the agent "called" a tool to get weather, and we provide the result
-    const response = await fetch("http://api.subroutine.internal/api/dev/generate-code", {
+    // 1. Define available integrations (simulating provided mode)
+    // Use env var to point to localhost:3002 when running locally, or default to internal dns for container
+    const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
+
+    // The internal URL is how the agent (inside container) reaches the mock servers (also inside container)
+    // Using localhost:80 works because they are in the same `api` service.
+    const INTERNAL_URL = "http://localhost:80";
+
+    // The mock servers are mounted at /mockMCP/weather etc.
+    const weatherUrl = `${INTERNAL_URL}/mockMCP/weather`;
+    const mailUrl = `${INTERNAL_URL}/mockMCP/mail`;
+
+    const requestPayload = {
+      request: "Check the weather in Portland, OR (97202) and list my urgent emails.",
+      needsImmediateInputs: true,
+      integrations: [
+        {
+          id: "mock-weather-server", // Must match what we expect in code
+          name: "mock-weather-server",
+          type: "mcp",
+          connectionUrl: weatherUrl,
+        },
+        {
+          id: "mock-mail-server",
+          name: "mock-mail-server",
+          type: "mcp",
+          connectionUrl: mailUrl,
+        },
+      ],
+      mcpContext: {
+        organizationId: "org_mock",
+        viewerId: "user_mock",
+        integrationNameToId: {
+          "mock-weather-server": "mock-weather-server",
+          "mock-mail-server": "mock-mail-server",
+        },
+      },
+    };
+
+    console.log(`Sending request to ${API_URL}/api/dev/generate-code...`);
+    const response = await fetch(`${API_URL}/api/dev/generate-code`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        request:
-          "Create a subroutine that returns the current temperature based on the previous tool call",
-        initialMessages: [
-          { role: "user", content: "What is the weather in San Francisco?" },
-          {
-            role: "assistant",
-            content: [
-              {
-                type: "tool-call",
-                toolCallId: "call_123",
-                toolName: "get_weather",
-                input: { location: "San Francisco" },
-              },
-            ],
-          },
-          {
-            role: "tool",
-            content: [
-              {
-                type: "tool-result",
-                toolCallId: "call_123",
-                toolName: "get_weather",
-                output: { type: "json", value: JSON.stringify({ temperature: 72, unit: "F" }) },
-              },
-            ],
-          },
-        ],
-        needsImmediateInputs: true,
-      }),
+      body: JSON.stringify(requestPayload),
     });
 
     const data = await response.json();
@@ -175,17 +188,44 @@ Deno.test({
       return;
     }
 
-    assertEquals(response.status, 200, `Expected 200, got ${response.status}`);
-    assertEquals(data.success, true, `Expected success = true, got ${data.success}`);
+    assertEquals(
+      response.status,
+      200,
+      `Expected 200, got ${response.status} - ${JSON.stringify(data.error)}`
+    );
+    assertEquals(data.success, true, `Expected true, got ${data.success}`);
+
+    // If the agent actually used the tools, it must have taken more than 1 step (inpsect -> write)
+    console.log(`Agent iterations: ${data.iterations}`);
+    assertEquals(
+      data.iterations > 1,
+      true,
+      `Expected > 1 iterations (inspect -> code), got ${data.iterations}`
+    );
 
     const code = data.source;
-    console.log("Generated code:", code);
+    console.log("=========================================");
+    console.log("GENERATED CODE WITH MOCKS:");
+    console.log(code);
+    console.log("=========================================");
 
-    // logic: it should interpret the tool result (72) and use it.
+    // Verify usage
     assertEquals(
-      code.includes("72"),
+      code.includes('getMcpClient("mock-weather-server")'),
       true,
-      `Expected code to include "72" from tool result, got ${code}`
+      'Expected code to use getMcpClient("mock-weather-server")'
+    );
+    assertEquals(
+      code.includes('getMcpClient("mock-mail-server")'),
+      true,
+      'Expected code to use getMcpClient("mock-mail-server")'
+    );
+
+    // It should call tools
+    assertEquals(
+      code.includes('"getForecast"') || code.includes("'getForecast'"),
+      true,
+      "Expected code to call getForecast tool"
     );
   },
 });

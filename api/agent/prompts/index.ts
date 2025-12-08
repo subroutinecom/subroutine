@@ -13,6 +13,7 @@ export const IntegrationInfoSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.enum(["mcp", "graphql"]),
+  connectionUrl: z.string().optional(),
 });
 
 export type IntegrationInfo = z.infer<typeof IntegrationInfoSchema>;
