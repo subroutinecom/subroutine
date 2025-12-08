@@ -1,11 +1,13 @@
 import { expect } from "@std/expect";
-import { describe, it } from "@std/testing/bdd";
+import { enableAiTests } from "../fixtures/aitests.ts";
 
 // Allow overriding API URL for local testing
 const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
 
-describe("Mock MCP Servers via Agent", () => {
-  it("should successfully query all mock MCP servers via agent", async () => {
+Deno.test({
+  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}Mock MCP Servers via Agent`,
+  ignore: !enableAiTests,
+  fn: async () => {
     const prompt =
       "What is the weather in Paris? Do I have any urgent emails? And what is the latest commit on main?";
 
@@ -42,5 +44,5 @@ describe("Mock MCP Servers via Agent", () => {
     const hasRepo = toolNames.includes("getCommit") || toolNames.includes("listBranches");
 
     expect(hasWeather || hasMail || hasRepo).toBe(true);
-  });
+  },
 });
