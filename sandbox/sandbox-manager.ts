@@ -1,6 +1,11 @@
 import type { SandboxIntegrationPayload } from "./types.ts";
 import { applyTransforms } from "./transforms/index.ts";
 import type { ExecuteMessage } from "./worker.ts";
+import { createHash } from "node:crypto";
+import { RunCacheManager } from "./memory-cache.ts";
+import { RemoteProxyServer, type WireMessage, type CallRequest, type CallResponse } from "./remoteProxy.ts";
+
+const MAX_CACHE_SIZE_BYTES = 5 * 1024 * 1024;
 
 type ExecutionWorkerMessage =
   | {
@@ -81,7 +86,106 @@ export class SandboxManager {
       },
     });
 
-    const channel = new MessageChannel();
+    const integrationChannel = new MessageChannel();
+    const executionChannel = new MessageChannel();
+
+    // Setup proxy handling in the main process
+    const executionPort = executionChannel.port2;
+    const integrationPort = integrationChannel.port1;
+
+    // Map to track request context for caching responses
+    const pendingRequests = new Map<
+      string,
+      {
+        runId?: string;
+        latestMarkerId?: string;
+        canonicalPath: readonly string[];
+        args: readonly unknown[];
+      }
+    >();
+
+    executionPort.onmessage = (ev: MessageEvent<WireMessage>) => {
+      const wireMsg = ev.data;
+      if (!wireMsg || wireMsg.kind !== "rpc") return;
+
+      (async () => {
+        const req = wireMsg.payload;
+        const { runId, latestMarkerId } = req.metadata || {};
+
+        // Canonicalize path for caching (remove non-deterministic instance ID)
+        let canonicalPath = req.path;
+        if (
+          canonicalPath[0] === RemoteProxyServer.INSTANCE_PREFIX &&
+          canonicalPath.length >= 2
+        ) {
+          canonicalPath = canonicalPath.slice(2);
+        }
+
+        if (
+          runId &&
+          latestMarkerId &&
+          typeof runId === "string" &&
+          typeof latestMarkerId === "string"
+        ) {
+          const hashInput = JSON.stringify({ path: canonicalPath, args: req.args });
+          const argsHash = createHash("sha256").update(hashInput).digest("hex");
+          const cacheKey = `${latestMarkerId}:${argsHash}`;
+
+          const cached = RunCacheManager.get(runId, cacheKey);
+          if (cached) {
+            console.log(`[SandboxManager] Cache HIT for ${cacheKey}`);
+            const wire: WireMessage = {
+              kind: "rpc_result",
+              payload: { ...cached, id: req.id },
+            };
+            executionPort.postMessage(wire);
+            return;
+          }
+        }
+
+        // Store metadata for response caching
+        pendingRequests.set(req.id, {
+          runId: typeof runId === "string" ? runId : undefined,
+          latestMarkerId: typeof latestMarkerId === "string" ? latestMarkerId : undefined,
+          canonicalPath,
+          args: req.args,
+        });
+
+        // Forward to integration proxy
+        integrationPort.postMessage(wireMsg);
+      })();
+    };
+
+    integrationPort.onmessage = (ev: MessageEvent<WireMessage>) => {
+      const wireMsg = ev.data;
+      if (!wireMsg || wireMsg.kind !== "rpc_result") return;
+
+      const res = wireMsg.payload;
+      const meta = pendingRequests.get(res.id);
+
+      if (meta) {
+        pendingRequests.delete(res.id);
+        const { runId, latestMarkerId, canonicalPath, args } = meta;
+
+        if (runId && latestMarkerId && res.ok) {
+          const hashInput = JSON.stringify({ path: canonicalPath, args });
+          const argsHash = createHash("sha256").update(hashInput).digest("hex");
+          const cacheKey = `${latestMarkerId}:${argsHash}`;
+
+          try {
+            const value = JSON.stringify(res);
+            if (new TextEncoder().encode(value).length <= MAX_CACHE_SIZE_BYTES) {
+              RunCacheManager.set(runId, cacheKey, res);
+            }
+          } catch (e) {
+            console.warn(`[SandboxManager] Cache write error:`, e);
+          }
+        }
+      }
+
+      // Forward response to execution worker
+      executionPort.postMessage(wireMsg);
+    };
 
     return new Promise<ExecutionResult>((resolve) => {
       let integrationProxyReady = false;
@@ -185,9 +289,9 @@ export class SandboxManager {
           type: "connect",
           integrations: options?.integrations ?? [],
         },
-        [channel.port2]
+        [integrationChannel.port2]
       );
-      executionWorker.postMessage({ type: "connect" }, [channel.port1]);
+      executionWorker.postMessage({ type: "connect" }, [executionChannel.port1]);
     });
   }
 }

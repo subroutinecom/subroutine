@@ -76,9 +76,8 @@ async function executeTypescript(
   };
 }
 
-describe("Sandbox Caching", () => {
-  it("caches integration results within the same runId and pmarker", async () => {
-    const code = `
+Deno.test("caches integration results within the same runId and pmarker", async () => {
+  const code = `
     export default async function(inputs, { integrations }) {
       const ping = await integrations.getPing();
       // This call should be cached if runId is provided
@@ -87,27 +86,28 @@ describe("Sandbox Caching", () => {
     }
     `;
 
-    const runId = `test-run-${Date.now()}`;
+  const runId = `test-run-${Date.now()}`;
 
-    // First execution
-    const res1 = await executeTypescript(code, {}, runId);
-    expect(res1.status).toBe(200);
-    expect(res1.result.success).toBe(true);
-    const timestamp1 = (res1.result.result as { timestamp: number }).timestamp;
+  // First execution
+  const res1 = await executeTypescript(code, {}, runId);
+  expect(res1.status, "HTTP status is 200").toBe(200);
+  expect(res1.result.success, "Result should indicate success").toBe(true);
+  const timestamp1 = (res1.result.result as { timestamp: number }).timestamp;
 
-    // Small delay to ensure time passes
-    await new Promise((resolve) => setTimeout(resolve, 100));
+  // Small delay to ensure time passes
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // Second execution - same runId
-    const res2 = await executeTypescript(code, {}, runId);
-    expect(res2.status).toBe(200);
-    expect(res2.result.success).toBe(true);
-    const timestamp2 = (res2.result.result as { timestamp: number }).timestamp;
+  // Second execution - same runId
+  const res2 = await executeTypescript(code, {}, runId);
+  expect(res2.status, "HTTP status is 200").toBe(200);
+  expect(res2.result.success, "Result should indicate success").toBe(true);
+  const timestamp2 = (res2.result.result as { timestamp: number }).timestamp;
 
-    // Timestamps should match exactly if cached
-    expect(timestamp2).toBe(timestamp1);
-  });
+  // Timestamps should match exactly if cached
+  expect(timestamp2, "Timestamps should match exactly if cached").toBe(timestamp1);
+});
 
+describe("Sandbox Caching", () => {
   it("does not cache across different runIds", async () => {
     const code = `
     export default async function(inputs, { integrations }) {
@@ -132,7 +132,7 @@ describe("Sandbox Caching", () => {
     const timestamp2 = (res2.result.result as { timestamp: number }).timestamp;
 
     // Timestamps should be different
-    expect(timestamp2).toBeGreaterThan(timestamp1);
+    expect(timestamp2, "Timestamps should be different").toBeGreaterThan(timestamp1);
   });
 
   it("invalidates cache if code (pmarker) changes", async () => {
@@ -164,6 +164,6 @@ describe("Sandbox Caching", () => {
     const res2 = await executeTypescript(code2, {}, runId);
     const timestamp2 = (res2.result.result as { timestamp: number }).timestamp;
 
-    expect(timestamp2).toBeGreaterThan(timestamp1);
+    expect(timestamp2, "Timestamps should be different").toBeGreaterThan(timestamp1);
   });
 });

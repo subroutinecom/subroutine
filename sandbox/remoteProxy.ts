@@ -193,9 +193,14 @@ export class RemoteProxyClient<T extends object = object> {
           if (ref && typeof ref === "object" && typeof ref.__remote_instance__ === "string") {
             const instanceId = ref.__remote_instance__;
             const cached = this.#instanceCache.get(instanceId);
-            if (cached) return cached;
+            if (cached) {
+              console.log("Cache hit for instance:", instanceId);
+              return cached;
+            }
             const inst = makeInstance(instanceId);
-            this.#instanceCache.set(instanceId, inst);
+            if (!cached) {
+              this.#instanceCache.set(instanceId, inst);
+            }
             return inst;
           }
           return out;
@@ -237,7 +242,9 @@ export class RemoteProxyClient<T extends object = object> {
               const cached = this.#instanceCache.get(nestedId);
               if (cached) return cached;
               const nested = makeInstance(nestedId);
-              this.#instanceCache.set(nestedId, nested);
+              if (!cached) {
+                this.#instanceCache.set(nestedId, nested);
+              }
               return nested;
             }
             return out;
@@ -252,7 +259,7 @@ export class RemoteProxyClient<T extends object = object> {
 }
 
 // MessagePort-based transport for MessageChannel communication
-type WireMessage =
+export type WireMessage =
   | { kind: "rpc"; payload: CallRequest }
   | {
       kind: "rpc_result";
