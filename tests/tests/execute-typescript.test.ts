@@ -15,6 +15,7 @@ interface ExecutionResult {
   success: boolean;
   result?: unknown;
   error?: string;
+  code?: string;
 }
 
 function makeRequest(
@@ -411,5 +412,27 @@ describe("Sandbox", () => {
     expect(status, "HTTP status is 200").toBe(200);
     expect(result.success, "Result should indicate success").toBe(true);
     expect((result.result as { login: string }).login, "Should return login").toBe("octocat");
+  });
+
+  it("post-tsmorph transformed code is deterministic", async () => {
+    const code = `
+    export default async function(inputs, integrations) {
+      const InputSchema = z.object({ value: z.number() });
+      const { value } = InputSchema.parse(inputs);
+      return { result: value * 2 };
+    }
+    `;
+    const response1 = await executeTypescript(code, { value: 10 });
+    const response2 = await executeTypescript(code, { value: 10 });
+
+    expect(response1.status).toBe(200);
+    expect(response1.result.success).toBe(true);
+    expect(response1.result.code).toBeDefined();
+
+    expect(response2.status).toBe(200);
+    expect(response2.result.success).toBe(true);
+    expect(response2.result.code).toBeDefined();
+
+    expect(response1.result.code).toBe(response2.result.code);
   });
 });

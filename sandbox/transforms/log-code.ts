@@ -7,7 +7,7 @@ export const logCodeTransform: TransformFn = (sourceFile: SourceFile) => {
   // Note: This changes line numbers, which might affect error stack traces.
   // But for this feature, it fulfills the requirement.
 
-  sourceFile.insertStatements(0, `console.log("--- Transforming Code ---");`);
-  sourceFile.insertStatements(1, `console.log(${JSON.stringify(sourceText)});`);
-  sourceFile.insertStatements(2, `console.log("----------------------");`);
+  // sourceFile.insertStatements(0, `console.log("--- Transforming Code ---");`);
+  // sourceFile.insertStatements(1, `console.log(${JSON.stringify(sourceText)});`);
+  // sourceFile.insertStatements(2, `console.log("----------------------");`);
 };

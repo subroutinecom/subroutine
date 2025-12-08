@@ -19,6 +19,7 @@ export interface ExecutionResult {
   success: boolean;
   result?: unknown;
   error?: string;
+  code?: string;
 }
 
 export class SandboxManager {
@@ -96,6 +97,7 @@ export class SandboxManager {
         resolve({
           success: false,
           error: `Execution timed out after ${Math.round(timeout / 1000)} seconds`,
+          code: transformedCode,
         });
       }, timeout);
 
@@ -139,6 +141,7 @@ export class SandboxManager {
           resolve({
             success: true,
             result: event.data.data,
+            code: transformedCode,
           });
         } else if (event.data.type === "error") {
           console.log(`[SandboxManager] Execution failed after ${elapsed}ms: ${event.data.error}`);
@@ -148,6 +151,7 @@ export class SandboxManager {
           resolve({
             success: false,
             error: event.data.error,
+            code: transformedCode,
           });
         }
       };
@@ -159,6 +163,7 @@ export class SandboxManager {
         resolve({
           success: false,
           error: error.message || "Worker execution failed",
+          code: transformedCode,
         });
       };
 
@@ -169,6 +174,7 @@ export class SandboxManager {
         resolve({
           success: false,
           error: `Integration proxy worker failed: ${error.message || "Unknown error"}`,
+          code: transformedCode,
         });
       };
 
