@@ -12,6 +12,7 @@ const apiServerApp = {
   ignore_watch: ["node_modules", ".git"],
   env: {
     NODE_ENV: IS_BUILD ? "production" : "development",
+    REDIS_HOST: process.env.REDIS_HOST || "redis.subroutine.internal",
   },
 };
 
