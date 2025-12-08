@@ -130,13 +130,13 @@ export const GenerateCodeOptionsSchema = z.object({
   needsImmediateInputs: z.boolean().optional(),
   /** First-party integrations with dedicated libraries (Gmail, Calendar, etc.) */
   firstPartyIntegrations: z.array(z.string()).optional(),
-  /** Configurable integrations (MCP servers or GraphQL endpoints) */
+  /** Configurable integrations (MCP servers, GraphQL endpoints, or OpenAPI services) */
   integrations: z
     .array(
       z.object({
         id: z.string(),
         name: z.string(),
-        type: z.enum(["mcp", "graphql"]),
+        type: z.enum(["mcp", "graphql", "openapi"]),
       })
     )
     .optional(),

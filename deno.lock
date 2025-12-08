@@ -2,8 +2,8 @@
   "version": "5",
   "specifiers": {
     "jsr:@hono-rate-limiter/hono-rate-limiter@~0.4.2": "0.4.2",
-    "jsr:@hono/hono@^4.10.5": "4.10.7",
-    "jsr:@hono/hono@^4.6.12": "4.10.7",
+    "jsr:@hono/hono@^4.10.5": "4.10.5",
+    "jsr:@hono/hono@^4.6.12": "4.10.5",
     "jsr:@std/assert@1": "1.0.15",
     "jsr:@std/assert@^1.0.14": "1.0.15",
     "jsr:@std/assert@^1.0.15": "1.0.15",
@@ -22,6 +22,8 @@
     "npm:@ai-sdk/google@^2.0.44": "2.0.44_zod@3.25.76",
     "npm:@ai-sdk/mcp@^0.0.11": "0.0.11_zod@3.25.76",
     "npm:@ai-sdk/openai@^2.0.64": "2.0.76_zod@3.25.76",
+    "npm:@apidevtools/swagger-parser@^10.1.1": "10.1.1_openapi-types@12.1.3_ajv@8.17.1",
+    "npm:@apidevtools/swagger-parser@^12.1.0": "12.1.0_openapi-types@12.1.3_ajv@8.17.1",
     "npm:@cap.js/server@^4.0.3": "4.0.4",
     "npm:@cap.js/widget@~0.1.31": "0.1.32",
     "npm:@eslint/js@^9.39.1": "9.39.1",
@@ -32,12 +34,12 @@
     "npm:@graphql-codegen/typescript@^5.0.4": "5.0.6_graphql@16.12.0",
     "npm:@graphql-typed-document-node/core@^3.2.0": "3.2.0_graphql@16.12.0",
     "npm:@hono/zod-openapi@~0.18.4": "0.18.4_hono@4.10.7_zod@3.25.76",
-    "npm:@modelcontextprotocol/sdk@^1.21.0": "1.24.1_zod@3.25.76_ajv@8.17.1_express@5.2.1",
+    "npm:@modelcontextprotocol/sdk@^1.21.0": "1.23.0_zod@3.25.76_ajv@8.17.1_express@5.2.1",
     "npm:@pothos/core@^4.10.0": "4.10.0_graphql@16.12.0",
-    "npm:@react-router/dev@^7.9.2": "7.10.0_@react-router+serve@7.10.0__react-router@7.10.0___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.22.1__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.10.0__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_@babel+core@7.28.5_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.2",
-    "npm:@react-router/node@^7.9.2": "7.10.0_react-router@7.10.0__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1",
-    "npm:@react-router/remix-routes-option-adapter@^7.9.5": "7.10.0_@react-router+dev@7.10.0__@react-router+serve@7.10.0___react-router@7.10.0____react@18.3.1____react-dom@18.3.1_____react@18.3.1___express@4.22.1___typescript@5.9.3___react@18.3.1___react-dom@18.3.1____react@18.3.1__react-router@7.10.0___react@18.3.1___react-dom@18.3.1____react@18.3.1__typescript@5.9.3__vite@7.2.6___@types+node@24.2.0___yaml@2.8.2___picomatch@4.0.3__@babel+core@7.28.5__react@18.3.1__react-dom@18.3.1___react@18.3.1__@types+node@24.2.0__yaml@2.8.2_typescript@5.9.3_@react-router+serve@7.10.0__react-router@7.10.0___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.22.1__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.10.0__react@18.3.1__react-dom@18.3.1___react@18.3.1_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.2",
-    "npm:@react-router/serve@^7.9.2": "7.10.0_react-router@7.10.0__react@18.3.1__react-dom@18.3.1___react@18.3.1_express@4.22.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+    "npm:@react-router/dev@^7.9.2": "7.9.6_@react-router+serve@7.9.6__react-router@7.9.6___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.22.1__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_@babel+core@7.28.5_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.2",
+    "npm:@react-router/node@^7.9.2": "7.9.6_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+    "npm:@react-router/remix-routes-option-adapter@^7.9.5": "7.9.6_@react-router+dev@7.9.6__@react-router+serve@7.9.6___react-router@7.9.6____react@18.3.1____react-dom@18.3.1_____react@18.3.1___express@4.22.1___typescript@5.9.3___react@18.3.1___react-dom@18.3.1____react@18.3.1__react-router@7.9.6___react@18.3.1___react-dom@18.3.1____react@18.3.1__typescript@5.9.3__vite@7.2.6___@types+node@24.2.0___yaml@2.8.2___picomatch@4.0.3__@babel+core@7.28.5__react@18.3.1__react-dom@18.3.1___react@18.3.1__@types+node@24.2.0__yaml@2.8.2_typescript@5.9.3_@react-router+serve@7.9.6__react-router@7.9.6___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.22.1__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.2",
+    "npm:@react-router/serve@^7.9.2": "7.9.6_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_express@4.22.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:@tailwindcss/vite@^4.1.13": "4.1.17_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_@types+node@24.2.0_yaml@2.8.2",
     "npm:@types/node@*": "24.2.0",
     "npm:@types/node@^24.2.0": "24.10.1",
@@ -45,14 +47,14 @@
     "npm:@types/react-dom@^19.1.9": "19.2.3_@types+react@18.3.27",
     "npm:@types/react@^18.3.12": "18.3.27",
     "npm:@types/react@^19.1.13": "19.2.7",
-    "npm:@typescript-eslint/utils@^8.46.3": "8.48.1_eslint@9.39.1_typescript@5.9.3",
+    "npm:@typescript-eslint/utils@^8.46.3": "8.48.0_eslint@9.39.1_typescript@5.9.3",
     "npm:@uidotdev/usehooks@^2.4.1": "2.4.1_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:ai@^5.0.102": "5.0.106_zod@3.25.76",
     "npm:ai@^5.0.106": "5.0.106_zod@3.25.76",
     "npm:arg@5": "5.0.2",
     "npm:bcrypt@6": "6.0.0",
-    "npm:better-auth@1.3.34": "1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.3_kysely@0.28.8_nanostores@1.1.0",
-    "npm:better-auth@^1.3.34": "1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.3_kysely@0.28.8_nanostores@1.1.0",
+    "npm:better-auth@1.3.34": "1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.2_kysely@0.28.8_nanostores@1.1.0",
+    "npm:better-auth@^1.3.34": "1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.2_kysely@0.28.8_nanostores@1.1.0",
     "npm:daisyui@^5.4.7": "5.5.5",
     "npm:date-fns@^4.1.0": "4.1.0",
     "npm:debug@^4.4.3": "4.4.3",
@@ -77,13 +79,14 @@
     "npm:lru-cache@^11.2.4": "11.2.4",
     "npm:lucide-react@0.554": "0.554.0_react@18.3.1",
     "npm:nanoid@^5.1.6": "5.1.6",
+    "npm:openapi-types@^12.1.3": "12.1.3",
     "npm:pg@^8.16.3": "8.16.3",
     "npm:prettier@^3.6.2": "3.7.3",
     "npm:react-dom@^18.3.1": "18.3.1_react@18.3.1",
     "npm:react-dom@^19.1.1": "19.2.0_react@18.3.1",
     "npm:react-hook-form@^7.66.0": "7.67.0_react@18.3.1",
     "npm:react-router-dom@^6.28.0": "6.30.2_react@18.3.1_react-dom@18.3.1__react@18.3.1",
-    "npm:react-router@^7.9.2": "7.10.0_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+    "npm:react-router@^7.9.2": "7.9.6_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:react@^18.3.1": "18.3.1",
     "npm:react@^19.1.1": "19.2.0",
     "npm:remix-flat-routes@~0.8.5": "0.8.5",
@@ -92,7 +95,7 @@
     "npm:tough-cookie@6": "6.0.0",
     "npm:ts-morph@26": "26.0.0",
     "npm:ts-morph@^27.0.2": "27.0.2",
-    "npm:typescript-eslint@^8.46.3": "8.48.1_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.48.1__eslint@9.39.1__typescript@5.9.3",
+    "npm:typescript-eslint@^8.46.3": "8.48.0_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.48.0__eslint@9.39.1__typescript@5.9.3",
     "npm:typescript@^5.9.2": "5.9.3",
     "npm:use-stick-to-bottom@^1.1.1": "1.1.1_react@18.3.1",
     "npm:vite-tsconfig-paths@^5.1.4": "5.1.4_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_typescript@5.9.3_@types+node@24.2.0_yaml@2.8.2",
@@ -112,8 +115,8 @@
         "jsr:@hono/hono@^4.6.12"
       ]
     },
-    "@hono/hono@4.10.7": {
-      "integrity": "b60512559d554f20a945e07a6c5f115e57cbd4c024da9217833c8e7b2c90355d"
+    "@hono/hono@4.10.5": {
+      "integrity": "13dbf2a528feb8189ad13394b213f0cf5f83b0ba4b2fadd0549993426db9ad2d"
     },
     "@std/assert@1.0.15": {
       "integrity": "d64018e951dbdfab9777335ecdb000c0b4e3df036984083be219ce5941e4703b",
@@ -228,6 +231,52 @@
       "integrity": "sha512-6o7Y2SeO9vFKB8lArHXehNuusnpddKPk7xqL7T2/b+OvXMRIXUO1rR4wcv1hAFUAT9avGZshty3Wlua/XA7TvA==",
       "dependencies": [
         "json-schema"
+      ]
+    },
+    "@apidevtools/json-schema-ref-parser@11.7.2": {
+      "integrity": "sha512-4gY54eEGEstClvEkGnwVkTkrx0sqwemEFG5OSRRn3tD91XH0+Q8XIkYIfo7IwEWPpJZwILb9GUXeShtplRc/eA==",
+      "dependencies": [
+        "@jsdevtools/ono",
+        "@types/json-schema",
+        "js-yaml"
+      ]
+    },
+    "@apidevtools/json-schema-ref-parser@14.0.1": {
+      "integrity": "sha512-Oc96zvmxx1fqoSEdUmfmvvb59/KDOnUoJ7s2t7bISyAn0XEz57LCCw8k2Y4Pf3mwKaZLMciESALORLgfe2frCw==",
+      "dependencies": [
+        "@types/json-schema",
+        "js-yaml"
+      ]
+    },
+    "@apidevtools/openapi-schemas@2.1.0": {
+      "integrity": "sha512-Zc1AlqrJlX3SlpupFGpiLi2EbteyP7fXmUOGup6/DnkRgjP9bgMM/ag+n91rsv0U1Gpz0H3VILA/o3bW7Ua6BQ=="
+    },
+    "@apidevtools/swagger-methods@3.0.2": {
+      "integrity": "sha512-QAkD5kK2b1WfjDS/UQn/qQkbwF31uqRjPTrsCs5ZG9BQGAkjwvqGFjjPqAuzac/IYzpPtRzjCP1WrTuAIjMrXg=="
+    },
+    "@apidevtools/swagger-parser@10.1.1_openapi-types@12.1.3_ajv@8.17.1": {
+      "integrity": "sha512-u/kozRnsPO/x8QtKYJOqoGtC4kH6yg1lfYkB9Au0WhYB0FNLpyFusttQtvhlwjtG3rOwiRz4D8DnnXa8iEpIKA==",
+      "dependencies": [
+        "@apidevtools/json-schema-ref-parser@11.7.2",
+        "@apidevtools/openapi-schemas",
+        "@apidevtools/swagger-methods",
+        "@jsdevtools/ono",
+        "ajv@8.17.1",
+        "ajv-draft-04",
+        "call-me-maybe",
+        "openapi-types"
+      ]
+    },
+    "@apidevtools/swagger-parser@12.1.0_openapi-types@12.1.3_ajv@8.17.1": {
+      "integrity": "sha512-e5mJoswsnAX0jG+J09xHFYQXb/bUc5S3pLpMxUuRUA2H8T2kni3yEoyz2R3Dltw5f4A6j6rPNMpWTK+iVDFlng==",
+      "dependencies": [
+        "@apidevtools/json-schema-ref-parser@14.0.1",
+        "@apidevtools/openapi-schemas",
+        "@apidevtools/swagger-methods",
+        "ajv@8.17.1",
+        "ajv-draft-04",
+        "call-me-maybe",
+        "openapi-types"
       ]
     },
     "@ardatan/relay-compiler@12.0.3_graphql@16.12.0": {
@@ -479,7 +528,7 @@
         "@babel/helper-validator-identifier"
       ]
     },
-    "@better-auth/core@1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.3_kysely@0.28.8_nanostores@1.1.0": {
+    "@better-auth/core@1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.2_kysely@0.28.8_nanostores@1.1.0": {
       "integrity": "sha512-rt/Bgl0Xa8OQ2DUMKCZEJ8vL9kUw4NCJsBP9Sj9uRhbsK8NEMPiznUOFMkUY2FvrslvfKN7H/fivwyHz9c7HzQ==",
       "dependencies": [
         "@better-auth/utils",
@@ -491,7 +540,7 @@
         "zod@4.1.13"
       ]
     },
-    "@better-auth/telemetry@1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.3_kysely@0.28.8_nanostores@1.1.0": {
+    "@better-auth/telemetry@1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.2_kysely@0.28.8_nanostores@1.1.0": {
       "integrity": "sha512-aQZ3wN90YMqV49diWxAMe1k7s2qb55KCsedCZne5PlgCjU4s3YtnqyjC5FEpzw2KY8l8rvR7DMAsDl13NjObKA==",
       "dependencies": [
         "@better-auth/core",
@@ -1559,14 +1608,17 @@
         "@jridgewell/sourcemap-codec"
       ]
     },
+    "@jsdevtools/ono@7.1.3": {
+      "integrity": "sha512-4JQNk+3mVzK3xh2rqd6RB4J46qUR19azEHBneZyTZM+c456qOrbbM/5xcR8huNCCcbVt7+UmizG6GuUvPvKUYg=="
+    },
     "@levischuck/tiny-cbor@0.2.11": {
       "integrity": "sha512-llBRm4dT4Z89aRsm6u2oEZ8tfwL/2l6BwpZ7JcyieouniDECM5AqNgr/y08zalEIvW3RSK4upYyybDcmjXqAow=="
     },
     "@mjackson/node-fetch-server@0.2.0": {
       "integrity": "sha512-EMlH1e30yzmTpGLQjlFmaDAjyOeZhng1/XCd7DExR8PNAnG/G1tyruZxEoUe11ClnwGhGrtsdnyyUx1frSzjng=="
     },
-    "@modelcontextprotocol/sdk@1.24.1_zod@3.25.76_ajv@8.17.1_express@5.2.1": {
-      "integrity": "sha512-YTg4v6bKSst8EJM8NXHC3nGm8kgHD08IbIBbognUeLAgGLVgLpYrgQswzLQd4OyTL4l614ejhqsDrV1//t02Qw==",
+    "@modelcontextprotocol/sdk@1.23.0_zod@3.25.76_ajv@8.17.1_express@5.2.1": {
+      "integrity": "sha512-MCGd4K9aZKvuSqdoBkdMvZNcYXCkZRYVs/Gh92mdV5IHbctX9H9uIvd4X93+9g8tBbXv08sxc/QHXTzf8y65bA==",
       "dependencies": [
         "ajv@8.17.1",
         "ajv-formats",
@@ -1577,7 +1629,6 @@
         "eventsource-parser",
         "express@5.2.1",
         "express-rate-limit",
-        "jose",
         "pkce-challenge",
         "raw-body@3.0.2",
         "zod@3.25.76",
@@ -1605,6 +1656,37 @@
       "dependencies": [
         "@nodelib/fs.scandir",
         "fastq"
+      ]
+    },
+    "@npmcli/git@4.1.0": {
+      "integrity": "sha512-9hwoB3gStVfa0N31ymBmrX+GuDGdVA/QWShZVqE0HK2Af+7QGGrCTbZia/SW0ImUTjTne7SP91qxDmtXvDHRPQ==",
+      "dependencies": [
+        "@npmcli/promise-spawn",
+        "lru-cache@7.18.3",
+        "npm-pick-manifest",
+        "proc-log",
+        "promise-inflight",
+        "promise-retry",
+        "semver@7.7.3",
+        "which@3.0.1"
+      ]
+    },
+    "@npmcli/package-json@4.0.1": {
+      "integrity": "sha512-lRCEGdHZomFsURroh522YvA/2cVb9oPIJrjHanCJZkiasz1BzcnLr3tBJhlV7S86MBJBuAQ33is2D60YitZL2Q==",
+      "dependencies": [
+        "@npmcli/git",
+        "glob@10.5.0",
+        "hosted-git-info",
+        "json-parse-even-better-errors@3.0.2",
+        "normalize-package-data",
+        "proc-log",
+        "semver@7.7.3"
+      ]
+    },
+    "@npmcli/promise-spawn@6.0.2": {
+      "integrity": "sha512-gGq0NJkIGSwdbUt4yhdF8ZrmkGKVz9vAdVzpOfnom+V8PLSmSOVhZwbNvZZS1EYcJN5hzzKBxmmVVAInM6HQLg==",
+      "dependencies": [
+        "which@3.0.1"
       ]
     },
     "@opentelemetry/api@1.9.0": {
@@ -1739,8 +1821,8 @@
         "graphql"
       ]
     },
-    "@react-router/dev@7.10.0_@react-router+serve@7.10.0__react-router@7.10.0___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.22.1__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.10.0__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_@babel+core@7.28.5_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.2": {
-      "integrity": "sha512-3UgkV0N5lp3+Ol3q64L4ZHgPXv2XA4KHJ59MVLSK2prokrOrPaYvqbdx40r602M+hRZp/u04ln2A6cOfBW6kxA==",
+    "@react-router/dev@7.9.6_@react-router+serve@7.9.6__react-router@7.9.6___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.22.1__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_@babel+core@7.28.5_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.2": {
+      "integrity": "sha512-pBkbczGwI+NcZPcK8JPvWGWdjUpT/+okXYp6IXvt7zI3WLxr5hQLLRox5FkLiVxkykbqARO1hk9NRp9KFwJ2sA==",
       "dependencies": [
         "@babel/core",
         "@babel/generator",
@@ -1749,6 +1831,7 @@
         "@babel/preset-typescript",
         "@babel/traverse",
         "@babel/types",
+        "@npmcli/package-json",
         "@react-router/node",
         "@react-router/serve",
         "@remix-run/node-fetch-server",
@@ -1764,10 +1847,9 @@
         "p-map",
         "pathe@1.1.2",
         "picocolors",
-        "pkg-types",
         "prettier",
         "react-refresh",
-        "react-router@7.10.0_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+        "react-router@7.9.6_react@18.3.1_react-dom@18.3.1__react@18.3.1",
         "semver@7.7.3",
         "tinyglobby",
         "typescript",
@@ -1781,31 +1863,31 @@
       ],
       "bin": true
     },
-    "@react-router/express@7.10.0_express@4.22.1_react-router@7.10.0__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
-      "integrity": "sha512-3cBJ2cyHn5J+wSNFn+XdNSpXVAlQ+nbj7CMa3OsiEpFb+d0GLthirvSESqRjX2Eid94xNHICqKpYS9bR4QqIxg==",
+    "@react-router/express@7.9.6_express@4.22.1_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
+      "integrity": "sha512-YykIWqZSkcaOnC72k0BtPZJK9781Ge623pWkTn0svzFLsqWW2/tX/Y1/Le6eG2xWrGeGfaeTSzi9dy3agP0OIw==",
       "dependencies": [
         "@react-router/node",
         "express@4.22.1",
-        "react-router@7.10.0_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+        "react-router@7.9.6_react@18.3.1_react-dom@18.3.1__react@18.3.1",
         "typescript"
       ],
       "optionalPeers": [
         "typescript"
       ]
     },
-    "@react-router/node@7.10.0_react-router@7.10.0__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
-      "integrity": "sha512-pff3Xz3gASrIUUX54QdlPzasdN9XRLnzoFEwUVsH5y2sZ6vijQdjZExLS6aQhPiuUr/uVPwN2WngO0Ryfrxulg==",
+    "@react-router/node@7.9.6_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
+      "integrity": "sha512-XzU8gPHwSl2Qh8/bOV30npbpH2fWOO3sFg+SwhX3+IddD1a/0C2KQzRiW/qAngkvZTJVdbca5Qp+FJjCCE7sNw==",
       "dependencies": [
         "@mjackson/node-fetch-server",
-        "react-router@7.10.0_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+        "react-router@7.9.6_react@18.3.1_react-dom@18.3.1__react@18.3.1",
         "typescript"
       ],
       "optionalPeers": [
         "typescript"
       ]
     },
-    "@react-router/remix-routes-option-adapter@7.10.0_@react-router+dev@7.10.0__@react-router+serve@7.10.0___react-router@7.10.0____react@18.3.1____react-dom@18.3.1_____react@18.3.1___express@4.22.1___typescript@5.9.3___react@18.3.1___react-dom@18.3.1____react@18.3.1__react-router@7.10.0___react@18.3.1___react-dom@18.3.1____react@18.3.1__typescript@5.9.3__vite@7.2.6___@types+node@24.2.0___yaml@2.8.2___picomatch@4.0.3__@babel+core@7.28.5__react@18.3.1__react-dom@18.3.1___react@18.3.1__@types+node@24.2.0__yaml@2.8.2_typescript@5.9.3_@react-router+serve@7.10.0__react-router@7.10.0___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.22.1__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.10.0__react@18.3.1__react-dom@18.3.1___react@18.3.1_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.2": {
-      "integrity": "sha512-CU16L7xCHHSY5LjQsF4igG4l8ZGyNIMGoRKf3NHXRTOfVMW8TiGZrpvPl0tZJHuHfk1XgUqxTxkxFwHU5UGo+A==",
+    "@react-router/remix-routes-option-adapter@7.9.6_@react-router+dev@7.9.6__@react-router+serve@7.9.6___react-router@7.9.6____react@18.3.1____react-dom@18.3.1_____react@18.3.1___express@4.22.1___typescript@5.9.3___react@18.3.1___react-dom@18.3.1____react@18.3.1__react-router@7.9.6___react@18.3.1___react-dom@18.3.1____react@18.3.1__typescript@5.9.3__vite@7.2.6___@types+node@24.2.0___yaml@2.8.2___picomatch@4.0.3__@babel+core@7.28.5__react@18.3.1__react-dom@18.3.1___react@18.3.1__@types+node@24.2.0__yaml@2.8.2_typescript@5.9.3_@react-router+serve@7.9.6__react-router@7.9.6___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.22.1__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.2": {
+      "integrity": "sha512-v8wzjfd2f8LFjVIGY2IpRJMe6uZHEXoSNRKoHX4JrpUeWic+3YhET+xz1KOCK1tj4uTWILOyZdBxrk71exz4OA==",
       "dependencies": [
         "@react-router/dev",
         "typescript"
@@ -1814,8 +1896,8 @@
         "typescript"
       ]
     },
-    "@react-router/serve@7.10.0_react-router@7.10.0__react@18.3.1__react-dom@18.3.1___react@18.3.1_express@4.22.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
-      "integrity": "sha512-tgdbw1lmDkzF3gCMj//iNklgUrYHUxz35rj0sbyLeti8K2gVsNxaZWyt5omanFgkeZ7WYfi0wzLHviqxl228eA==",
+    "@react-router/serve@7.9.6_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_express@4.22.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
+      "integrity": "sha512-qIT8hp1RJ0VAHyXpfuwoO31b9evrjPLRhUugqYJ7BZLpyAwhRsJIaQvvj60yZwWBMF2/3LdZu7M39rf0FhL6Iw==",
       "dependencies": [
         "@mjackson/node-fetch-server",
         "@react-router/express",
@@ -1824,7 +1906,7 @@
         "express@4.22.1",
         "get-port",
         "morgan",
-        "react-router@7.10.0_react@18.3.1_react-dom@18.3.1__react@18.3.1",
+        "react-router@7.9.6_react@18.3.1_react-dom@18.3.1__react@18.3.1",
         "source-map-support"
       ],
       "bin": true
@@ -2158,8 +2240,8 @@
         "@types/node@24.2.0"
       ]
     },
-    "@typescript-eslint/eslint-plugin@8.48.1_@typescript-eslint+parser@8.48.1__eslint@9.39.1__typescript@5.9.3_eslint@9.39.1_typescript@5.9.3": {
-      "integrity": "sha512-X63hI1bxl5ohelzr0LY5coufyl0LJNthld+abwxpCoo6Gq+hSqhKwci7MUWkXo67mzgUK6YFByhmaHmUcuBJmA==",
+    "@typescript-eslint/eslint-plugin@8.48.0_@typescript-eslint+parser@8.48.0__eslint@9.39.1__typescript@5.9.3_eslint@9.39.1_typescript@5.9.3": {
+      "integrity": "sha512-XxXP5tL1txl13YFtrECECQYeZjBZad4fyd3cFV4a19LkAY/bIp9fev3US4S5fDVV2JaYFiKAZ/GRTOLer+mbyQ==",
       "dependencies": [
         "@eslint-community/regexpp",
         "@typescript-eslint/parser",
@@ -2175,8 +2257,8 @@
         "typescript"
       ]
     },
-    "@typescript-eslint/parser@8.48.1_eslint@9.39.1_typescript@5.9.3": {
-      "integrity": "sha512-PC0PDZfJg8sP7cmKe6L3QIL8GZwU5aRvUFedqSIpw3B+QjRSUZeeITC2M5XKeMXEzL6wccN196iy3JLwKNvDVA==",
+    "@typescript-eslint/parser@8.48.0_eslint@9.39.1_typescript@5.9.3": {
+      "integrity": "sha512-jCzKdm/QK0Kg4V4IK/oMlRZlY+QOcdjv89U2NgKHZk1CYTj82/RVSx1mV/0gqCVMJ/DA+Zf/S4NBWNF8GQ+eqQ==",
       "dependencies": [
         "@typescript-eslint/scope-manager",
         "@typescript-eslint/types",
@@ -2187,8 +2269,8 @@
         "typescript"
       ]
     },
-    "@typescript-eslint/project-service@8.48.1_typescript@5.9.3": {
-      "integrity": "sha512-HQWSicah4s9z2/HifRPQ6b6R7G+SBx64JlFQpgSSHWPKdvCZX57XCbszg/bapbRsOEv42q5tayTYcEFpACcX1w==",
+    "@typescript-eslint/project-service@8.48.0_typescript@5.9.3": {
+      "integrity": "sha512-Ne4CTZyRh1BecBf84siv42wv5vQvVmgtk8AuiEffKTUo3DrBaGYZueJSxxBZ8fjk/N3DrgChH4TOdIOwOwiqqw==",
       "dependencies": [
         "@typescript-eslint/tsconfig-utils",
         "@typescript-eslint/types",
@@ -2196,21 +2278,21 @@
         "typescript"
       ]
     },
-    "@typescript-eslint/scope-manager@8.48.1": {
-      "integrity": "sha512-rj4vWQsytQbLxC5Bf4XwZ0/CKd362DkWMUkviT7DCS057SK64D5lH74sSGzhI6PDD2HCEq02xAP9cX68dYyg1w==",
+    "@typescript-eslint/scope-manager@8.48.0": {
+      "integrity": "sha512-uGSSsbrtJrLduti0Q1Q9+BF1/iFKaxGoQwjWOIVNJv0o6omrdyR8ct37m4xIl5Zzpkp69Kkmvom7QFTtue89YQ==",
       "dependencies": [
         "@typescript-eslint/types",
         "@typescript-eslint/visitor-keys"
       ]
     },
-    "@typescript-eslint/tsconfig-utils@8.48.1_typescript@5.9.3": {
-      "integrity": "sha512-k0Jhs4CpEffIBm6wPaCXBAD7jxBtrHjrSgtfCjUvPp9AZ78lXKdTR8fxyZO5y4vWNlOvYXRtngSZNSn+H53Jkw==",
+    "@typescript-eslint/tsconfig-utils@8.48.0_typescript@5.9.3": {
+      "integrity": "sha512-WNebjBdFdyu10sR1M4OXTt2OkMd5KWIL+LLfeH9KhgP+jzfDV/LI3eXzwJ1s9+Yc0Kzo2fQCdY/OpdusCMmh6w==",
       "dependencies": [
         "typescript"
       ]
     },
-    "@typescript-eslint/type-utils@8.48.1_eslint@9.39.1_typescript@5.9.3": {
-      "integrity": "sha512-1jEop81a3LrJQLTf/1VfPQdhIY4PlGDBc/i67EVWObrtvcziysbLN3oReexHOM6N3jyXgCrkBsZpqwH0hiDOQg==",
+    "@typescript-eslint/type-utils@8.48.0_eslint@9.39.1_typescript@5.9.3": {
+      "integrity": "sha512-zbeVaVqeXhhab6QNEKfK96Xyc7UQuoFWERhEnj3mLVnUWrQnv15cJNseUni7f3g557gm0e46LZ6IJ4NJVOgOpw==",
       "dependencies": [
         "@typescript-eslint/types",
         "@typescript-eslint/typescript-estree",
@@ -2221,11 +2303,11 @@
         "typescript"
       ]
     },
-    "@typescript-eslint/types@8.48.1": {
-      "integrity": "sha512-+fZ3LZNeiELGmimrujsDCT4CRIbq5oXdHe7chLiW8qzqyPMnn1puNstCrMNVAqwcl2FdIxkuJ4tOs/RFDBVc/Q=="
+    "@typescript-eslint/types@8.48.0": {
+      "integrity": "sha512-cQMcGQQH7kwKoVswD1xdOytxQR60MWKM1di26xSUtxehaDs/32Zpqsu5WJlXTtTTqyAVK8R7hvsUnIXRS+bjvA=="
     },
-    "@typescript-eslint/typescript-estree@8.48.1_typescript@5.9.3": {
-      "integrity": "sha512-/9wQ4PqaefTK6POVTjJaYS0bynCgzh6ClJHGSBj06XEHjkfylzB+A3qvyaXnErEZSaxhIo4YdyBgq6j4RysxDg==",
+    "@typescript-eslint/typescript-estree@8.48.0_typescript@5.9.3": {
+      "integrity": "sha512-ljHab1CSO4rGrQIAyizUS6UGHHCiAYhbfcIZ1zVJr5nMryxlXMVWS3duFPSKvSUbFPwkXMFk1k0EMIjub4sRRQ==",
       "dependencies": [
         "@typescript-eslint/project-service",
         "@typescript-eslint/tsconfig-utils",
@@ -2239,8 +2321,8 @@
         "typescript"
       ]
     },
-    "@typescript-eslint/utils@8.48.1_eslint@9.39.1_typescript@5.9.3": {
-      "integrity": "sha512-fAnhLrDjiVfey5wwFRwrweyRlCmdz5ZxXz2G/4cLn0YDLjTapmN4gcCsTBR1N2rWnZSDeWpYtgLDsJt+FpmcwA==",
+    "@typescript-eslint/utils@8.48.0_eslint@9.39.1_typescript@5.9.3": {
+      "integrity": "sha512-yTJO1XuGxCsSfIVt1+1UrLHtue8xz16V8apzPYI06W0HbEbEWHxHXgZaAgavIkoh+GeV6hKKd5jm0sS6OYxWXQ==",
       "dependencies": [
         "@eslint-community/eslint-utils",
         "@typescript-eslint/scope-manager",
@@ -2250,8 +2332,8 @@
         "typescript"
       ]
     },
-    "@typescript-eslint/visitor-keys@8.48.1": {
-      "integrity": "sha512-BmxxndzEWhE4TIEEMBs8lP3MBWN3jFPs/p6gPm/wkv02o41hI6cq9AuSmGAaTTHPtA1FTi2jBre4A9rm5ZmX+Q==",
+    "@typescript-eslint/visitor-keys@8.48.0": {
+      "integrity": "sha512-T0XJMaRPOH3+LBbAfzR2jalckP1MSG/L9eUtY0DEzUyVaXJ/t6zN0nR7co5kz0Jko/nkSYCBRkz1djvjajVTTg==",
       "dependencies": [
         "@typescript-eslint/types",
         "eslint-visitor-keys@4.2.1"
@@ -2347,6 +2429,15 @@
         "@ai-sdk/provider-utils",
         "@opentelemetry/api",
         "zod@3.25.76"
+      ]
+    },
+    "ajv-draft-04@1.0.0_ajv@8.17.1": {
+      "integrity": "sha512-mv00Te6nmYbRp5DCwclxtt7yV/joXJPGS7nM+97GdxvuttCOfgI3K4U25zboyeX0O+myI8ERluxQe5wljMmVIw==",
+      "dependencies": [
+        "ajv@8.17.1"
+      ],
+      "optionalPeers": [
+        "ajv@8.17.1"
       ]
     },
     "ajv-formats@3.0.1_ajv@8.17.1": {
@@ -2465,7 +2556,7 @@
       ],
       "scripts": true
     },
-    "better-auth@1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.3_kysely@0.28.8_nanostores@1.1.0": {
+    "better-auth@1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.2_kysely@0.28.8_nanostores@1.1.0": {
       "integrity": "sha512-LWA52SlvnUBJRbN8VLSTLILPomZY3zZAiLxVJCeSQ5uVmaIKkMBhERitkfJcXB9RJcfl4uP+3EqKkb6hX1/uiw==",
       "dependencies": [
         "@better-auth/core",
@@ -2589,6 +2680,9 @@
         "call-bind-apply-helpers",
         "get-intrinsic"
       ]
+    },
+    "call-me-maybe@1.0.2": {
+      "integrity": "sha512-HpX65o1Hnr9HH25ojC1YGs7HCQLq0GCOibSaWER0eNpgJ/Z1MZv2mTc7+xh6WOPxbRVcmgbv4hGU+uSQ/2xFZQ=="
     },
     "callsites@3.1.0": {
       "integrity": "sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ=="
@@ -2761,9 +2855,6 @@
     "concat-map@0.0.1": {
       "integrity": "sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg=="
     },
-    "confbox@0.2.2": {
-      "integrity": "sha512-1NB+BKqhtNipMsov4xI/NnhCKp9XG9NamYp5PVm9klAT0fsrNPjaFICsCFhNhwZJKNh7zB/3q8qXz0E9oaMNtQ=="
-    },
     "constant-case@3.0.4": {
       "integrity": "sha512-I2hSBi7Vvs7BEuJDr5dDHfzb/Ruj3FyvFyh7KLilAjNQw3Be+xgqUBA2W6scVEcL0hL1dwPRtIqEPVUCKkSsyQ==",
       "dependencies": [
@@ -2849,7 +2940,7 @@
       "dependencies": [
         "path-key",
         "shebang-command",
-        "which"
+        "which@2.0.2"
       ]
     },
     "csstype@3.2.3": {
@@ -2957,8 +3048,8 @@
     "ee-first@1.1.1": {
       "integrity": "sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow=="
     },
-    "electron-to-chromium@1.5.263": {
-      "integrity": "sha512-DrqJ11Knd+lo+dv+lltvfMDLU27g14LMdH2b0O3Pio4uk0x+z7OR+JrmyacTPN2M8w3BrZ7/RTwG3R9B7irPlg=="
+    "electron-to-chromium@1.5.262": {
+      "integrity": "sha512-NlAsMteRHek05jRUxUR0a5jpjYq9ykk6+kO0yRaMi5moe7u0fVIOeQ3Y30A8dIiWFBNUoQGi1ljb1i5VtS9WQQ=="
     },
     "emoji-regex@10.6.0": {
       "integrity": "sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A=="
@@ -2990,6 +3081,9 @@
     },
     "environment@1.1.0": {
       "integrity": "sha512-xUtoPkMggbz0MPyPiIWr1Kp4aeWJjDZ6SMvURhimjdZgsRuDplF5/s9hcgGhyXMhs+6vpnuoiZ2kFiu3FMnS8Q=="
+    },
+    "err-code@2.0.3": {
+      "integrity": "sha512-2bmlRpNKBxT/CRmPOlyISQpNj+qSeYvcym/uT0Jx2bMOlKLtSy1ZmLuVxSEKKyor/N5yhvp/ZiG1oE3DEYMSFA=="
     },
     "error-ex@1.3.4": {
       "integrity": "sha512-sqQamAnR14VgCr1A618A3sGrygcpK+HEbenA/HiEAkkUwcZIIB/tgWqHFxWgOyDh4nB4JCRimh79dR5Ywc9MDQ==",
@@ -3228,9 +3322,6 @@
         "type-is@2.0.1",
         "vary"
       ]
-    },
-    "exsolve@1.0.8": {
-      "integrity": "sha512-LmDxfWXwcTArk8fUEnOfSZpHOJ6zOMUJKOtFLFqJLoKJetuQG874Uc7/Kki7zFLzYybmZhp1M7+98pfMqeX8yA=="
     },
     "extend@3.0.2": {
       "integrity": "sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g=="
@@ -3698,6 +3789,12 @@
     "hono@4.10.7": {
       "integrity": "sha512-icXIITfw/07Q88nLSkB9aiUrd8rYzSweK681Kjo/TSggaGbOX4RRyxxm71v+3PC8C/j+4rlxGeoTRxQDkaJkUw=="
     },
+    "hosted-git-info@6.1.3": {
+      "integrity": "sha512-HVJyzUrLIL1c0QmviVh5E8VGyUS7xCFPS6yydaVd1UegW+ibV/CohqTH9MkOLDp5o+rb82DMo77PTuc9F/8GKw==",
+      "dependencies": [
+        "lru-cache@7.18.3"
+      ]
+    },
     "http-errors@2.0.0": {
       "integrity": "sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==",
       "dependencies": [
@@ -3886,8 +3983,8 @@
       "integrity": "sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==",
       "bin": true
     },
-    "jose@6.1.3": {
-      "integrity": "sha512-0TpaTfihd4QMNwrz/ob2Bp7X04yuxJkjRGi4aKmOqwhov54i6u79oCv7T+C7lo70MKH6BesI3vscD1yb/yzKXQ=="
+    "jose@6.1.2": {
+      "integrity": "sha512-MpcPtHLE5EmztuFIqB0vzHAWJPpmN1E6L4oo+kze56LIs3MyXIj9ZHMDxqOvkP38gBR7K1v3jqd4WU2+nrfONQ=="
     },
     "js-tokens@4.0.0": {
       "integrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ=="
@@ -3914,6 +4011,9 @@
     },
     "json-parse-even-better-errors@2.3.1": {
       "integrity": "sha512-xyFwyhro/JEof6Ghe2iz2NcXoj2sloNsWr/XsERDK/oiPCfaNhl5ONfp+jQdAZRQQ0IJWNzH9zIZF7li91kh2w=="
+    },
+    "json-parse-even-better-errors@3.0.2": {
+      "integrity": "sha512-fi0NG4bPjCHunUJffmLd0gxssIgkNmArMvis4iNah6Owg1MCJjWhEcDLmsK6iGkJq3tHwbDkTlce70/tmXN4cQ=="
     },
     "json-schema-traverse@0.4.1": {
       "integrity": "sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg=="
@@ -4166,6 +4266,9 @@
         "yallist"
       ]
     },
+    "lru-cache@7.18.3": {
+      "integrity": "sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA=="
+    },
     "lucide-react@0.554.0_react@18.3.1": {
       "integrity": "sha512-St+z29uthEJVx0Is7ellNkgTEhaeSoA42I7JjOCBCrc5X6LYMGSv0P/2uS5HDLTExP5tpiqRD2PyUEOS6s9UXA==",
       "dependencies": [
@@ -4347,10 +4450,46 @@
     "node-releases@2.0.27": {
       "integrity": "sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA=="
     },
+    "normalize-package-data@5.0.0": {
+      "integrity": "sha512-h9iPVIfrVZ9wVYQnxFgtw1ugSvGEMOlyPWWtm8BMJhnwyEL/FLbYbTY3V3PpjI/BUK67n9PEWDu6eHzu1fB15Q==",
+      "dependencies": [
+        "hosted-git-info",
+        "is-core-module",
+        "semver@7.7.3",
+        "validate-npm-package-license"
+      ]
+    },
     "normalize-path@2.1.1": {
       "integrity": "sha512-3pKJwH184Xo/lnH6oyP1q2pMd7HcypqqmRs91/6/i2CGtWwIKGCkOOMTm/zXbgTEWHw1uNpNi/igc3ePOYHb6w==",
       "dependencies": [
         "remove-trailing-separator"
+      ]
+    },
+    "npm-install-checks@6.3.0": {
+      "integrity": "sha512-W29RiK/xtpCGqn6f3ixfRYGk+zRyr+Ew9F2E20BfXxT5/euLdA/Nm7fO7OeTGuAmTs30cpgInyJ0cYe708YTZw==",
+      "dependencies": [
+        "semver@7.7.3"
+      ]
+    },
+    "npm-normalize-package-bin@3.0.1": {
+      "integrity": "sha512-dMxCf+zZ+3zeQZXKxmyuCKlIDPGuv8EF940xbkC4kQVDTtqoh6rJFO+JTKSA6/Rwi0getWmtuy4Itup0AMcaDQ=="
+    },
+    "npm-package-arg@10.1.0": {
+      "integrity": "sha512-uFyyCEmgBfZTtrKk/5xDfHp6+MdrqGotX/VoOyEEl3mBwiEE5FlBaePanazJSVMPT7vKepcjYBY2ztg9A3yPIA==",
+      "dependencies": [
+        "hosted-git-info",
+        "proc-log",
+        "semver@7.7.3",
+        "validate-npm-package-name"
+      ]
+    },
+    "npm-pick-manifest@8.0.2": {
+      "integrity": "sha512-1dKY+86/AIiq1tkKVD3l0WI+Gd3vkknVGAggsFeBkTvbhMQ1OND/LKkYv4JtXPKUJ8bOTCyLiqEg2P6QNdK+Gg==",
+      "dependencies": [
+        "npm-install-checks",
+        "npm-normalize-package-bin",
+        "npm-package-arg",
+        "semver@7.7.3"
       ]
     },
     "nullthrows@1.1.1": {
@@ -4394,6 +4533,9 @@
       "dependencies": [
         "mimic-function"
       ]
+    },
+    "openapi-types@12.1.3": {
+      "integrity": "sha512-N4YtSYJqghVu4iek2ZUvcN/0aqH1kRDuNqzcycDxhOUpg7GdvLa2F3DgS6yBNhInhv2r/6I0Flkn7CqL8+nIcw=="
     },
     "openapi3-ts@4.5.0": {
       "integrity": "sha512-jaL+HgTq2Gj5jRcfdutgRGLosCy/hT8sQf6VOy+P+g36cZOjI1iukdPnijC+4CmeRzg/jEllJUboEic2FhxhtQ==",
@@ -4456,7 +4598,7 @@
       "dependencies": [
         "@babel/code-frame",
         "error-ex",
-        "json-parse-even-better-errors",
+        "json-parse-even-better-errors@2.3.1",
         "lines-and-columns"
       ]
     },
@@ -4582,14 +4724,6 @@
     "pkce-challenge@5.0.1": {
       "integrity": "sha512-wQ0b/W4Fr01qtpHlqSqspcj3EhBvimsdh0KlHhH8HRZnMsEa0ea2fTULOXOS9ccQr3om+GcGRk4e+isrZWV8qQ=="
     },
-    "pkg-types@2.3.0": {
-      "integrity": "sha512-SIqCzDRg0s9npO5XQ3tNZioRY1uK06lA41ynBC1YmFTmnY6FjUjVt6s4LoADmwoig1qqD0oK8h1p/8mlMx8Oig==",
-      "dependencies": [
-        "confbox",
-        "exsolve",
-        "pathe@2.0.3"
-      ]
-    },
     "pluralize@8.0.0": {
       "integrity": "sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA=="
     },
@@ -4622,6 +4756,19 @@
     "prettier@3.7.3": {
       "integrity": "sha512-QgODejq9K3OzoBbuyobZlUhznP5SKwPqp+6Q6xw6o8gnhr4O85L2U915iM2IDcfF2NPXVaM9zlo9tdwipnYwzg==",
       "bin": true
+    },
+    "proc-log@3.0.0": {
+      "integrity": "sha512-++Vn7NS4Xf9NacaU9Xq3URUuqZETPsf8L4j5/ckhaRYsfPeRyzGw+iDjFhV/Jr3uNmTvvddEJFWh5R1gRgUH8A=="
+    },
+    "promise-inflight@1.0.1": {
+      "integrity": "sha512-6zWPyEOFaQBJYcGMHBKTKJ3u6TBsnMFOIZSa6ce1e/ZrrsOlnHRHbabMjLiBYKp+n44X9eUI6VUPaukCXHuG4g=="
+    },
+    "promise-retry@2.0.1": {
+      "integrity": "sha512-y+WKFlBR8BGXnsNlIHFGPZmyDf3DFMoLhaflAnyZgV6rG6xu+JwesTo2Q9R6XwYmtmwAFCkAk3e35jEdoeh/3g==",
+      "dependencies": [
+        "err-code",
+        "retry"
+      ]
     },
     "promise@7.3.1": {
       "integrity": "sha512-nolQXZ/4L+bP/UGlkfaIujX9BKxGwmQ9OT4mOt5yvy8iK1h3wqTEJCijzGANTCCl9nWjY41juyAn2K3Q1hLLTg==",
@@ -4718,8 +4865,8 @@
         "react@18.3.1"
       ]
     },
-    "react-router@7.10.0_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
-      "integrity": "sha512-FVyCOH4IZ0eDDRycODfUqoN8ZSR2LbTvtx6RPsBgzvJ8xAXlMZNCrOFpu+jb8QbtZnpAd/cEki2pwE848pNGxw==",
+    "react-router@7.9.6_react@18.3.1_react-dom@18.3.1__react@18.3.1": {
+      "integrity": "sha512-Y1tUp8clYRXpfPITyuifmSoE2vncSME18uVLgaqyxh9H35JWpIfzHo+9y3Fzh5odk/jxPW29IgLgzcdwxGqyNA==",
       "dependencies": [
         "cookie@1.1.1",
         "react@18.3.1",
@@ -4811,6 +4958,9 @@
         "onetime",
         "signal-exit"
       ]
+    },
+    "retry@0.12.0": {
+      "integrity": "sha512-9LkiTwjUh6rT555DtE9rTX+BKByPfrMzEAtnlEtdEwr3Nkffwiihqe2bWADg+OQRjt9gl6ICdmB/ZFDCGAtSow=="
     },
     "reusify@1.1.0": {
       "integrity": "sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw=="
@@ -5088,6 +5238,26 @@
     "source-map@0.6.1": {
       "integrity": "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="
     },
+    "spdx-correct@3.2.0": {
+      "integrity": "sha512-kN9dJbvnySHULIluDHy32WHRUu3Og7B9sbY7tsFLctQkIqnMh3hErYgdMjTYuqmcXX+lK5T1lnUt3G7zNswmZA==",
+      "dependencies": [
+        "spdx-expression-parse",
+        "spdx-license-ids"
+      ]
+    },
+    "spdx-exceptions@2.5.0": {
+      "integrity": "sha512-PiU42r+xO4UbUS1buo3LPJkjlO7430Xn5SVAhdpzzsPHsjbYVflnnFdATgabnLude+Cqu25p6N+g2lw/PFsa4w=="
+    },
+    "spdx-expression-parse@3.0.1": {
+      "integrity": "sha512-cbqHunsQWnJNE6KhVSMsMeH5H/L9EpymbzqTQ3uLwNCLZ1Q481oWaofqH7nO6V07xlXwY6PhQdQ2IedWx/ZK4Q==",
+      "dependencies": [
+        "spdx-exceptions",
+        "spdx-license-ids"
+      ]
+    },
+    "spdx-license-ids@3.0.22": {
+      "integrity": "sha512-4PRT4nh1EImPbt2jASOKHX7PB7I+e4IWNLvkKFDxNhJlfjbYlleYQh285Z/3mPTHSAK/AvdMmw5BNNuYH8ShgQ=="
+    },
     "split2@4.2.0": {
       "integrity": "sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg=="
     },
@@ -5334,8 +5504,8 @@
         "mime-types@3.0.2"
       ]
     },
-    "typescript-eslint@8.48.1_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.48.1__eslint@9.39.1__typescript@5.9.3": {
-      "integrity": "sha512-FbOKN1fqNoXp1hIl5KYpObVrp0mCn+CLgn479nmu2IsRMrx2vyv74MmsBLVlhg8qVwNFGbXSp8fh1zp8pEoC2A==",
+    "typescript-eslint@8.48.0_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.48.0__eslint@9.39.1__typescript@5.9.3": {
+      "integrity": "sha512-fcKOvQD9GUn3Xw63EgiDqhvWJ5jsyZUaekl3KVpGsDJnN46WJTe3jWxtQP9lMZm1LJNkFLlTaWAxK2vUQR+cqw==",
       "dependencies": [
         "@typescript-eslint/eslint-plugin",
         "@typescript-eslint/parser",
@@ -5438,6 +5608,16 @@
         "typescript"
       ]
     },
+    "validate-npm-package-license@3.0.4": {
+      "integrity": "sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==",
+      "dependencies": [
+        "spdx-correct",
+        "spdx-expression-parse"
+      ]
+    },
+    "validate-npm-package-name@5.0.1": {
+      "integrity": "sha512-OljLrQ9SQdOUqTaQxqL5dEfZWrXExyyWsozYlAWFawPVNuD83igl7uJD2RTkNMbniIYgt8l81eCJGIdQF7avLQ=="
+    },
     "vary@1.1.2": {
       "integrity": "sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg=="
     },
@@ -5503,6 +5683,13 @@
     },
     "which@2.0.2": {
       "integrity": "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==",
+      "dependencies": [
+        "isexe"
+      ],
+      "bin": true
+    },
+    "which@3.0.1": {
+      "integrity": "sha512-XA1b62dzQzLfaEOSQFTCOd5KFf/1VSzZo7/7TUjnya6u0vGGKzU96UQBZTAThCb2j4/xjBAyii1OhRLJEivHvg==",
       "dependencies": [
         "isexe"
       ],
@@ -5625,6 +5812,7 @@
       "jsr:@hono-rate-limiter/hono-rate-limiter@~0.4.2",
       "jsr:@std/assert@^1.0.15",
       "npm:@ai-sdk/anthropic@^2.0.49",
+      "npm:@apidevtools/swagger-parser@^12.1.0",
       "npm:@eslint/js@^9.39.1",
       "npm:@graphql-codegen/cli@^6.0.2",
       "npm:@types/node@^24.2.0",
@@ -5636,6 +5824,7 @@
       "npm:graphql-request@^7.3.3",
       "npm:graphql@^16.12.0",
       "npm:lru-cache@^11.2.4",
+      "npm:openapi-types@^12.1.3",
       "npm:prettier@^3.6.2",
       "npm:theme-change@^2.5.0",
       "npm:ts-morph@26",
@@ -5693,6 +5882,7 @@
           "npm:@ai-sdk/google@^2.0.44",
           "npm:@ai-sdk/mcp@^0.0.11",
           "npm:@ai-sdk/openai@^2.0.64",
+          "npm:@apidevtools/swagger-parser@^10.1.1",
           "npm:@graphql-codegen/schema-ast@5",
           "npm:@hono/zod-openapi@~0.18.4",
           "npm:@modelcontextprotocol/sdk@^1.21.0",
@@ -5714,6 +5904,7 @@
           "npm:kysely-codegen@0.19",
           "npm:kysely@~0.28.8",
           "npm:nanoid@^5.1.6",
+          "npm:openapi-types@^12.1.3",
           "npm:pg@^8.16.3",
           "npm:react-dom@^18.3.1",
           "npm:react-router-dom@^6.28.0",

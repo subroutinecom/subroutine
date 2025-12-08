@@ -12,7 +12,7 @@ type FindResult =
       integration: {
         id: string;
         name: string;
-        type: "mcp" | "graphql";
+        type: "mcp" | "graphql" | "openapi";
       };
     }
   | {
@@ -86,7 +86,7 @@ If the integration doesn't exist, use manageMcpIntegration to set one up.`,
         // Already found before, look up type
         const allIntegrations = await getAvailableIntegrations(mcpContext.organizationId, "all");
         const integration = allIntegrations.find((i) => i.id === existingId);
-        if (integration && (integration.authConfig.type === "mcp" || integration.authConfig.type === "graphql")) {
+        if (integration && (integration.authConfig.type === "mcp" || integration.authConfig.type === "graphql" || integration.authConfig.type === "openapi")) {
           return {
             found: true,
             integration: {
@@ -108,7 +108,7 @@ If the integration doesn't exist, use manageMcpIntegration to set one up.`,
           (i) =>
             i.name.toLowerCase() === params.integrationName.toLowerCase() &&
             i.enabled &&
-            (i.authConfig.type === "mcp" || i.authConfig.type === "graphql")
+            (i.authConfig.type === "mcp" || i.authConfig.type === "graphql" || i.authConfig.type === "openapi")
         ) ?? null;
       }
 
@@ -120,7 +120,7 @@ If the integration doesn't exist, use manageMcpIntegration to set one up.`,
       }
 
       // Verify it's a supported type
-      if (integration.authConfig.type !== "mcp" && integration.authConfig.type !== "graphql") {
+      if (integration.authConfig.type !== "mcp" && integration.authConfig.type !== "graphql" && integration.authConfig.type !== "openapi") {
         return {
           found: false,
           message: `Integration "${params.integrationName}" has unsupported type: ${integration.authConfig.type}`,

@@ -23,6 +23,18 @@ export type GraphQLIntegrationSchema = {
 };
 
 /**
+ * OpenAPI integration info for validation
+ */
+export type OpenAPIIntegrationSchema = {
+  /** Integration name as used in import path */
+  name: string;
+  /** OpenAPI spec as JSON string */
+  spec: string;
+  /** List of available operations (method + path) */
+  operations: Array<{ method: string; path: string }>;
+};
+
+/**
  * Context for validation rules that need runtime information
  * (e.g., list of valid integration names, GraphQL schemas)
  */
@@ -31,6 +43,8 @@ export type ValidationContext = {
   mcpIntegrationNames?: string[];
   /** GraphQL integrations with their schemas for query validation */
   graphqlIntegrations?: GraphQLIntegrationSchema[];
+  /** OpenAPI integrations with their specs for request validation */
+  openapiIntegrations?: OpenAPIIntegrationSchema[];
 };
 
 /** All validation rules receive context - they can choose to use it or not */

@@ -2,6 +2,13 @@ import { SyntaxKind } from "ts-morph";
 import type { SourceFile } from "ts-morph";
 import type { ValidationError, ValidationContext } from "../types";
 
+/** Valid methods that can be called on the integrations object */
+const VALID_INTEGRATION_METHODS = new Set([
+  "getMcpClient",
+  "getGraphQLClient",
+  "getOpenAPIClient",
+]);
+
 export const requireMcpClientAccess = (
   sourceFile: SourceFile,
   _context?: ValidationContext
@@ -16,7 +23,7 @@ export const requireMcpClientAccess = (
     if (expression.getText() === "integrations") {
       const propertyName = access.getName();
 
-      if (propertyName !== "getMcpClient") {
+      if (!VALID_INTEGRATION_METHODS.has(propertyName)) {
         errors.push({
           rule: "require-mcp-client-access",
           message: `Invalid integration access: 'integrations.${propertyName}'. Use integrations.getMcpClient("${propertyName}") to access MCP integrations.`,

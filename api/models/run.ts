@@ -6,7 +6,9 @@ import type {
   AuthStrategy,
   SandboxGraphQLConfig,
   SandboxMcpConfig,
+  SandboxOpenAPIConfig,
 } from "../integrations/providers/types.ts";
+import { buildAuthHeadersFromBlock } from "../integrations/auth-utils.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
 import { getLogger } from "../utils/logger.ts";
 import type {
@@ -18,6 +20,7 @@ import { IntegrationAuthRequiredError } from "./errors.ts";
 import type {
   GraphQLIntegrationConfig,
   McpIntegrationConfig,
+  OpenAPIIntegrationConfig,
   OAuthConfig,
 } from "./integration.ts";
 import { getIntegration } from "./integration.ts";
@@ -62,6 +65,8 @@ type SandboxIntegrationDefinition = {
   mcpConfig?: SandboxMcpConfig;
   /** GraphQL-specific configuration. Present when authConfig.type is "graphql". */
   graphqlConfig?: SandboxGraphQLConfig;
+  /** OpenAPI-specific configuration. Present when authConfig.type is "openapi". */
+  openapiConfig?: SandboxOpenAPIConfig;
 };
 
 /**
@@ -78,61 +83,37 @@ const buildMcpConfig = (config: McpIntegrationConfig): SandboxMcpConfig => {
 };
 
 /**
- * Builds auth headers from an AuthStrategy.
- * Used for GraphQL (and future REST) integrations.
- */
-const buildAuthHeaders = (
-  auth: AuthStrategy,
-  opts: { apiKey?: string; accessToken?: string }
-): Record<string, string> => {
-  switch (auth.type) {
-    case "none":
-      return {};
-    case "api_key": {
-      const key = auth.viewerScoped ? opts.accessToken : opts.apiKey;
-      if (!key) {
-        throw new Error("API key is required but not provided");
-      }
-      const headerName = auth.headerName ?? "Authorization";
-      // If using Authorization header, format as Bearer token
-      if (headerName.toLowerCase() === "authorization") {
-        return { [headerName]: `Bearer ${key}` };
-      }
-      return { [headerName]: key };
-    }
-    case "bearer_oauth": {
-      if (!opts.accessToken) {
-        throw new Error("Access token is required for bearer_oauth auth strategy");
-      }
-      return { Authorization: `Bearer ${opts.accessToken}` };
-    }
-    case "custom_headers":
-      return auth.headers;
-    default: {
-      // TypeScript exhaustiveness check
-      const _exhaustive: never = auth;
-      throw new Error(`Unknown auth strategy type: ${JSON.stringify(_exhaustive)}`);
-    }
-  }
-};
-
-/**
  * Converts GraphQLIntegrationConfig to SandboxGraphQLConfig for the sandbox worker.
  */
 const buildGraphQLConfig = (
   config: GraphQLIntegrationConfig,
   opts: { accessToken?: string }
 ): SandboxGraphQLConfig => {
-  const authHeaders = buildAuthHeaders(config.auth.strategy, {
-    apiKey: config.auth.apiKey,
-    accessToken: opts.accessToken,
-  });
+  const authHeaders = buildAuthHeadersFromBlock(config.auth, opts.accessToken);
 
   return {
     endpoint: config.endpoint,
     authHeaders,
     schema: config.schema,
     schemaFetchedAt: config.schemaFetchedAt,
+  };
+};
+
+/**
+ * Converts OpenAPIIntegrationConfig to SandboxOpenAPIConfig for the sandbox worker.
+ */
+const buildOpenAPIConfig = (
+  config: OpenAPIIntegrationConfig,
+  opts: { accessToken?: string }
+): SandboxOpenAPIConfig => {
+  const authHeaders = buildAuthHeadersFromBlock(config.auth, opts.accessToken);
+
+  return {
+    baseUrl: config.baseUrl,
+    authHeaders,
+    spec: config.spec,
+    specVersion: config.specVersion,
+    specFetchedAt: config.specFetchedAt,
   };
 };
 
@@ -439,6 +420,47 @@ const buildSandboxIntegrations = async (params: {
         name: integration.name,
         authConfig: authConfig as unknown as Record<string, unknown>,
         graphqlConfig,
+        ...(account && {
+          account: {
+            id: account.id,
+            viewerId: account.viewerId,
+            accountIdentifier: account.accountIdentifier,
+            credentials: account.credentials,
+          },
+        }),
+      });
+      continue;
+    }
+
+    // Handle OpenAPI integrations
+    if (authConfig.type === "openapi") {
+      logger.info(
+        `[buildSandboxIntegrations] OpenAPI integration, authStrategy: ${authConfig.auth.strategy.type}`
+      );
+
+      // Resolve viewer credentials (throws if auth required but not available)
+      const connectedAccount = connectedAccountsMap.get(integrationId);
+      const { accessToken, account } = await resolveViewerCredentials({
+        integrationId,
+        integrationName: integration.name,
+        provider,
+        authStrategy: authConfig.auth.strategy,
+        oauthConfig: authConfig.auth.oauthConfig,
+        metadata: authConfig.metadata,
+        connectedAccount,
+        viewerId: params.viewerId,
+        organizationId: params.organizationId,
+      });
+
+      // Build OpenAPI config with resolved credentials
+      const openapiConfig = buildOpenAPIConfig(authConfig, { accessToken });
+
+      integrations.push({
+        id: integration.id,
+        provider,
+        name: integration.name,
+        authConfig: authConfig as unknown as Record<string, unknown>,
+        openapiConfig,
         ...(account && {
           account: {
             id: account.id,

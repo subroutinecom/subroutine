@@ -85,6 +85,25 @@ export const buildIntegrationConfig = (
     return { success: true, config: JSON.stringify(config) };
   }
 
+  if (definition.authType === "openapi") {
+    if (!data.baseUrl?.trim()) {
+      return { success: false, error: "Base URL is required" };
+    }
+
+    const config: Record<string, unknown> = {
+      type: "openapi" as const,
+      baseUrl: data.baseUrl.trim(),
+      auth: authBlock,
+    };
+
+    // Add spec URL if provided
+    if (data.specUrl?.trim()) {
+      config.specUrl = data.specUrl.trim();
+    }
+
+    return { success: true, config: JSON.stringify(config) };
+  }
+
   // OAuth2 native provider (gmail, github, etc.)
   if (definition.authType === "oauth2") {
     if (!data.oauthClientId?.trim()) {

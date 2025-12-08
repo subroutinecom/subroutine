@@ -12,6 +12,7 @@ export { AuthStrategySelector } from "./AuthStrategySelector";
 export { AuthFields } from "./AuthFields";
 export { McpFormFields } from "./McpFormFields";
 export { GraphQLFormFields } from "./GraphQLFormFields";
+export { OpenAPIFormFields } from "./OpenAPIFormFields";
 export { OAuthFormFields } from "./OAuthFormFields";
 
 // Hooks

@@ -10,6 +10,10 @@ import {
   printSchema,
   type IntrospectionQuery,
 } from "graphql";
+import {
+  validateExternalUrl,
+  DEFAULT_FETCH_TIMEOUT_MS,
+} from "./url-validation";
 
 export interface IntrospectionResult {
   /** The schema in SDL format */
@@ -20,20 +24,56 @@ export interface IntrospectionResult {
 
 export interface IntrospectionError {
   message: string;
-  code: "NETWORK_ERROR" | "INTROSPECTION_DISABLED" | "INVALID_RESPONSE" | "PARSE_ERROR";
+  code: "NETWORK_ERROR" | "INTROSPECTION_DISABLED" | "INVALID_RESPONSE" | "PARSE_ERROR" | "INVALID_URL";
+}
+
+/**
+ * Options for introspecting GraphQL schemas.
+ */
+export interface IntrospectSchemaOptions {
+  /** Headers to include in the request (e.g., for auth) */
+  headers?: Record<string, string>;
+  /** Timeout in milliseconds (default: 30000) */
+  timeoutMs?: number;
 }
 
 /**
  * Introspect a GraphQL endpoint and return the schema as SDL.
  *
  * @param endpoint - The GraphQL endpoint URL
- * @param headers - Optional auth headers to include in the request
+ * @param headersOrOptions - Headers or options for the request
  * @returns The schema SDL and fetch timestamp, or an error
  */
 export const introspectSchema = async (
   endpoint: string,
-  headers: Record<string, string> = {}
+  headersOrOptions: Record<string, string> | IntrospectSchemaOptions = {}
 ): Promise<{ ok: true; result: IntrospectionResult } | { ok: false; error: IntrospectionError }> => {
+  // Validate URL to prevent SSRF attacks
+  const urlValidation = validateExternalUrl(endpoint);
+  if (!urlValidation.valid) {
+    return {
+      ok: false,
+      error: {
+        message: urlValidation.error ?? "Invalid URL",
+        code: "INVALID_URL",
+      },
+    };
+  }
+
+  // Support both old signature (headers only) and new signature (options object)
+  // If it has headers or timeoutMs keys, treat as options object, otherwise treat as headers
+  const isOptionsObject = (obj: unknown): obj is IntrospectSchemaOptions =>
+    typeof obj === "object" && obj !== null && ("headers" in obj || "timeoutMs" in obj);
+
+  const options: IntrospectSchemaOptions = isOptionsObject(headersOrOptions)
+    ? headersOrOptions
+    : { headers: headersOrOptions as Record<string, string> };
+
+  const { headers = {}, timeoutMs = DEFAULT_FETCH_TIMEOUT_MS } = options;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -46,7 +86,10 @@ export const introspectSchema = async (
         query: getIntrospectionQuery(),
         operationName: "IntrospectionQuery",
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return {
@@ -102,8 +145,28 @@ export const introspectSchema = async (
       },
     };
   } catch (err) {
+    clearTimeout(timeoutId);
+
+    // Check for abort/timeout error
+    if (err instanceof Error && err.name === "AbortError") {
+      return {
+        ok: false,
+        error: {
+          message: `Request timeout after ${timeoutMs}ms`,
+          code: "NETWORK_ERROR",
+        },
+      };
+    }
+
     // Network errors, JSON parse errors, etc.
-    const message = err instanceof Error ? err.message : String(err);
+    const rawMessage = err instanceof Error ? err.message : String(err);
+
+    // Sanitize error message to avoid leaking internal details
+    const message = rawMessage.includes("ECONNREFUSED") ||
+      rawMessage.includes("ENOTFOUND") ||
+      rawMessage.includes("getaddrinfo")
+      ? "Failed to connect to the specified URL"
+      : rawMessage;
 
     // Determine error type
     let code: IntrospectionError["code"] = "NETWORK_ERROR";

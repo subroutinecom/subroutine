@@ -3,12 +3,14 @@ import {
   getAvailableIntegrations,
   getIntegrationOrGlobal,
   type GraphQLIntegrationConfig,
+  type OpenAPIIntegrationConfig,
 } from "../../models/integration.ts";
 import { getLogger } from "../../utils/logger.ts";
 import type { IntegrationInfo } from "../prompts/index.ts";
 import type { McpContext, SubroutineCapture } from "../utils/types.ts";
 import { validateCode } from "../validation/validator.ts";
-import type { GraphQLIntegrationSchema, ValidationContext } from "../validation/types.ts";
+import type { GraphQLIntegrationSchema, OpenAPIIntegrationSchema, ValidationContext } from "../validation/types.ts";
+import { parseOpenAPISpec } from "../../integrations/openapi-introspection.ts";
 const logger = getLogger("api/agent/tools/write-code.ts", "debug");
 
 type GenerateSubroutineOptions = {
@@ -22,7 +24,7 @@ const buildValidationContext = async (
   options?: GenerateSubroutineOptions
 ): Promise<ValidationContext | undefined> => {
   if (options?.integrations?.length && options.mcpContext) {
-    // Provided mode: fetch schemas for GraphQL integrations
+    // Provided mode: fetch schemas for GraphQL and OpenAPI integrations
     const mcpNames = options.integrations.filter((i) => i.type === "mcp").map((i) => i.name);
 
     // For GraphQL integrations, fetch the full integration to get the schema
@@ -46,9 +48,38 @@ const buildValidationContext = async (
       }
     }
 
+    // For OpenAPI integrations, fetch the full integration to get the spec
+    const openapiIntegrations: OpenAPIIntegrationSchema[] = [];
+    for (const integration of options.integrations.filter((i) => i.type === "openapi")) {
+      const fullIntegration = await getIntegrationOrGlobal(
+        integration.id,
+        options.mcpContext.organizationId
+      );
+      if (fullIntegration?.authConfig.type === "openapi") {
+        const config = fullIntegration.authConfig as OpenAPIIntegrationConfig;
+        if (config.spec) {
+          const parseResult = await parseOpenAPISpec(config.spec);
+          if (parseResult.ok) {
+            openapiIntegrations.push({
+              name: integration.name,
+              spec: config.spec,
+              operations: parseResult.result.operations.map((op) => ({
+                method: op.method,
+                path: op.path,
+              })),
+            });
+            logger.debug(`Found spec for OpenAPI integration "${integration.name}"`);
+          }
+        } else {
+          logger.debug(`No spec cached for OpenAPI integration "${integration.name}"`);
+        }
+      }
+    }
+
     return {
       mcpIntegrationNames: mcpNames.length > 0 ? mcpNames : undefined,
       graphqlIntegrations: graphqlIntegrations.length > 0 ? graphqlIntegrations : undefined,
+      openapiIntegrations: openapiIntegrations.length > 0 ? openapiIntegrations : undefined,
     };
   }
 
@@ -56,7 +87,7 @@ const buildValidationContext = async (
     // Discovery mode: fetch all available integrations
     const integrations = await getAvailableIntegrations(options.mcpContext.organizationId, "all");
     const enabledIntegrations = integrations.filter(
-      (i) => i.enabled && (i.authConfig.type === "mcp" || i.authConfig.type === "graphql")
+      (i) => i.enabled && (i.authConfig.type === "mcp" || i.authConfig.type === "graphql" || i.authConfig.type === "openapi")
     );
 
     if (enabledIntegrations.length > 0) {
@@ -78,9 +109,31 @@ const buildValidationContext = async (
         }
       }
 
+      // Extract OpenAPI integrations with their specs
+      const openapiIntegrations: OpenAPIIntegrationSchema[] = [];
+      for (const integration of enabledIntegrations.filter(
+        (i) => i.authConfig.type === "openapi"
+      )) {
+        const config = integration.authConfig as OpenAPIIntegrationConfig;
+        if (config.spec) {
+          const parseResult = await parseOpenAPISpec(config.spec);
+          if (parseResult.ok) {
+            openapiIntegrations.push({
+              name: integration.name,
+              spec: config.spec,
+              operations: parseResult.result.operations.map((op) => ({
+                method: op.method,
+                path: op.path,
+              })),
+            });
+          }
+        }
+      }
+
       return {
         mcpIntegrationNames: mcpNames.length > 0 ? mcpNames : undefined,
         graphqlIntegrations: graphqlIntegrations.length > 0 ? graphqlIntegrations : undefined,
+        openapiIntegrations: openapiIntegrations.length > 0 ? openapiIntegrations : undefined,
       };
     }
   }

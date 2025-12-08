@@ -10,6 +10,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { McpIntegrationConfig } from "../models/integration";
+import { buildAuthHeadersFromBlock } from "../integrations/auth-utils.ts";
 
 export interface McpToolInfo {
   name: string;
@@ -18,74 +19,6 @@ export interface McpToolInfo {
 }
 
 const DEFAULT_TIMEOUT_MS = 30000;
-
-/**
- * Builds HTTP headers for MCP server authentication based on the auth strategy.
- */
-const buildAuthHeaders = (
-  config: McpIntegrationConfig,
-  accessToken?: string
-): Record<string, string> => {
-  const headers: Record<string, string> = {};
-  const auth = config.auth;
-
-  switch (auth.strategy.type) {
-    case "none":
-      // No auth headers needed
-      break;
-
-    case "api_key": {
-      if (auth.strategy.viewerScoped) {
-        // Viewer-scoped PAT - token comes from connected account
-        if (!accessToken) {
-          throw new Error(
-            "MCP integration with viewer-scoped api_key requires user's access token"
-          );
-        }
-        const headerName = auth.strategy.headerName ?? "Authorization";
-        if (headerName.toLowerCase() === "authorization") {
-          headers[headerName] = `Bearer ${accessToken}`;
-        } else {
-          headers[headerName] = accessToken;
-        }
-      } else {
-        // Org-level API key
-        if (!auth.apiKey) {
-          throw new Error("MCP integration with api_key auth strategy requires apiKey");
-        }
-        const headerName = auth.strategy.headerName ?? "Authorization";
-        if (headerName.toLowerCase() === "authorization") {
-          headers[headerName] = `Bearer ${auth.apiKey}`;
-        } else {
-          headers[headerName] = auth.apiKey;
-        }
-      }
-      break;
-    }
-
-    case "bearer_oauth": {
-      if (!accessToken) {
-        throw new Error(
-          "MCP integration with bearer_oauth auth strategy requires accessToken"
-        );
-      }
-      headers["Authorization"] = `Bearer ${accessToken}`;
-      break;
-    }
-
-    case "custom_headers": {
-      Object.assign(headers, auth.strategy.headers);
-      break;
-    }
-
-    default: {
-      const _exhaustive: never = auth.strategy;
-      throw new Error(`Unknown auth strategy: ${JSON.stringify(_exhaustive)}`);
-    }
-  }
-
-  return headers;
-};
 
 /**
  * Creates a transport for connecting to an MCP server.
@@ -128,7 +61,7 @@ export const listMcpTools = async (
   accessToken?: string,
   timeoutMs: number = DEFAULT_TIMEOUT_MS
 ): Promise<McpToolInfo[]> => {
-  const headers = buildAuthHeaders(config, accessToken);
+  const headers = buildAuthHeadersFromBlock(config.auth, accessToken);
   const transport = createTransport(config, headers);
 
   const client = new Client({ name: "subroutine-api", version: "1.0.0" }, { capabilities: {} });

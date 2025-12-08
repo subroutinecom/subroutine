@@ -10,6 +10,26 @@ export interface Integrations {
   getS3(): Promise<{ listBuckets(): Promise<{ buckets: string[] }> }>;
   getGithub(): Promise<{ me(): Promise<{ login: string }> }>;
   getPing(): Promise<{ ping(message: string): Promise<{ echo: string; timestamp: number }> }>;
+  getGraphQLClient(name: string): Promise<GraphQLClient>;
+  getOpenAPIClient(name: string): Promise<OpenAPIClient>;
+}
+
+export interface GraphQLClient {
+  request<TData = unknown, TVariables extends Record<string, unknown> = Record<string, unknown>>(
+    query: string,
+    variables?: TVariables,
+  ): Promise<TData>;
+}
+
+export interface OpenAPIClient {
+  request<T = unknown>(
+    method: string,
+    path: string,
+    params?: Record<string, unknown>,
+    body?: unknown,
+  ): Promise<T>;
+  getOperations(): Array<{ method: string; path: string; summary?: string }>;
+  getOperation(method: string, path: string): { method: string; path: string; summary?: string } | null;
 }
 
 // Re-export types that subroutine code commonly uses

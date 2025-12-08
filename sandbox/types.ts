@@ -3,12 +3,13 @@ export type {
   McpTransport,
   SandboxMcpConfig,
   SandboxGraphQLConfig,
+  SandboxOpenAPIConfig,
   AuthStrategy,
   AuthBlock,
   OAuthConfig,
 } from "../packages/shared-types/integration";
 
-import type { SandboxMcpConfig, SandboxGraphQLConfig } from "../packages/shared-types/integration";
+import type { SandboxMcpConfig, SandboxGraphQLConfig, SandboxOpenAPIConfig } from "../packages/shared-types/integration";
 
 export interface SandboxIntegrationCredentialsMetadata {
   providerAccountIdentifier?: string;
@@ -18,7 +19,7 @@ export interface SandboxIntegrationCredentialsMetadata {
 
 export interface SandboxIntegrationAccountPayload {
   id: string;
-  userId: string;
+  viewerId: string;
   accountIdentifier?: string | null;
   credentials: {
     accessToken: string;
@@ -40,4 +41,6 @@ export interface SandboxIntegrationPayload {
   mcpConfig?: SandboxMcpConfig;
   /** GraphQL-specific configuration. Present when provider is a GraphQL integration. */
   graphqlConfig?: SandboxGraphQLConfig;
+  /** OpenAPI-specific configuration. Present when provider is an OpenAPI integration. */
+  openapiConfig?: SandboxOpenAPIConfig;
 }

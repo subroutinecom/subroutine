@@ -10,6 +10,7 @@ import {
   type IntegrationFormData,
   buildIntegrationConfig,
   GraphQLFormFields,
+  OpenAPIFormFields,
   McpFormFields,
   OAuthFormFields,
   ProviderSelector,
@@ -44,6 +45,14 @@ const INTEGRATION_PROVIDERS_QUERY = gql`
       mcpConfig {
         serverUrl
         transport
+        authStrategy {
+          type
+          headerName
+          headers
+        }
+      }
+      openapiConfig {
+        baseUrl
         authStrategy {
           type
           headerName
@@ -99,9 +108,9 @@ export default function NewIntegrationPage() {
   const [description, setDescription] = useState<string>("");
   const [makeGlobal, setMakeGlobal] = useState<boolean>(false);
 
-  // Filter to only show MCP and GraphQL providers (no OAuth providers or mocks)
+  // Filter to only show MCP, GraphQL, and OpenAPI providers (no OAuth providers or mocks)
   const providerDefinitions = useMemo(
-    () => allProviders.filter((p) => p.authType === "mcp" || p.authType === "graphql"),
+    () => allProviders.filter((p) => p.authType === "mcp" || p.authType === "graphql" || p.authType === "openapi"),
     [allProviders]
   );
 
@@ -117,6 +126,7 @@ export default function NewIntegrationPage() {
     watchedApiKeyIsViewerScoped,
     isMcpProvider,
     isGraphQLProvider,
+    isOpenAPIProvider,
     getProviderDefinition,
     handleSelectAuthMethod,
     applyDiscoveryResult,
@@ -299,7 +309,7 @@ export default function NewIntegrationPage() {
           </div>
 
           {/* Protocol-specific configuration card */}
-          {(isMcpProvider || isGraphQLProvider) && (
+          {(isMcpProvider || isGraphQLProvider || isOpenAPIProvider) && (
             <div className="rounded-2xl border border-base-300/50 bg-base-100/50 backdrop-blur-sm p-8">
               {/* MCP-specific fields */}
               {isMcpProvider && (
@@ -327,11 +337,22 @@ export default function NewIntegrationPage() {
                   redirectUri={watchedRedirectUri}
                 />
               )}
+
+              {/* OpenAPI-specific fields */}
+              {isOpenAPIProvider && (
+                <OpenAPIFormFields
+                  register={register as Parameters<typeof OpenAPIFormFields>[0]["register"]}
+                  errors={errors}
+                  watchedAuthStrategy={watchedAuthStrategy}
+                  watchedApiKeyIsViewerScoped={watchedApiKeyIsViewerScoped}
+                  redirectUri={watchedRedirectUri}
+                />
+              )}
             </div>
           )}
 
           {/* OAuth2-specific fields (legacy - shouldn't show with filtered providers) */}
-          {!isMcpProvider && !isGraphQLProvider && (
+          {!isMcpProvider && !isGraphQLProvider && !isOpenAPIProvider && (
             <div className="rounded-2xl border border-base-300/50 bg-base-100/50 backdrop-blur-sm p-8">
               <OAuthFormFields
                 register={register as Parameters<typeof OAuthFormFields>[0]["register"]}

@@ -35,7 +35,7 @@ export type GenerateSubroutineRequest = {
 
 /**
  * Builds integration info for the code generation prompt.
- * This retrieves basic identifying info (name, id, type) for MCP and GraphQL integrations.
+ * This retrieves basic identifying info (name, id, type) for MCP, GraphQL, and OpenAPI integrations.
  *
  * Auth checking and capability discovery happens lazily during code generation
  * via the inspectIntegration agent tool.
@@ -55,9 +55,9 @@ const buildIntegrationInfo = async (
     const integration = await getIntegration(integrationId, organizationId);
     if (!integration) continue;
 
-    // Only include MCP and GraphQL integrations
+    // Only include MCP, GraphQL, and OpenAPI integrations
     const configType = integration.authConfig.type;
-    if (configType !== "mcp" && configType !== "graphql") continue;
+    if (configType !== "mcp" && configType !== "graphql" && configType !== "openapi") continue;
 
     integrations.push({
       id: integrationId,

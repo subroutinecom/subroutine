@@ -79,3 +79,20 @@ export interface SandboxGraphQLConfig {
   /** Timestamp when the schema was last fetched */
   schemaFetchedAt?: number;
 }
+
+/**
+ * OpenAPI-specific configuration for sandbox integrations.
+ * Contains all info needed to execute REST API calls from the sandbox.
+ */
+export interface SandboxOpenAPIConfig {
+  /** Base URL of the API (e.g., "https://api.example.com/v1") */
+  baseUrl: string;
+  /** Pre-computed auth headers based on auth strategy */
+  authHeaders: Record<string, string>;
+  /** OpenAPI specification as JSON string */
+  spec?: string;
+  /** Detected OpenAPI version */
+  specVersion?: "3.0" | "3.1";
+  /** Timestamp when the spec was last fetched */
+  specFetchedAt?: number;
+}

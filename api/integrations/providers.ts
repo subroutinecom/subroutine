@@ -4,6 +4,7 @@ import { gmailDefinition } from "./providers/definitions/gmail.ts";
 import { graphqlDefinition } from "./providers/definitions/graphql.ts";
 import { mcpDefinition } from "./providers/definitions/mcp.ts";
 import { mockOAuthDefinition } from "./providers/definitions/mock_oauth.ts";
+import { openapiDefinition } from "./providers/definitions/openapi.ts";
 import type { IntegrationDefinition } from "./providers/types.ts";
 
 const definitions = [
@@ -12,6 +13,7 @@ const definitions = [
   githubDefinition,
   mcpDefinition,
   graphqlDefinition,
+  openapiDefinition,
   mockOAuthDefinition,
 ] as const;
 
@@ -45,6 +47,7 @@ export type {
   McpTransport,
   SandboxGraphQLConfig,
   SandboxMcpConfig,
+  SandboxOpenAPIConfig,
   AuthStrategy,
   AuthBlock,
   OAuthConfig,

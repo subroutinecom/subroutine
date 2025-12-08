@@ -12,7 +12,7 @@ type IntegrationDocs = {
 export const IntegrationInfoSchema = z.object({
   id: z.string(),
   name: z.string(),
-  type: z.enum(["mcp", "graphql"]),
+  type: z.enum(["mcp", "graphql", "openapi"]),
   connectionUrl: z.string().optional(),
 });
 
@@ -126,7 +126,7 @@ Example flow for "get my GitHub PRs":
 };
 
 /**
- * Generates documentation for integrations (MCP and GraphQL).
+ * Generates documentation for integrations (MCP, GraphQL, and OpenAPI).
  *
  * IMPORTANT: The agent must use inspectIntegration to discover what each integration offers.
  */
@@ -135,6 +135,7 @@ const getIntegrationDocs = (integrations: IntegrationInfo[]): string => {
 
   const mcpIntegrations = integrations.filter((i) => i.type === "mcp");
   const graphqlIntegrations = integrations.filter((i) => i.type === "graphql");
+  const openapiIntegrations = integrations.filter((i) => i.type === "openapi");
 
   let docs = "";
 
@@ -182,6 +183,33 @@ USAGE:
 3. const result = await client.request(\`query { ... }\`, { variables: { ... } });
 
 IMPORTANT: Your GraphQL queries MUST be valid against the schema returned by inspectIntegration.
+`;
+  }
+
+  if (openapiIntegrations.length > 0) {
+    const validNames = openapiIntegrations.map((i) => `"${i.name}"`).join(", ");
+    const exampleName = openapiIntegrations[0]?.name || "my-rest-api";
+
+    docs += `
+OPENAPI INTEGRATIONS:
+Available integration names: ${validNames}
+
+CRITICAL - getOpenAPIClient REQUIREMENTS:
+1. The argument MUST be one of the exact integration names listed above: ${validNames}
+2. You MUST await the call - getOpenAPIClient returns a Promise
+3. DO NOT invent or guess integration names - only use the names listed above
+
+USAGE:
+1. Call inspectIntegration({ integrationName: "${exampleName}" }) to get the OpenAPI spec and operations
+2. const client = await integrations.getOpenAPIClient("${exampleName}");
+3. const result = await client.request("GET", "/users/{userId}", { userId: "123" });
+4. const created = await client.request("POST", "/users", {}, { name: "John" });
+
+PATH PARAMETERS: Use placeholders like {paramName} in the path, pass values in params object.
+QUERY PARAMETERS: Any params not in the path become query parameters.
+REQUEST BODY: Pass as the 4th argument for POST, PUT, PATCH methods.
+
+IMPORTANT: Your method+path combinations MUST be valid against the spec returned by inspectIntegration.
 `;
   }
 

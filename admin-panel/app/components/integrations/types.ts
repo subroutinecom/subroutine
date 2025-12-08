@@ -13,6 +13,8 @@ export interface IntegrationFormData {
   serverUrl?: string; // MCP
   transport?: McpTransport; // MCP
   endpoint?: string; // GraphQL
+  baseUrl?: string; // OpenAPI
+  specUrl?: string; // OpenAPI
 
   // Auth strategy selection
   authStrategy: AuthStrategyType;
