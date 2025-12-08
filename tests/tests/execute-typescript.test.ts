@@ -466,8 +466,8 @@ describe("Sandbox", () => {
 
     const pmarkers1 = getPmarkers(response1.result.code || "");
     const pmarkers2 = getPmarkers(response2.result.code || "");
-    console.log("pmarkers1", pmarkers1);
-    console.log("pmarkers2", pmarkers2);
+    console.log("pmarkers1", response1.result.code || "", pmarkers1);
+    console.log("pmarkers2", response2.result.code || "", pmarkers2);
 
     expect(pmarkers1.length).toBe(2);
     expect(pmarkers2.length).toBe(2);
