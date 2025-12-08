@@ -338,7 +338,7 @@ const buildServerForIntegrations = async (
             if (!integration.account) {
               throw new Error("Mock OAuth integration requires credentials");
             }
-            const viewerId = integration.account.accountIdentifier ?? integration.account.userId;
+            const viewerId = integration.account.accountIdentifier ?? integration.account.viewerId;
             server.registerSingleton(
               "getMockOAuth",
               () =>

@@ -28,7 +28,7 @@ const fetchIntegrationsWithStatus = async (
     description: i.description,
     visibility: i.visibility,
     status: i.status,
-    type: i.authConfig.type as "mcp" | "graphql",
+    type: i.authConfig.type as "mcp" | "graphql" | "openapi",
     hasConnection: connectedIntegrationIds.has(i.id),
   }));
 };

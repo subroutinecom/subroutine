@@ -68,7 +68,7 @@ const executeTypescript = async (
   code: string,
   integrations?: unknown
 ): Promise<{ status: number; result: ExecutionResult }> => {
-  const wrappedCode = "\nexport default async function() {\n  " + code + "\n}\n";
+  const wrappedCode = "\nexport default async function(inputs, { integrations }) {\n  " + code + "\n}\n";
 
   const response = await makeRequest(
     {

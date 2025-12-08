@@ -19,7 +19,7 @@ export interface SandboxIntegrationCredentialsMetadata {
 
 export interface SandboxIntegrationAccountPayload {
   id: string;
-  userId: string;
+  viewerId: string;
   accountIdentifier?: string | null;
   credentials: {
     accessToken: string;

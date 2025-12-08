@@ -55,7 +55,7 @@ export const createInspectIntegration = (
     name: string;
     id: string;
     connectionUrl?: string;
-    type: "mcp" | "graphql";
+    type: "mcp" | "graphql" | "openapi";
   }[] = []
 ) => {
   return {
@@ -89,7 +89,7 @@ Call this BEFORE writing code to understand what the integration can do.`,
           id: provided.id,
           name: provided.name,
           authConfig: {
-            type: provided.type as "mcp" | "graphql", // Type assertion for safety
+            type: provided.type as "mcp" | "graphql" | "openapi", // Type assertion for safety
             serverUrl: provided.connectionUrl,
             endpoint: provided.connectionUrl, // GraphQL uses endpoint
             auth: {
