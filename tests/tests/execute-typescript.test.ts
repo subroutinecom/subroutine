@@ -60,7 +60,7 @@ async function executeTypescript(
 
   const response = await makeRequest(
     {
-      hostname: "sandbox",
+      hostname: "sandbox.subroutine.internal",
       path: "/test/executeTypescript",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },
@@ -77,7 +77,7 @@ async function executeTypescript(
 describe("Sandbox", () => {
   it("sandbox health check", async () => {
     const response = await makeRequest({
-      hostname: "sandbox",
+      hostname: "sandbox.subroutine.internal",
       path: "/_status",
       method: "GET",
       headers: MOCK_HEADERS,

@@ -62,7 +62,7 @@ async function executeCommand(
 ): Promise<{ status: number; result: CommandExecutionResult }> {
   const response = await makeRequest(
     {
-      hostname: "sandbox",
+      hostname: "sandbox.subroutine.internal",
       path: "/test/executeCommand",
       method: "POST",
       headers: { ...MOCK_HEADERS, "Content-Type": "application/json" },

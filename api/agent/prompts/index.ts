@@ -1,5 +1,6 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { z } from "zod";
 
 type IntegrationDocs = {
   id: string;
@@ -8,11 +9,13 @@ type IntegrationDocs = {
   docsUrl?: string;
 };
 
-export type IntegrationInfo = {
-  id: string;
-  name: string;
-  type: "mcp" | "graphql";
-};
+export const IntegrationInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(["mcp", "graphql"]),
+});
+
+export type IntegrationInfo = z.infer<typeof IntegrationInfoSchema>;
 
 let integrationTypesCache: string | null = null;
 
