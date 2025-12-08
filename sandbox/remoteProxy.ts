@@ -269,7 +269,7 @@ export class MessagePortTransport implements Transport {
     };
   }
 
-  async request(req: CallRequest): Promise<CallResponse> {
+  request(req: CallRequest): Promise<CallResponse> {
     // Simulate JSON wire on send
     const wireReq = JSON.stringify(req);
     const safeReq = JSON.parse(wireReq) as CallRequest;
