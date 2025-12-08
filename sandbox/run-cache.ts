@@ -1,7 +1,7 @@
-import { createClient } from "npm:redis@^5.10.0";
+import { createClient } from "redis";
 import type { CallResponse } from "./remoteProxy.ts";
 
-const REDIS_HOST = process.env.REDIS_HOST || "redis.subroutine.internal";
+const REDIS_HOST = Deno.env.get("REDIS_HOST") || "redis.subroutine.internal";
 const REDIS_URL = `redis://${REDIS_HOST}:6379`;
 
 export class RunCacheManager {
@@ -15,7 +15,7 @@ export class RunCacheManager {
 
   private static async ensureConnection() {
     if (!this.isConnected) {
-      this.client.on("error", (err) => console.error("Redis Client Error", err));
+      this.client.on("error", (err: unknown) => console.error("Redis Client Error", err));
       await this.client.connect();
       this.isConnected = true;
     }
