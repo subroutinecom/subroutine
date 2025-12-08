@@ -14,6 +14,9 @@ export const IntegrationInfoSchema = z.object({
   name: z.string(),
   type: z.enum(["mcp", "graphql", "openapi"]),
   connectionUrl: z.string().optional(),
+  tools: z.array(z.record(z.unknown())).optional(),
+  schema: z.string().optional(),
+  operations: z.array(z.record(z.unknown())).optional(),
 });
 
 export type IntegrationInfo = z.infer<typeof IntegrationInfoSchema>;
@@ -286,6 +289,12 @@ ${rules.map((r: string) => `- ${r}`).join("\n")}
 ${hasAnyIntegrations ? "NOTE: Integrations provide REAL data. Do not mock." : "NOTE: Use discovery tools to find real integrations."}
 `;
 
+  const showInspectGuidance = hasProvidedIntegrations || !hasAnyIntegrations;
+  const toolGuidance = `
+TOOL USAGE GUIDANCE:
+${showInspectGuidance ? `- inspectIntegration: CRITICAL. You MUST use this to inspect the schema/tools of an integration BEFORE generating code. Do not hallucinate capabilities.\n` : ""}- writeCode: Use this ONLY after you have gathered all necessary information. ${showInspectGuidance ? "If you have not inspected the integration yet, DO NOT use writeCode." : ""}
+`.trim();
+
   return `You are an expert TypeScript code generator that creates FULLY WORKING subroutines.
 
 YOUR RESPONSIBILITY:
@@ -305,6 +314,7 @@ TECHNICAL REQUIREMENTS:
 7. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n8. Use the available integrations to interact with external services" : ""}
 9. You may import "zod" from "zod" if you need runtime validation (e.g. import { z } from "zod";)
 ${sandboxRestrictions}
+${toolGuidance}
 ${standardIntegrationsSection}
 ${dynamicIntegrationsSection}
 

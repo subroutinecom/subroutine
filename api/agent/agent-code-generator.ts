@@ -1,13 +1,9 @@
 import { z } from "@hono/zod-openapi";
 import type { LanguageModel, ModelMessage } from "ai";
 import { streamText } from "ai";
-import util from "node:util";
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../models/errors.ts";
 import { getLogger } from "../utils/logger.ts";
-import {
-  CODE_GENERATION_USER_PROMPT,
-  SYSTEM_PROMPT,
-} from "./prompts/index.ts";
+import { CODE_GENERATION_USER_PROMPT, IntegrationInfoSchema, SYSTEM_PROMPT } from "./prompts/index.ts";
 import {
   checkAuthRequirements,
   createAgentTools,
@@ -131,15 +127,7 @@ export const GenerateCodeOptionsSchema = z.object({
   /** First-party integrations with dedicated libraries (Gmail, Calendar, etc.) */
   firstPartyIntegrations: z.array(z.string()).optional(),
   /** Configurable integrations (MCP servers, GraphQL endpoints, or OpenAPI services) */
-  integrations: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        type: z.enum(["mcp", "graphql", "openapi"]),
-      })
-    )
-    .optional(),
+  integrations: z.array(IntegrationInfoSchema).optional(),
   /** Context for MCP tool discovery - required if integrations is non-empty */
   mcpContext: z
     .object({
@@ -253,9 +241,6 @@ export const generateCode = async (
       usedIntegrationIds: finalUsedIds,
     };
   } catch (error) {
-    logger.warn("========= CAUSE =========");
-    if (error instanceof Error && "cause" in error) logger.warn(util.inspect(error.cause));
-    logger.warn("========= END CAUSE =========");
     if (streamTextParams) {
       try {
         logger.info(

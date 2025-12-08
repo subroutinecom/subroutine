@@ -56,6 +56,9 @@ export const createInspectIntegration = (
     id: string;
     connectionUrl?: string;
     type: "mcp" | "graphql" | "openapi";
+    tools?: any[];
+    schema?: string;
+    operations?: any[];
   }[] = []
 ) => {
   return {
@@ -80,75 +83,136 @@ Call this BEFORE writing code to understand what the integration can do.`,
         };
       }
 
-      // Check if this is a provided integration with a connection URL (Mock/Test mode)
-      const provided = providedIntegrations.find((i) => i.id === integrationId && i.connectionUrl);
-      if (provided && provided.connectionUrl) {
-        // Construct a temporary integration object for the mock server
-        // This bypasses the DB lookup
-        const mockIntegration: any = {
-          id: provided.id,
-          name: provided.name,
-          authConfig: {
-            type: provided.type as "mcp" | "graphql" | "openapi", // Type assertion for safety
-            serverUrl: provided.connectionUrl,
-            endpoint: provided.connectionUrl, // GraphQL uses endpoint
-            auth: {
-              strategy: { type: "none" }, // Mocks usually don't need auth
-            },
-            transport: "streamable-http", // Default for mocks
-          },
-        };
+      // Check if this is a provided integration (Mock/Test mode)
+      const provided = providedIntegrations.find((i) => i.id === integrationId);
+      if (provided) {
+        // Direct mock data provided?
+        if (provided.type === "mcp" && provided.tools) {
+          usedIntegrationIds.add(provided.id);
+          return {
+            success: true,
+            type: "mcp",
+            integrationName: provided.name,
+            tools: provided.tools,
+            usage: `This is an MCP integration. Use integrations.getMcpClient() to get a client:
 
-        // Handle based on integration type
-        if (provided.type === "mcp") {
-          const result = await handleInspectMcp(
-            mockIntegration,
-            mcpContext,
-            capturedAuthRequirements
-          );
-          if (result.success && result.tools) {
-            usedIntegrationIds.add(mockIntegration.id);
-            console.log(
-              `[InspectIntegration] MCP Result for ${mockIntegration.name}:`,
-              JSON.stringify(result.tools, null, 2)
+const client = await integrations.getMcpClient("${provided.name}");
+const result = await client.callTool({ name: "toolName", arguments: { param: "value" } });
+const data = JSON.parse(result.content[0]?.text || "{}");`,
+          };
+        }
+
+        if (provided.type === "graphql" && provided.schema) {
+          usedIntegrationIds.add(provided.id);
+          return {
+            success: true,
+            type: "graphql",
+            integrationName: provided.name,
+            schema: provided.schema,
+            schemaFetchedAt: Date.now(),
+            usage: `This is a GraphQL integration. Use integrations.getGraphQLClient() to get a client:
+
+const client = await integrations.getGraphQLClient("${provided.name}");
+const result = await client.request(\`query { ... }\`, { variables });
+
+IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
+          };
+        }
+
+        if (provided.type === "openapi" && provided.operations) {
+          usedIntegrationIds.add(provided.id);
+          return {
+            success: true,
+            type: "openapi",
+            integrationName: provided.name,
+            specVersion: "3.0",
+            specFetchedAt: Date.now(),
+            operations: provided.operations,
+            usage: `This is an OpenAPI/REST integration. Use integrations.getOpenAPIClient() to get a client:
+
+const client = await integrations.getOpenAPIClient("${provided.name}");
+
+// GET request with path parameter
+const user = await client.request("GET", "/users/{userId}", { userId: "123" });
+
+// GET request with query parameters
+const users = await client.request("GET", "/users", { limit: 10, offset: 0 });
+
+// POST request with body
+const created = await client.request("POST", "/users", {}, { name: "John", email: "john@example.com" });
+
+IMPORTANT: The method and path must match one of the operations listed above.`,
+          };
+        }
+
+        if (provided.connectionUrl) {
+          // Construct a temporary integration object for the mock server
+          // This bypasses the DB lookup
+          const mockIntegration: any = {
+            id: provided.id,
+            name: provided.name,
+            authConfig: {
+              type: provided.type as "mcp" | "graphql" | "openapi", // Type assertion for safety
+              serverUrl: provided.connectionUrl,
+              endpoint: provided.connectionUrl, // GraphQL uses endpoint
+              auth: {
+                strategy: { type: "none" }, // Mocks usually don't need auth
+              },
+              transport: "streamable-http", // Default for mocks
+            },
+          };
+
+          // Handle based on integration type
+          if (provided.type === "mcp") {
+            const result = await handleInspectMcp(
+              mockIntegration,
+              mcpContext,
+              capturedAuthRequirements
             );
-            return {
-              success: true,
-              type: "mcp",
-              integrationName: mockIntegration.name,
-              tools: result.tools,
-              usage: `This is an MCP integration. Use integrations.getMcpClient() to get a client:
+            if (result.success && result.tools) {
+              usedIntegrationIds.add(mockIntegration.id);
+              console.log(
+                `[InspectIntegration] MCP Result for ${mockIntegration.name}:`,
+                JSON.stringify(result.tools, null, 2)
+              );
+              return {
+                success: true,
+                type: "mcp",
+                integrationName: mockIntegration.name,
+                tools: result.tools,
+                usage: `This is an MCP integration. Use integrations.getMcpClient() to get a client:
 
 const client = await integrations.getMcpClient("${mockIntegration.name}");
 const result = await client.callTool({ name: "toolName", arguments: { param: "value" } });
 const data = JSON.parse(result.content[0]?.text || "{}");`,
-            };
-          }
-          return { success: false, error: result.error ?? "Unknown error" };
-        } else if (provided.type === "graphql") {
-          const result = await handleInspectGraphQL(
-            mockIntegration,
-            mcpContext,
-            capturedAuthRequirements
-          );
-          if (result.success && result.schema) {
-            usedIntegrationIds.add(mockIntegration.id);
-            console.log(`[InspectIntegration] GraphQL Schema for ${mockIntegration.name}:`, result.schema);
-            return {
-              success: true,
-              type: "graphql",
-              integrationName: mockIntegration.name,
-              schema: result.schema,
-              schemaFetchedAt: result.schemaFetchedAt!,
-              usage: `This is a GraphQL integration. Use integrations.getGraphQLClient() to get a client:
+              };
+            }
+            return { success: false, error: result.error ?? "Unknown error" };
+          } else if (provided.type === "graphql") {
+            const result = await handleInspectGraphQL(
+              mockIntegration,
+              mcpContext,
+              capturedAuthRequirements
+            );
+            if (result.success && result.schema) {
+              usedIntegrationIds.add(mockIntegration.id);
+              console.log(`[InspectIntegration] GraphQL Schema for ${mockIntegration.name}:`, result.schema);
+              return {
+                success: true,
+                type: "graphql",
+                integrationName: mockIntegration.name,
+                schema: result.schema,
+                schemaFetchedAt: result.schemaFetchedAt!,
+                usage: `This is a GraphQL integration. Use integrations.getGraphQLClient() to get a client:
 
 const client = await integrations.getGraphQLClient("${mockIntegration.name}");
 const result = await client.request(\`query { ... }\`, { variables });
 
 IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
-            };
+              };
+            }
+            return { success: false, error: result.error ?? "Unknown error" };
           }
-          return { success: false, error: result.error ?? "Unknown error" };
         }
       }
 
