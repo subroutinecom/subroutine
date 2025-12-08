@@ -2,23 +2,23 @@ import { LRUCache } from "lru-cache";
 import type { CallResponse } from "./remoteProxy.ts";
 
 export class RunCacheManager {
-  // Map<RunId, LRUCache>
-  private static caches = new Map<string, LRUCache<string, CallResponse>>();
-  private static readonly DEFAULT_TTL = 1000 * 60 * 5; // 5 minutes
-  private static readonly MAX_SIZE = 50; // Items per run
+  // LRUCache<RunId, Map>
+  private static readonly MAX_RUNS = 50;
+  private static readonly RUN_TTL = 1000 * 60 * 5; // 5 minutes
 
-  private static getCache(runId: string): LRUCache<string, CallResponse> {
+  private static caches = new LRUCache<string, Map<string, CallResponse>>({
+    max: RunCacheManager.MAX_RUNS,
+    ttl: RunCacheManager.RUN_TTL,
+  });
+
+  private static getCache(runId: string): Map<string, CallResponse> {
     console.log("Getting cache container for runId:", runId);
-    if (!this.caches.has(runId)) {
-      this.caches.set(
-        runId,
-        new LRUCache({
-          max: this.MAX_SIZE,
-          ttl: this.DEFAULT_TTL,
-        })
-      );
+    let cache = this.caches.get(runId);
+    if (!cache) {
+      cache = new Map<string, CallResponse>();
+      this.caches.set(runId, cache);
     }
-    return this.caches.get(runId)!;
+    return cache;
   }
 
   static get(runId: string, key: string): CallResponse | undefined {
