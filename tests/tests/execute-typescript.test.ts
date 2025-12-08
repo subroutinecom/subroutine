@@ -435,4 +435,50 @@ describe("Sandbox", () => {
 
     expect(response1.result.code).toBe(response2.result.code);
   });
+
+  it("pmarkers stay the same with a shared code prefix and change after the code changes", async () => {
+    const code1 = `
+    export default async function(inputs, integrations) {
+      await new Promise(r => setTimeout(r, 10));
+      await new Promise(r => setTimeout(r, 10));
+      return 'done';
+    }
+    `;
+
+    const code2 = `
+    export default async function(inputs, integrations) {
+      await new Promise(r => setTimeout(r, 20));
+      await new Promise(r => setTimeout(r, 10));
+      return 'done';
+    }
+    `;
+
+    const response1 = await executeTypescript(code1, {});
+    const response2 = await executeTypescript(code2, {});
+
+    expect(response1.status).toBe(200);
+    expect(response2.status).toBe(200);
+
+    const getPmarkers = (code: string) => {
+      const match = code.matchAll(/pmarker\('([a-f0-9]+)'\)/g);
+      return Array.from(match).map((m) => m[1]);
+    };
+
+    const pmarkers1 = getPmarkers(response1.result.code || "");
+    const pmarkers2 = getPmarkers(response2.result.code || "");
+    console.log("pmarkers1", pmarkers1);
+    console.log("pmarkers2", pmarkers2);
+
+    expect(pmarkers1.length).toBe(2);
+    expect(pmarkers2.length).toBe(2);
+
+    // The first await is physically at the same location relative to start,
+    // and the code before it is identical (imports + function signature + indentation).
+    // So the first pmarker should be the same.
+    expect(pmarkers1[0], "First pmarker should be identical").toBe(pmarkers2[0]);
+
+    // The second await has different code preceding it (setTimeout 10 vs 20).
+    // So the second pmarker should be different.
+    expect(pmarkers1[1], "Second pmarker should be divergent").not.toBe(pmarkers2[1]);
+  });
 });
