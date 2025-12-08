@@ -33,6 +33,15 @@ export interface OAuth2IntegrationConfig {
 }
 
 /**
+ * MCP tool definition (cached from server).
+ */
+export interface McpToolDefinition {
+  name: string;
+  description?: string;
+  inputSchema?: Record<string, unknown>;
+}
+
+/**
  * MCP integration config.
  * Protocol-specific fields + a dedicated auth block.
  */
@@ -41,6 +50,10 @@ export interface McpIntegrationConfig {
   serverUrl: string;
   transport: McpTransport;
   auth: AuthBlock;
+  /** Cached list of tools from the MCP server */
+  tools?: McpToolDefinition[];
+  /** Timestamp when tools were last fetched */
+  toolsFetchedAt?: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -761,7 +774,121 @@ export const updateIntegrationDescription = async (
 };
 
 // =============================================================================
-// Schema Introspection
+// MCP Tools Introspection
+// =============================================================================
+
+/**
+ * Result type for MCP tools introspection operations.
+ */
+export type IntrospectMcpToolsResult =
+  | {
+      ok: true;
+      tools: McpToolDefinition[];
+      toolCount: number;
+      fetchedAt: number;
+    }
+  | { ok: false; error: string; code: string };
+
+/**
+ * Introspect the tools for an MCP integration and store them.
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @returns The introspection result
+ */
+export const introspectAndStoreMcpTools = async (
+  id: string,
+  organizationId: string
+): Promise<IntrospectMcpToolsResult> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration) {
+    return { ok: false, error: "Integration not found", code: "NOT_FOUND" };
+  }
+
+  if (integration.authConfig.type !== "mcp") {
+    return { ok: false, error: "Integration is not an MCP integration", code: "INVALID_TYPE" };
+  }
+
+  const config = integration.authConfig;
+
+  // Import dynamically to avoid circular dependency
+  const { listMcpTools } = await import("../utils/mcp-client.ts");
+
+  try {
+    const tools = await listMcpTools(config);
+    const fetchedAt = Date.now();
+
+    // Update the integration with the tools
+    const updatedConfig: McpIntegrationConfig = {
+      ...config,
+      tools,
+      toolsFetchedAt: fetchedAt,
+    };
+
+    const now = new Date().toISOString();
+    const encryptedAuthConfig = encrypt(JSON.stringify(updatedConfig));
+
+    await db
+      .updateTable("integration")
+      .set({
+        authConfig: encryptedAuthConfig,
+        updatedAt: now,
+      })
+      .where("id", "=", id)
+      .where("organizationId", "=", organizationId)
+      .execute();
+
+    return {
+      ok: true,
+      tools,
+      toolCount: tools.length,
+      fetchedAt,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: `Failed to fetch tools from MCP server: ${error instanceof Error ? error.message : String(error)}`,
+      code: "MCP_ERROR",
+    };
+  }
+};
+
+/**
+ * Get the stored tools for an MCP integration.
+ *
+ * @param id - Integration ID
+ * @param organizationId - Organization ID
+ * @returns The tools list and fetch timestamp, or null if not available
+ */
+export const getMcpIntegrationTools = async (
+  id: string,
+  organizationId: string
+): Promise<{ tools: McpToolDefinition[]; fetchedAt: number } | null> => {
+  const integration = await getIntegration(id, organizationId);
+
+  if (!integration) {
+    return null;
+  }
+
+  if (integration.authConfig.type !== "mcp") {
+    return null;
+  }
+
+  const config = integration.authConfig;
+
+  if (!config.tools) {
+    return null;
+  }
+
+  return {
+    tools: config.tools,
+    fetchedAt: config.toolsFetchedAt ?? 0,
+  };
+};
+
+// =============================================================================
+// Schema Introspection (GraphQL)
 // =============================================================================
 
 /**
