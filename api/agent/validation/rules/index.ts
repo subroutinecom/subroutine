@@ -1,17 +1,17 @@
 import type { ValidationRule } from "../types";
-import { noCtxUsage } from "./no-ctx-usage";
-import { noFetchCalls } from "./no-fetch-calls";
+import { noCtxUsage } from "./no-ctx-param";
+import { noFetchCalls } from "./no-network-fetch";
 import { noNestedImports } from "./no-nested-imports";
-import { requireAsyncMain } from "./require-async-main";
-import { requireAwaitMcpClient } from "./require-await-mcp-client";
-import { requireExportMain } from "./require-export-main";
-import { requireInputsType } from "./require-inputs-type";
-import { requireMcpClientAccess } from "./require-mcp-client-access";
-import { requireOutputsType } from "./require-outputs-type";
-import { requireReturnInMain } from "./require-return-in-main";
-import { validateGraphqlQueries } from "./validate-graphql-queries";
-import { validateMcpIntegrationName } from "./validate-mcp-integration-name";
-import { validateOpenAPICalls } from "./validate-openapi-calls";
+import { requireAsyncMain } from "./main-must-be-async";
+import { requireAwaitMcpClient } from "./await-mcp-client";
+import { requireExportMain } from "./main-must-be-exported";
+import { requireInputsType } from "./must-define-inputs-type";
+import { requireMcpClientAccess } from "./only-allow-standard-integrations-methods";
+import { requireOutputsType } from "./must-define-outputs-type";
+import { requireReturnInMain } from "./main-must-return-outputs";
+import { validateGraphqlQueries } from "./validate-graphql-schema";
+import { validateMcpIntegrationName } from "./verify-integration-names-exist";
+import { validateOpenAPICalls } from "./validate-openapi-schema";
 
 export const rules: ValidationRule[] = [
   requireExportMain,

@@ -14,6 +14,9 @@ export const IntegrationInfoSchema = z.object({
   name: z.string(),
   type: z.enum(["mcp", "graphql", "openapi"]),
   connectionUrl: z.string().optional(),
+  tools: z.array(z.record(z.unknown())).optional(),
+  schema: z.string().optional(),
+  operations: z.array(z.record(z.unknown())).optional(),
 });
 
 export type IntegrationInfo = z.infer<typeof IntegrationInfoSchema>;
@@ -32,6 +35,23 @@ const getIntegrationTypesContent = (): string => {
     return "// Integration types not available";
   }
 };
+
+const validationRules = (() => {
+  try {
+    const currentDir = dirname(fileURLToPath(import.meta.url));
+    const rulesDir = resolve(currentDir, "../validation/rules");
+    const rules: string[] = [];
+
+    for (const entry of Deno.readDirSync(rulesDir)) {
+      if (entry.isFile && entry.name.endsWith(".ts") && entry.name !== "index.ts") {
+        rules.push(entry.name.replace(".ts", ""));
+      }
+    }
+    return rules.sort();
+  } catch {
+    return [];
+  }
+})();
 
 const getStandardIntegrationDocs = (integrationId: string): IntegrationDocs | null => {
   switch (integrationId) {
@@ -237,63 +257,43 @@ export const SYSTEM_PROMPT = (options: SystemPromptOptions | string[] = {}): str
   const hasProvidedIntegrations = providedIntegrations.length > 0;
   const hasAnyIntegrations = hasStandardIntegrations || hasProvidedIntegrations;
 
-  const typeDefinitions = getIntegrationTypesContent();
-  let integrationsSection = "";
-
-  if (hasStandardIntegrations) {
-    const integrationsList = standardDocs
-      .map((doc, idx) => {
-        let entry = `${idx + 1}. ${doc.id} (use integrations.${doc.functionName}())\n${doc.usageExample}`;
-        if (doc.docsUrl) {
-          entry += `\n   Docs: ${doc.docsUrl}`;
-        }
-        return entry;
-      })
-      .join("\n\n");
-
-    integrationsSection = `
+  const standardIntegrationsSection = hasStandardIntegrations
+    ? `
 BUILT-IN INTEGRATIONS (NOT MCP/GraphQL):
 These are direct API integrations with known interfaces. Use the specific getter functions.
 Do NOT use getMcpClient() or inspectIntegration for these - they have dedicated methods.
 
 Available integrations:
-${integrationsList}
+${standardDocs
+  .map((doc, idx) => {
+    let entry = `${idx + 1}. ${doc.id} (use integrations.${doc.functionName}())\n${doc.usageExample}`;
+    if (doc.docsUrl) {
+      entry += `\n   Docs: ${doc.docsUrl}`;
+    }
+    return entry;
+  })
+  .join("\n\n")}
+`
+    : "";
+
+  const dynamicIntegrationsSection = hasProvidedIntegrations
+    ? `${getIntegrationDocs(providedIntegrations)}${getProvidedIntegrationsDocs(providedIntegrations)}`
+    : getDiscoveryModeDocs();
+
+  const rules = validationRules;
+  const sandboxRestrictions = `
+SYSTEM CONSTRAINTS:
+The following is a list of eslint rules which will run against your code. These will cause an error if violated.
+${rules.map((r: string) => `- ${r}`).join("\n")}
+
+${hasAnyIntegrations ? "NOTE: Integrations provide REAL data. Do not mock." : "NOTE: Use discovery tools to find real integrations."}
 `;
-  }
 
-  if (hasProvidedIntegrations) {
-    // Provided mode: integrations were explicitly passed
-    integrationsSection += getIntegrationDocs(providedIntegrations);
-    integrationsSection += getProvidedIntegrationsDocs(providedIntegrations);
-  } else {
-    // Discovery mode: no integrations provided, agent must discover
-    integrationsSection += getDiscoveryModeDocs();
-  }
-
-  // Build the sandbox restrictions section
-  let sandboxRestrictions: string;
-  if (hasAnyIntegrations) {
-    sandboxRestrictions = `
-SANDBOX RESTRICTIONS:
-- You CANNOT use fetch(), XMLHttpRequest, or direct HTTP calls - they will fail
-- ALL external API calls MUST go through the "integrations" object
-- The integrations provide REAL access to external services - use them!
-- DO NOT mock or simulate external data - the integrations return real data`;
-  } else if (!hasProvidedIntegrations) {
-    // Discovery mode - integrations can be set up
-    sandboxRestrictions = `
-SANDBOX RESTRICTIONS:
-- You CANNOT use fetch(), XMLHttpRequest, or direct HTTP calls - they will fail
-- ALL external API calls MUST go through integrations (MCP or GraphQL)
-- Use the discovery tools to find or set up integrations before generating code
-- DO NOT mock or simulate external data - use real integrations`;
-  } else {
-    sandboxRestrictions = `
-SANDBOX RESTRICTIONS:
-- Your code runs in an isolated sandbox with NO network access
-- You CANNOT use fetch(), XMLHttpRequest, or any direct HTTP/network calls - they will fail
-- No external integrations are available for this subroutine`;
-  }
+  const showInspectGuidance = hasProvidedIntegrations || !hasAnyIntegrations;
+  const toolGuidance = `
+TOOL USAGE GUIDANCE:
+${showInspectGuidance ? `- inspectIntegration: CRITICAL. You MUST use this to inspect the schema/tools of an integration BEFORE generating code. Do not hallucinate capabilities.\n` : ""}- writeCode: Use this ONLY after you have gathered all necessary information. ${showInspectGuidance ? "If you have not inspected the integration yet, DO NOT use writeCode." : ""}
+`.trim();
 
   return `You are an expert TypeScript code generator that creates FULLY WORKING subroutines.
 
@@ -314,11 +314,13 @@ TECHNICAL REQUIREMENTS:
 7. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n8. Use the available integrations to interact with external services" : ""}
 9. You may import "zod" from "zod" if you need runtime validation (e.g. import { z } from "zod";)
 ${sandboxRestrictions}
-${integrationsSection}
+${toolGuidance}
+${standardIntegrationsSection}
+${dynamicIntegrationsSection}
 
 TYPE DEFINITIONS (reference for available integration methods):
 \`\`\`typescript
-${typeDefinitions}
+${getIntegrationTypesContent()}
 \`\`\`
 
 Use the writeCode tool to submit your code. The tool will validate it and provide feedback if there are issues.
