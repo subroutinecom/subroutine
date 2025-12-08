@@ -3,6 +3,13 @@
 import { createMessagePortClient, type Remote } from "./remoteProxy";
 import type { Integrations } from "@subroutine/integration-types";
 
+// Define global pmarker function for code tracing
+// deno-lint-ignore no-explicit-any
+(globalThis as any).pmarker = (_hash: string) => {
+  // Used for code execution tracing/hashing
+  // console.log(`[pmarker] ${hash}`);
+};
+
 // Additional message types for worker communication
 interface ConnectMessage {
   type: "connect";

@@ -1,4 +1,5 @@
 import type { SandboxIntegrationPayload } from "./types.ts";
+import { applyTransforms } from "./transforms/index.ts";
 import type { ExecuteMessage } from "./worker.ts";
 
 type ExecutionWorkerMessage =
@@ -27,7 +28,7 @@ export class SandboxManager {
     this.defaultTimeout = defaultTimeout;
   }
 
-  executeCode(
+  async executeCode(
     code: string,
     options?: {
       integrations?: SandboxIntegrationPayload[];
@@ -37,6 +38,9 @@ export class SandboxManager {
   ): Promise<ExecutionResult> {
     const timeout = options?.timeoutMs ?? this.defaultTimeout;
     const executionId = crypto.randomUUID();
+
+    // Apply code transformations (e.g. logging)
+    const transformedCode = await applyTransforms(code);
 
     // Create integration proxy worker for integrations
     const integrationProxyWorker = new Worker(
@@ -102,7 +106,7 @@ export class SandboxManager {
           // Both workers are ready, send execution message
           executionWorker.postMessage({
             type: "execute",
-            code,
+            code: transformedCode,
             id: executionId,
             contentType: "application/typescript",
             inputs: options?.inputs,

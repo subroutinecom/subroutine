@@ -1,6 +1,8 @@
 import type { gmail_v1, calendar_v3 } from "googleapis";
 import type { Client } from "@modelcontextprotocol/sdk/client";
 
+export function pmarker(_hash: string): void {}
+
 export interface Integrations {
   getMcpClient(name: string): Promise<Client>;
   getGmail(): Promise<gmail_v1.Gmail>;

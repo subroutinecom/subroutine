@@ -10,7 +10,7 @@ module.exports = {
       args: "task dev",
       autorestart: true,
 
-      watch: IS_BUILD ? false : ["*.ts", "*.js", "*.json"],
+      watch: IS_BUILD ? false : ["**/*.ts", "*.ts", "*.js", "*.json"],
 
       ignore_watch: IS_BUILD ? [] : ["node_modules", ".git"],
 
