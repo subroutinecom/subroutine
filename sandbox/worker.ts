@@ -1,7 +1,7 @@
 /// <reference lib="deno.worker" />
 
-import { createMessagePortClient, type Remote } from "./remoteProxy";
 import type { Integrations } from "@subroutine/integration-types";
+import { createMessagePortClient, type Remote } from "./remoteProxy.ts";
 
 // Store the integrations client (it's a Remote proxy)
 let integrations: Remote<Integrations> | undefined = undefined;
@@ -20,9 +20,7 @@ let currentRunId: string | undefined = undefined;
 
 // Expose pmarker type on globalThis for TS
 declare global {
-  // eslint-disable-next-line no-var
   var pmarker: (hash: string) => void;
-  // eslint-disable-next-line no-var
   var integrations: Remote<Integrations> | undefined;
 }
 
