@@ -1,8 +1,9 @@
+import { logger } from "better-auth";
 import { z } from "zod";
-import type { AuthRequirement } from "../../models/errors";
-import { getIntegrationOrGlobal } from "../../models/integration";
-import type { McpContext } from "../utils/types";
-import { handleInspectGraphQL, handleInspectMcp, handleInspectOpenAPI } from "./utils";
+import type { AuthRequirement } from "../../models/errors.ts";
+import { getIntegrationOrGlobal } from "../../models/integration.ts";
+import type { McpContext } from "../utils/types.ts";
+import { handleInspectGraphQL, handleInspectMcp, handleInspectOpenAPI } from "./utils.ts";
 
 /**
  * Result type for inspectIntegration tool.
@@ -171,7 +172,7 @@ IMPORTANT: The method and path must match one of the operations listed above.`,
             );
             if (result.success && result.tools) {
               usedIntegrationIds.add(mockIntegration.id);
-              console.log(
+              logger.debug(
                 `[InspectIntegration] MCP Result for ${mockIntegration.name}:`,
                 JSON.stringify(result.tools, null, 2)
               );
@@ -196,7 +197,10 @@ const data = JSON.parse(result.content[0]?.text || "{}");`,
             );
             if (result.success && result.schema) {
               usedIntegrationIds.add(mockIntegration.id);
-              console.log(`[InspectIntegration] GraphQL Schema for ${mockIntegration.name}:`, result.schema);
+              logger.debug(
+                `[InspectIntegration] GraphQL Schema for ${mockIntegration.name}:`,
+                result.schema
+              );
               return {
                 success: true,
                 type: "graphql",
@@ -230,7 +234,7 @@ IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
         const result = await handleInspectMcp(integration, mcpContext, capturedAuthRequirements);
         if (result.success && result.tools) {
           usedIntegrationIds.add(integration.id);
-          console.log(
+          logger.debug(
             `[InspectIntegration] MCP Result for ${integration.name}:`,
             JSON.stringify(result.tools, null, 2)
           );
@@ -257,7 +261,10 @@ const data = JSON.parse(result.content[0]?.text || "{}");`,
         );
         if (result.success && result.schema) {
           usedIntegrationIds.add(integration.id);
-          console.log(`[InspectIntegration] GraphQL Schema for ${integration.name}:`, result.schema);
+          logger.debug(
+            `[InspectIntegration] GraphQL Schema for ${integration.name}:`,
+            result.schema
+          );
           return {
             success: true,
             type: "graphql",
@@ -276,10 +283,14 @@ IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
       }
 
       if (integration.authConfig.type === "openapi") {
-        const result = await handleInspectOpenAPI(integration, mcpContext, capturedAuthRequirements);
+        const result = await handleInspectOpenAPI(
+          integration,
+          mcpContext,
+          capturedAuthRequirements
+        );
         if (result.success && result.operations) {
           usedIntegrationIds.add(integration.id);
-          console.log(
+          logger.debug(
             `[InspectIntegration] OpenAPI Operations for ${integration.name}:`,
             JSON.stringify(result.operations, null, 2)
           );
