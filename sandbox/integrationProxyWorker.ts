@@ -13,6 +13,10 @@ import { createGraphQLClient, type GraphQLClient } from "./integrations/graphql/
 import { createMcpClient } from "./integrations/mcp/mod.ts";
 import { RemoteProxyServer, type CallRequest, type CallResponse } from "./remoteProxy.ts";
 import type { SandboxIntegrationPayload } from "./types.ts";
+import { createHash } from "node:crypto";
+import { RunCacheManager } from "./memory-cache.ts";
+
+const MAX_CACHE_SIZE_BYTES = 5 * 1024 * 1024;
 
 interface S3API {
   listBuckets(): { buckets: string[] };
@@ -336,17 +340,65 @@ addEventListener("message", async (ev: Event) => {
         ? await buildServerForIntegrations(providedIntegrations)
         : await buildDefaultServer();
 
-    messagePort.onmessage = async (portEvent: MessageEvent<WireMessage>) => {
+    messagePort.onmessage = (portEvent: MessageEvent<WireMessage>) => {
       const wireMsg = portEvent.data;
       if (!wireMsg || wireMsg.kind !== "rpc") return;
 
-      const req = wireMsg.payload;
+      (async () => {
+        const req = wireMsg.payload;
+        const { runId, latestMarkerId } = req.metadata || {};
+
+        if (
+        runId &&
+        latestMarkerId &&
+        typeof runId === "string" &&
+        typeof latestMarkerId === "string"
+      ) {
+        const hashInput = JSON.stringify({ path: req.path, args: req.args });
+        const argsHash = createHash("sha256").update(hashInput).digest("hex");
+        const cacheKey = `${latestMarkerId}:${argsHash}`;
+
+        const cached = RunCacheManager.get(runId, cacheKey);
+        if (cached) {
+          console.log(`[IntegrationProxy] Cache HIT for ${cacheKey}`);
+          const wire: WireMessage = {
+            kind: "rpc_result",
+            payload: { ...cached, id: req.id },
+          };
+          messagePort!.postMessage(wire);
+          return;
+        }
+      }
+
       const res = await server.handle(JSON.parse(JSON.stringify(req)));
+
+      if (
+        runId &&
+        latestMarkerId &&
+        res.ok &&
+        typeof runId === "string" &&
+        typeof latestMarkerId === "string"
+      ) {
+        const hashInput = JSON.stringify({ path: req.path, args: req.args });
+        const argsHash = createHash("sha256").update(hashInput).digest("hex");
+        const cacheKey = `${latestMarkerId}:${argsHash}`;
+
+        try {
+          const value = JSON.stringify(res);
+          if (new TextEncoder().encode(value).length <= MAX_CACHE_SIZE_BYTES) {
+            RunCacheManager.set(runId, cacheKey, res);
+          }
+        } catch (e) {
+          console.warn(`[IntegrationProxy] Cache write error:`, e);
+        }
+      }
+
       const wire: WireMessage = {
         kind: "rpc_result",
         payload: JSON.parse(JSON.stringify(res)) as CallResponse,
       };
       messagePort!.postMessage(wire);
+      })();
     };
 
     (self as unknown as { postMessage: (data: unknown) => void }).postMessage({

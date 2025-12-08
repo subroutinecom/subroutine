@@ -73,6 +73,8 @@
     "npm:js-yaml@^4.1.1": "4.1.1",
     "npm:kysely-codegen@0.19": "0.19.0_kysely@0.28.8_pg@8.16.3_typescript@5.9.3",
     "npm:kysely@~0.28.8": "0.28.8",
+    "npm:lru-cache@^10.2.0": "10.4.3",
+    "npm:lru-cache@^11.2.4": "11.2.4",
     "npm:lucide-react@0.554": "0.554.0_react@18.3.1",
     "npm:nanoid@^5.1.6": "5.1.6",
     "npm:pg@^8.16.3": "8.16.3",
@@ -4155,6 +4157,9 @@
     "lru-cache@10.4.3": {
       "integrity": "sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ=="
     },
+    "lru-cache@11.2.4": {
+      "integrity": "sha512-B5Y16Jr9LB9dHVkh6ZevG+vAbOsNOYCX+sXvFWFu7B3Iz5mijW3zdbMyhsh8ANd2mSWBYdJgnqi+mL7/LrOPYg=="
+    },
     "lru-cache@5.1.1": {
       "integrity": "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==",
       "dependencies": [
@@ -5630,6 +5635,7 @@
       "npm:globals@^16.5.0",
       "npm:graphql-request@^7.3.3",
       "npm:graphql@^16.12.0",
+      "npm:lru-cache@^11.2.4",
       "npm:prettier@^3.6.2",
       "npm:theme-change@^2.5.0",
       "npm:ts-morph@26",
@@ -5734,6 +5740,7 @@
           "npm:graphql-request@^7.3.5",
           "npm:graphql@^16.12.0",
           "npm:hono@^4.10.4",
+          "npm:lru-cache@^10.2.0",
           "npm:ts-morph@^27.0.2",
           "npm:zod@^3.24.1"
         ]

@@ -35,6 +35,7 @@
     "globals": "npm:globals@^16.5.0",
     "graphql": "npm:graphql@^16.12.0",
     "graphql-request": "npm:graphql-request@^7.3.3",
+    "lru-cache": "npm:lru-cache@^11.2.4",
     "prettier": "npm:prettier@^3.6.2",
     "theme-change": "npm:theme-change@^2.5.0",
     "typescript-eslint": "npm:typescript-eslint@^8.46.3",

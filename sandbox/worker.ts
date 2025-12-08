@@ -16,6 +16,14 @@ let currentRunId: string | undefined = undefined;
   // console.log(`[pmarker] ${hash}`);
 };
 
+// Expose pmarker type on globalThis for TS
+declare global {
+  // eslint-disable-next-line no-var
+  var pmarker: (hash: string) => void;
+  // eslint-disable-next-line no-var
+  var integrations: Remote<Integrations> | undefined;
+}
+
 // Additional message types for worker communication
 interface ConnectMessage {
   type: "connect";
@@ -49,7 +57,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       integrations = client.getProxy<Integrations>();
 
       // Expose integrations globally so user code can access them
-      (globalThis as { integrations?: Remote<Integrations> }).integrations = integrations;
+      globalThis.integrations = integrations;
 
       // Signal that we're ready
       self.postMessage({ type: "execution_ready" });
@@ -80,7 +88,7 @@ self.onmessage = async (event: MessageEvent<WorkerMessage>) => {
       if (typeof entryPoint === "function") {
         const options = {
           integrations,
-          pmarker: (globalThis as any).pmarker,
+          pmarker: globalThis.pmarker,
         };
         // Pass inputs and options object
         result = await entryPoint(inputs, options);
