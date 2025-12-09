@@ -1,3 +1,4 @@
+import Ajv from "ajv";
 import { Config, createFormatter, createParser, SchemaGenerator } from "ts-json-schema-generator";
 import { Project } from "ts-morph";
 import ts from "typescript";
@@ -176,12 +177,13 @@ export const createWriteCodeTool = (
 
   const toolSchema = options?.shouldGenerateInputs
     ? baseToolSchema.extend({
-        generatedInputs: z
+        inputValues: z
           .record(z.unknown())
-          .optional()
           .describe("Concrete values conforming to input type for immediate execution"),
       })
     : baseToolSchema;
+
+  logger.warn("ADDED INPUTS?", !!options?.shouldGenerateInputs);
 
   return {
     description: "Submit a generated TypeScript function with input and output schemas",
@@ -190,10 +192,8 @@ export const createWriteCodeTool = (
       try {
         logger.debug(`Code length: ${params.code.length} chars`);
         const { code } = params;
-        const generatedInputs =
-          "generatedInputs" in params
-            ? (params.generatedInputs as Record<string, unknown>)
-            : undefined;
+        const inputValues =
+          "inputValues" in params ? (params.inputValues as Record<string, unknown>) : undefined;
 
         const validationContext = await buildValidationContext(options);
         logger.info(
@@ -281,13 +281,27 @@ export const createWriteCodeTool = (
         const formatter = createFormatter(config);
         const generator = new SchemaGenerator(program, parser, formatter, config);
 
+        const inputsSchema = generator.createSchema("Inputs");
+        const outputsSchema = generator.createSchema("Outputs");
+
+        if (options?.shouldGenerateInputs && "inputValues" in params) {
+          const ajv = new Ajv();
+          const validate = ajv.compile(inputsSchema);
+          const valid = validate(params.inputValues);
+          if (!valid) {
+            logger.warn(`Generated inputs are invalid: ${JSON.stringify(validate.errors)}`);
+            return {
+              success: false,
+              message: `Generated inputs are invalid: ${JSON.stringify(validate.errors)}`,
+            };
+          }
+        }
+
         const result: SubroutineCapture = {
           code,
-          generatedInputs,
-          inputsSchema: JSON.parse(JSON.stringify(generator.createSchema("Inputs"), filterSchema)),
-          outputsSchema: JSON.parse(
-            JSON.stringify(generator.createSchema("Outputs"), filterSchema)
-          ),
+          generatedInputs: inputValues,
+          inputsSchema: JSON.parse(JSON.stringify(inputsSchema, filterSchema)),
+          outputsSchema: JSON.parse(JSON.stringify(outputsSchema, filterSchema)),
         };
         onCapture(result);
         logger.info(`Success - code captured`);

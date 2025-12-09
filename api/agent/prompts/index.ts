@@ -371,7 +371,7 @@ Your goal is to create a REUSABLE, ABSTRACTED function that can be retrieved and
 - DO NOT hardcode these specific values in the function body. The function logic should be generic.
 - Example: If asked to "add 5 and 10", generate a function that accepts two numbers as inputs, NOT a function that returns 5 + 10.
 - Example: If asked to "get the contents of repo my_stuff", generate a function that takes \`repoName\` as input.
-- YOUR inputsSchema MUST MATCH THE input type of your main function. In this case, you should also have generatedInputs of {x: 5, y: 10}
+- YOUR In this case, you should also have inputValues of {x: 5, y: 10} if it generates a schema of type Inputs = {x: number; y: number}
 
 TOOL USAGE REQUIREMENTS:
 When calling the \`writeCode\` tool, you MUST:
