@@ -22,7 +22,7 @@
     "npm:@ai-sdk/openai@^2.0.64": "2.0.64_zod@3.25.76",
     "npm:@apidevtools/swagger-parser@^10.1.1": "10.1.1_openapi-types@12.1.3_ajv@8.17.1",
     "npm:@better-auth/cli@latest": "1.3.34_@babel+core@7.28.5_prisma@5.22.0_@prisma+client@5.22.0__prisma@5.22.0_@types+better-sqlite3@7.6.13_@types+react@18.3.27_better-sqlite3@12.4.1_kysely@0.28.8_pg@8.16.3_react@18.3.1",
-    "npm:@graphql-codegen/cli@6.0.2": "6.0.2_graphql@16.12.0_@types+node@24.2.0",
+    "npm:@graphql-codegen/cli@6.0.2": "6.0.2_graphql@16.12.0_@types+node@24.2.0_typescript@5.9.3",
     "npm:@graphql-codegen/schema-ast@5": "5.0.0_graphql@16.12.0",
     "npm:@hono/zod-openapi@~0.18.4": "0.18.4_hono@4.10.4_zod@3.25.76",
     "npm:@modelcontextprotocol/sdk@^1.21.0": "1.21.0_ajv@8.17.1_express@5.1.0_zod@3.25.76",
@@ -43,7 +43,7 @@
     "npm:graphql@^16.12.0": "16.12.0",
     "npm:hono@^4.10.4": "4.10.4",
     "npm:json-schema-to-zod@^2.7.0": "2.7.0",
-    "npm:kysely-codegen@0.19": "0.19.0_kysely@0.28.8_pg@8.16.3",
+    "npm:kysely-codegen@0.19": "0.19.0_kysely@0.28.8_pg@8.16.3_typescript@5.9.3",
     "npm:kysely@~0.28.8": "0.28.8",
     "npm:nanoid@^5.1.6": "5.1.6",
     "npm:openapi-types@^12.1.3": "12.1.3",
@@ -52,8 +52,10 @@
     "npm:react-router-dom@^6.28.0": "6.30.2_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:react@^18.3.1": "18.3.1",
     "npm:redis@^5.10.0": "5.10.0_@redis+client@5.10.0",
+    "npm:ts-json-schema-generator@^2.4.0": "2.4.0",
     "npm:ts-morph@26": "26.0.0",
     "npm:typescript-eslint@^8.46.3": "8.48.0_eslint@9.39.1_typescript@5.9.3_@typescript-eslint+parser@8.48.0__eslint@9.39.1__typescript@5.9.3",
+    "npm:typescript@^5.9.3": "5.9.3",
     "npm:winston@^3.13.0": "3.18.3",
     "npm:yaml@*": "2.8.1",
     "npm:yaml@^2.8.1": "2.8.1",
@@ -530,7 +532,7 @@
         "better-sqlite3",
         "c12",
         "chalk@5.6.2",
-        "commander",
+        "commander@12.1.0",
         "dotenv@17.2.3",
         "drizzle-orm",
         "get-tsconfig",
@@ -710,7 +712,7 @@
         "tslib@2.6.3"
       ]
     },
-    "@graphql-codegen/cli@6.0.2_graphql@16.12.0_@types+node@24.2.0": {
+    "@graphql-codegen/cli@6.0.2_graphql@16.12.0_@types+node@24.2.0_typescript@5.9.3": {
       "integrity": "sha512-W+0ime0xMrCyG77q+5xiPkkqPLuXJcTx0Zr9TTOxF4zIqWKVsuImS3qVxtpeTx+GRbb8VWv9IedWMtt91JGzQg==",
       "dependencies": [
         "@babel/generator",
@@ -731,7 +733,7 @@
         "@inquirer/prompts",
         "@whatwg-node/fetch",
         "chalk@4.1.2",
-        "cosmiconfig@9.0.0",
+        "cosmiconfig@9.0.0_typescript@5.9.3",
         "debounce",
         "detect-indent",
         "graphql",
@@ -2492,6 +2494,9 @@
     "commander@12.1.0": {
       "integrity": "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="
     },
+    "commander@13.1.0": {
+      "integrity": "sha512-/rFeCpNJQbhSZjGVwO9RFV3xPqbnERS8MmIQzCtD/zl6gpJuV/bMLuN92oG3F7d8oDEHHRrujSXNUr8fpjntKw=="
+    },
     "common-tags@1.8.2": {
       "integrity": "sha512-gk/Z852D2Wtb//0I+kRFNKKE9dIIVirjoqPoA1wJU+XePVXZfGeBpk45+A1rKO4Q43prqWBNY/MiIeRLbPWUaA=="
     },
@@ -2537,22 +2542,30 @@
         "vary"
       ]
     },
-    "cosmiconfig@8.3.6": {
+    "cosmiconfig@8.3.6_typescript@5.9.3": {
       "integrity": "sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==",
       "dependencies": [
         "import-fresh",
         "js-yaml",
         "parse-json",
-        "path-type"
+        "path-type",
+        "typescript"
+      ],
+      "optionalPeers": [
+        "typescript"
       ]
     },
-    "cosmiconfig@9.0.0": {
+    "cosmiconfig@9.0.0_typescript@5.9.3": {
       "integrity": "sha512-itvL5h8RETACmOTFc4UfIyB2RfEHi71Ax6E/PivVxq9NseKbOWpeyHEOIbmAw1rs8Ak0VursQNww7lf7YtUwzg==",
       "dependencies": [
         "env-paths",
         "import-fresh",
         "js-yaml",
-        "parse-json"
+        "parse-json",
+        "typescript"
+      ],
+      "optionalPeers": [
+        "typescript"
       ]
     },
     "cross-fetch@3.2.0": {
@@ -3169,11 +3182,23 @@
       "integrity": "sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==",
       "dependencies": [
         "foreground-child",
-        "jackspeak",
+        "jackspeak@3.4.3",
         "minimatch@9.0.5",
         "minipass",
         "package-json-from-dist",
-        "path-scurry"
+        "path-scurry@1.11.1"
+      ],
+      "bin": true
+    },
+    "glob@11.1.0": {
+      "integrity": "sha512-vuNwKSaKiqm7g0THUBu2x7ckSs3XJLXE+2ssL7/MfTGPLLcrJQ/4Uq1CjPTtO5cCIiRxqvN6Twy1qOwhL0Xjcw==",
+      "dependencies": [
+        "foreground-child",
+        "jackspeak@4.1.1",
+        "minimatch@10.1.1",
+        "minipass",
+        "package-json-from-dist",
+        "path-scurry@2.0.1"
       ],
       "bin": true
     },
@@ -3259,7 +3284,7 @@
     "graphemer@1.4.0": {
       "integrity": "sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag=="
     },
-    "graphql-config@5.1.5_graphql@16.12.0_@types+node@24.2.0": {
+    "graphql-config@5.1.5_graphql@16.12.0_typescript@5.9.3_@types+node@24.2.0": {
       "integrity": "sha512-mG2LL1HccpU8qg5ajLROgdsBzx/o2M6kgI3uAmoaXiSH9PCUbtIyLomLqUtCFaAeG2YCFsl0M5cfQ9rKmDoMVA==",
       "dependencies": [
         "@graphql-tools/graphql-file-loader",
@@ -3268,7 +3293,7 @@
         "@graphql-tools/merge",
         "@graphql-tools/url-loader@8.0.33_graphql@16.12.0_ws@8.18.3_@types+node@24.2.0",
         "@graphql-tools/utils",
-        "cosmiconfig@8.3.6",
+        "cosmiconfig@8.3.6_typescript@5.9.3",
         "graphql",
         "jiti",
         "minimatch@9.0.5",
@@ -3547,6 +3572,12 @@
         "@pkgjs/parseargs"
       ]
     },
+    "jackspeak@4.1.1": {
+      "integrity": "sha512-zptv57P3GpL+O0I7VdMJNBZCu+BPHVQUk55Ft8/QCJjTVxrnJHuVuX/0Bl2A6/+2oyR/ZMEuFKwmzqqZ/U5nPQ==",
+      "dependencies": [
+        "@isaacs/cliui"
+      ]
+    },
     "jiti@2.6.1": {
       "integrity": "sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==",
       "bin": true
@@ -3634,11 +3665,11 @@
     "kuler@2.0.0": {
       "integrity": "sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A=="
     },
-    "kysely-codegen@0.19.0_kysely@0.28.8_pg@8.16.3": {
+    "kysely-codegen@0.19.0_kysely@0.28.8_pg@8.16.3_typescript@5.9.3": {
       "integrity": "sha512-ZpdQQnpfY0kh45CA6yPA9vdFsBE+b06Fx7QVcbL5rX//yjbA0yYGZGhnH7GTd4P4BY/HIv5uAfuOD83JVZf95w==",
       "dependencies": [
         "chalk@4.1.2",
-        "cosmiconfig@9.0.0",
+        "cosmiconfig@9.0.0_typescript@5.9.3",
         "dotenv@17.2.3",
         "dotenv-expand",
         "git-diff",
@@ -3748,6 +3779,9 @@
     },
     "lru-cache@10.4.3": {
       "integrity": "sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ=="
+    },
+    "lru-cache@11.2.4": {
+      "integrity": "sha512-B5Y16Jr9LB9dHVkh6ZevG+vAbOsNOYCX+sXvFWFu7B3Iz5mijW3zdbMyhsh8ANd2mSWBYdJgnqi+mL7/LrOPYg=="
     },
     "lru-cache@5.1.1": {
       "integrity": "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==",
@@ -3902,6 +3936,9 @@
       "dependencies": [
         "remove-trailing-separator"
       ]
+    },
+    "normalize-path@3.0.0": {
+      "integrity": "sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA=="
     },
     "nullthrows@1.1.1": {
       "integrity": "sha512-2vPPEi+Z7WqML2jZYddDIfy5Dqb0r2fze2zTxNNknZaFpVHU3mFB3R+DWeJWGVx0ecvttSGlJTI+WG+8Z4cDWw=="
@@ -4069,6 +4106,13 @@
       "integrity": "sha512-Xa4Nw17FS9ApQFJ9umLiJS4orGjm7ZzwUrwamcGQuHSzDyth9boKDaycYdDcZDuqYATXw4HFXgaqWTctW/v1HA==",
       "dependencies": [
         "lru-cache@10.4.3",
+        "minipass"
+      ]
+    },
+    "path-scurry@2.0.1": {
+      "integrity": "sha512-oWyT4gICAu+kaA7QWk/jvCHWarMKNs6pXOGWKDTr7cw4IGcUbW+PeTfbaQiLGheFRpjo6O9J0PmyMfQPjH71oA==",
+      "dependencies": [
+        "lru-cache@11.2.4",
         "minipass"
       ]
     },
@@ -4757,6 +4801,20 @@
         "typescript"
       ]
     },
+    "ts-json-schema-generator@2.4.0": {
+      "integrity": "sha512-HbmNsgs58CfdJq0gpteRTxPXG26zumezOs+SB9tgky6MpqiFgQwieCn2MW70+sxpHouZ/w9LW0V6L4ZQO4y1Ug==",
+      "dependencies": [
+        "@types/json-schema",
+        "commander@13.1.0",
+        "glob@11.1.0",
+        "json5",
+        "normalize-path@3.0.0",
+        "safe-stable-stringify",
+        "tslib@2.8.1",
+        "typescript"
+      ],
+      "bin": true
+    },
     "ts-log@2.2.7": {
       "integrity": "sha512-320x5Ggei84AxzlXp91QkIGSw5wgaLT6GeAH0KsqDmRZdVWW2OiSeVvElVoatk3f7nicwXlElXsoFkARiGE2yg=="
     },
@@ -4833,7 +4891,7 @@
     "unixify@1.0.0": {
       "integrity": "sha512-6bc58dPYhCMHHuwxldQxO3RRNZ4eCogZ/st++0+fcC1nr0jiGUtAdBJ2qzmLQWSxbtz42pWt4QQMiZ9HvZf5cg==",
       "dependencies": [
-        "normalize-path"
+        "normalize-path@2.1.1"
       ]
     },
     "unpipe@1.0.0": {
@@ -5073,8 +5131,10 @@
       "npm:react-router-dom@^6.28.0",
       "npm:react@^18.3.1",
       "npm:redis@^5.10.0",
+      "npm:ts-json-schema-generator@^2.4.0",
       "npm:ts-morph@26",
       "npm:typescript-eslint@^8.46.3",
+      "npm:typescript@^5.9.3",
       "npm:winston@^3.13.0",
       "npm:yaml@^2.8.1",
       "npm:zod@^3.25.76"

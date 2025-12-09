@@ -1,3 +1,6 @@
+import { Config, createFormatter, createParser, SchemaGenerator } from "ts-json-schema-generator";
+import { Project } from "ts-morph";
+import ts from "typescript";
 import { z } from "zod";
 import { parseOpenAPISpec } from "../../integrations/openapi-introspection.ts";
 import {
@@ -15,7 +18,19 @@ import type {
   ValidationContext,
 } from "../validation/types.ts";
 import { validateCode } from "../validation/validator.ts";
+
+const filterSchema = (k: any, v: any) => (k === "$schema" ? undefined : v);
+
+const DEFAULT_FILE_NAME = "source.ts";
+
 const logger = getLogger("api/agent/tools/write-code.ts", "debug");
+
+// 1. Compiler options (minimal example)
+const compilerOptions: ts.CompilerOptions = {
+  strict: true,
+  target: ts.ScriptTarget.ES2020,
+  module: ts.ModuleKind.CommonJS,
+};
 
 type GenerateSubroutineOptions = {
   shouldGenerateInputs?: boolean;
@@ -154,8 +169,6 @@ export const createWriteCodeTool = (
   options?: GenerateSubroutineOptions
 ) => {
   const baseToolSchema = z.object({
-    inputsSchema: z.record(z.unknown()).describe("JSON Schema for the input parameters"),
-    outputsSchema: z.record(z.unknown()).describe("JSON Schema for the output"),
     code: z
       .string()
       .describe("The TypeScript code that exports an async main function with proper types"),
@@ -166,7 +179,7 @@ export const createWriteCodeTool = (
         generatedInputs: z
           .record(z.unknown())
           .optional()
-          .describe("Concrete values conforming to inputsSchema for immediate execution"),
+          .describe("Concrete values conforming to input type for immediate execution"),
       })
     : baseToolSchema;
 
@@ -174,41 +187,121 @@ export const createWriteCodeTool = (
     description: "Submit a generated TypeScript function with input and output schemas",
     inputSchema: toolSchema,
     execute: async (params: z.infer<typeof toolSchema>) => {
-      logger.debug(`Called`);
-      logger.debug(`Code length: ${params.code.length} chars`);
-      const { inputsSchema, outputsSchema, code } = params;
-      const generatedInputs =
-        "generatedInputs" in params
-          ? (params.generatedInputs as Record<string, unknown>)
-          : undefined;
+      try {
+        logger.debug(`Code length: ${params.code.length} chars`);
+        const { code } = params;
+        const generatedInputs =
+          "generatedInputs" in params
+            ? (params.generatedInputs as Record<string, unknown>)
+            : undefined;
 
-      const validationContext = await buildValidationContext(options);
-      logger.info(`Validating code with context: ${JSON.stringify(validationContext)}`);
-      const validation = await validateCode(code, validationContext);
-
-      if (!validation.valid) {
-        const errorMessages = validation.errors.map((e) =>
-          e.line ? `Line ${e.line}: ${e.message}` : e.message
+        const validationContext = await buildValidationContext(options);
+        logger.info(
+          `Validating code (${code.length} chars) with context: ${JSON.stringify(validationContext)}`
         );
-        logger.warn(`Validation failed:`, errorMessages);
+        const validation = await validateCode(code, validationContext);
+
+        if (!validation.valid) {
+          const errorMessages = validation.errors.map((e) =>
+            e.line ? `Line ${e.line}: ${e.message}` : e.message
+          );
+          logger.warn(`Validation failed:`, errorMessages);
+          return {
+            success: false,
+            errors: errorMessages,
+          };
+        }
+
+        // 2. In-memory compiler host
+        const host = ts.createCompilerHost(compilerOptions);
+
+        // load the source of this file into a new ts-morph project and delete everything besides the inputs and outputs types
+        const project = new Project({
+          useInMemoryFileSystem: true,
+          compilerOptions: {
+            strict: true,
+            skipLibCheck: true,
+          },
+        });
+        const sourceFile = project.createSourceFile(DEFAULT_FILE_NAME, code);
+        const inputsTypeAlias = sourceFile.getTypeAlias("Inputs");
+        const inputsInterface = sourceFile.getInterface("Inputs");
+        const inputsClass = sourceFile.getClass("Inputs");
+        const outputsTypeAlias = sourceFile.getTypeAlias("Outputs");
+        const outputsInterface = sourceFile.getInterface("Outputs");
+        const outputsClass = sourceFile.getClass("Outputs");
+        // rewrite sourceFile to just have the above nodes
+        const typesFile = project.createSourceFile(`${DEFAULT_FILE_NAME}.types.ts`, "", {
+          overwrite: true,
+        });
+
+        // re-add as *structures*
+        if (inputsTypeAlias)
+          typesFile.addTypeAlias({ ...inputsTypeAlias.getStructure(), isExported: true });
+
+        if (inputsInterface)
+          typesFile.addInterface({ ...inputsInterface.getStructure(), isExported: true });
+
+        if (inputsClass) typesFile.addClass({ ...inputsClass.getStructure(), isExported: true });
+
+        if (outputsTypeAlias)
+          typesFile.addTypeAlias({ ...outputsTypeAlias.getStructure(), isExported: true });
+
+        if (outputsInterface)
+          typesFile.addInterface({ ...outputsInterface.getStructure(), isExported: true });
+
+        if (outputsClass) typesFile.addClass({ ...outputsClass.getStructure(), isExported: true });
+        // convert the typesFile to a string
+        const typesCode = typesFile.getFullText();
+        typesFile.delete();
+        sourceFile.delete();
+        logger.warn(`Types code: ${typesCode}`);
+
+        // Override the FS-related methods
+        host.readFile = (path) => (path === DEFAULT_FILE_NAME ? typesCode : undefined);
+        host.fileExists = (path) => path === DEFAULT_FILE_NAME;
+        host.getSourceFile = (path, languageVersion) => {
+          if (path !== DEFAULT_FILE_NAME) return undefined;
+          return ts.createSourceFile(path, typesCode, languageVersion, true);
+        };
+
+        // 3. Create a Program from the virtual file
+        const program = ts.createProgram([DEFAULT_FILE_NAME], compilerOptions, host);
+        // 4. Wire it into ts-json-schema-generator
+        const config: Config = {
+          path: DEFAULT_FILE_NAME, // just used for internal filtering, name must match
+          tsconfig: undefined, // not needed, we already have a Program
+          type: "*", // we'll ask for specific types below
+          expose: "export",
+          jsDoc: "extended",
+        };
+
+        // Use the low-level API instead of createGenerator(config)
+        const parser = createParser(program, config);
+        const formatter = createFormatter(config);
+        const generator = new SchemaGenerator(program, parser, formatter, config);
+
+        const result: SubroutineCapture = {
+          code,
+          generatedInputs,
+          inputsSchema: JSON.parse(JSON.stringify(generator.createSchema("Inputs"), filterSchema)),
+          outputsSchema: JSON.parse(
+            JSON.stringify(generator.createSchema("Outputs"), filterSchema)
+          ),
+        };
+        onCapture(result);
+        logger.info(`Success - code captured`);
+        return {
+          success: true,
+          message: "Subroutine generated successfully",
+        };
+      } catch (error) {
+        logger.error(`Failed to generate code: ${error}`);
         return {
           success: false,
-          errors: errorMessages,
+          message: `Failed to generate code: ${error}`,
         };
       }
-
-      const result: SubroutineCapture = {
-        inputsSchema,
-        outputsSchema,
-        code,
-        generatedInputs,
-      };
-      onCapture(result);
-      logger.info(`Success - code captured`);
-      return {
-        success: true,
-        message: "Subroutine generated successfully",
-      };
     },
   };
 };

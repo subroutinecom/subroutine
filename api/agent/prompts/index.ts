@@ -363,10 +363,27 @@ type PromptOptions = {
 };
 
 export const CODE_GENERATION_USER_PROMPT = (request: string, options?: PromptOptions): string => {
-  let prompt = `Generate a TypeScript subroutine for: ${request}`;
+  let prompt = `Generate a TypeScript subroutine for: ${request}
+
+CRITICAL INSTRUCTION:
+Your goal is to create a REUSABLE, ABSTRACTED function that can be retrieved and used later for similar tasks.
+- EXTRACT specific values, IDs, search terms, or parameters from the user's request into the "Inputs" schema.
+- DO NOT hardcode these specific values in the function body. The function logic should be generic.
+- Example: If asked to "add 5 and 10", generate a function that accepts two numbers as inputs, NOT a function that returns 5 + 10.
+- Example: If asked to "get the contents of repo my_stuff", generate a function that takes \`repoName\` as input.
+- YOUR inputsSchema MUST MATCH THE input type of your main function. In this case, you should also have generatedInputs of {x: 5, y: 10}
+
+TOOL USAGE REQUIREMENTS:
+When calling the \`writeCode\` tool, you MUST:
+1. \`inputsSchema\`: Provide a valid JSON Schema that strictly matches your TypeScript \`type Inputs\`.
+   - If \`type Inputs\` has fields, \`inputsSchema\` MUST have corresponding properties.
+2. \`code\`: The abstracted TypeScript code.`;
 
   if (options?.shouldGenerateInputs) {
-    prompt += `\n\nAdditionally, produce an "generatedInputs" JSON object that satisfies your Inputs schema and can be used to execute main right away without further clarification. Populate every required field with sensible defaults inferred from the request.`;
+    prompt += `\n3. \`generatedInputs\`: You accepted "shouldGenerateInputs=true".
+   - You MUST populate this field with the specific values from the user's request.
+   - Example: { "num1": 5, "num2": 10 } or { "repoName": "my_stuff" }
+   - This object MUST satisfy the \`inputsSchema\`.`;
   }
 
   return prompt;

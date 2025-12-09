@@ -61,12 +61,13 @@ Deno.test({
     // Check if inputs match what we asked for
     const inputs = data.generatedInputs;
     console.log("Received generatedInputs:", JSON.stringify(inputs, null, 2));
+    console.log("Generated Source:", data.source);
     // The keys might vary, but values should likely be 5 and 10
     const values = Object.values(inputs);
     assertEquals(
       values.includes(5),
       true,
-      `Expected 5 to be in values, got ${JSON.stringify(values)}`
+      `Expected 5 to be in values, got ${JSON.stringify(values)} from ${JSON.stringify(data)}`
     );
     assertEquals(
       values.includes(10),

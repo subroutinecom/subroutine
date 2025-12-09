@@ -39,6 +39,8 @@
     "@types/react-dom": "npm:@types/react-dom@^18.3.1",
     "@typescript-eslint/utils": "npm:@typescript-eslint/utils@^8.46.3",
     "redis": "npm:redis@^5.10.0",
+    "ts-json-schema-generator": "npm:ts-json-schema-generator@^2.4.0",
+    "typescript": "npm:typescript@^5.9.3",
     "yaml": "npm:yaml@^2.8.1",
     "zod": "npm:zod@^3.25.76",
     "ts-morph": "npm:ts-morph@^26.0.0",
