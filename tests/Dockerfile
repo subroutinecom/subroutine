@@ -15,8 +15,12 @@ RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh -s -- -
 
 WORKDIR /app
 
+COPY ./deno.json ./deno.json
 COPY ./tests ./tests
 COPY ./packages ./packages
+COPY ./api ./api
+COPY ./sandbox ./sandbox
+COPY ./admin-panel ./admin-panel
 
 WORKDIR /app/tests
 

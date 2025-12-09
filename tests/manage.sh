@@ -58,6 +58,9 @@ run_deno_tests() {
 
   build_test_args
 
+  # Run from workspace root so deno.json workspace config is used
+  cd /app
+
   local -a cmd=(
     deno test
   )
@@ -65,10 +68,10 @@ run_deno_tests() {
   if [ ${#TEST_FILE_ARGS[@]} -gt 0 ]; then
     cmd+=("${TEST_FILE_ARGS[@]}")
   else
-    cmd+=(tests)
+    cmd+=(tests api sandbox)
   fi
 
-  cmd+=("--allow-net" "--allow-env" "--allow-read" "--sloppy-imports" "--unstable-worker-options" "--fail-fast")
+  cmd+=("--allow-net" "--allow-env" "--allow-read" "--allow-sys" "--sloppy-imports" "--unstable-worker-options" "--fail-fast")
 
   if [ "$watch_mode" = "1" ]; then
     cmd+=("--watch")

@@ -124,8 +124,12 @@ services:
     environment:
       TEST_NAMES: ${TEST_NAMES:-}
     volumes:
+      - ./deno.json:/app/deno.json
       - ./tests:/app/tests
       - ./packages:/app/packages
+      - ./api:/app/api
+      - ./sandbox:/app/sandbox
+      - ./admin-panel:/app/admin-panel
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3456/health"]
       interval: 3s
