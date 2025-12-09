@@ -74,7 +74,12 @@ jobs:
           services_newline="$(printf "%s\n" "${services[@]}")"
           services_csv="$(IFS=,; echo "${services[*]}")"
 
-          printf "SERVICES<<'EOF'\n%s\nEOF\n" "${services_newline}" >> "$GITHUB_ENV"
+          {
+            echo "SERVICES<<EOF"
+            printf "%s\n" "${services_newline}"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
           echo "targets=${services_csv}" >> "$GITHUB_OUTPUT"
           echo "Selected services: ${services[*]}"
 
