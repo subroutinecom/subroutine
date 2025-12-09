@@ -24,6 +24,11 @@ Interactions:
 
 - Services can be started once and do not need to be restarted. They are set up to watch the source code and internally restart when the code changes.
 
+Testing:
+
+- **Unit tests**: Colocate with source code as `.test.ts` files.
+- **Integration/e2e tests**: Place in the `tests/` directory.
+
 Feedback Loop:
 
 - Before handing off control to the user, run `deno task validate` and `deno task test` and ensure those are passing.
