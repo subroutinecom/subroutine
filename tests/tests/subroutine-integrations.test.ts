@@ -3,6 +3,7 @@ import { describe, it } from "@std/testing/bdd";
 import { gql } from "graphql-request";
 import { getDefaultAuthContext } from "../fixtures/apikey.ts";
 import { makeRequest } from "../fixtures/request.ts";
+import { executeTypescript } from "../fixtures/sandbox-execution.ts";
 import { createGraphQLClient } from "../utils/graphql-client.ts";
 
 const MOCK_HEADERS: HeadersInit = { "x-use-mock": "true" };
@@ -11,6 +12,7 @@ interface Run {
   id: string;
   status: "queued" | "running" | "succeeded" | "failed";
   outputs?: Record<string, unknown> | null;
+  error?: Record<string, unknown> | null;
 }
 
 const pollRunCompletion = async (
@@ -45,6 +47,47 @@ const CREATE_INTEGRATION = gql`
 `;
 
 describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: false }, () => {
+  it("sandbox supports mock_oauth integration directly", async () => {
+    const mockOAuthPayload = [
+      {
+        id: "test-mock-oauth-integration",
+        provider: "mock_oauth",
+        name: "Test Mock OAuth",
+        authConfig: {
+          type: "oauth2",
+          clientId: "test-client-id",
+          clientSecret: "test-secret",
+        },
+        account: {
+          id: "account-1",
+          viewerId: "test-viewer@example.com",
+          accountIdentifier: "test-viewer@example.com",
+          credentials: {
+            accessToken: "mock-access-token",
+            refreshToken: "mock-refresh-token",
+            expiresAt: Date.now() + 3600000,
+            tokenType: "Bearer",
+          },
+        },
+      },
+    ];
+
+    const code = `
+      export default async function(inputs, { integrations }) {
+        const mock = await integrations.getMockOAuth();
+        const result = await mock.ping("test-message");
+        return result;
+      }
+    `;
+
+    const { status, result } = await executeTypescript(code, { integrations: mockOAuthPayload });
+
+    expect(status).toBe(200);
+    expect(result.success).toBe(true);
+    expect((result.result as { echo: string }).echo).toBe("test-message");
+    expect((result.result as { viewerId: string }).viewerId).toBe("test-viewer@example.com");
+  });
+
   it("requires OAuth when integration credentials are missing", async () => {
     const authContext = await getDefaultAuthContext();
     const graphqlClient = createGraphQLClient(authContext.cookieJar);
@@ -113,7 +156,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
     expect(runData.error.viewerId).toBe("viewer@example.com");
   });
 
-  it.skip("runs subroutine via mock OAuth integration", async () => {
+  it("runs subroutine via mock OAuth integration", async () => {
     const authContext = await getDefaultAuthContext();
     const graphqlClient = createGraphQLClient(authContext.cookieJar);
 
@@ -159,6 +202,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
     const createData = JSON.parse(createResponse.data);
     const subroutineId = createData.subroutine?.id as string;
     expect(subroutineId).toBeDefined();
+
     const initialRun = await makeRequest(
       {
         hostname: "api.subroutine.internal",
@@ -179,6 +223,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
 
     const authResponse = await fetch(authorizationUrl);
     expect(authResponse.status).toBe(200);
+    await authResponse.text(); // Consume response body
 
     const secondRun = await makeRequest(
       {
@@ -190,7 +235,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
       JSON.stringify({
         viewerId,
         inputs: { message: "hello" },
-        wait: false,
+        wait: true,
       })
     );
 
@@ -200,6 +245,9 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
     expect(runId).toBeDefined();
 
     const completedRun = await pollRunCompletion(runId);
+    if (completedRun.status === "failed") {
+      throw new Error(`Run failed with error: ${JSON.stringify(completedRun.error, null, 2)}`);
+    }
     expect(completedRun.status).toBe("succeeded");
     const outputs = completedRun.outputs as { viewerId?: string; echo?: string };
     expect(outputs?.viewerId).toBe(viewerId);

@@ -43,7 +43,7 @@ export async function main(inputs: any, integrations: any) {
 
   if (lowerRequest.includes("mock integration")) {
     return `// Generated from: ${request}
-export async function main(inputs: any, integrations: any) {
+export async function main(inputs: any, { integrations }: any) {
   const message = inputs?.message ?? "hello";
   const mock = await integrations.getMockOAuth();
   const result = await mock.ping(message);
