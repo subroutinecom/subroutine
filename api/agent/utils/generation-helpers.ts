@@ -22,7 +22,7 @@ export type ToolCreationOptions = {
   mcpContext?: McpContext;
   /** Integrations provided to the agent (MCP or GraphQL) */
   integrations?: IntegrationInfo[];
-  needsImmediateInputs?: boolean;
+  executeImmediately?: boolean;
 };
 
 export const createAgentTools = (
@@ -33,7 +33,7 @@ export const createAgentTools = (
 ) => {
   const tools: Record<string, unknown> = {
     writeCode: createWriteCodeTool(onCapture, {
-      needsImmediateInputs: options.needsImmediateInputs,
+      executeImmediately: options.executeImmediately,
       mcpContext: options.mcpContext,
       integrations: options.integrations,
     }),

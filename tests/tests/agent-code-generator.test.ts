@@ -59,7 +59,7 @@ Deno.test({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         request: "Add 5 and 10 together",
-        needsImmediateInputs: true,
+        executeImmediately: true,
       }),
     });
 
@@ -100,7 +100,7 @@ Deno.test({
           { role: "user", content: "I have a secret value called secret_value which is 42." },
           { role: "assistant", content: "Okay, I will remember that secret_value is 42." },
         ],
-        needsImmediateInputs: true,
+        executeImmediately: true,
       }),
     });
 
@@ -131,7 +131,7 @@ Deno.test({
   },
 });
 
-Deno.test.only({
+Deno.test({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with initial messages (tool calls)`,
   ignore: !enableAiTests,
   fn: async () => {
@@ -149,7 +149,7 @@ Deno.test.only({
 
     const requestPayload = {
       request: "Check the weather in Portland, OR (97202) and list my urgent emails.",
-      needsImmediateInputs: true,
+      executeImmediately: true,
       integrations: [
         {
           id: "mock-weather-server", // Must match what we expect in code

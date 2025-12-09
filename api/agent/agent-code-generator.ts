@@ -127,7 +127,7 @@ export const ModelMessageSchema = z.union([
 ]);
 
 export const GenerateCodeOptionsSchema = z.object({
-  needsImmediateInputs: z.boolean().optional(),
+  executeImmediately: z.boolean().optional(),
   /** First-party integrations with dedicated libraries (Gmail, Calendar, etc.) */
   firstPartyIntegrations: z.array(z.string()).optional(),
   /** Configurable integrations (MCP servers, GraphQL endpoints, or OpenAPI services) */
@@ -175,7 +175,7 @@ export const generateCode = async (
     const tools = createAgentTools(onCapture, capturedAuthRequirements, usedIntegrationIds, {
       mcpContext: options?.mcpContext,
       integrations: options?.integrations,
-      needsImmediateInputs: options?.needsImmediateInputs,
+      executeImmediately: options?.executeImmediately,
     });
 
     logger.debug(`Available tools: ${Object.keys(tools).join(", ")}`);
@@ -193,7 +193,7 @@ export const generateCode = async (
         {
           role: "assistant",
           content: CODE_GENERATION_USER_PROMPT(request, {
-            needsImmediateInputs: options?.needsImmediateInputs ?? false,
+            executeImmediately: options?.executeImmediately ?? false,
           }),
         },
       ],

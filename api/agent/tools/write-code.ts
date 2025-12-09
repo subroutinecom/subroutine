@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parseOpenAPISpec } from "../../integrations/openapi-introspection.ts";
 import {
   getAvailableIntegrations,
   getIntegrationOrGlobal,
@@ -8,13 +9,16 @@ import {
 import { getLogger } from "../../utils/logger.ts";
 import type { IntegrationInfo } from "../prompts/index.ts";
 import type { McpContext, SubroutineCapture } from "../utils/types.ts";
+import type {
+  GraphQLIntegrationSchema,
+  OpenAPIIntegrationSchema,
+  ValidationContext,
+} from "../validation/types.ts";
 import { validateCode } from "../validation/validator.ts";
-import type { GraphQLIntegrationSchema, OpenAPIIntegrationSchema, ValidationContext } from "../validation/types.ts";
-import { parseOpenAPISpec } from "../../integrations/openapi-introspection.ts";
 const logger = getLogger("api/agent/tools/write-code.ts", "debug");
 
 type GenerateSubroutineOptions = {
-  needsImmediateInputs?: boolean;
+  executeImmediately?: boolean;
   mcpContext?: McpContext;
   /** Specific integrations to use (MCP or GraphQL) - for provided mode, not discovery mode */
   integrations?: IntegrationInfo[];
@@ -87,7 +91,11 @@ const buildValidationContext = async (
     // Discovery mode: fetch all available integrations
     const integrations = await getAvailableIntegrations(options.mcpContext.organizationId, "all");
     const enabledIntegrations = integrations.filter(
-      (i) => i.enabled && (i.authConfig.type === "mcp" || i.authConfig.type === "graphql" || i.authConfig.type === "openapi")
+      (i) =>
+        i.enabled &&
+        (i.authConfig.type === "mcp" ||
+          i.authConfig.type === "graphql" ||
+          i.authConfig.type === "openapi")
     );
 
     if (enabledIntegrations.length > 0) {
@@ -153,7 +161,7 @@ export const createWriteCodeTool = (
       .describe("The TypeScript code that exports an async main function with proper types"),
   });
 
-  const toolSchema = options?.needsImmediateInputs
+  const toolSchema = options?.executeImmediately
     ? baseToolSchema.extend({
         immediateInputs: z
           .record(z.unknown())
