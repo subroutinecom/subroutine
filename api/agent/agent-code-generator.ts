@@ -197,6 +197,7 @@ export const generateCode = async (
           }),
         },
       ],
+      toolChoice: "required",
       tools: tools as Parameters<typeof streamText>[0]["tools"],
       stopWhen: () => {
         iters++;
