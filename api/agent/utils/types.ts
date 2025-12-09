@@ -33,6 +33,7 @@ export type { TypeCoercerParams, TypeCoercerResult } from "../agent-type-coercer
 export enum Capability {
   CODING = "coding",
   CODING_FIRSTPASS = "coding.firstpass",
+  CODING_FORMAT_INPUTS = "coding.format_inputs",
   WEB_SEARCH = "web_search",
   PLANNING = "planning",
   GENERAL = "general",

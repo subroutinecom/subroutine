@@ -30,7 +30,7 @@ const filterSchema = (k: any, v: any) => (k === "$schema" ? undefined : v);
 
 const DEFAULT_FILE_NAME = "source.ts";
 
-const logger = getLogger("api/agent/tools/write-code.ts", "info");
+const logger = getLogger("api/agent/tools/write-code.ts", "debug");
 
 // 1. Compiler options (minimal example)
 const compilerOptions: ts.CompilerOptions = {
@@ -293,6 +293,7 @@ export const createWriteCodeTool = (
           const validate = ajv.compile(inputsSchema);
           const valid = validate(inputValues);
           if (!valid) {
+            logger.debug(`Input validation failed: ${JSON.stringify(validate.errors)}`);
             return {
               success: false,
               message: `inputValues are invalid (${JSON.stringify(inputValues)}): ${JSON.stringify(validate.errors)}`,
@@ -300,6 +301,7 @@ export const createWriteCodeTool = (
           }
         }
 
+        logger.debug(`Generated code: ${code}`);
         const result: SubroutineCapture = {
           code,
           generatedInputs: inputValues,

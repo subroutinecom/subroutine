@@ -201,6 +201,12 @@ export const generateCode = async (
       tools: tools as Parameters<typeof streamText>[0]["tools"],
       stopWhen: () => {
         iters++;
+        logger.warn(
+          JSON.stringify({
+            iters,
+            shouldStop: capturedResult !== null || iters >= MAX_ITERATIONS,
+          })
+        );
         return capturedResult !== null || iters >= MAX_ITERATIONS;
       },
     };
