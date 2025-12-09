@@ -53,6 +53,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Select services
+        id: select-services
         run: |
           services=()
           if [[ "${{ github.event.inputs.admin_panel }}" == 'true' ]]; then
@@ -70,7 +71,11 @@ jobs:
             exit 1
           fi
 
-          echo "SERVICES=${services[*]}" >> "$GITHUB_ENV"
+          services_newline="$(printf "%s\n" "${services[@]}")"
+          services_csv="$(IFS=,; echo "${services[*]}")"
+
+          printf "SERVICES<<'EOF'\n%s\nEOF\n" "${services_newline}" >> "$GITHUB_ENV"
+          echo "targets=${services_csv}" >> "$GITHUB_OUTPUT"
           echo "Selected services: ${services[*]}"
 
       - name: Build and push release images (with cache)
@@ -79,7 +84,7 @@ jobs:
           files: |
             docker-compose.yml
             docker-compose.prod.yml
-          targets: ${{ env.SERVICES }}
+          targets: ${{ steps.select-services.outputs.targets }}
           set: |
             *.cache-from=type=gha,scope=subroutine
             *.cache-to=type=gha,scope=subroutine,mode=max
