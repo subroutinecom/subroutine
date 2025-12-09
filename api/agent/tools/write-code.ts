@@ -1,5 +1,11 @@
 import Ajv from "ajv";
-import { Config, createFormatter, createParser, SchemaGenerator } from "ts-json-schema-generator";
+import {
+  type CompletedConfig,
+  type Config,
+  createFormatter,
+  createParser,
+  SchemaGenerator,
+} from "ts-json-schema-generator";
 import { Project } from "ts-morph";
 import ts from "typescript";
 import { z } from "zod";
@@ -274,8 +280,8 @@ export const createWriteCodeTool = (
         };
 
         // Use the low-level API instead of createGenerator(config)
-        const parser = createParser(program, config);
-        const formatter = createFormatter(config);
+        const parser = createParser(program, config as unknown as CompletedConfig);
+        const formatter = createFormatter(config as unknown as CompletedConfig);
         const generator = new SchemaGenerator(program, parser, formatter, config);
 
         const inputsSchema = generator.createSchema("Inputs");
