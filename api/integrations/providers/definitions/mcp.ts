@@ -14,7 +14,7 @@ export const mcpDefinition: IntegrationDefinition = {
   id: "mcp",
   name: "MCP Server",
   description: "Connect to any Model Context Protocol (MCP) server",
-  category: "mcp",
+  category: "generic",
   // MCP integrations are NOT viewer-scoped by default.
   // They use org-level API keys. For viewer-scoped MCP with OAuth passthrough,
   // use a dedicated provider definition (e.g., "mcp_github").

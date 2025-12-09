@@ -60,13 +60,21 @@ type Integration {
 
 type IntegrationProviderDefinition {
   authType: String
+  category: String
   description: String
+  graphqlConfig: IntegrationProviderGraphQLConfig
   id: String
   mcpConfig: IntegrationProviderMcpConfig
   name: String
   oauthConfig: IntegrationProviderOAuthConfig
   openapiConfig: IntegrationProviderOpenAPIConfig
   viewerScoped: Boolean
+}
+
+type IntegrationProviderGraphQLConfig {
+  authStrategy: McpAuthStrategy
+  endpoint: String
+  oauthConfig: IntegrationProviderOAuthConfig
 }
 
 type IntegrationProviderMcpConfig {
@@ -86,6 +94,7 @@ type IntegrationProviderOAuthConfig {
 type IntegrationProviderOpenAPIConfig {
   authStrategy: McpAuthStrategy
   baseUrl: String
+  oauthConfig: IntegrationProviderOAuthConfig
 }
 
 type IntegrationSchemaResult {
@@ -94,6 +103,14 @@ type IntegrationSchemaResult {
   fetchedAt: Int
   schema: String
   success: Boolean
+}
+
+type IntegrationTestCase {
+  description: String
+  id: String
+  name: String
+  providerId: String
+  readonly: Boolean
 }
 
 type McpAuthStrategy {
@@ -151,6 +168,16 @@ type Mutation {
   Introspect a GraphQL endpoint and store the schema. Only works for GraphQL integrations with appropriate auth configured.
   """
   introspectIntegrationSchema(integrationId: String!): IntegrationSchemaResult
+  """
+  Run integration tests for a specific integration. Requires a connected account with valid OAuth tokens.
+  """
+  runIntegrationTests(
+    integrationId: String!
+    """
+    Specific test case IDs to run. If omitted, runs all tests for the provider.
+    """
+    testCaseIds: [String!]
+  ): TestRunResult
   """Set integration visibility (superadmin only for 'global')"""
   setIntegrationVisibility(
     id: String!
@@ -203,6 +230,8 @@ type Query {
   integrationProviders: [IntegrationProviderDefinition!]
   """Get the stored GraphQL schema for a GraphQL integration"""
   integrationSchema(integrationId: String!): StoredSchema
+  """Get available test cases for a provider"""
+  integrationTestCases(providerId: String!): [IntegrationTestCase!]
   """
   Get integrations with optional visibility filter. Filter: 'private' (org-specific only), 'global' (registry only), 'all' or omit for both.
   """
@@ -249,4 +278,34 @@ type StoredOpenAPISpec {
 type StoredSchema {
   fetchedAt: Int
   schema: String
+}
+
+type TestCaseError {
+  message: String
+  name: String
+  stack: String
+}
+
+type TestCaseResult {
+  details: String
+  durationMs: Int
+  error: TestCaseError
+  message: String
+  success: Boolean
+  testCaseId: String
+}
+
+type TestRunResult {
+  executedAt: String
+  integrationId: String
+  providerId: String
+  results: [TestCaseResult!]
+  summary: TestRunSummary
+}
+
+type TestRunSummary {
+  failed: Int
+  passed: Int
+  total: Int
+  totalDurationMs: Int
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
-import { ArrowLeft, Check, Clock, Github, Mail, Pencil, Server, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle, Clock, Github, Mail, Pencil, Play, Server, Trash2, X, XCircle } from "lucide-react";
 import { Link } from "react-router";
 import { gql } from "graphql-request";
 import { useAuth } from "~/components/providers/AuthProvider";
@@ -56,6 +56,75 @@ const DELETE_INTEGRATION_MUTATION = gql`
   }
 `;
 
+const GET_TEST_CASES_QUERY = gql`
+  query GetIntegrationTestCases($providerId: String!) {
+    integrationTestCases(providerId: $providerId) {
+      id
+      name
+      description
+      providerId
+      readonly
+    }
+  }
+`;
+
+const RUN_TESTS_MUTATION = gql`
+  mutation RunIntegrationTests($integrationId: String!, $testCaseIds: [String!]) {
+    runIntegrationTests(integrationId: $integrationId, testCaseIds: $testCaseIds) {
+      integrationId
+      providerId
+      results {
+        testCaseId
+        success
+        message
+        details
+        durationMs
+        error {
+          name
+          message
+        }
+      }
+      summary {
+        total
+        passed
+        failed
+        totalDurationMs
+      }
+      executedAt
+    }
+  }
+`;
+
+interface TestCase {
+  id: string;
+  name: string;
+  description: string;
+  providerId: string;
+  readonly: boolean;
+}
+
+interface TestCaseResult {
+  testCaseId: string;
+  success: boolean;
+  message: string;
+  details: string | null;
+  durationMs: number;
+  error: { name: string; message: string } | null;
+}
+
+interface TestRunResult {
+  integrationId: string;
+  providerId: string;
+  results: TestCaseResult[];
+  summary: {
+    total: number;
+    passed: number;
+    failed: number;
+    totalDurationMs: number;
+  };
+  executedAt: string;
+}
+
 interface IntegrationResponse {
   id: string;
   organizationId: string;
@@ -106,10 +175,23 @@ export const clientLoader = async ({ params }: { params: { integrationId: string
     authConfig: JSON.parse(integrationData.integration.authConfig) as IntegrationConfig,
   };
 
+  // Fetch test cases for this provider
+  let testCases: TestCase[] = [];
+  try {
+    const testCasesData = await client.request<{ integrationTestCases: TestCase[] }>(
+      GET_TEST_CASES_QUERY,
+      { providerId: integration.provider }
+    );
+    testCases = testCasesData.integrationTestCases;
+  } catch {
+    // Test cases may not be available for all providers
+  }
+
   return {
     integration,
     isSuperadmin: integrationData.isSuperadmin,
     connectedAccounts: accountsData.connectedAccountsByIntegration,
+    testCases,
   };
 };
 
@@ -145,9 +227,12 @@ export default function IntegrationDetailPage() {
   const client = useMemo(() => createGraphqlClient(config), [config]);
   const navigate = useNavigate();
   const { activeOrganization } = useAuth();
-  const { integration, isSuperadmin, connectedAccounts } = useLoaderData<typeof clientLoader>();
+  const { integration, isSuperadmin, connectedAccounts, testCases } = useLoaderData<typeof clientLoader>();
 
   const [deleting, setDeleting] = useState(false);
+  const [runningTests, setRunningTests] = useState(false);
+  const [testResults, setTestResults] = useState<TestRunResult | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isGlobal = integration.visibility === "global";
@@ -173,6 +258,28 @@ export default function IntegrationDetailPage() {
       setDeleting(false);
     }
   };
+
+  const handleRunTests = async () => {
+    setRunningTests(true);
+    setTestError(null);
+    setTestResults(null);
+
+    try {
+      const result = await client.request<{ runIntegrationTests: TestRunResult }>(
+        RUN_TESTS_MUTATION,
+        { integrationId: integration.id }
+      );
+      setTestResults(result.runIntegrationTests);
+    } catch (err) {
+      setTestError(err instanceof Error ? err.message : "Failed to run tests");
+    } finally {
+      setRunningTests(false);
+    }
+  };
+
+  const hasActiveConnectedAccount = connectedAccounts.some(
+    (account) => account.status === "active"
+  );
 
   return (
     <div className="space-y-6">
@@ -418,6 +525,151 @@ export default function IntegrationDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Integration Testing */}
+      {testCases.length > 0 && (
+        <div className="card bg-base-100 shadow-sm border border-base-300">
+          <div className="card-body">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="card-title text-lg">
+                Integration Testing
+                <span className="badge badge-neutral">{testCases.length} tests</span>
+              </h2>
+              <button
+                type="button"
+                onClick={handleRunTests}
+                disabled={runningTests || !hasActiveConnectedAccount}
+                className="btn btn-primary btn-sm"
+              >
+                {runningTests ? (
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Running...
+                  </>
+                ) : (
+                  <>
+                    <Play size={16} />
+                    Run Tests
+                  </>
+                )}
+              </button>
+            </div>
+
+            {!hasActiveConnectedAccount && (
+              <div className="alert alert-warning mb-4">
+                <span>Connect an account to run integration tests</span>
+              </div>
+            )}
+
+            {testError && (
+              <div className="alert alert-error mb-4">
+                <span>{testError}</span>
+              </div>
+            )}
+
+            {/* Test Results */}
+            {testResults && (
+              <div className="space-y-4">
+                <div className="stats stats-horizontal shadow w-full">
+                  <div className="stat">
+                    <div className="stat-title">Total</div>
+                    <div className="stat-value text-lg">{testResults.summary.total}</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-title">Passed</div>
+                    <div className="stat-value text-lg text-success">{testResults.summary.passed}</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-title">Failed</div>
+                    <div className="stat-value text-lg text-error">{testResults.summary.failed}</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-title">Duration</div>
+                    <div className="stat-value text-lg">{testResults.summary.totalDurationMs}ms</div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Test</th>
+                        <th>Status</th>
+                        <th>Message</th>
+                        <th>Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {testResults.results.map((result) => {
+                        const testCase = testCases.find((tc) => tc.id === result.testCaseId);
+                        return (
+                          <tr key={result.testCaseId}>
+                            <td>
+                              <div>
+                                <p className="font-medium">{testCase?.name || result.testCaseId}</p>
+                                {testCase?.description && (
+                                  <p className="text-xs text-base-content/60">{testCase.description}</p>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              <div className="flex items-center gap-2">
+                                {result.success ? (
+                                  <CheckCircle size={16} className="text-success" />
+                                ) : (
+                                  <XCircle size={16} className="text-error" />
+                                )}
+                                <span className={result.success ? "text-success" : "text-error"}>
+                                  {result.success ? "Passed" : "Failed"}
+                                </span>
+                              </div>
+                            </td>
+                            <td>
+                              <p className="text-sm">{result.message}</p>
+                              {result.error && (
+                                <p className="text-xs text-error">{result.error.message}</p>
+                              )}
+                            </td>
+                            <td>{result.durationMs}ms</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Available Test Cases (when no results) */}
+            {!testResults && (
+              <div className="overflow-x-auto">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Test Name</th>
+                      <th>Description</th>
+                      <th>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {testCases.map((testCase) => (
+                      <tr key={testCase.id}>
+                        <td className="font-medium">{testCase.name}</td>
+                        <td className="text-sm text-base-content/70">{testCase.description}</td>
+                        <td>
+                          <span className={`badge badge-sm ${testCase.readonly ? "badge-info" : "badge-warning"}`}>
+                            {testCase.readonly ? "Read-only" : "May modify"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

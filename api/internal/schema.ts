@@ -40,6 +40,13 @@ import {
 } from "../integrations/providers.ts";
 import { discoverMcpOAuth, type McpOAuthDiscoveryResult } from "../services/mcp-oauth-discovery.ts";
 import { validateSlug, type SlugValidationWithAvailabilityResult } from "../validation/slug";
+import {
+  runIntegrationTests,
+  getAvailableTestCases,
+  type IntegrationTestCase,
+  type TestCaseResult,
+  type TestRunResult,
+} from "../integrations/testing";
 
 type User = {
   id: string;
@@ -204,6 +211,41 @@ McpIntegrationConfigType.implement({
   }),
 });
 
+// GraphQL Provider Config Type
+const GraphQLIntegrationConfigType = builder.objectRef<
+  Extract<IntegrationDefinition["auth"], { type: "graphql" }>
+>("IntegrationProviderGraphQLConfig");
+
+GraphQLIntegrationConfigType.implement({
+  fields: (t) => ({
+    endpoint: t.exposeString("endpoint"),
+    authStrategy: t.field({
+      type: McpAuthStrategyType,
+      resolve: (parent) => parent.authStrategy,
+    }),
+    oauthConfig: t.field({
+      type: OAuthIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => {
+        // Expose nested OAuth config for bearer_oauth strategy
+        if (parent.authStrategy.type === "bearer_oauth" && parent.oauthConfig) {
+          // Return as oauth2 type shape for compatibility with OAuthIntegrationConfigType
+          return {
+            type: "oauth2" as const,
+            authUrl: parent.oauthConfig.authUrl,
+            tokenUrl: parent.oauthConfig.tokenUrl,
+            defaultScopes: parent.oauthConfig.defaultScopes,
+            requiredScopes: parent.oauthConfig.requiredScopes,
+            defaultRedirectPath: parent.oauthConfig.defaultRedirectPath,
+            supportsCustomConfig: false,
+          };
+        }
+        return null;
+      },
+    }),
+  }),
+});
+
 // OpenAPI Provider Config Type
 const OpenAPIIntegrationConfigType = builder.objectRef<
   Extract<IntegrationDefinition["auth"], { type: "openapi" }>
@@ -215,6 +257,25 @@ OpenAPIIntegrationConfigType.implement({
     authStrategy: t.field({
       type: McpAuthStrategyType,
       resolve: (parent) => parent.authStrategy,
+    }),
+    oauthConfig: t.field({
+      type: OAuthIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => {
+        // Expose nested OAuth config for bearer_oauth strategy
+        if (parent.authStrategy.type === "bearer_oauth" && parent.oauthConfig) {
+          return {
+            type: "oauth2" as const,
+            authUrl: parent.oauthConfig.authUrl,
+            tokenUrl: parent.oauthConfig.tokenUrl,
+            defaultScopes: parent.oauthConfig.defaultScopes,
+            requiredScopes: parent.oauthConfig.requiredScopes,
+            defaultRedirectPath: parent.oauthConfig.defaultRedirectPath,
+            supportsCustomConfig: false,
+          };
+        }
+        return null;
+      },
     }),
   }),
 });
@@ -228,6 +289,7 @@ IntegrationProviderDefinitionType.implement({
     id: t.exposeString("id"),
     name: t.exposeString("name"),
     description: t.exposeString("description", { nullable: true }),
+    category: t.exposeString("category", { nullable: true }),
     viewerScoped: t.boolean({
       resolve: (parent) => parent.viewerScoped ?? false,
     }),
@@ -243,6 +305,11 @@ IntegrationProviderDefinitionType.implement({
       type: McpIntegrationConfigType,
       nullable: true,
       resolve: (parent) => (parent.auth.type === "mcp" ? parent.auth : null),
+    }),
+    graphqlConfig: t.field({
+      type: GraphQLIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => (parent.auth.type === "graphql" ? parent.auth : null),
     }),
     openapiConfig: t.field({
       type: OpenAPIIntegrationConfigType,
@@ -407,6 +474,90 @@ StoredOpenAPISpecType.implement({
       type: [OpenAPIOperationType],
       resolve: (parent) => parent.operations,
     }),
+  }),
+});
+
+// Integration Testing Types
+const IntegrationTestCaseType = builder.objectRef<IntegrationTestCase>("IntegrationTestCase");
+
+IntegrationTestCaseType.implement({
+  fields: (t) => ({
+    id: t.exposeString("id"),
+    name: t.exposeString("name"),
+    description: t.exposeString("description"),
+    providerId: t.exposeString("providerId"),
+    readonly: t.exposeBoolean("readonly"),
+  }),
+});
+
+const TestCaseErrorType = builder.objectRef<{
+  name: string;
+  message: string;
+  stack?: string;
+}>("TestCaseError");
+
+TestCaseErrorType.implement({
+  fields: (t) => ({
+    name: t.exposeString("name"),
+    message: t.exposeString("message"),
+    stack: t.exposeString("stack", { nullable: true }),
+  }),
+});
+
+const TestCaseResultType = builder.objectRef<TestCaseResult>("TestCaseResult");
+
+TestCaseResultType.implement({
+  fields: (t) => ({
+    testCaseId: t.exposeString("testCaseId"),
+    success: t.exposeBoolean("success"),
+    message: t.exposeString("message"),
+    details: t.field({
+      type: "String",
+      nullable: true,
+      resolve: (parent) => (parent.details ? JSON.stringify(parent.details) : null),
+    }),
+    durationMs: t.int({
+      resolve: (parent) => parent.durationMs,
+    }),
+    error: t.field({
+      type: TestCaseErrorType,
+      nullable: true,
+      resolve: (parent) => parent.error ?? null,
+    }),
+  }),
+});
+
+const TestRunSummaryType = builder.objectRef<{
+  total: number;
+  passed: number;
+  failed: number;
+  totalDurationMs: number;
+}>("TestRunSummary");
+
+TestRunSummaryType.implement({
+  fields: (t) => ({
+    total: t.int({ resolve: (parent) => parent.total }),
+    passed: t.int({ resolve: (parent) => parent.passed }),
+    failed: t.int({ resolve: (parent) => parent.failed }),
+    totalDurationMs: t.int({ resolve: (parent) => parent.totalDurationMs }),
+  }),
+});
+
+const TestRunResultType = builder.objectRef<TestRunResult>("TestRunResult");
+
+TestRunResultType.implement({
+  fields: (t) => ({
+    integrationId: t.exposeString("integrationId"),
+    providerId: t.exposeString("providerId"),
+    results: t.field({
+      type: [TestCaseResultType],
+      resolve: (parent) => parent.results,
+    }),
+    summary: t.field({
+      type: TestRunSummaryType,
+      resolve: (parent) => parent.summary,
+    }),
+    executedAt: t.exposeString("executedAt"),
   }),
 });
 
@@ -607,6 +758,16 @@ builder.queryType({
       },
       resolve: async (_parent, args, ctx) => {
         return getOpenAPIIntegrationSpec(args.integrationId, ctx.session.activeOrganizationId);
+      },
+    }),
+    integrationTestCases: t.field({
+      type: [IntegrationTestCaseType],
+      description: "Get available test cases for a provider",
+      args: {
+        providerId: t.arg.string({ required: true }),
+      },
+      resolve: (_parent, args) => {
+        return getAvailableTestCases(args.providerId);
       },
     }),
   }),
@@ -900,6 +1061,27 @@ builder.mutationType({
             code: result.code,
           };
         }
+      },
+    }),
+    runIntegrationTests: t.field({
+      type: TestRunResultType,
+      description:
+        "Run integration tests for a specific integration. " +
+        "Requires a connected account with valid OAuth tokens.",
+      args: {
+        integrationId: t.arg.string({ required: true }),
+        testCaseIds: t.arg.stringList({
+          required: false,
+          description: "Specific test case IDs to run. If omitted, runs all tests for the provider.",
+        }),
+      },
+      resolve: async (_parent, args, ctx) => {
+        return runIntegrationTests({
+          integrationId: args.integrationId,
+          organizationId: ctx.session.activeOrganizationId,
+          viewerId: ctx.user.id,
+          testCaseIds: args.testCaseIds ?? undefined,
+        });
       },
     }),
   }),

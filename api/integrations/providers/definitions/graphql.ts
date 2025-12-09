@@ -16,7 +16,7 @@ export const graphqlDefinition: IntegrationDefinition = {
   id: "graphql",
   name: "GraphQL API",
   description: "Connect to any GraphQL endpoint",
-  category: "api",
+  category: "generic",
   // GraphQL integrations are NOT viewer-scoped by default.
   // They use org-level API keys. For viewer-scoped GraphQL with OAuth passthrough,
   // the auth config can specify viewerScoped: true or bearer_oauth.

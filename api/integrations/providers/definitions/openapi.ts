@@ -16,7 +16,7 @@ export const openapiDefinition: IntegrationDefinition = {
   id: "openapi",
   name: "OpenAPI/REST API",
   description: "Connect to any REST API with an OpenAPI specification",
-  category: "api",
+  category: "generic",
   // OpenAPI integrations are NOT viewer-scoped by default.
   // They use org-level API keys. For viewer-scoped OpenAPI with OAuth passthrough,
   // the auth config can specify viewerScoped: true or bearer_oauth.

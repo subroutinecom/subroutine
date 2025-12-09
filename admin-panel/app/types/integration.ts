@@ -75,24 +75,38 @@ export interface OAuthIntegrationProviderConfig {
 export interface McpProviderConfig {
   serverUrl: string;
   transport: McpTransport;
-  auth: AuthBlock;
+  authStrategy: {
+    type: string;
+    headerName?: string;
+    headers?: string;
+  };
 }
 
 export interface GraphQLProviderConfig {
   endpoint: string;
-  auth: AuthBlock;
+  authStrategy: {
+    type: string;
+    headerName?: string;
+    headers?: string;
+  };
+  oauthConfig?: OAuthIntegrationProviderConfig | null;
 }
 
 export interface OpenAPIProviderConfig {
   baseUrl: string;
-  specUrl?: string;
-  auth: AuthBlock;
+  authStrategy: {
+    type: string;
+    headerName?: string;
+    headers?: string;
+  };
+  oauthConfig?: OAuthIntegrationProviderConfig | null;
 }
 
 export interface IntegrationProviderDefinition {
-  id: IntegrationProvider;
+  id: string;
   name: string;
   description?: string;
+  category?: string | null;
   viewerScoped: boolean;
   authType: IntegrationProviderAuthType;
   oauthConfig?: OAuthIntegrationProviderConfig | null;

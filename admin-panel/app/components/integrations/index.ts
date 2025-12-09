@@ -8,6 +8,7 @@ export type {
 
 // Components
 export { ProviderSelector } from "./ProviderSelector";
+export { IntegrationCombobox } from "./IntegrationCombobox";
 export { AuthStrategySelector } from "./AuthStrategySelector";
 export { AuthFields } from "./AuthFields";
 export { McpFormFields } from "./McpFormFields";

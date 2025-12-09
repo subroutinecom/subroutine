@@ -67,20 +67,19 @@ export const useIntegrationForm = (options: UseIntegrationFormOptions) => {
       setValue("transport", currentProvider.mcpConfig.transport || "sse");
 
       // Set auth strategy from provider config
-      const authType = currentProvider.mcpConfig.auth?.strategy?.type ?? "none";
+      const authType = currentProvider.mcpConfig.authStrategy?.type ?? "none";
       setValue("authStrategy", authType as AuthStrategyType);
     } else if (isGraphQLProvider && currentProvider.graphqlConfig) {
       setValue("endpoint", currentProvider.graphqlConfig.endpoint || "");
 
       // Set auth strategy from provider config
-      const authType = currentProvider.graphqlConfig.auth?.strategy?.type ?? "none";
+      const authType = currentProvider.graphqlConfig.authStrategy?.type ?? "none";
       setValue("authStrategy", authType as AuthStrategyType);
     } else if (isOpenAPIProvider && currentProvider.openapiConfig) {
       setValue("baseUrl", currentProvider.openapiConfig.baseUrl || "");
-      setValue("specUrl", currentProvider.openapiConfig.specUrl || "");
 
       // Set auth strategy from provider config
-      const authType = currentProvider.openapiConfig.auth?.strategy?.type ?? "none";
+      const authType = currentProvider.openapiConfig.authStrategy?.type ?? "none";
       setValue("authStrategy", authType as AuthStrategyType);
     } else if (isOAuthProvider && currentProvider.oauthConfig) {
       setValue("oauthAuthUrl", currentProvider.oauthConfig.authUrl || "");
