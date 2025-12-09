@@ -36,18 +36,18 @@ build_test_args() {
     fi
 
     case "$trimmed" in
-      tests/*)
-        TEST_FILE_ARGS+=("$trimmed")
-        ;;
-      ./tests/*)
-        TEST_FILE_ARGS+=("${trimmed#./}")
-        ;;
-      */*)
-        TEST_FILE_ARGS+=("$trimmed")
-        ;;
-      *)
-        TEST_FILE_ARGS+=("tests/$trimmed")
-        ;;
+    tests/*)
+      TEST_FILE_ARGS+=("$trimmed")
+      ;;
+    ./tests/*)
+      TEST_FILE_ARGS+=("${trimmed#./}")
+      ;;
+    */*)
+      TEST_FILE_ARGS+=("$trimmed")
+      ;;
+    *)
+      TEST_FILE_ARGS+=("tests/$trimmed")
+      ;;
     esac
   done
 }
@@ -62,7 +62,7 @@ run_deno_tests() {
   cd /app
 
   local -a cmd=(
-    deno test
+    deno test --parallel
   )
 
   if [ ${#TEST_FILE_ARGS[@]} -gt 0 ]; then
@@ -85,7 +85,7 @@ run_deno_tests() {
 await_mcp_test_server() {
   echo "Waiting for MCP test server to be ready..."
   for i in {1..30}; do
-    if curl -s http://localhost:3456/health > /dev/null 2>&1; then
+    if curl -s http://localhost:3456/health >/dev/null 2>&1; then
       echo "MCP test server is ready"
       break
     fi
