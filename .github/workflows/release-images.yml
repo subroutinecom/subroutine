@@ -70,7 +70,7 @@ jobs:
             exit 1
           fi
 
-          printf "SERVICES<<'EOF'\n%s\nEOF\n" "$(printf "%s\n" "${services[@]}")" >> "$GITHUB_ENV"
+          echo "SERVICES=${services[*]}" >> "$GITHUB_ENV"
           echo "Selected services: ${services[*]}"
 
       - name: Build and push release images (with cache)
