@@ -112,7 +112,7 @@ Deno.test({
     }
 
     assertEquals(response.status, 200, `Expected 200, got ${response.status}`);
-    assertEquals(data.success, true, `Expected true, got ${data.success}`);
+    assertEquals(data.success, true, `Expected success=true, got ${data.success}`);
 
     // The agent should have generated code that returns 42, likely as a default value or hardcoded
     const code = data.source;
@@ -131,7 +131,7 @@ Deno.test({
   },
 });
 
-Deno.test({
+Deno.test.only({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with initial messages (tool calls)`,
   ignore: !enableAiTests,
   fn: async () => {

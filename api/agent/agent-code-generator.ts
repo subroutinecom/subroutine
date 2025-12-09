@@ -3,7 +3,11 @@ import type { LanguageModel, ModelMessage } from "ai";
 import { streamText } from "ai";
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../models/errors.ts";
 import { getLogger } from "../utils/logger.ts";
-import { CODE_GENERATION_USER_PROMPT, IntegrationInfoSchema, SYSTEM_PROMPT } from "./prompts/index.ts";
+import {
+  CODE_GENERATION_USER_PROMPT,
+  IntegrationInfoSchema,
+  SYSTEM_PROMPT,
+} from "./prompts/index.ts";
 import {
   checkAuthRequirements,
   createAgentTools,
@@ -13,7 +17,7 @@ import {
 import type { CodeGenerationResult, SubroutineCapture } from "./utils/types.ts";
 const logger = getLogger("api/agent/agent-code-generator.ts", "info");
 
-const MAX_ITERATIONS = 5;
+const MAX_ITERATIONS = 10;
 
 const TextPartSchema = z.object({
   type: z.literal("text"),

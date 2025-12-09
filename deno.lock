@@ -51,6 +51,7 @@
     "npm:@uidotdev/usehooks@^2.4.1": "2.4.1_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:ai@^5.0.102": "5.0.106_zod@3.25.76",
     "npm:ai@^5.0.106": "5.0.106_zod@3.25.76",
+    "npm:ajv@^8.17.1": "8.17.1",
     "npm:arg@5": "5.0.2",
     "npm:bcrypt@6": "6.0.0",
     "npm:better-auth@1.3.34": "1.3.34_@better-auth+utils@0.3.0_@better-fetch+fetch@1.1.18_better-call@1.0.19_jose@6.1.2_kysely@0.28.8_nanostores@1.1.0",
@@ -73,6 +74,7 @@
     "npm:hono@^4.10.4": "4.10.7",
     "npm:isbot@^5.1.31": "5.1.32",
     "npm:js-yaml@^4.1.1": "4.1.1",
+    "npm:json-schema-to-zod@^2.7.0": "2.7.0",
     "npm:kysely-codegen@0.19": "0.19.0_kysely@0.28.8_pg@8.16.3_typescript@5.9.3",
     "npm:kysely@~0.28.8": "0.28.8",
     "npm:lru-cache@^10.2.0": "10.4.3",
@@ -4049,6 +4051,10 @@
     "json-parse-even-better-errors@3.0.2": {
       "integrity": "sha512-fi0NG4bPjCHunUJffmLd0gxssIgkNmArMvis4iNah6Owg1MCJjWhEcDLmsK6iGkJq3tHwbDkTlce70/tmXN4cQ=="
     },
+    "json-schema-to-zod@2.7.0": {
+      "integrity": "sha512-eW59l3NQ6sa3HcB+Ahf7pP6iGU7MY4we5JsPqXQ2ZcIPF8QxSg/lkY8lN0Js/AG0NjMbk+nZGUfHlceiHF+bwQ==",
+      "bin": true
+    },
     "json-schema-traverse@0.4.1": {
       "integrity": "sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg=="
     },
@@ -5939,6 +5945,7 @@
           "npm:@types/react@^18.3.12",
           "npm:@typescript-eslint/utils@^8.46.3",
           "npm:ai@^5.0.106",
+          "npm:ajv@^8.17.1",
           "npm:bcrypt@6",
           "npm:better-auth@1.3.34",
           "npm:eslint@^9.39.1",
@@ -5948,6 +5955,7 @@
           "npm:graphql-yoga@^5.16.2",
           "npm:graphql@^16.12.0",
           "npm:hono@^4.10.4",
+          "npm:json-schema-to-zod@^2.7.0",
           "npm:kysely-codegen@0.19",
           "npm:kysely@~0.28.8",
           "npm:nanoid@^5.1.6",
@@ -5975,6 +5983,7 @@
           "npm:@graphql-typed-document-node/core@^3.2.0",
           "npm:@modelcontextprotocol/sdk@^1.21.0",
           "npm:@types/node@*",
+          "npm:ajv@^8.17.1",
           "npm:googleapis@134",
           "npm:graphql-request@^7.3.5",
           "npm:graphql@^16.12.0",
