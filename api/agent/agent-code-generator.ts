@@ -17,7 +17,7 @@ import {
 import type { CodeGenerationResult, SubroutineCapture } from "./utils/types.ts";
 const logger = getLogger("api/agent/agent-code-generator.ts", "info");
 
-const MAX_ITERATIONS = 10;
+const MAX_ITERATIONS = 5;
 
 const TextPartSchema = z.object({
   type: z.literal("text"),

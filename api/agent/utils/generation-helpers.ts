@@ -83,7 +83,7 @@ export const logGenerationSteps = (steps: any[]) => {
     logger.debug(`Step ${i + 1}:`);
     if (step.toolCalls && step.toolCalls.length > 0) {
       for (const tc of step.toolCalls) {
-        const args = "args" in tc ? tc.args : {};
+        const args = "input" in tc ? tc.input : {};
         logger.debug(`  - Tool call: ${tc.toolName}`);
         logger.debug(`    Args: ${JSON.stringify(args, logFilter, 2)}`);
       }

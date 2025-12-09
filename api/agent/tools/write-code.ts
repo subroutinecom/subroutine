@@ -24,7 +24,7 @@ const filterSchema = (k: any, v: any) => (k === "$schema" ? undefined : v);
 
 const DEFAULT_FILE_NAME = "source.ts";
 
-const logger = getLogger("api/agent/tools/write-code.ts", "debug");
+const logger = getLogger("api/agent/tools/write-code.ts", "info");
 
 // 1. Compiler options (minimal example)
 const compilerOptions: ts.CompilerOptions = {
@@ -178,12 +178,10 @@ export const createWriteCodeTool = (
   const toolSchema = options?.shouldGenerateInputs
     ? baseToolSchema.extend({
         inputValues: z
-          .record(z.unknown())
+          .record(z.record(z.string(), z.unknown()))
           .describe("Concrete values conforming to input type for immediate execution"),
       })
     : baseToolSchema;
-
-  logger.warn("ADDED INPUTS?", !!options?.shouldGenerateInputs);
 
   return {
     description: "Submit a generated TypeScript function with input and output schemas",
@@ -196,7 +194,7 @@ export const createWriteCodeTool = (
           "inputValues" in params ? (params.inputValues as Record<string, unknown>) : undefined;
 
         const validationContext = await buildValidationContext(options);
-        logger.info(
+        logger.debug(
           `Validating code (${code.length} chars) with context: ${JSON.stringify(validationContext)}`
         );
         const validation = await validateCode(code, validationContext);
@@ -255,7 +253,6 @@ export const createWriteCodeTool = (
         const typesCode = typesFile.getFullText();
         typesFile.delete();
         sourceFile.delete();
-        logger.warn(`Types code: ${typesCode}`);
 
         // Override the FS-related methods
         host.readFile = (path) => (path === DEFAULT_FILE_NAME ? typesCode : undefined);
@@ -284,15 +281,15 @@ export const createWriteCodeTool = (
         const inputsSchema = generator.createSchema("Inputs");
         const outputsSchema = generator.createSchema("Outputs");
 
-        if (options?.shouldGenerateInputs && "inputValues" in params) {
+        if (options?.shouldGenerateInputs && inputValues) {
+          logger.debug(`Validating inputs: ${JSON.stringify(params)}`);
           const ajv = new Ajv();
           const validate = ajv.compile(inputsSchema);
-          const valid = validate(params.inputValues);
+          const valid = validate(inputValues);
           if (!valid) {
-            logger.warn(`Generated inputs are invalid: ${JSON.stringify(validate.errors)}`);
             return {
               success: false,
-              message: `Generated inputs are invalid: ${JSON.stringify(validate.errors)}`,
+              message: `inputValues are invalid (${JSON.stringify(inputValues)}): ${JSON.stringify(validate.errors)}`,
             };
           }
         }
@@ -304,7 +301,7 @@ export const createWriteCodeTool = (
           outputsSchema: JSON.parse(JSON.stringify(outputsSchema, filterSchema)),
         };
         onCapture(result);
-        logger.info(`Success - code captured`);
+        logger.debug(`Success - code captured`);
         return {
           success: true,
           message: "Subroutine generated successfully",
