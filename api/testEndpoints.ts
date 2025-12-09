@@ -2,7 +2,6 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import { randomUUID } from "node:crypto";
 import { checkCustomRules } from "./agent/validation/ast-checker.ts";
 import { typeCheckCode } from "./agent/validation/type-checker.ts";
-import { validateCode } from "./agent/validation/validator.ts";
 import type { AuthContext } from "./middlewares/auth.ts";
 import { generatePatLinkUrl } from "./models/pat-link.ts";
 import { completeMockAuthorization } from "./services/mock-oauth.ts";
@@ -53,59 +52,6 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
 
     await completeMockAuthorization(state);
     return c.json({ success: true });
-  });
-
-  // Code validation endpoint - validates subroutine code without generating
-  // Placed in non-authenticated endpoints for testing purposes
-  app.post("/tests/validate-code", async (c) => {
-    let body: {
-      code?: string;
-      mcpIntegrationNames?: string[];
-      graphqlIntegrations?: Array<{ name: string; schema: string }>;
-      openapiIntegrations?: Array<{ name: string; spec: string; operations: Array<{ method: string; path: string }> }>;
-    };
-    try {
-      body = await c.req.json();
-    } catch {
-      return c.json(
-        {
-          error: {
-            code: "VALIDATION",
-            message: "Invalid JSON body",
-          },
-        },
-        400
-      );
-    }
-
-    if (!body.code || typeof body.code !== "string") {
-      return c.json(
-        {
-          error: {
-            code: "VALIDATION",
-            message: "code field is required",
-          },
-        },
-        400
-      );
-    }
-
-    // Build context for validation
-    const context =
-      body.mcpIntegrationNames || body.graphqlIntegrations || body.openapiIntegrations
-        ? {
-            mcpIntegrationNames: body.mcpIntegrationNames,
-            graphqlIntegrations: body.graphqlIntegrations,
-            openapiIntegrations: body.openapiIntegrations,
-          }
-        : undefined;
-
-    const result = await validateCode(body.code, context);
-
-    return c.json({
-      valid: result.valid,
-      errors: result.errors,
-    });
   });
 
   // TypeScript type checking endpoint - runs full type checking on subroutine code

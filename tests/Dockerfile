@@ -17,6 +17,8 @@ WORKDIR /app
 
 COPY ./tests ./tests
 COPY ./packages ./packages
+COPY ./api ./api
+COPY ./sandbox ./sandbox
 
 WORKDIR /app/tests
 

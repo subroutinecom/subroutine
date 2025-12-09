@@ -1,59 +1,12 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
-
-const API_BASE = "http://api.subroutine.internal";
+import { validateCode } from "./validator";
 
 type ValidationError = {
   rule: string;
   message: string;
   line?: number;
   column?: number;
-};
-
-type ValidationResult = {
-  valid: boolean;
-  errors: ValidationError[];
-};
-
-type GraphQLIntegrationSchema = {
-  name: string;
-  schema: string;
-};
-
-type OpenAPIIntegrationSchema = {
-  name: string;
-  spec: string;
-  operations: Array<{ method: string; path: string }>;
-};
-
-type ValidationContext = {
-  mcpIntegrationNames?: string[];
-  graphqlIntegrations?: GraphQLIntegrationSchema[];
-  openapiIntegrations?: OpenAPIIntegrationSchema[];
-};
-
-const validateCode = async (
-  code: string,
-  context?: ValidationContext
-): Promise<ValidationResult> => {
-  const response = await fetch(`${API_BASE}/tests/validate-code`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      code,
-      mcpIntegrationNames: context?.mcpIntegrationNames,
-      graphqlIntegrations: context?.graphqlIntegrations,
-      openapiIntegrations: context?.openapiIntegrations,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Validation request failed: ${response.status}`);
-  }
-
-  return response.json();
 };
 
 describe("AST-based Code Validation", () => {

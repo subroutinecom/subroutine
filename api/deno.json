@@ -8,6 +8,8 @@
     "@hono/hono": "jsr:@hono/hono@^4.10.5",
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^0.18.4",
     "@pothos/core": "npm:@pothos/core@^4.10.0",
+    "@std/expect": "jsr:@std/expect@^1.0.17",
+    "@std/testing": "jsr:@std/testing@^1.0.16",
     "@subroutine/integration-types": "../packages/integration-types/mod.ts",
     "@subroutinecom/config": "../packages/config/mod.ts",
     "globals": "npm:globals@^16.5.0",

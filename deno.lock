@@ -5922,6 +5922,8 @@
         "dependencies": [
           "jsr:@hono-rate-limiter/hono-rate-limiter@~0.4.2",
           "jsr:@hono/hono@^4.10.5",
+          "jsr:@std/expect@^1.0.17",
+          "jsr:@std/testing@^1.0.16",
           "npm:@ai-sdk/anthropic@^2.0.41",
           "npm:@ai-sdk/google-vertex@^3.0.85",
           "npm:@ai-sdk/google@^2.0.44",
