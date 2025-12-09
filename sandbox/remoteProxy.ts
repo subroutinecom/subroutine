@@ -48,15 +48,23 @@ type ProviderEntry = {
   instanceId?: string;
 };
 
+export type CallHook = (path: Path, args: readonly unknown[]) => void;
+
+export interface RemoteProxyOptions {
+  onCall?: CallHook;
+}
+
 export class RemoteProxyServer<T extends object = object> {
   #target: T;
   #instances: Map<string, object> = new Map();
   #providers: Map<string, ProviderEntry> = new Map();
+  #onCall?: CallHook;
   static readonly INSTANCE_PREFIX = "@@instance" as const;
 
-  constructor(target?: T) {
+  constructor(target?: T, options?: RemoteProxyOptions) {
     // When no implementation is provided, use an empty object and rely on providers
     this.#target = target ?? ({} as T);
+    this.#onCall = options?.onCall;
   }
 
   register(
@@ -85,6 +93,10 @@ export class RemoteProxyServer<T extends object = object> {
     try {
       const { path, args } = req;
 
+      if (this.#onCall) {
+        this.#onCall(path, args);
+      }
+
       // Determine context: root target or an existing instance
       let startIndex = 0;
       let ctx: unknown = this.#target;
@@ -108,6 +120,7 @@ export class RemoteProxyServer<T extends object = object> {
       if (typeof ctx !== "object" || ctx === null) {
         throw new Error(`Invalid call target for ${leafKey}`);
       }
+
       const fnCandidate = (ctx as Record<string, unknown>)[leafKey];
       if (!isFunction(fnCandidate)) {
         // Lazy provider fallback if calling a root-level virtual method

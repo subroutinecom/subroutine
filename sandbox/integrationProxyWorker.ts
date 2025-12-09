@@ -12,7 +12,12 @@ import type { GmailAPI } from "./integrations/gmail/types";
 import { createGraphQLClient, type GraphQLClient } from "./integrations/graphql/mod";
 import { createMcpClient } from "./integrations/mcp/mod";
 import { createOpenAPIClient, type OpenAPIClient } from "./integrations/openapi/mod";
-import { RemoteProxyServer, type CallRequest, type CallResponse } from "./remoteProxy";
+import {
+  RemoteProxyServer,
+  type CallRequest,
+  type CallResponse,
+  type Path,
+} from "./remoteProxy";
 import type { SandboxIntegrationPayload } from "./types.ts";
 
 interface S3API {
@@ -34,7 +39,11 @@ type WireMessage =
 let messagePort: MessagePort | null = null;
 
 const buildDefaultServer = (): RemoteProxyServer<object> => {
-  const defaultServer = new RemoteProxyServer<object>();
+  const defaultServer = new RemoteProxyServer<object>(undefined, {
+    onCall: (path: Path, args: readonly unknown[]) => {
+      console.log(`[IntegrationProxy] Call: ${path.join(".")} ${JSON.stringify(args)}`);
+    },
+  });
 
   const mockGmail: GmailAPI = {
     users: {
@@ -104,7 +113,11 @@ const buildServerForIntegrations = async (
   const buildStart = Date.now();
   console.log(`[IntegrationProxy] Building server for ${integrations.length} integrations`);
 
-  const server = new RemoteProxyServer<object>();
+  const server = new RemoteProxyServer<object>(undefined, {
+    onCall: (path: Path, args: readonly unknown[]) => {
+      console.log(`[IntegrationProxy] Call: ${path.join(".")} ${JSON.stringify(args)}`);
+    },
+  });
 
   // Store MCP clients by integration name for the getMcpClient getter
   const mcpClients = new Map<string, Client>();
