@@ -18,7 +18,7 @@ import { validateCode } from "../validation/validator.ts";
 const logger = getLogger("api/agent/tools/write-code.ts", "debug");
 
 type GenerateSubroutineOptions = {
-  executeImmediately?: boolean;
+  shouldGenerateInputs?: boolean;
   mcpContext?: McpContext;
   /** Specific integrations to use (MCP or GraphQL) - for provided mode, not discovery mode */
   integrations?: IntegrationInfo[];
@@ -161,10 +161,11 @@ export const createWriteCodeTool = (
       .describe("The TypeScript code that exports an async main function with proper types"),
   });
 
-  const toolSchema = options?.executeImmediately
+  const toolSchema = options?.shouldGenerateInputs
     ? baseToolSchema.extend({
-        immediateInputs: z
+        generatedInputs: z
           .record(z.unknown())
+          .optional()
           .describe("Concrete values conforming to inputsSchema for immediate execution"),
       })
     : baseToolSchema;
@@ -176,9 +177,9 @@ export const createWriteCodeTool = (
       logger.debug(`Called`);
       logger.debug(`Code length: ${params.code.length} chars`);
       const { inputsSchema, outputsSchema, code } = params;
-      const immediateInputs =
-        "immediateInputs" in params
-          ? (params.immediateInputs as Record<string, unknown>)
+      const generatedInputs =
+        "generatedInputs" in params
+          ? (params.generatedInputs as Record<string, unknown>)
           : undefined;
 
       const validationContext = await buildValidationContext(options);
@@ -200,7 +201,7 @@ export const createWriteCodeTool = (
         inputsSchema,
         outputsSchema,
         code,
-        immediateInputs,
+        generatedInputs,
       };
       onCapture(result);
       logger.info(`Success - code captured`);

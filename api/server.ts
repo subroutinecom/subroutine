@@ -809,10 +809,10 @@ const initialize = async () => {
           integrations,
           organizationId: auth.organizationId,
           useMock,
-          executeImmediately: true,
+          shouldGenerateInputs: true,
         });
         if (!generatedSubroutine.initialInputs) {
-          throw new Error("Generated subroutine did not include immediate inputs");
+          throw new Error("Generated subroutine did not include generated inputs");
         }
 
         const run = await runSubroutine({

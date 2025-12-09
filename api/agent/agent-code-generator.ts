@@ -127,7 +127,7 @@ export const ModelMessageSchema = z.union([
 ]);
 
 export const GenerateCodeOptionsSchema = z.object({
-  executeImmediately: z.boolean().optional(),
+  shouldGenerateInputs: z.boolean().optional(),
   /** First-party integrations with dedicated libraries (Gmail, Calendar, etc.) */
   firstPartyIntegrations: z.array(z.string()).optional(),
   /** Configurable integrations (MCP servers, GraphQL endpoints, or OpenAPI services) */
@@ -175,7 +175,7 @@ export const generateCode = async (
     const tools = createAgentTools(onCapture, capturedAuthRequirements, usedIntegrationIds, {
       mcpContext: options?.mcpContext,
       integrations: options?.integrations,
-      executeImmediately: options?.executeImmediately,
+      shouldGenerateInputs: options?.shouldGenerateInputs,
     });
 
     logger.debug(`Available tools: ${Object.keys(tools).join(", ")}`);
@@ -193,7 +193,7 @@ export const generateCode = async (
         {
           role: "assistant",
           content: CODE_GENERATION_USER_PROMPT(request, {
-            executeImmediately: options?.executeImmediately ?? false,
+            shouldGenerateInputs: options?.shouldGenerateInputs ?? false,
           }),
         },
       ],
@@ -232,7 +232,7 @@ export const generateCode = async (
     }
 
     // 6. Return Success
-    const { code, inputsSchema, outputsSchema, immediateInputs } = capturedResult;
+    const { code, inputsSchema, outputsSchema, generatedInputs } = capturedResult;
     const finalUsedIds = determineUsedIntegrations(code, usedIntegrationIds, options?.mcpContext);
 
     return {
@@ -240,7 +240,7 @@ export const generateCode = async (
       source: code,
       inputsSchema,
       outputsSchema,
-      immediateInputs,
+      generatedInputs,
       iterations: steps.length,
       usedIntegrationIds: finalUsedIds,
     };

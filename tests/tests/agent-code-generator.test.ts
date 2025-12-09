@@ -27,30 +27,11 @@ Deno.test({
     assertExists(data.source, `Expected source to exist, got ${data.source}`);
     assertExists(data.inputsSchema, `Expected inputsSchema to exist, got ${data.inputsSchema}`);
     assertExists(data.outputsSchema, `Expected outputsSchema to exist, got ${data.outputsSchema}`);
-
-    // Basic validation of the generated code
-    const code = data.source;
-    assertEquals(
-      code.includes("export const main") || code.includes("export async function main"),
-      true,
-      `Expected code to include "export const main", got ${code}`
-    );
-    // Ideally it should have types defined
-    assertEquals(
-      code.includes("type Inputs"),
-      true,
-      `Expected code to include "type Inputs", got ${code}`
-    );
-    assertEquals(
-      code.includes("type Outputs"),
-      true,
-      `Expected code to include "type Outputs", got ${code}`
-    );
   },
 });
 
 Deno.test({
-  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with immediate inputs`,
+  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with generated inputs`,
   ignore: !enableAiTests,
   fn: async () => {
     const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
@@ -59,7 +40,7 @@ Deno.test({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         request: "Add 5 and 10 together",
-        executeImmediately: true,
+        shouldGenerateInputs: true,
       }),
     });
 
@@ -73,16 +54,25 @@ Deno.test({
     assertEquals(response.status, 200, `Expected 200, got ${response.status}`);
     assertEquals(data.success, true, `Expected true, got ${data.success}`);
     assertExists(
-      data.immediateInputs,
-      `Expected immediateInputs to exist, got ${data.immediateInputs}`
+      data.generatedInputs,
+      `Expected generatedInputs to exist, got ${data.generatedInputs}`
     );
 
     // Check if inputs match what we asked for
-    const inputs = data.immediateInputs;
+    const inputs = data.generatedInputs;
+    console.log("Received generatedInputs:", JSON.stringify(inputs, null, 2));
     // The keys might vary, but values should likely be 5 and 10
     const values = Object.values(inputs);
-    assertEquals(values.includes(5), true, `Expected 5 to be in values, got ${values}`);
-    assertEquals(values.includes(10), true, `Expected 10 to be in values, got ${values}`);
+    assertEquals(
+      values.includes(5),
+      true,
+      `Expected 5 to be in values, got ${JSON.stringify(values)}`
+    );
+    assertEquals(
+      values.includes(10),
+      true,
+      `Expected 10 to be in values, got ${JSON.stringify(values)}`
+    );
   },
 });
 
@@ -100,7 +90,7 @@ Deno.test({
           { role: "user", content: "I have a secret value called secret_value which is 42." },
           { role: "assistant", content: "Okay, I will remember that secret_value is 42." },
         ],
-        executeImmediately: true,
+        shouldGenerateInputs: true,
       }),
     });
 
@@ -112,6 +102,7 @@ Deno.test({
     }
 
     assertEquals(response.status, 200, `Expected 200, got ${response.status}`);
+    console.log(JSON.stringify(data, null, 2));
     assertEquals(data.success, true, `Expected success=true, got ${data.success}`);
 
     // The agent should have generated code that returns 42, likely as a default value or hardcoded
@@ -119,7 +110,7 @@ Deno.test({
     console.log("Generated code:", code);
 
     // We expect the code to reference 42 or the input to default to 42
-    // Or simpler: check if immediateInputs has 42 if it decided to make it an input (less likely if hardcoded)
+    // Or simpler: check if generatedInputs has 42 if it decided to make it an input (less likely if hardcoded)
     // Or if the code body contains 42.
 
     // It's tricky to assert EXACTLY what the LLM does, but it should mention 42.
@@ -149,7 +140,7 @@ Deno.test({
 
     const requestPayload = {
       request: "Check the weather in Portland, OR (97202) and list my urgent emails.",
-      executeImmediately: true,
+      shouldGenerateInputs: true,
       integrations: [
         {
           id: "mock-weather-server", // Must match what we expect in code

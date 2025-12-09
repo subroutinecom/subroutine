@@ -359,14 +359,14 @@ export async function main(inputs: Inputs, { integrations }: { integrations: Int
 };
 
 type PromptOptions = {
-  executeImmediately?: boolean;
+  shouldGenerateInputs?: boolean;
 };
 
 export const CODE_GENERATION_USER_PROMPT = (request: string, options?: PromptOptions): string => {
   let prompt = `Generate a TypeScript subroutine for: ${request}`;
 
-  if (options?.executeImmediately) {
-    prompt += `\n\nAdditionally, produce an "immediateInputs" JSON object that satisfies your Inputs schema and can be used to execute main right away without further clarification. Populate every required field with sensible defaults inferred from the request.`;
+  if (options?.shouldGenerateInputs) {
+    prompt += `\n\nAdditionally, produce an "generatedInputs" JSON object that satisfies your Inputs schema and can be used to execute main right away without further clarification. Populate every required field with sensible defaults inferred from the request.`;
   }
 
   return prompt;

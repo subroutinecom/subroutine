@@ -30,7 +30,7 @@ export type GenerateSubroutineRequest = {
   viewerId: string;
   integrations?: string[];
   useMock?: boolean;
-  executeImmediately?: boolean;
+  shouldGenerateInputs?: boolean;
 };
 
 /**
@@ -93,7 +93,7 @@ export const generateSubroutine = async (
   if (params.useMock) {
     logger.info(`Using mock code generation for "${params.request}" (requested via useMock flag)`);
     source = generateMockCode(params.request);
-    if (params.executeImmediately) {
+    if (params.shouldGenerateInputs) {
       initialInputs = {};
     }
   } else {
@@ -127,7 +127,7 @@ export const generateSubroutine = async (
     };
 
     const result = await generateCode(model, params.request, {
-      executeImmediately: params.executeImmediately ?? false,
+      shouldGenerateInputs: params.shouldGenerateInputs ?? false,
       firstPartyIntegrations: params.integrations ?? [],
       integrations,
       mcpContext,
@@ -140,9 +140,9 @@ export const generateSubroutine = async (
     source = result.source;
     inputsSchema = result.inputsSchema;
     outputsSchema = result.outputsSchema;
-    initialInputs = result.immediateInputs;
-    if (params.executeImmediately && !initialInputs) {
-      throw new Error("Generator did not provide immediate inputs for execution");
+    initialInputs = result.generatedInputs;
+    if (params.shouldGenerateInputs && !initialInputs) {
+      throw new Error("Generator did not provide generated inputs for execution");
     }
 
     // In discovery mode, merge any integrations discovered during code generation
@@ -378,7 +378,7 @@ export const executeRequest = async (
     integrations: params.integrations,
     organizationId: params.organizationId,
     useMock: params.useMock,
-    executeImmediately: true,
+    shouldGenerateInputs: true,
   });
 
   if (!subroutine.initialInputs) {
