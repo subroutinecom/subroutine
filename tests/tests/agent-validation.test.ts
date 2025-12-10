@@ -556,3 +556,25 @@ Deno.test.only("Validator - generic-integrations-type-check", async (t) => {
     assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
   });
 });
+
+Deno.test.only("Validator - explicit json-schema-to-ts usage", async (t) => {
+  await t.step("Negative: Invalid type assignment", async () => {
+    const code = `
+      import type { FromSchema } from "json-schema-to-ts";
+
+      const schema = {
+        type: "object",
+        properties: { foo: { type: "string" } },
+        required: ["foo"],
+        additionalProperties: false,
+      } as const;
+
+      type MyType = FromSchema<typeof schema>;
+
+      // This should fail because 'foo' expects string, got number
+      const invalid: MyType = { foo: 123 };
+    `;
+    const result = await validateCodeViaApi(code);
+    assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
+  });
+});
