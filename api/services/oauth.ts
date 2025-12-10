@@ -311,7 +311,7 @@ export const handleOAuthCallback = async (params: {
 
     const TEN_MINUTES = 10 * 60 * 1000;
     if (timeDiff > TEN_MINUTES) {
-      logger.error("State expired - time diff:", Math.floor(timeDiff / 1000), "seconds");
+      logger.error(`State expired - time diff: ${Math.floor(timeDiff / 1000)} seconds`);
       return {
         success: false,
         error: "Authorization state expired. Please try again.",

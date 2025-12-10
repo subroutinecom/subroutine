@@ -13,6 +13,7 @@
     "graphql-request": "npm:graphql-request@^7.3.3",
     "graphql-tag": "npm:graphql-tag@^2.12.6",
     "graphql-yoga": "npm:graphql-yoga@^5.10.13",
+    "json-schema-to-ts": "npm:json-schema-to-ts@^3.1.1",
     "tough-cookie": "npm:tough-cookie@^6.0.0",
     "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
     "@hono/hono": "jsr:@hono/hono@^4.10.5",

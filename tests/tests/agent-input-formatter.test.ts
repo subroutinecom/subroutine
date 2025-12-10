@@ -12,6 +12,7 @@ Deno.test({
       y: z.coerce.number(),
       operation: z.enum(["add", "subtract", "multiply", "divide"]),
     });
+    type Args = z.infer<typeof argsSchema>;
 
     const response = await fetch("http://api.subroutine.internal/api/dev/input-format", {
       method: "POST",

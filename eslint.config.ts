@@ -57,6 +57,7 @@ export default tseslint.config([
     rules: {
       "local/no-console": "error",
       "local/logger-name-match": "error",
+      "local/logger-arg-pattern": "error",
     },
   },
 ]);
