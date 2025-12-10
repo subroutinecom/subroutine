@@ -104,7 +104,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
 
     const integrationResult = await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "gmail",
-      name: `Gmail Integration ${crypto.randomUUID()}`,
+      name: `gmail-integration-${crypto.randomUUID()}`,
       authConfig: JSON.stringify(authConfig),
     });
 
@@ -172,7 +172,7 @@ describe("Subroutine integrations", { sanitizeOps: false, sanitizeResources: fal
 
     const integrationResult = await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "mock_oauth",
-      name: `Mock OAuth Integration ${crypto.randomUUID()}`,
+      name: `mock-oauth-integration-${crypto.randomUUID()}`,
       authConfig: JSON.stringify(authConfig),
     });
 

@@ -126,14 +126,14 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     // 1. Create integration
     const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "github",
-      name: "Test GitHub Integration",
+      name: "test-github-integration",
       authConfig: JSON.stringify(authConfig),
     });
 
     expect(createResult.createIntegration).toBeDefined();
     expect(createResult.createIntegration.id).toBeDefined();
     expect(createResult.createIntegration.provider).toBe("github");
-    expect(createResult.createIntegration.name).toBe("Test GitHub Integration");
+    expect(createResult.createIntegration.name).toBe("test-github-integration");
     expect(createResult.createIntegration.enabled).toBe(true);
 
     const integrationId = createResult.createIntegration.id;
@@ -162,13 +162,13 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     // 4. Update integration
     const updateResult: any = await graphqlClient.request(UPDATE_INTEGRATION, {
       id: integrationId,
-      name: "Updated GitHub Integration",
+      name: "updated-github-integration",
       enabled: false,
     });
 
     expect(updateResult.updateIntegration).toBeDefined();
     expect(updateResult.updateIntegration.id).toBe(integrationId);
-    expect(updateResult.updateIntegration.name).toBe("Updated GitHub Integration");
+    expect(updateResult.updateIntegration.name).toBe("updated-github-integration");
     expect(updateResult.updateIntegration.enabled).toBe(false);
 
     // 5. Delete integration
@@ -255,7 +255,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const createResult: any = await graphqlClient1.request(CREATE_INTEGRATION, {
       provider: "github",
-      name: "Org 1 Integration",
+      name: "org-1-integration",
       authConfig: JSON.stringify(authConfig),
     });
 
@@ -321,7 +321,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     try {
       await graphqlClient.request(CREATE_INTEGRATION, {
         provider: "invalid-provider",
-        name: "Test Integration",
+        name: "test-integration",
         authConfig: JSON.stringify(authConfig),
       });
       throw new Error("Should have thrown error");
@@ -365,14 +365,14 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "mcp",
-      name: "Viewer-Scoped PAT MCP Integration",
+      name: "viewer-scoped-pat-mcp-integration",
       authConfig: JSON.stringify(authConfig),
     });
 
     expect(createResult.createIntegration).toBeDefined();
     expect(createResult.createIntegration.id).toBeDefined();
     expect(createResult.createIntegration.provider).toBe("mcp");
-    expect(createResult.createIntegration.name).toBe("Viewer-Scoped PAT MCP Integration");
+    expect(createResult.createIntegration.name).toBe("viewer-scoped-pat-mcp-integration");
     expect(createResult.createIntegration.enabled).toBe(true);
 
     // Verify authConfig is returned correctly
@@ -420,7 +420,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     try {
       await graphqlClient.request(CREATE_INTEGRATION, {
         provider: "mcp",
-        name: "Org-Level API Key MCP Integration",
+        name: "org-level-api-key-mcp-integration",
         authConfig: JSON.stringify(authConfig),
       });
       throw new Error("Should have thrown error");
@@ -462,14 +462,14 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "graphql",
-      name: "Public GraphQL API",
+      name: "public-graphql-api",
       authConfig: JSON.stringify(authConfig),
     });
 
     expect(createResult.createIntegration).toBeDefined();
     expect(createResult.createIntegration.id).toBeDefined();
     expect(createResult.createIntegration.provider).toBe("graphql");
-    expect(createResult.createIntegration.name).toBe("Public GraphQL API");
+    expect(createResult.createIntegration.name).toBe("public-graphql-api");
     expect(createResult.createIntegration.enabled).toBe(true);
 
     const returnedAuthConfig = JSON.parse(createResult.createIntegration.authConfig);
@@ -511,7 +511,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "graphql",
-      name: "GraphQL with Org API Key",
+      name: "graphql-with-org-api-key",
       authConfig: JSON.stringify(authConfig),
     });
 
@@ -560,7 +560,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "graphql",
-      name: "GraphQL with Viewer PAT",
+      name: "graphql-with-viewer-pat",
       authConfig: JSON.stringify(authConfig),
     });
 
@@ -611,7 +611,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "graphql",
-      name: "GraphQL with OAuth",
+      name: "graphql-with-oauth",
       authConfig: JSON.stringify(authConfig),
     });
 
@@ -662,7 +662,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
 
     const createResult: any = await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "graphql",
-      name: "GraphQL with Custom Headers",
+      name: "graphql-with-custom-headers",
       authConfig: JSON.stringify(authConfig),
     });
 
@@ -703,7 +703,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     try {
       await graphqlClient.request(CREATE_INTEGRATION, {
         provider: "graphql",
-        name: "Invalid GraphQL Integration",
+        name: "invalid-graphql-integration",
         authConfig: JSON.stringify(authConfig),
       });
       throw new Error("Should have thrown error");
@@ -740,7 +740,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     try {
       await graphqlClient.request(CREATE_INTEGRATION, {
         provider: "graphql",
-        name: "Invalid GraphQL Integration",
+        name: "invalid-graphql-integration",
         authConfig: JSON.stringify(authConfig),
       });
       throw new Error("Should have thrown error");
@@ -783,7 +783,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     try {
       await graphqlClient.request(CREATE_INTEGRATION, {
         provider: "graphql",
-        name: "Invalid GraphQL Integration",
+        name: "invalid-graphql-integration",
         authConfig: JSON.stringify(authConfig),
       });
       throw new Error("Should have thrown error");
@@ -825,7 +825,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     try {
       await graphqlClient.request(CREATE_INTEGRATION, {
         provider: "graphql",
-        name: "Invalid GraphQL Integration",
+        name: "invalid-graphql-integration",
         authConfig: JSON.stringify(authConfig),
       });
       throw new Error("Should have thrown error");
@@ -869,7 +869,7 @@ describe("Integrations GraphQL API", { sanitizeOps: false, sanitizeResources: fa
     try {
       await graphqlClient.request(CREATE_INTEGRATION, {
         provider: "graphql",
-        name: "Invalid GraphQL Integration",
+        name: "invalid-graphql-integration",
         authConfig: JSON.stringify(authConfig),
       });
       throw new Error("Should have thrown error");

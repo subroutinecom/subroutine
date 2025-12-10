@@ -1,6 +1,8 @@
 import { nanoid } from "nanoid";
+import { sql } from "kysely";
 import { db } from "../db/index.ts";
 import type { IntegrationTable } from "../db/schema.ts";
+import { validateIntegrationName } from "../validation/integration-name";
 import type {
   AuthStrategy,
   IntegrationProvider,
@@ -388,6 +390,11 @@ export const createIntegration = async (
     throw new Error(`Invalid provider: ${params.provider}`);
   }
 
+  const nameValidation = validateIntegrationName(params.name);
+  if (!nameValidation.valid) {
+    throw new Error(nameValidation.error);
+  }
+
   validateIntegrationConfig(params.authConfig);
   const id = nanoid();
   const now = new Date().toISOString();
@@ -493,6 +500,10 @@ export const updateIntegration = async (
   };
 
   if (params.name !== undefined) {
+    const nameValidation = validateIntegrationName(params.name);
+    if (!nameValidation.valid) {
+      throw new Error(nameValidation.error);
+    }
     updateValues.name = params.name;
   }
 
@@ -542,6 +553,11 @@ export type CreateDynamicIntegrationRequest = {
 export const createDynamicIntegration = async (
   params: CreateDynamicIntegrationRequest
 ): Promise<IntegrationWithConfig> => {
+  const nameValidation = validateIntegrationName(params.name);
+  if (!nameValidation.valid) {
+    throw new Error(nameValidation.error);
+  }
+
   validateMcpConfig(params.authConfig);
 
   const id = nanoid();
@@ -634,7 +650,7 @@ export const getIntegrationByName = async (
   const row = await db
     .selectFrom("integration")
     .selectAll()
-    .where("name", "=", name)
+    .where(sql`LOWER(name)`, "=", name.toLowerCase())
     .where("organizationId", "=", organizationId)
     .where("enabled", "=", true)
     .executeTakeFirst();
