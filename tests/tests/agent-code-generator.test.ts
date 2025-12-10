@@ -259,7 +259,7 @@ Deno.test({
   },
 });
 
-Deno.test.only({
+Deno.test({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API - Coercion Test (Simple String)`,
   ignore: !enableAiTests,
   fn: async () => {

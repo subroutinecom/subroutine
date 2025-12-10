@@ -514,7 +514,7 @@ Deno.test("Validator - agent/no-undefined-references", async (t) => {
   });
 });
 
-Deno.test.only("Validator - json-schema-to-ts usage", async (t) => {
+Deno.test("Validator - json-schema-to-ts usage", async (t) => {
   await t.step("Negative: Invalid type assignment", async () => {
     const code = `
       import type { Integrations } from "@subroutine/integration-types";
@@ -535,7 +535,6 @@ Deno.test.only("Validator - json-schema-to-ts usage", async (t) => {
       export async function main(inputs: Inputs, integrations: Integrations) {
         // This should fail because 'foo' expects string, got number
         const invalid: MyType = { foo: 123 };
-        
         return {};
       }
     `;
@@ -543,44 +542,82 @@ Deno.test.only("Validator - json-schema-to-ts usage", async (t) => {
     console.log(JSON.stringify(result, null, 2));
     assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
   });
+});
 
-  await t.step("Negative: invalid tool arguments with generic type", async () => {
+Deno.test("Validator - simple-type-check", async (t) => {
+  await t.step("Negative: Invalid assignment to SimpleTestType", async () => {
     const code = `
-      import type { Integrations } from "@subroutine/integration-types";
-
-      const MyShape = {
-        mcp: {
-          "weather": {
-             getForecast: {
-               inputSchema: {
-                 type: "object",
-                 properties: { city: { type: "string" } },
-                 required: ["city"],
-                 additionalProperties: false
-               } as const
-             }
-          }
-        }
-      } as const;
+      import type { Integrations, SimpleTestType } from "@subroutine/integration-types";
 
       export type Inputs = {};
       export type Outputs = {};
 
-      // Use the generic type!
-      export async function main(inputs: Inputs, integrations: Integrations<typeof MyShape>) {
-          const client = await integrations.getMcpClient("weather");
-
-          // This should error because 'city' expects string, got number
-          await client.callTool({
-            name: "getForecast",
-            arguments: { city: 123 }
-          });
-
+      export async function main(inputs: Inputs, integrations: Integrations) {
+          const x: SimpleTestType = { foo: 123 }; // Error: foo expects string
           return {};
       }
     `;
-    const result = await validateCodeViaApi(code, { mcpIntegrationNames: ["weather"] });
+    const result = await validateCodeViaApi(code);
     console.log(JSON.stringify(result, null, 2));
     assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
+  });
+});
+
+Deno.test("Validator - Integrations check", async (t) => {
+  await t.step("Negative: Invalid assignment to SimpleTestType", async () => {
+    const code = `
+      import type { Integrations } from "@subroutine/integration-types";
+
+      export type Inputs = {};
+      export type Outputs = {};
+
+      export async function main(inputs: Inputs, integrations: Integrations<{
+        mcp: {
+          weather: {
+            getForecast: {
+              inputSchema: {
+                type: "object",
+                properties: {
+                  location: {
+                    type: "string",
+                    description: "City name or coordinates",
+                  },
+                  days: {
+                    type: "number",
+                    minimum: 1,
+                    maximum: 7,
+                    description: "Number of days",
+                  },
+                },
+                required: ["location"],
+                additionalProperties: false,
+                $schema: "http://json-schema.org/draft-07/schema#",
+              },
+              outputSchema: {
+                type: "object",
+                properties: {
+                  temperature: { type: "number" },
+                  condition: { type: "string" },
+                },
+                required: ["temperature", "condition"],
+                additionalProperties: false,
+                $schema: "http://json-schema.org/draft-07/schema#",
+              },
+            },
+          },
+        },
+      }>) { 
+        const weather = await integrations.getMcpClient("weather");
+        const forecast = await weather.callTool("getForecast", { location: "New York", days: "3" });
+        return { forecast };
+      }
+    `;
+    const result = await validateCodeViaApi(code);
+    console.log(JSON.stringify(result, null, 2));
+    assertError(
+      result,
+      "typescript-typecheck",
+      "Argument of type 'string' is not assignable to parameter of type '{ name: \"getForecast\"; arguments: { days?: number | undefined; location: string; }; }'."
+    );
   });
 });

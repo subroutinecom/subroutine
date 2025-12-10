@@ -466,3 +466,7 @@ export interface GithubClient {
   me(): Promise<{ login: string }>;
   // Add more GitHub methods as needed
 }
+
+export type SimpleTestType = {
+  foo: string;
+};
