@@ -54,6 +54,7 @@ export const validateWithEslint = (code: string, context?: ValidationContext): V
     message: msg.message,
     line: msg.line,
     column: msg.column,
+    source: "eslint",
   }));
 
   return {

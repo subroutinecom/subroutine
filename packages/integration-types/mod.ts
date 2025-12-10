@@ -43,7 +43,7 @@ export type TypedMcpClient<ServerShape> = Omit<Client, "callTool"> & {
     },
     resultSchema?: any // We don't have output schema in Shape yet widely but keeping for compat
   ): Promise<any>; // Returning any for result as we focus on input typing first
-} & Client; // Intersecting with Client to keep other methods available but typed callTool takes precedence
+};
 
 export interface GraphQLClient {
   request<TData = unknown, TVariables extends Record<string, unknown> = Record<string, unknown>>(
@@ -69,3 +69,7 @@ export interface OpenAPIClient {
 // Re-export types that subroutine code commonly uses
 export type { Client as McpClient } from "@modelcontextprotocol/sdk/client";
 export type { calendar_v3, gmail_v1 } from "googleapis";
+
+export type SimpleTestType = {
+  foo: string;
+};

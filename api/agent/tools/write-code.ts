@@ -197,9 +197,16 @@ export const createWriteCodeTool = (
         const validation = await validateCode(code, validationContext);
 
         if (!validation.valid) {
-          const errorMessages = validation.errors.map((e) =>
-            e.line ? `Line ${e.line}: ${e.message}` : e.message
-          );
+          const errorMessages = validation.errors.map((e) => {
+            const loc = e.line ? `Line ${e.line}` : "Global";
+            let attribution = "";
+            if (e.source === "eslint" && e.rule) {
+              attribution = ` [${e.source}: ${e.rule}]`;
+            } else if (e.source) {
+              attribution = ` [${e.source}]`;
+            }
+            return `${loc}: ${e.message}${attribution}`;
+          });
           logger.warn("Validation failed", { errorMessages, code });
           return {
             success: false,

@@ -179,8 +179,18 @@ CRITICAL - getMcpClient REQUIREMENTS:
 USAGE:
 1. Call inspectIntegration({ integrationName: "${exampleName}" }) to discover tools
 2. const client = await integrations.getMcpClient("${exampleName}");  // Use exact name from Available list
-3. const result = await client.callTool({ name: "tool_name", arguments: {...} });
-4. const data = JSON.parse(result.content[0]?.text || "{}");
+3. const rawResult = await client.callTool({ name: "tool_name", arguments: {...} }) // Call the tool with the exact name from the tools list and get an unknown response shape
+4. const result = await integrations.coerce( // coerce the result to a json schema (which will also create an accomponying ts type)
+  {
+   type: "object",
+   properties: {
+     name: { type: "string" },
+     email: { type: "string", format: "email" },
+   },
+   required: ["name", "email"],
+ } as const,
+  rawResult
+  );
 `;
   }
 
@@ -312,7 +322,6 @@ TECHNICAL REQUIREMENTS:
 5. Handle edge cases with proper validation and error messages
 6. Use the actual types you define - no any types
 7. NEVER use fetch() or make direct network requests - use integrations instead${hasAnyIntegrations ? "\n8. Use the available integrations to interact with external services" : ""}
-9. You may import "zod" from "zod" if you need runtime validation (e.g. import { z } from "zod";)
 ${sandboxRestrictions}
 ${toolGuidance}
 ${standardIntegrationsSection}

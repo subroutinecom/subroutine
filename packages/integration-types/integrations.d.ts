@@ -48,6 +48,12 @@ export interface Integrations<Config extends IntegrationConfig = IntegrationConf
 
   /** Get an OpenAPI client by integration name */
   getOpenAPIClient(name: string): Promise<OpenAPIClient>;
+
+  /**
+   * Coerces a value to match a given JSON Schema.
+   * If strict validation fails, uses an agentic fallback to coerce the data.
+   */
+  coerce<S extends object>(schema: S, value: unknown): Promise<any>;
 }
 
 // ============================================================================
@@ -460,3 +466,7 @@ export interface GithubClient {
   me(): Promise<{ login: string }>;
   // Add more GitHub methods as needed
 }
+
+export type SimpleTestType = {
+  foo: string;
+};

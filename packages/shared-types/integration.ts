@@ -64,6 +64,12 @@ export interface SandboxMcpConfig {
   apiKey?: string;
   /** Access token for bearer_oauth auth strategy (from viewer's connected account) */
   accessToken?: string;
+  /**
+   * Schemas for the tools provided by this MCP server.
+   * Key is the tool name, value is the JSON schema for the arguments.
+   * Used for validation in the sandbox.
+   */
+  toolSchemas?: Record<string, object>;
 }
 
 /**
@@ -95,4 +101,19 @@ export interface SandboxOpenAPIConfig {
   specVersion?: "3.0" | "3.1";
   /** Timestamp when the spec was last fetched */
   specFetchedAt?: number;
+}
+
+/**
+ * Interface definition for the 'integrations' object available in the sandbox.
+ * This is what the user's code will interact with.
+ */
+export interface Integrations {
+  getMcpClient(name: string): Promise<any>;
+  getGraphQLClient(name: string): Promise<any>;
+  getOpenAPIClient(name: string): Promise<any>;
+  /**
+   * Coerces a value to match a given JSON Schema.
+   * If strict validation fails, uses an agentic fallback to coerce the data.
+   */
+  coerce<S extends object>(schema: S, value: unknown): Promise<any>;
 }

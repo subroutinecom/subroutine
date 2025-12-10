@@ -1,6 +1,6 @@
 import { Activity, ArrowRight, Plug, Sparkles, TrendingUp, Users } from "lucide-react";
-import { useAuth } from "~/components/providers/AuthProvider";
 import { Link } from "react-router";
+import { useAuth } from "../../components/providers/AuthProvider.tsx";
 
 export function meta() {
   return [
@@ -75,7 +75,9 @@ export default function Home() {
         <h1 className="text-5xl font-bold text-base-content">
           Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
         </h1>
-        <p className="text-xl text-base-content/60">{activeOrganization?.name}</p>
+        <p className="text-xl text-base-content/60">
+          {activeOrganization?.name} <span className="text-sm">({activeOrganization?.id})</span>
+        </p>
       </div>
 
       {/* Stats Grid */}

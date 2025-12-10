@@ -1,6 +1,7 @@
 /// <reference lib="deno.worker" />
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import Ajv from "ajv";
 import {
   createCalendarClient,
   type CalendarConfig,
@@ -145,6 +146,8 @@ const buildServerForIntegrations = async (
 ): Promise<RemoteProxyServer<object>> => {
   const buildStart = Date.now();
   console.log(`[IntegrationProxy] Building server for ${integrations.length} integrations`);
+  // biome-ignore lint/suspicious/noExplicitAny: Ajv import interop
+  const ajv = new (Ajv as any)({ strict: false });
 
   const server = new RemoteProxyServer<object>(undefined, {
     onCall: (path: Path, args: readonly unknown[], metadata?: Record<string, unknown>) => {
@@ -183,6 +186,48 @@ const buildServerForIntegrations = async (
         const client = await createMcpClient(mcpConfig, {
           clientName: `subroutine-${integration.name}`,
         });
+
+        // Add validation interceptor if schemas are present
+        if (mcpConfig.toolSchemas) {
+          const schemas = mcpConfig.toolSchemas;
+          const originalCallTool = client.callTool.bind(client);
+
+          // biome-ignore lint/suspicious/noExplicitAny: Wrapping generic MCP client
+          client.callTool = async (params: any, ...args: any[]) => {
+            const toolName = params.name;
+            const toolArgs = params.arguments || {};
+
+            if (schemas[toolName]) {
+              console.log(
+                `[IntegrationProxy] Validating inputs for tool '${toolName}' in integration '${integration.name}'`
+              );
+              try {
+                // Ensure schema is valid before compiling (some schemas might use newer features or have issues)
+                const validate = ajv.compile(schemas[toolName]);
+                if (!validate(toolArgs)) {
+                  const errorText = ajv.errorsText(validate.errors);
+                  console.error(
+                    `[IntegrationProxy] Validation failed for '${toolName}': ${errorText}`
+                  );
+                  throw new Error(`Invalid arguments for tool '${toolName}': ${errorText}`);
+                }
+              } catch (err: unknown) {
+                // If validation setup fails (e.g. invalid schema), we log but allow call (or should we fail?)
+                // User requirement implies strict validation. failure to compile schema should probably not block?
+                // But failure to validate args MUST block.
+                // Let's assume schema is valid JSON Schema.
+                if (err instanceof Error && err.message.startsWith("Invalid arguments")) {
+                  throw err;
+                }
+                console.warn(
+                  `[IntegrationProxy] Schema compilation failed for '${toolName}': ${err}`
+                );
+              }
+            }
+            return originalCallTool(params, ...args);
+          };
+        }
+
         mcpClients.set(integration.name, client);
         console.log(
           `[IntegrationProxy] MCP '${integration.name}' client created after ${Date.now() - integrationStart}ms`
@@ -437,6 +482,66 @@ const buildServerForIntegrations = async (
         }
       })
   );
+
+  // Register coerce helper
+  server.register("coerce", async (schema: unknown, value: unknown) => {
+    // 1. Try strict validation first
+    try {
+      // AJV needs schema to be an object, but we receive it from wire.
+      // We ensure it's cloned/parsed correctly.
+      let schemaObj = typeof schema === "string" ? JSON.parse(schema) : schema;
+
+      // Helper to strip unsupported keywords from schema
+      const sanitizeSchema = (s: any): any => {
+        if (!s || typeof s !== "object") return s;
+        if (Array.isArray(s)) return s.map(sanitizeSchema);
+
+        const { format: _format, nullable: _nullable, ...rest } = s; // Strip format and nullable
+        const sanitized = { ...rest };
+
+        for (const key in sanitized) {
+          sanitized[key] = sanitizeSchema(sanitized[key]);
+        }
+        return sanitized;
+      };
+
+      schemaObj = sanitizeSchema(schemaObj);
+
+      const validate = ajv.compile(schemaObj);
+      if (validate(value)) {
+        return value as object;
+      }
+    } catch (err) {
+      console.warn(`[IntegrationProxy] Strict validation failed or schema error: ${err}`);
+      // Fall through to API coercion
+    }
+
+    // 2. Fallback to API coercion
+    console.log("[IntegrationProxy] Strict validation failed, falling back to API coercion");
+
+    const apiResponse = await fetch("http://api.subroutine.internal/api/dev/type-coerce", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input: value,
+        instructions: "Coerce the input to match the schema exactly.",
+        schema: typeof schema === "string" ? schema : JSON.stringify(schema),
+        mode: "json",
+      }),
+    });
+
+    if (!apiResponse.ok) {
+      const errorText = await apiResponse.text();
+      throw new Error(`Coercion API failed (${apiResponse.status}): ${errorText}`);
+    }
+
+    const data = await apiResponse.json();
+    if (!data.success) {
+      throw new Error(`Coercion failed: ${data.error}`);
+    }
+
+    return data.value;
+  });
 
   return server;
 };

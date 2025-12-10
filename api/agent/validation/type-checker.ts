@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { getLogger } from "../../utils/logger.ts";
 import type { ValidationError } from "./types.ts";
-const logger = getLogger("api/agent/validation/type-checker.ts");
+const _logger = getLogger("api/agent/validation/type-checker.ts");
 
 const getPaths = () => {
   const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -53,8 +53,6 @@ export const typeCheckCode = (code: string): TypeCheckResult => {
     },
   };
 
-  logger.info("Type checking with options:", compilerOptions);
-
   // Create a compiler host that serves our virtual file from memory
   const host = ts.createCompilerHost(compilerOptions);
   const originalGetSourceFile = host.getSourceFile;
@@ -82,6 +80,7 @@ export const typeCheckCode = (code: string): TypeCheckResult => {
       line: diagnostic.file
         ? diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start!).line + 1
         : 0,
+      source: "typescript-compiler",
     });
   }
 
