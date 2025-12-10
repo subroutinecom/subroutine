@@ -29,6 +29,11 @@ export interface Integrations<Config extends IntegrationConfig = IntegrationConf
   getPing(): Promise<{ ping(message: string): Promise<{ echo: string; timestamp: number }> }>;
   getGraphQLClient(name: string): Promise<GraphQLClient>;
   getOpenAPIClient(name: string): Promise<OpenAPIClient>;
+  /**
+   * Coerces a value to match a given JSON Schema.
+   * If strict validation fails, uses an agentic fallback to coerce the data.
+   */
+  coerce<S extends object>(schema: S, value: unknown): Promise<any>;
 }
 
 export type TypedMcpClient<ServerShape> = Omit<Client, "callTool"> & {

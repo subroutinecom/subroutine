@@ -276,6 +276,18 @@ ${standardDocs
 `
     : "";
 
+  const coerceDocumentation = `
+UTILITIES:
+- coerce(schema, someValue): Use integrations.coerce(schema, value) to force fuzzy data (strings, partial objects) into a strict shape defined by a JSON schema.
+  Example:
+  \`\`\`typescript
+  // Schema for { name: string, email: string }
+  const personSchema = { type: "object", properties: { ... } };
+  const result = await integrations.coerce(personSchema, "John Doe <john@example.com>");
+  // result is { name: "John Doe", email: "john@example.com" }
+  \`\`\`
+`;
+
   const dynamicIntegrationsSection = hasProvidedIntegrations
     ? `${getIntegrationDocs(providedIntegrations)}${getProvidedIntegrationsDocs(providedIntegrations)}`
     : getDiscoveryModeDocs();
@@ -315,6 +327,7 @@ TECHNICAL REQUIREMENTS:
 ${sandboxRestrictions}
 ${toolGuidance}
 ${standardIntegrationsSection}
+${coerceDocumentation}
 ${dynamicIntegrationsSection}
 
 TYPE DEFINITIONS (reference for available integration methods):
