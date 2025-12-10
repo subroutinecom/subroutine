@@ -179,8 +179,18 @@ CRITICAL - getMcpClient REQUIREMENTS:
 USAGE:
 1. Call inspectIntegration({ integrationName: "${exampleName}" }) to discover tools
 2. const client = await integrations.getMcpClient("${exampleName}");  // Use exact name from Available list
-3. const result = await client.callTool({ name: "tool_name", arguments: {...} });
-4. const data = JSON.parse(result.content[0]?.text || "{}");
+3. const rawResult = await client.callTool({ name: "tool_name", arguments: {...} }) // Call the tool with the exact name from the tools list and get an unknown response shape
+4. const result = await integrations.coerce( // coerce the result to a json schema (which will also create an accomponying ts type)
+  {
+   type: "object",
+   properties: {
+     name: { type: "string" },
+     email: { type: "string", format: "email" },
+   },
+   required: ["name", "email"],
+ } as const,
+  rawResult
+  );
 `;
   }
 
@@ -276,18 +286,6 @@ ${standardDocs
 `
     : "";
 
-  const coerceDocumentation = `
-UTILITIES:
-- coerce(schema, someValue): Use integrations.coerce(schema, value) to force fuzzy data (strings, partial objects) into a strict shape defined by a JSON schema.
-  Example:
-  \`\`\`typescript
-  // Schema for { name: string, email: string }
-  const personSchema = { type: "object", properties: { ... } };
-  const result = await integrations.coerce(personSchema, "John Doe <john@example.com>");
-  // result is { name: "John Doe", email: "john@example.com" }
-  \`\`\`
-`;
-
   const dynamicIntegrationsSection = hasProvidedIntegrations
     ? `${getIntegrationDocs(providedIntegrations)}${getProvidedIntegrationsDocs(providedIntegrations)}`
     : getDiscoveryModeDocs();
@@ -327,7 +325,6 @@ TECHNICAL REQUIREMENTS:
 ${sandboxRestrictions}
 ${toolGuidance}
 ${standardIntegrationsSection}
-${coerceDocumentation}
 ${dynamicIntegrationsSection}
 
 TYPE DEFINITIONS (reference for available integration methods):

@@ -489,7 +489,23 @@ const buildServerForIntegrations = async (
     try {
       // AJV needs schema to be an object, but we receive it from wire.
       // We ensure it's cloned/parsed correctly.
-      const schemaObj = typeof schema === "string" ? JSON.parse(schema) : schema;
+      let schemaObj = typeof schema === "string" ? JSON.parse(schema) : schema;
+
+      // Helper to strip unsupported keywords from schema
+      const sanitizeSchema = (s: any): any => {
+        if (!s || typeof s !== "object") return s;
+        if (Array.isArray(s)) return s.map(sanitizeSchema);
+
+        const { format: _format, nullable: _nullable, ...rest } = s; // Strip format and nullable
+        const sanitized = { ...rest };
+
+        for (const key in sanitized) {
+          sanitized[key] = sanitizeSchema(sanitized[key]);
+        }
+        return sanitized;
+      };
+
+      schemaObj = sanitizeSchema(schemaObj);
 
       const validate = ajv.compile(schemaObj);
       if (validate(value)) {

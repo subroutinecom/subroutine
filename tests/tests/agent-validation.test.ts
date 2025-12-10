@@ -514,49 +514,47 @@ Deno.test("Validator - agent/no-undefined-references", async (t) => {
   });
 });
 
-// Deno.test.only("Validator - generic-integrations-type-check", async (t) => {
-//   await t.step("Negative: invalid tool arguments with generic type", async () => {
-//     const code = `
-//       import type { Integrations } from "@subroutine/integration-types";
+Deno.test.only("Validator - json-schema-to-ts usage", async (t) => {
+  await t.step("Negative: invalid tool arguments with generic type", async () => {
+    const code = `
+      import type { Integrations } from "@subroutine/integration-types";
 
-//       const MyShape = {
-//         mcp: {
-//           "weather": {
-//              getForecast: {
-//                inputSchema: {
-//                  type: "object",
-//                  properties: { city: { type: "string" } },
-//                  required: ["city"],
-//                  additionalProperties: false
-//                } as const
-//              }
-//           }
-//         }
-//       } as const;
+      const MyShape = {
+        mcp: {
+          "weather": {
+             getForecast: {
+               inputSchema: {
+                 type: "object",
+                 properties: { city: { type: "string" } },
+                 required: ["city"],
+                 additionalProperties: false
+               } as const
+             }
+          }
+        }
+      } as const;
 
-//       export type Inputs = {};
-//       export type Outputs = {};
+      export type Inputs = {};
+      export type Outputs = {};
 
-//       // Use the generic type!
-//       export async function main(inputs: Inputs, integrations: Integrations<typeof MyShape>) {
-//           const client = await integrations.getMcpClient("weather");
+      // Use the generic type!
+      export async function main(inputs: Inputs, integrations: Integrations<typeof MyShape>) {
+          const client = await integrations.getMcpClient("weather");
 
-//           // This should error because 'city' expects string, got number
-//           await client.callTool({
-//             name: "getForecast",
-//             arguments: { city: 123 }
-//           });
+          // This should error because 'city' expects string, got number
+          await client.callTool({
+            name: "getForecast",
+            arguments: { city: 123 }
+          });
 
-//           return {};
-//       }
-//     `;
-//     const result = await validateCodeViaApi(code, { mcpIntegrationNames: ["weather"] });
-//     console.log(JSON.stringify(result, null, 2));
-//     assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
-//   });
-// });
+          return {};
+      }
+    `;
+    const result = await validateCodeViaApi(code, { mcpIntegrationNames: ["weather"] });
+    console.log(JSON.stringify(result, null, 2));
+    assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
+  });
 
-Deno.test.only("Validator - explicit json-schema-to-ts usage", async (t) => {
   await t.step("Negative: Invalid type assignment", async () => {
     const code = `
       import type { Integrations } from "@subroutine/integration-types";

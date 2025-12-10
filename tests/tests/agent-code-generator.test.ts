@@ -267,7 +267,7 @@ Deno.test.only({
 
     const requestPayload = {
       request:
-        "Parse this string 'Bob <bob@example.com>' into a structured object with name and email using integrations.coerce. Ensure the email is valid format 'email' in the schema.",
+        "Parse this string 'Bob <bob@example.com>' into a structured object with name and email, do not manually parse it, use the coerce integration to do it.",
       disableExecution: false,
       mcpContext: {
         organizationId: "test-org", // Mock ID
