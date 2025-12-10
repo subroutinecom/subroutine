@@ -2,7 +2,7 @@ import { z } from "@hono/zod-openapi";
 import type { LanguageModel, ModelMessage } from "ai";
 import { streamText } from "ai";
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../models/errors.ts";
-import { executeSandboxCode } from "../services/sandbox.ts";
+import { buildSandboxIntegrations, executeSandboxCode } from "../services/sandbox.ts";
 import { getLogger } from "../utils/logger.ts";
 import { formatInput } from "./agent-input-formatter.ts";
 import {
@@ -169,6 +169,7 @@ export const generateCode = async (
     let capturedResult: SubroutineCapture | null = null;
     const capturedAuthRequirements: AuthRequirement[] = [];
     const usedIntegrationIds: Set<string> = new Set();
+    const capturedSchemas = new Map<string, Record<string, object>>();
 
     const runId = options?.runId ?? crypto.randomUUID();
 
@@ -191,24 +192,33 @@ export const generateCode = async (
         }
 
         // 2. Execute in sandbox
+        // 2. Execute in sandbox
+        let sandboxIntegrations: Awaited<ReturnType<typeof buildSandboxIntegrations>> = [];
+
+        if (options?.mcpContext) {
+          const finalUsedIds = determineUsedIntegrations(
+            result.code,
+            usedIntegrationIds,
+            options.mcpContext
+          );
+
+          sandboxIntegrations = await buildSandboxIntegrations({
+            integrationIds: finalUsedIds,
+            organizationId: options.mcpContext.organizationId,
+            viewerId: options.mcpContext.viewerId,
+          });
+
+          // Inject captured schemas
+          for (const integration of sandboxIntegrations) {
+            if (integration.mcpConfig && capturedSchemas.has(integration.name)) {
+              integration.mcpConfig.toolSchemas = capturedSchemas.get(integration.name);
+            }
+          }
+        }
+
         const executionResult = await executeSandboxCode({
           code: result.code,
-          integrations: options?.integrations // Need to convert IntegrationInfo to SandboxIntegrationDefinition?
-            ? [] // TODO: We need to build sandbox integrations here if we have them
-            : [], // For now, let's assume no integrations for simple execution or rely on buildSandboxIntegrations if needed.
-          // WAIT - executeSandboxCode expects SandboxIntegrationDefinition[].
-          // The `integrations` option here is `IntegrationInfo[]`.
-          // We might need to use `buildSandboxIntegrations` or similar if we want to support integrations.
-          // For the scope of "fix broken code", usually it's logic errors.
-          // But if tools are used, we need them.
-          // Let's pass empty list for now as a safer step if we don't have the builders ready here,
-          // OR better: The previous code didn't execute, so it didn't need them.
-          // If we want real execution, we need real integration configs.
-          // `options.integrations` has type, id, name.
-          // `buildSandboxIntegrations` takes ids and fetches configs.
-          // If `options.integrations` came from discovery, we might not have full config here unless we fetch it.
-          // The `executeSandboxCode` function takes `SandboxIntegrationDefinition[]`.
-
+          integrations: sandboxIntegrations,
           inputs: inputResult.value as Record<string, unknown>,
           runId,
         });
@@ -232,6 +242,36 @@ export const generateCode = async (
       integrations: options?.integrations,
       disableExecution: options?.disableExecution,
     });
+
+    // Wrap inspectIntegration to capture schemas
+    // We do this here instead of inside createAgentTools to avoid cluttering specific tool logic with general agent state
+    if (
+      tools.inspectIntegration &&
+      typeof tools.inspectIntegration === "object" &&
+      "execute" in tools.inspectIntegration
+    ) {
+      const originalExecute = tools.inspectIntegration.execute as (params: {
+        integrationName: string;
+      }) => Promise<any>;
+
+      // biome-ignore lint/suspicious/noExplicitAny: Dynamic tool wrapping
+      (tools.inspectIntegration as any).execute = async (params: { integrationName: string }) => {
+        const result = await originalExecute(params);
+
+        if (result.success && result.type === "mcp" && result.tools) {
+          const schemaMap: Record<string, object> = {};
+          for (const tool of result.tools) {
+            if (tool.inputSchema) {
+              schemaMap[tool.name] = tool.inputSchema as object;
+            }
+          }
+          capturedSchemas.set(result.integrationName, schemaMap);
+          logger.debug(`Captured schemas for integration ${result.integrationName}`);
+        }
+
+        return result;
+      };
+    }
 
     logger.debug(`Available tools: ${Object.keys(tools).join(", ")}`);
 

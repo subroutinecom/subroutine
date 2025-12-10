@@ -1,6 +1,7 @@
 /// <reference lib="deno.worker" />
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import Ajv from "ajv";
 import {
   createCalendarClient,
   type CalendarConfig,
@@ -145,6 +146,8 @@ const buildServerForIntegrations = async (
 ): Promise<RemoteProxyServer<object>> => {
   const buildStart = Date.now();
   console.log(`[IntegrationProxy] Building server for ${integrations.length} integrations`);
+  // biome-ignore lint/suspicious/noExplicitAny: Ajv import interop
+  const ajv = new (Ajv as any)({ strict: false });
 
   const server = new RemoteProxyServer<object>(undefined, {
     onCall: (path: Path, args: readonly unknown[], metadata?: Record<string, unknown>) => {
@@ -183,6 +186,48 @@ const buildServerForIntegrations = async (
         const client = await createMcpClient(mcpConfig, {
           clientName: `subroutine-${integration.name}`,
         });
+
+        // Add validation interceptor if schemas are present
+        if (mcpConfig.toolSchemas) {
+          const schemas = mcpConfig.toolSchemas;
+          const originalCallTool = client.callTool.bind(client);
+
+          // biome-ignore lint/suspicious/noExplicitAny: Wrapping generic MCP client
+          client.callTool = async (params: any, ...args: any[]) => {
+            const toolName = params.name;
+            const toolArgs = params.arguments || {};
+
+            if (schemas[toolName]) {
+              console.log(
+                `[IntegrationProxy] Validating inputs for tool '${toolName}' in integration '${integration.name}'`
+              );
+              try {
+                // Ensure schema is valid before compiling (some schemas might use newer features or have issues)
+                const validate = ajv.compile(schemas[toolName]);
+                if (!validate(toolArgs)) {
+                  const errorText = ajv.errorsText(validate.errors);
+                  console.error(
+                    `[IntegrationProxy] Validation failed for '${toolName}': ${errorText}`
+                  );
+                  throw new Error(`Invalid arguments for tool '${toolName}': ${errorText}`);
+                }
+              } catch (err: unknown) {
+                // If validation setup fails (e.g. invalid schema), we log but allow call (or should we fail?)
+                // User requirement implies strict validation. failure to compile schema should probably not block?
+                // But failure to validate args MUST block.
+                // Let's assume schema is valid JSON Schema.
+                if (err instanceof Error && err.message.startsWith("Invalid arguments")) {
+                  throw err;
+                }
+                console.warn(
+                  `[IntegrationProxy] Schema compilation failed for '${toolName}': ${err}`
+                );
+              }
+            }
+            return originalCallTool(params, ...args);
+          };
+        }
+
         mcpClients.set(integration.name, client);
         console.log(
           `[IntegrationProxy] MCP '${integration.name}' client created after ${Date.now() - integrationStart}ms`

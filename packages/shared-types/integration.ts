@@ -64,6 +64,12 @@ export interface SandboxMcpConfig {
   apiKey?: string;
   /** Access token for bearer_oauth auth strategy (from viewer's connected account) */
   accessToken?: string;
+  /**
+   * Schemas for the tools provided by this MCP server.
+   * Key is the tool name, value is the JSON schema for the arguments.
+   * Used for validation in the sandbox.
+   */
+  toolSchemas?: Record<string, object>;
 }
 
 /**
