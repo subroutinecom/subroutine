@@ -1,8 +1,10 @@
 import type { JSONSchema7, LanguageModel, Schema } from "ai";
 import { jsonSchema, streamObject, zodSchema } from "ai";
 import type { z } from "zod";
+import { getLogger } from "../utils/logger.ts";
 import { createModel } from "./utils/providers.ts";
 import { Capability } from "./utils/types.ts";
+const logger = getLogger("api/agent/agent-input-formatter.ts");
 
 type SchemaType<S extends z.ZodTypeAny | string> = S extends z.ZodType<infer Out> ? Out : unknown;
 
@@ -73,6 +75,13 @@ export const formatInput = async <S extends z.ZodTypeAny | string>(
 
   let schemaForModel: Schema<SchemaType<S>>;
   try {
+    // logger.debug(`Materializing schema: ${JSON.stringify(params.schema)}`); // Need logger import if I want to log here, or just console.log for debug.
+    // The user error "Cannot read properties of undefined (reading 'typeName')" likely comes from zodSchema or jsonSchema internally if something is malformed.
+    // Or it comes from `onCapture` passing something weird.
+    // Let's add console.log temporarily to debug or use logger if available.
+    // The previous file view didn't show logger in `agent-input-formatter.ts`.
+    // I'll assume console.log is fine for now as it will show in logs.
+    logger.info("Materializing schema:", JSON.stringify(params.schema, null, 2));
     schemaForModel = materializeSchema(params.schema);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid schema provided";

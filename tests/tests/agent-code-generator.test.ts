@@ -1,4 +1,5 @@
 import { assertEquals, assertExists } from "@std/assert";
+import { expect } from "@std/expect/expect";
 import { enableAiTests } from "../fixtures/aitests.ts";
 
 Deno.test({
@@ -11,6 +12,7 @@ Deno.test({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         request: "Create a subroutine that takes two numbers, a and b, and returns their sum.",
+        disableExecution: true,
       }),
     });
 
@@ -26,6 +28,51 @@ Deno.test({
     assertExists(data.source, `Expected source to exist, got ${data.source}`);
     assertExists(data.inputsSchema, `Expected inputsSchema to exist, got ${data.inputsSchema}`);
     assertExists(data.outputsSchema, `Expected outputsSchema to exist, got ${data.outputsSchema}`);
+
+    expect(data.executionResult).not.toBeTruthy();
+  },
+});
+
+Deno.test({
+  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with disableExecution=false (Explicit Execution)`,
+  ignore: !enableAiTests,
+  fn: async () => {
+    const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
+    const response = await fetch(`${API_URL}/api/dev/generate-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        request: "Calculate the sum of 10 and 20",
+        disableExecution: false,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 500 && data.error === "Failed to create coding model") {
+      console.log("Skipping test: Failed to create coding model (missing API keys?)");
+      return;
+    }
+
+    assertEquals(response.status, 200, `Expected 200, got ${response.status} - ${data.error}`);
+    assertEquals(data.success, true, `Expected true, got ${data.success}`);
+    assertExists(
+      data.executionResult,
+      "executionResult should be present when disableExecution is false"
+    );
+    assertEquals(
+      data.executionResult.success,
+      true,
+      `Execution should succeed: ${data.executionResult.error}`
+    );
+
+    expect(data.executionResult.result).toBeTruthy();
+    let foundResult = false;
+    JSON.stringify(data.executionResult.result, (_ey, value) => {
+      if (value === 30) foundResult = true;
+      return value;
+    });
+    expect(foundResult).toBeTruthy();
   },
 });
 
@@ -46,12 +93,16 @@ Deno.test({
     const data = await response.json();
 
     if (response.status === 500 && data.error === "Failed to create coding model") {
-      console.log("Skipping test: Failed to create coding model (missing API keys?)");
       return;
     }
 
     assertEquals(response.status, 200, `Expected 200, got ${response.status}`);
     assertEquals(data.success, true, `Expected true, got ${data.success}`);
+    assertEquals(
+      data.executionResult,
+      undefined,
+      "executionResult should NOT be present when disableExecution is true"
+    );
   },
 });
 

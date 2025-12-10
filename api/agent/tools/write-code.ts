@@ -171,7 +171,7 @@ const buildValidationContext = async (
 };
 
 export const createWriteCodeTool = (
-  onCapture: (result: SubroutineCapture) => void,
+  onCapture: (result: SubroutineCapture) => Promise<void>,
   options?: GenerateSubroutineOptions
 ) => {
   const baseToolSchema = z.object({
@@ -284,7 +284,7 @@ export const createWriteCodeTool = (
           inputsSchema: JSON.parse(JSON.stringify(inputsSchema, filterSchema)),
           outputsSchema: JSON.parse(JSON.stringify(outputsSchema, filterSchema)),
         };
-        onCapture(result);
+        await onCapture(result);
         logger.debug(`Success - code captured`);
         return {
           success: true,

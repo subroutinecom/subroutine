@@ -26,7 +26,7 @@ export type ToolCreationOptions = {
 };
 
 export const createAgentTools = (
-  onCapture: (result: SubroutineCapture) => void,
+  onCapture: (result: SubroutineCapture) => Promise<void>,
   capturedAuthRequirements: AuthRequirement[],
   usedIntegrationIds: Set<string>,
   options: ToolCreationOptions
