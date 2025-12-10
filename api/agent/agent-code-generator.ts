@@ -181,7 +181,7 @@ export const generateCode = async (
         // 1. Format inputs
         const inputResult = await formatInput({
           input: request,
-          schema: result.inputsSchema as any, // TODO: Fix type
+          schema: JSON.stringify(result.inputsSchema), // TODO: Fix type
           model, // Reuse the same model
         });
         logger.warn(`Input result: ${JSON.stringify(inputResult)}`);

@@ -1,7 +1,8 @@
 import { assertEquals, assertExists } from "@std/assert";
+import { expect } from "@std/expect/expect";
 import { enableAiTests } from "../fixtures/aitests.ts";
 
-Deno.test.only({
+Deno.test({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API`,
   ignore: !enableAiTests,
   fn: async () => {
@@ -10,7 +11,8 @@ Deno.test.only({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        request: "Add 5 and 10 together",
+        request: "Create a subroutine that takes two numbers, a and b, and returns their sum.",
+        disableExecution: true,
       }),
     });
 
@@ -27,29 +29,11 @@ Deno.test.only({
     assertExists(data.inputsSchema, `Expected inputsSchema to exist, got ${data.inputsSchema}`);
     assertExists(data.outputsSchema, `Expected outputsSchema to exist, got ${data.outputsSchema}`);
 
-    // Check for execution result (default is enabled/undefined which means enabled in our new logic?
-    // Wait, previous test didn't have disableExecution, so it was undefined.
-    // My new logic checks `options?.disableExecution !== true`.
-    // So it should execute by default.
-    // However, for this simple test, we want to verify it EXECUTED.
-    if (data.executionResult) {
-      console.log("Execution Result:", data.executionResult);
-      assertEquals(data.executionResult.success, true, "Execution should succeed for simple sum");
-      // We can't easily check the result value without knowing exactly what inputs were generated,
-      // but 'add 10 + 5' example in prompt might be used if I didn't specify inputs?
-      // Wait, `formatInput` generates inputs from the prompt.
-      // Prompt: "Create a subroutine that takes two numbers, a and b, and returns their sum."
-      // FormatInput might generate random inputs or null if it can't find values.
-      // But `formatInput` asks LLM to map prompt to schema.
-      // Schema is { a: number, b: number }.
-      // Prompt doesn't contain values. LLM might invent them or fail.
-      // If it fails, `formatInput` returns success: false, and we throw error.
-      // So if this test passes 200 OK, it means `formatInput` succeeded (probably invented numbers).
-    }
+    expect(data.executionResult).not.toBeTruthy();
   },
 });
 
-Deno.test({
+Deno.test.only({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with disableExecution=false (Explicit Execution)`,
   ignore: !enableAiTests,
   fn: async () => {
@@ -81,13 +65,14 @@ Deno.test({
       true,
       `Execution should succeed: ${data.executionResult.error}`
     );
-    // The result should be 30
-    if (data.executionResult.result) {
-      // It might be { result: 30 } or just 30 depending on how the code returns it.
-      // Usually it returns the output object.
-      // Schema: { sum: number } or similar?
-      console.log("Execution Output:", data.executionResult.result);
-    }
+
+    expect(data.executionResult.result).toBeTruthy();
+    let foundResult = false;
+    JSON.stringify(data.executionResult.result, (key, value) => {
+      if (value === 30) foundResult = true;
+      return value;
+    });
+    expect(foundResult).toBeTruthy();
   },
 });
 
