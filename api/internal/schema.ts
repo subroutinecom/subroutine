@@ -26,20 +26,19 @@ import {
 } from "../models/integration.ts";
 import { isSuperadminOrg } from "../utils/superadmin.ts";
 import {
-  type ConnectedAccountWithCredentials,
-  createConnectedAccount,
-  deleteConnectedAccount,
-  getConnectedAccount,
-  listConnectedAccountsByOrganization,
-  listConnectedAccountsByIntegration,
-} from "../models/connected-account.ts";
-import {
   getAllProviderDefinitions,
   type IntegrationDefinition,
   type IntegrationProvider,
 } from "../integrations/providers.ts";
 import { discoverMcpOAuth, type McpOAuthDiscoveryResult } from "../services/mcp-oauth-discovery.ts";
 import { validateSlug, type SlugValidationWithAvailabilityResult } from "../validation/slug";
+import {
+  runIntegrationTests,
+  getAvailableTestCases,
+  type IntegrationTestCase,
+  type TestCaseResult,
+  type TestRunResult,
+} from "../integrations/testing";
 
 type User = {
   id: string;
@@ -128,27 +127,6 @@ IntegrationType.implement({
   }),
 });
 
-// Connected Account Types
-const ConnectedAccountType = builder.objectRef<ConnectedAccountWithCredentials>("ConnectedAccount");
-
-ConnectedAccountType.implement({
-  fields: (t) => ({
-    id: t.exposeString("id"),
-    integrationId: t.exposeString("integrationId"),
-    viewerId: t.exposeString("viewerId"),
-    organizationId: t.exposeString("organizationId"),
-    credentials: t.field({
-      type: "String",
-      resolve: (parent) => JSON.stringify(parent.credentials),
-    }),
-    accountIdentifier: t.exposeString("accountIdentifier", { nullable: true }),
-    status: t.exposeString("status"),
-    lastUsedAt: t.exposeString("lastUsedAt", { nullable: true }),
-    createdAt: t.exposeString("createdAt"),
-    updatedAt: t.exposeString("updatedAt"),
-  }),
-});
-
 const OAuthIntegrationConfigType = builder.objectRef<
   Extract<IntegrationDefinition["auth"], { type: "oauth2" }>
 >("IntegrationProviderOAuthConfig");
@@ -189,6 +167,61 @@ McpAuthStrategyType.implement({
   }),
 });
 
+// API Key Config for Auth Options
+import type { AuthOption, ProviderApiKeyConfig } from "../integrations/providers/types";
+
+const AuthOptionApiKeyConfigType = builder.objectRef<ProviderApiKeyConfig>(
+  "IntegrationAuthOptionApiKeyConfig"
+);
+
+AuthOptionApiKeyConfigType.implement({
+  fields: (t) => ({
+    headerName: t.exposeString("headerName"),
+    headerPrefix: t.exposeString("headerPrefix", { nullable: true }),
+    instructionsUrl: t.exposeString("instructionsUrl", { nullable: true }),
+  }),
+});
+
+// Auth Option Type
+const AuthOptionType = builder.objectRef<AuthOption>("IntegrationAuthOption");
+
+AuthOptionType.implement({
+  fields: (t) => ({
+    id: t.exposeString("id"),
+    label: t.exposeString("label"),
+    description: t.exposeString("description", { nullable: true }),
+    recommended: t.exposeBoolean("recommended", { nullable: true }),
+    viewerScoped: t.exposeBoolean("viewerScoped", { nullable: true }),
+    strategy: t.field({
+      type: McpAuthStrategyType,
+      resolve: (parent) => parent.strategy,
+    }),
+    oauthConfig: t.field({
+      type: OAuthIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => {
+        if (parent.oauthConfig) {
+          return {
+            type: "oauth2" as const,
+            authUrl: parent.oauthConfig.authUrl,
+            tokenUrl: parent.oauthConfig.tokenUrl,
+            defaultScopes: parent.oauthConfig.defaultScopes,
+            requiredScopes: parent.oauthConfig.requiredScopes,
+            defaultRedirectPath: parent.oauthConfig.defaultRedirectPath,
+            supportsCustomConfig: false,
+          };
+        }
+        return null;
+      },
+    }),
+    apiKeyConfig: t.field({
+      type: AuthOptionApiKeyConfigType,
+      nullable: true,
+      resolve: (parent) => parent.apiKeyConfig ?? null,
+    }),
+  }),
+});
+
 const McpIntegrationConfigType = builder.objectRef<
   Extract<IntegrationDefinition["auth"], { type: "mcp" }>
 >("IntegrationProviderMcpConfig");
@@ -197,9 +230,24 @@ McpIntegrationConfigType.implement({
   fields: (t) => ({
     serverUrl: t.exposeString("serverUrl"),
     transport: t.exposeString("transport"),
-    authStrategy: t.field({
-      type: McpAuthStrategyType,
-      resolve: (parent) => parent.authStrategy,
+    authOptions: t.field({
+      type: [AuthOptionType],
+      resolve: (parent) => parent.authOptions,
+    }),
+  }),
+});
+
+// GraphQL Provider Config Type
+const GraphQLIntegrationConfigType = builder.objectRef<
+  Extract<IntegrationDefinition["auth"], { type: "graphql" }>
+>("IntegrationProviderGraphQLConfig");
+
+GraphQLIntegrationConfigType.implement({
+  fields: (t) => ({
+    endpoint: t.exposeString("endpoint"),
+    authOptions: t.field({
+      type: [AuthOptionType],
+      resolve: (parent) => parent.authOptions,
     }),
   }),
 });
@@ -212,9 +260,9 @@ const OpenAPIIntegrationConfigType = builder.objectRef<
 OpenAPIIntegrationConfigType.implement({
   fields: (t) => ({
     baseUrl: t.exposeString("baseUrl"),
-    authStrategy: t.field({
-      type: McpAuthStrategyType,
-      resolve: (parent) => parent.authStrategy,
+    authOptions: t.field({
+      type: [AuthOptionType],
+      resolve: (parent) => parent.authOptions,
     }),
   }),
 });
@@ -228,6 +276,7 @@ IntegrationProviderDefinitionType.implement({
     id: t.exposeString("id"),
     name: t.exposeString("name"),
     description: t.exposeString("description", { nullable: true }),
+    category: t.exposeString("category", { nullable: true }),
     viewerScoped: t.boolean({
       resolve: (parent) => parent.viewerScoped ?? false,
     }),
@@ -243,6 +292,11 @@ IntegrationProviderDefinitionType.implement({
       type: McpIntegrationConfigType,
       nullable: true,
       resolve: (parent) => (parent.auth.type === "mcp" ? parent.auth : null),
+    }),
+    graphqlConfig: t.field({
+      type: GraphQLIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => (parent.auth.type === "graphql" ? parent.auth : null),
     }),
     openapiConfig: t.field({
       type: OpenAPIIntegrationConfigType,
@@ -410,6 +464,134 @@ StoredOpenAPISpecType.implement({
   }),
 });
 
+// Integration Testing Types
+const IntegrationTestCaseType = builder.objectRef<IntegrationTestCase>("IntegrationTestCase");
+
+IntegrationTestCaseType.implement({
+  fields: (t) => ({
+    id: t.exposeString("id"),
+    name: t.exposeString("name"),
+    description: t.exposeString("description"),
+    providerId: t.exposeString("providerId"),
+    readonly: t.exposeBoolean("readonly"),
+  }),
+});
+
+const TestCaseErrorType = builder.objectRef<{
+  name: string;
+  message: string;
+  stack?: string;
+}>("TestCaseError");
+
+TestCaseErrorType.implement({
+  fields: (t) => ({
+    name: t.exposeString("name"),
+    message: t.exposeString("message"),
+    stack: t.exposeString("stack", { nullable: true }),
+  }),
+});
+
+const TestCaseResultType = builder.objectRef<TestCaseResult>("TestCaseResult");
+
+TestCaseResultType.implement({
+  fields: (t) => ({
+    testCaseId: t.exposeString("testCaseId"),
+    success: t.exposeBoolean("success"),
+    message: t.exposeString("message"),
+    details: t.field({
+      type: "String",
+      nullable: true,
+      resolve: (parent) => (parent.details ? JSON.stringify(parent.details) : null),
+    }),
+    durationMs: t.int({
+      resolve: (parent) => parent.durationMs,
+    }),
+    error: t.field({
+      type: TestCaseErrorType,
+      nullable: true,
+      resolve: (parent) => parent.error ?? null,
+    }),
+  }),
+});
+
+const TestRunSummaryType = builder.objectRef<{
+  total: number;
+  passed: number;
+  failed: number;
+  totalDurationMs: number;
+}>("TestRunSummary");
+
+TestRunSummaryType.implement({
+  fields: (t) => ({
+    total: t.int({ resolve: (parent) => parent.total }),
+    passed: t.int({ resolve: (parent) => parent.passed }),
+    failed: t.int({ resolve: (parent) => parent.failed }),
+    totalDurationMs: t.int({ resolve: (parent) => parent.totalDurationMs }),
+  }),
+});
+
+// Auth requirement type for test results (matches IntegrationAuthRequiredError.requirements)
+const TestAuthRequirementType = builder.objectRef<{
+  integrationId: string;
+  integrationName: string;
+  provider: string;
+  authorizationUrl: string;
+  state: string;
+  patLinkUrl?: string;
+  authInstructions?: string;
+}>("TestAuthRequirement");
+
+TestAuthRequirementType.implement({
+  fields: (t) => ({
+    integrationId: t.exposeString("integrationId"),
+    integrationName: t.exposeString("integrationName"),
+    provider: t.exposeString("provider"),
+    authorizationUrl: t.exposeString("authorizationUrl"),
+    state: t.exposeString("state"),
+    patLinkUrl: t.string({
+      nullable: true,
+      resolve: (parent) => parent.patLinkUrl ?? null,
+    }),
+    authInstructions: t.string({
+      nullable: true,
+      resolve: (parent) => parent.authInstructions ?? null,
+    }),
+  }),
+});
+
+const TestRunResultType = builder.objectRef<TestRunResult>("TestRunResult");
+
+TestRunResultType.implement({
+  fields: (t) => ({
+    integrationId: t.exposeString("integrationId"),
+    providerId: t.exposeString("providerId"),
+    results: t.field({
+      type: [TestCaseResultType],
+      resolve: (parent) => parent.results,
+    }),
+    summary: t.field({
+      type: TestRunSummaryType,
+      resolve: (parent) => parent.summary,
+    }),
+    executedAt: t.exposeString("executedAt"),
+    authRequired: t.boolean({
+      nullable: true,
+      resolve: (parent) => parent.authRequired ?? null,
+    }),
+    authorizationUrl: t.string({
+      nullable: true,
+      description: "OAuth authorization URL. Deprecated: use authRequirement instead.",
+      resolve: (parent) => parent.authorizationUrl ?? null,
+    }),
+    authRequirement: t.field({
+      type: TestAuthRequirementType,
+      nullable: true,
+      description: "Full auth requirement details including OAuth URL, PAT link URL, and instructions.",
+      resolve: (parent) => parent.authRequirement ?? null,
+    }),
+  }),
+});
+
 builder.queryType({
   fields: (t) => ({
     ping: t.string({
@@ -467,34 +649,6 @@ builder.queryType({
     integrationProviders: t.field({
       type: [IntegrationProviderDefinitionType],
       resolve: () => getAllProviderDefinitions(),
-    }),
-    connectedAccounts: t.field({
-      type: [ConnectedAccountType],
-      resolve: async (_parent, _args, ctx) => {
-        return listConnectedAccountsByOrganization(ctx.session.activeOrganizationId);
-      },
-    }),
-    connectedAccount: t.field({
-      type: ConnectedAccountType,
-      nullable: true,
-      args: {
-        id: t.arg.string({ required: true }),
-      },
-      resolve: async (_parent, args, ctx) => {
-        return getConnectedAccount(args.id, ctx.session.activeOrganizationId);
-      },
-    }),
-    connectedAccountsByIntegration: t.field({
-      type: [ConnectedAccountType],
-      args: {
-        integrationId: t.arg.string({ required: true }),
-      },
-      resolve: async (_parent, args, ctx) => {
-        return listConnectedAccountsByIntegration(
-          args.integrationId,
-          ctx.session.activeOrganizationId
-        );
-      },
     }),
     discoverMcpOAuth: t.field({
       type: McpOAuthDiscoveryResultType,
@@ -607,6 +761,16 @@ builder.queryType({
       },
       resolve: async (_parent, args, ctx) => {
         return getOpenAPIIntegrationSpec(args.integrationId, ctx.session.activeOrganizationId);
+      },
+    }),
+    integrationTestCases: t.field({
+      type: [IntegrationTestCaseType],
+      description: "Get available test cases for a provider",
+      args: {
+        providerId: t.arg.string({ required: true }),
+      },
+      resolve: (_parent, args) => {
+        return getAvailableTestCases(args.providerId);
       },
     }),
   }),
@@ -806,38 +970,6 @@ builder.mutationType({
         );
       },
     }),
-    createConnectedAccount: t.field({
-      type: ConnectedAccountType,
-      args: {
-        integrationId: t.arg.string({ required: true }),
-        viewerId: t.arg.string({ required: true }),
-        credentials: t.arg.string({
-          required: true,
-          description: "JSON string of ConnectedAccountCredentials",
-        }),
-        accountIdentifier: t.arg.string({ required: false }),
-      },
-      resolve: async (_parent, args, ctx) => {
-        const credentials = JSON.parse(args.credentials);
-
-        return createConnectedAccount({
-          integrationId: args.integrationId,
-          viewerId: args.viewerId,
-          organizationId: ctx.session.activeOrganizationId,
-          credentials,
-          accountIdentifier: args.accountIdentifier || undefined,
-        });
-      },
-    }),
-    deleteConnectedAccount: t.field({
-      type: "Boolean",
-      args: {
-        id: t.arg.string({ required: true }),
-      },
-      resolve: async (_parent, args, ctx) => {
-        return deleteConnectedAccount(args.id, ctx.session.activeOrganizationId);
-      },
-    }),
     introspectIntegrationSchema: t.field({
       type: IntegrationSchemaResultType,
       description:
@@ -900,6 +1032,27 @@ builder.mutationType({
             code: result.code,
           };
         }
+      },
+    }),
+    runIntegrationTests: t.field({
+      type: TestRunResultType,
+      description:
+        "Run integration tests for a specific integration. " +
+        "Requires a connected account with valid OAuth tokens.",
+      args: {
+        integrationId: t.arg.string({ required: true }),
+        testCaseIds: t.arg.stringList({
+          required: false,
+          description: "Specific test case IDs to run. If omitted, runs all tests for the provider.",
+        }),
+      },
+      resolve: async (_parent, args, ctx) => {
+        return runIntegrationTests({
+          integrationId: args.integrationId,
+          organizationId: ctx.session.activeOrganizationId,
+          viewerId: ctx.user.id,
+          testCaseIds: args.testCaseIds ?? undefined,
+        });
       },
     }),
   }),

@@ -1,5 +1,50 @@
 import type { AuthStrategy, AuthBlock } from "../../packages/shared-types/integration";
 
+// ============================================================================
+// Viewer Credential Requirement Detection
+// ============================================================================
+
+/**
+ * Describes what kind of viewer credentials are needed for an integration.
+ * - "none": No viewer credentials needed (public API or org-level key)
+ * - "oauth": Viewer must OAuth authorize
+ * - "pat": Viewer must link a Personal Access Token
+ */
+export type ViewerCredentialRequirement =
+  | { type: "none" }
+  | { type: "oauth" }
+  | { type: "pat" };
+
+/**
+ * Determines what kind of viewer credentials are needed based on auth strategy.
+ * This is the single source of truth for credential requirement detection.
+ *
+ * @param authStrategy - The auth strategy configuration
+ * @returns The type of viewer credentials required
+ */
+export const getViewerCredentialRequirement = (
+  authStrategy: AuthStrategy
+): ViewerCredentialRequirement => {
+  switch (authStrategy.type) {
+    case "bearer_oauth":
+      return { type: "oauth" };
+    case "api_key":
+      return authStrategy.viewerScoped ? { type: "pat" } : { type: "none" };
+    case "none":
+    case "custom_headers":
+      return { type: "none" };
+    default: {
+      // TypeScript exhaustiveness check
+      const _exhaustive: never = authStrategy;
+      throw new Error(`Unknown auth strategy type: ${JSON.stringify(_exhaustive)}`);
+    }
+  }
+};
+
+// ============================================================================
+// Auth Header Building
+// ============================================================================
+
 /**
  * Shared authentication header building utilities.
  *

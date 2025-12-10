@@ -11,6 +11,7 @@ import type {
   IntegrationConfig,
   McpIntegrationConfig,
   GraphQLIntegrationConfig,
+  OpenAPIIntegrationConfig,
   AuthStrategy,
   McpTransport,
   OAuth2IntegrationConfig,
@@ -76,6 +77,9 @@ type EditFormData = {
   transport: McpTransport;
   // GraphQL fields
   endpoint: string;
+  // OpenAPI fields
+  baseUrl: string;
+  specUrl: string;
   // Auth strategy
   authStrategy: AuthStrategyType;
   apiKey: string;
@@ -117,6 +121,8 @@ export default function EditIntegrationPage() {
       serverUrl: "",
       transport: "sse",
       endpoint: "",
+      baseUrl: "",
+      specUrl: "",
       authStrategy: "none",
       apiKey: "",
       apiKeyHeaderName: "X-API-Key",
@@ -135,6 +141,7 @@ export default function EditIntegrationPage() {
   const watchedApiKeyIsViewerScoped = watch("apiKeyIsViewerScoped");
   const isMcpIntegration = integration?.authConfig.type === "mcp";
   const isGraphQLIntegration = integration?.authConfig.type === "graphql";
+  const isOpenAPIIntegration = integration?.authConfig.type === "openapi";
   const isOAuthIntegration = integration?.authConfig.type === "oauth2";
 
   useEffect(() => {
@@ -164,6 +171,8 @@ export default function EditIntegrationPage() {
             serverUrl: mcpConfig.serverUrl,
             transport: mcpConfig.transport,
             endpoint: "",
+            baseUrl: "",
+            specUrl: "",
             authStrategy: mcpConfig.auth.strategy.type as AuthStrategyType,
             apiKey: "",
             apiKeyHeaderName:
@@ -193,6 +202,8 @@ export default function EditIntegrationPage() {
             serverUrl: "",
             transport: "sse",
             endpoint: graphqlConfig.endpoint,
+            baseUrl: "",
+            specUrl: "",
             authStrategy: graphqlConfig.auth.strategy.type as AuthStrategyType,
             apiKey: "",
             apiKeyHeaderName:
@@ -214,6 +225,37 @@ export default function EditIntegrationPage() {
             oauthAuthUrl: graphqlConfig.auth.oauthConfig?.authUrl || "",
             oauthTokenUrl: graphqlConfig.auth.oauthConfig?.tokenUrl || "",
           });
+        } else if (parsed.authConfig.type === "openapi") {
+          const openapiConfig = parsed.authConfig as OpenAPIIntegrationConfig;
+          reset({
+            name: parsed.name,
+            enabled: parsed.enabled,
+            serverUrl: "",
+            transport: "sse",
+            endpoint: "",
+            baseUrl: openapiConfig.baseUrl,
+            specUrl: openapiConfig.specUrl || "",
+            authStrategy: openapiConfig.auth.strategy.type as AuthStrategyType,
+            apiKey: "",
+            apiKeyHeaderName:
+              openapiConfig.auth.strategy.type === "api_key"
+                ? openapiConfig.auth.strategy.headerName || "X-API-Key"
+                : "X-API-Key",
+            apiKeyIsViewerScoped:
+              openapiConfig.auth.strategy.type === "api_key"
+                ? openapiConfig.auth.strategy.viewerScoped || false
+                : false,
+            customHeaders:
+              openapiConfig.auth.strategy.type === "custom_headers"
+                ? JSON.stringify(openapiConfig.auth.strategy.headers, null, 2)
+                : "{}",
+            oauthClientId: openapiConfig.auth.oauthConfig?.clientId || "",
+            oauthClientSecret: "",
+            oauthScopes: openapiConfig.auth.oauthConfig?.scopes?.join(" ") || "",
+            oauthRedirectUri: openapiConfig.auth.oauthConfig?.redirectUri || "",
+            oauthAuthUrl: openapiConfig.auth.oauthConfig?.authUrl || "",
+            oauthTokenUrl: openapiConfig.auth.oauthConfig?.tokenUrl || "",
+          });
         } else {
           const oauthConfig = parsed.authConfig as OAuth2IntegrationConfig;
           reset({
@@ -222,6 +264,8 @@ export default function EditIntegrationPage() {
             serverUrl: "",
             transport: "sse",
             endpoint: "",
+            baseUrl: "",
+            specUrl: "",
             authStrategy: "bearer_oauth",
             apiKey: "",
             apiKeyHeaderName: "X-API-Key",
@@ -323,6 +367,38 @@ export default function EditIntegrationPage() {
         };
 
         authConfig = JSON.stringify(graphqlAuthConfig);
+      } else if (integration.authConfig.type === "openapi") {
+        if (!data.baseUrl.trim()) {
+          setServerError("Base URL is required");
+          return;
+        }
+
+        const authStrategy = buildAuthStrategy(data);
+        const openapiAuthConfig: OpenAPIIntegrationConfig = {
+          type: "openapi",
+          baseUrl: data.baseUrl.trim(),
+          ...(data.specUrl.trim() ? { specUrl: data.specUrl.trim() } : {}),
+          auth: {
+            strategy: authStrategy,
+            ...(data.authStrategy === "api_key" && !data.apiKeyIsViewerScoped && data.apiKey.trim()
+              ? { apiKey: data.apiKey.trim() }
+              : {}),
+            ...(data.authStrategy === "bearer_oauth" && data.oauthClientId.trim()
+              ? {
+                  oauthConfig: {
+                    clientId: data.oauthClientId.trim(),
+                    clientSecret: data.oauthClientSecret.trim() || "",
+                    authUrl: data.oauthAuthUrl.trim(),
+                    tokenUrl: data.oauthTokenUrl.trim(),
+                    redirectUri: data.oauthRedirectUri.trim(),
+                    scopes: data.oauthScopes.split(/[\s,]+/).filter(Boolean),
+                  },
+                }
+              : {}),
+          },
+        };
+
+        authConfig = JSON.stringify(openapiAuthConfig);
       } else {
         const oauthConfig = integration.authConfig as OAuth2IntegrationConfig;
         const authConfigPayload: Record<string, unknown> = {
@@ -505,6 +581,54 @@ export default function EditIntegrationPage() {
                   id="endpoint"
                   type="url"
                   {...register("endpoint")}
+                  className="input input-bordered w-full"
+                />
+              </div>
+
+              <AuthStrategySelector
+                register={register as Parameters<typeof AuthStrategySelector>[0]["register"]}
+                errors={errors}
+                currentStrategy={watchedAuthStrategy}
+              />
+
+              <AuthFields
+                register={register as Parameters<typeof AuthFields>[0]["register"]}
+                errors={errors}
+                authStrategy={watchedAuthStrategy}
+                apiKeyIsViewerScoped={watchedApiKeyIsViewerScoped}
+              />
+            </>
+          )}
+
+          {/* OpenAPI-specific fields */}
+          {isOpenAPIIntegration && (
+            <>
+              <div className="space-y-3">
+                <label htmlFor="baseUrl" className="block">
+                  <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
+                    Base URL
+                  </span>
+                </label>
+                <input
+                  id="baseUrl"
+                  type="url"
+                  {...register("baseUrl")}
+                  className="input input-bordered w-full"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label htmlFor="specUrl" className="block">
+                  <span className="text-sm font-semibold text-base-content uppercase tracking-wide">
+                    OpenAPI Spec URL
+                  </span>
+                  <span className="ml-2 text-xs font-normal text-base-content/40">optional</span>
+                </label>
+                <input
+                  id="specUrl"
+                  type="url"
+                  {...register("specUrl")}
+                  placeholder="https://api.example.com/openapi.json"
                   className="input input-bordered w-full"
                 />
               </div>

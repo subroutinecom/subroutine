@@ -103,6 +103,20 @@ const extractOAuthConfig = (authConfig: IntegrationAuthConfig): ExtractedOAuthCo
     };
   }
 
+  if (authConfig.type === "openapi") {
+    if (authConfig.auth.strategy.type !== "bearer_oauth" || !authConfig.auth.oauthConfig) {
+      return null;
+    }
+    return {
+      clientId: authConfig.auth.oauthConfig.clientId,
+      clientSecret: authConfig.auth.oauthConfig.clientSecret,
+      authUrl: authConfig.auth.oauthConfig.authUrl,
+      tokenUrl: authConfig.auth.oauthConfig.tokenUrl,
+      redirectUri: authConfig.auth.oauthConfig.redirectUri,
+      scopes: authConfig.auth.oauthConfig.scopes,
+    };
+  }
+
   return null;
 };
 

@@ -2,18 +2,26 @@ import { calendarDefinition } from "./providers/definitions/calendar.ts";
 import { githubDefinition } from "./providers/definitions/github.ts";
 import { gmailDefinition } from "./providers/definitions/gmail.ts";
 import { graphqlDefinition } from "./providers/definitions/graphql.ts";
+import { linearDefinition } from "./providers/definitions/linear.ts";
 import { mcpDefinition } from "./providers/definitions/mcp.ts";
 import { mockOAuthDefinition } from "./providers/definitions/mock_oauth.ts";
 import { openapiDefinition } from "./providers/definitions/openapi.ts";
+import { slackDefinition } from "./providers/definitions/slack.ts";
 import type { IntegrationDefinition } from "./providers/types.ts";
 
 const definitions = [
+  // First-party integrations (pre-configured for specific services)
+  linearDefinition,
+  slackDefinition,
+  // Existing OAuth providers
   gmailDefinition,
   calendarDefinition,
   githubDefinition,
+  // Generic protocol providers
   mcpDefinition,
   graphqlDefinition,
   openapiDefinition,
+  // Test providers
   mockOAuthDefinition,
 ] as const;
 

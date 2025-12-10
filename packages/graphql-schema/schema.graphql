@@ -17,19 +17,6 @@ type ApiKey {
   updatedAt: String
 }
 
-type ConnectedAccount {
-  accountIdentifier: String
-  createdAt: String
-  credentials: String
-  id: String
-  integrationId: String
-  lastUsedAt: String
-  organizationId: String
-  status: String
-  updatedAt: String
-  viewerId: String
-}
-
 type CreatedApiKey {
   createdAt: String
   enabled: Boolean
@@ -58,9 +45,28 @@ type Integration {
   visibility: String
 }
 
+type IntegrationAuthOption {
+  apiKeyConfig: IntegrationAuthOptionApiKeyConfig
+  description: String
+  id: String
+  label: String
+  oauthConfig: IntegrationProviderOAuthConfig
+  recommended: Boolean
+  strategy: McpAuthStrategy
+  viewerScoped: Boolean
+}
+
+type IntegrationAuthOptionApiKeyConfig {
+  headerName: String
+  headerPrefix: String
+  instructionsUrl: String
+}
+
 type IntegrationProviderDefinition {
   authType: String
+  category: String
   description: String
+  graphqlConfig: IntegrationProviderGraphQLConfig
   id: String
   mcpConfig: IntegrationProviderMcpConfig
   name: String
@@ -69,8 +75,13 @@ type IntegrationProviderDefinition {
   viewerScoped: Boolean
 }
 
+type IntegrationProviderGraphQLConfig {
+  authOptions: [IntegrationAuthOption!]
+  endpoint: String
+}
+
 type IntegrationProviderMcpConfig {
-  authStrategy: McpAuthStrategy
+  authOptions: [IntegrationAuthOption!]
   serverUrl: String
   transport: String
 }
@@ -84,7 +95,7 @@ type IntegrationProviderOAuthConfig {
 }
 
 type IntegrationProviderOpenAPIConfig {
-  authStrategy: McpAuthStrategy
+  authOptions: [IntegrationAuthOption!]
   baseUrl: String
 }
 
@@ -94,6 +105,14 @@ type IntegrationSchemaResult {
   fetchedAt: Int
   schema: String
   success: Boolean
+}
+
+type IntegrationTestCase {
+  description: String
+  id: String
+  name: String
+  providerId: String
+  readonly: Boolean
 }
 
 type McpAuthStrategy {
@@ -122,13 +141,6 @@ type Mutation {
     name: String
     prefix: String
   ): CreatedApiKey
-  createConnectedAccount(
-    accountIdentifier: String
-    """JSON string of ConnectedAccountCredentials"""
-    credentials: String!
-    integrationId: String!
-    viewerId: String!
-  ): ConnectedAccount
   createIntegration(
     """JSON string of IntegrationAuthConfig"""
     authConfig: String!
@@ -141,7 +153,6 @@ type Mutation {
     visibility: String
   ): Integration
   deleteApiKey(id: String!): Boolean
-  deleteConnectedAccount(id: String!): Boolean
   deleteIntegration(id: String!): Boolean
   """
   Fetch an OpenAPI spec and store it for an integration. Only works for OpenAPI integrations with specUrl configured.
@@ -151,6 +162,16 @@ type Mutation {
   Introspect a GraphQL endpoint and store the schema. Only works for GraphQL integrations with appropriate auth configured.
   """
   introspectIntegrationSchema(integrationId: String!): IntegrationSchemaResult
+  """
+  Run integration tests for a specific integration. Requires a connected account with valid OAuth tokens.
+  """
+  runIntegrationTests(
+    integrationId: String!
+    """
+    Specific test case IDs to run. If omitted, runs all tests for the provider.
+    """
+    testCaseIds: [String!]
+  ): TestRunResult
   """Set integration visibility (superadmin only for 'global')"""
   setIntegrationVisibility(
     id: String!
@@ -193,9 +214,6 @@ type OpenAPIOperation {
 type Query {
   apiKey(id: String!): ApiKey
   apiKeys: [ApiKey!]
-  connectedAccount(id: String!): ConnectedAccount
-  connectedAccounts: [ConnectedAccount!]
-  connectedAccountsByIntegration(integrationId: String!): [ConnectedAccount!]
   discoverMcpOAuth(serverUrl: String!): McpOAuthDiscoveryResult
   integration(id: String!): Integration
   """Get the stored OpenAPI spec for an OpenAPI integration"""
@@ -203,6 +221,8 @@ type Query {
   integrationProviders: [IntegrationProviderDefinition!]
   """Get the stored GraphQL schema for a GraphQL integration"""
   integrationSchema(integrationId: String!): StoredSchema
+  """Get available test cases for a provider"""
+  integrationTestCases(providerId: String!): [IntegrationTestCase!]
   """
   Get integrations with optional visibility filter. Filter: 'private' (org-specific only), 'global' (registry only), 'all' or omit for both.
   """
@@ -249,4 +269,51 @@ type StoredOpenAPISpec {
 type StoredSchema {
   fetchedAt: Int
   schema: String
+}
+
+type TestAuthRequirement {
+  authInstructions: String
+  authorizationUrl: String
+  integrationId: String
+  integrationName: String
+  patLinkUrl: String
+  provider: String
+  state: String
+}
+
+type TestCaseError {
+  message: String
+  name: String
+  stack: String
+}
+
+type TestCaseResult {
+  details: String
+  durationMs: Int
+  error: TestCaseError
+  message: String
+  success: Boolean
+  testCaseId: String
+}
+
+type TestRunResult {
+  authRequired: Boolean
+  """
+  Full auth requirement details including OAuth URL, PAT link URL, and instructions.
+  """
+  authRequirement: TestAuthRequirement
+  """OAuth authorization URL. Deprecated: use authRequirement instead."""
+  authorizationUrl: String
+  executedAt: String
+  integrationId: String
+  providerId: String
+  results: [TestCaseResult!]
+  summary: TestRunSummary
+}
+
+type TestRunSummary {
+  failed: Int
+  passed: Int
+  total: Int
+  totalDurationMs: Int
 }

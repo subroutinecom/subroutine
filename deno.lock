@@ -27,7 +27,8 @@
     "npm:@cap.js/server@^4.0.3": "4.0.4",
     "npm:@cap.js/widget@~0.1.31": "0.1.32",
     "npm:@eslint/js@^9.39.1": "9.39.1",
-    "npm:@graphql-codegen/cli@^6.0.2": "6.1.0_graphql@16.12.0_@types+node@24.2.0_typescript@5.9.3",
+    "npm:@graphql-codegen/cli@6.0.2": "6.0.2_graphql@16.12.0_@types+node@24.2.0_typescript@5.9.3",
+    "npm:@graphql-codegen/cli@^6.0.2": "6.0.2_graphql@16.12.0_@types+node@24.2.0_typescript@5.9.3",
     "npm:@graphql-codegen/schema-ast@5": "5.0.0_graphql@16.12.0",
     "npm:@graphql-codegen/typed-document-node@^6.1.2": "6.1.4_graphql@16.12.0",
     "npm:@graphql-codegen/typescript-operations@^5.0.4": "5.0.6_graphql@16.12.0",
@@ -801,8 +802,8 @@
         "tslib@2.6.3"
       ]
     },
-    "@graphql-codegen/cli@6.1.0_graphql@16.12.0_@types+node@24.2.0_typescript@5.9.3": {
-      "integrity": "sha512-7w3Zq5IFONVOBcyOiP01Nv9WRxGS/TEaBCAb/ALYA3xHq95dqKCpoGnxt/Ut9R18jiS+aMgT0gc8Tr8sHy44jA==",
+    "@graphql-codegen/cli@6.0.2_graphql@16.12.0_@types+node@24.2.0_typescript@5.9.3": {
+      "integrity": "sha512-W+0ime0xMrCyG77q+5xiPkkqPLuXJcTx0Zr9TTOxF4zIqWKVsuImS3qVxtpeTx+GRbb8VWv9IedWMtt91JGzQg==",
       "dependencies": [
         "@babel/generator",
         "@babel/template",

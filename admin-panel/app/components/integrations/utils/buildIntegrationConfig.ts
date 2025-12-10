@@ -38,19 +38,25 @@ export const buildIntegrationConfig = (
     if (!data.oauthClientId?.trim()) {
       return { success: false, error: "OAuth Client ID is required" };
     }
+    if (!data.oauthClientSecret?.trim()) {
+      return { success: false, error: "OAuth Client Secret is required" };
+    }
     if (!data.oauthAuthUrl?.trim()) {
       return { success: false, error: "OAuth Authorization URL is required" };
     }
     if (!data.oauthTokenUrl?.trim()) {
       return { success: false, error: "OAuth Token URL is required" };
     }
+    if (!data.oauthRedirectUri?.trim()) {
+      return { success: false, error: "OAuth Redirect URI is required" };
+    }
 
     authBlock.oauthConfig = {
       clientId: data.oauthClientId.trim(),
-      clientSecret: data.oauthClientSecret?.trim() ?? "",
+      clientSecret: data.oauthClientSecret.trim(),
       authUrl: data.oauthAuthUrl.trim(),
       tokenUrl: data.oauthTokenUrl.trim(),
-      redirectUri: data.oauthRedirectUri?.trim() ?? "",
+      redirectUri: data.oauthRedirectUri.trim(),
       scopes: data.oauthScopes?.split(/[\s,]+/).filter(Boolean) ?? [],
     };
   }

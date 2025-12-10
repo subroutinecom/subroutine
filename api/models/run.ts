@@ -8,7 +8,10 @@ import type {
   SandboxMcpConfig,
   SandboxOpenAPIConfig,
 } from "../integrations/providers/types.ts";
-import { buildAuthHeadersFromBlock } from "../integrations/auth-utils.ts";
+import {
+  buildAuthHeadersFromBlock,
+  getViewerCredentialRequirement,
+} from "../integrations/auth-utils.ts";
 import { generateAuthorizationUrl } from "../services/oauth.ts";
 import { getLogger } from "../utils/logger.ts";
 import type {
@@ -120,33 +123,6 @@ const buildOpenAPIConfig = (
 // ============================================================================
 // Viewer Credential Resolution (Protocol-Agnostic)
 // ============================================================================
-
-/**
- * Determines what kind of viewer credentials are needed based on auth strategy.
- */
-type ViewerCredentialRequirement =
-  | { type: "none" }
-  | { type: "oauth" }
-  | { type: "pat" };
-
-const getViewerCredentialRequirement = (
-  authStrategy: AuthStrategy
-): ViewerCredentialRequirement => {
-  switch (authStrategy.type) {
-    case "bearer_oauth":
-      return { type: "oauth" };
-    case "api_key":
-      return authStrategy.viewerScoped ? { type: "pat" } : { type: "none" };
-    case "none":
-    case "custom_headers":
-      return { type: "none" };
-    default: {
-      // TypeScript exhaustiveness check
-      const _exhaustive: never = authStrategy;
-      throw new Error(`Unknown auth strategy type: ${JSON.stringify(_exhaustive)}`);
-    }
-  }
-};
 
 /**
  * Resolves viewer credentials for an integration.
