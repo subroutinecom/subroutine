@@ -97,6 +97,7 @@ type IntegrationProviderOAuthConfig {
 type IntegrationProviderOpenAPIConfig {
   authOptions: [IntegrationAuthOption!]
   baseUrl: String
+  specUrl: String
 }
 
 type IntegrationSchemaResult {

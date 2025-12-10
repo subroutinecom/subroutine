@@ -30,6 +30,7 @@ export const slackDefinition: IntegrationDefinition = {
   auth: {
     type: "openapi",
     baseUrl: "https://slack.com/api",
+    specUrl: "https://raw.githubusercontent.com/slackapi/slack-api-specs/master/web-api/slack_web_openapi_v2.json",
     authOptions: [
       {
         id: "oauth",

@@ -70,6 +70,7 @@ export const useIntegrationForm = (options: UseIntegrationFormOptions) => {
       setValue("endpoint", currentProvider.graphqlConfig.endpoint || "");
     } else if (isOpenAPIProvider && currentProvider.openapiConfig) {
       setValue("baseUrl", currentProvider.openapiConfig.baseUrl || "");
+      setValue("specUrl", currentProvider.openapiConfig.specUrl || "");
     } else if (isOAuthProvider && currentProvider.oauthConfig) {
       setValue("oauthAuthUrl", currentProvider.oauthConfig.authUrl || "");
       setValue("oauthTokenUrl", currentProvider.oauthConfig.tokenUrl || "");

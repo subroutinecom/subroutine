@@ -87,6 +87,7 @@ const INTEGRATION_PROVIDERS_QUERY = gql`
       }
       openapiConfig {
         baseUrl
+        specUrl
         authOptions {
           ${AUTH_OPTION_FIELDS}
         }
@@ -315,6 +316,7 @@ export default function NewIntegrationPage() {
       setValue("endpoint", selectedProvider.graphqlConfig.endpoint);
     } else if (selectedProvider.openapiConfig) {
       setValue("baseUrl", selectedProvider.openapiConfig.baseUrl);
+      setValue("specUrl", selectedProvider.openapiConfig.specUrl || "");
     } else if (selectedProvider.mcpConfig) {
       setValue("serverUrl", selectedProvider.mcpConfig.serverUrl);
       setValue("transport", selectedProvider.mcpConfig.transport as "sse" | "streamable-http");
@@ -703,6 +705,7 @@ export default function NewIntegrationPage() {
                       watchedAuthStrategy={watchedAuthStrategy}
                       watchedApiKeyIsViewerScoped={watchedApiKeyIsViewerScoped}
                       redirectUri={watchedRedirectUri}
+                      isGenericProvider
                     />
                   )}
                 </div>

@@ -96,6 +96,12 @@ export const buildIntegrationConfig = (
       return { success: false, error: "Base URL is required" };
     }
 
+    // For generic openapi provider, specUrl is required
+    const isGenericProvider = definition.category === "generic";
+    if (isGenericProvider && !data.specUrl?.trim()) {
+      return { success: false, error: "OpenAPI Spec URL is required" };
+    }
+
     const config: Record<string, unknown> = {
       type: "openapi" as const,
       baseUrl: data.baseUrl.trim(),

@@ -106,6 +106,8 @@ export type AuthStrategyDefinition =
   | {
       type: "openapi";
       baseUrl: string;
+      /** URL to fetch the OpenAPI spec from */
+      specUrl?: string;
       /** Auth options the user can choose from when creating an integration */
       authOptions: AuthOption[];
     };

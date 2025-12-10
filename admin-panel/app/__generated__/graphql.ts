@@ -119,6 +119,7 @@ export type IntegrationProviderOpenApiConfig = {
   __typename?: 'IntegrationProviderOpenAPIConfig';
   authOptions?: Maybe<Array<IntegrationAuthOption>>;
   baseUrl?: Maybe<Scalars['String']['output']>;
+  specUrl?: Maybe<Scalars['String']['output']>;
 };
 
 export type IntegrationSchemaResult = {
