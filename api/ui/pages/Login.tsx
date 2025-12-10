@@ -6,12 +6,15 @@ type LoginProps = {
   };
   authBaseUrl?: string;
   isSignUp?: boolean; // Passed from server based on URL params
+  callbackURL?: string; // Optional callback URL from query params
 };
 
-export const Login = ({ authProviders, authBaseUrl, isSignUp = false }: LoginProps) => {
+export const Login = ({ authProviders, authBaseUrl, isSignUp = false, callbackURL }: LoginProps) => {
   // Default to email/password if no providers specified
   const providers = authProviders || { emailPassword: { enabled: true } };
   const baseUrl = authBaseUrl || "";
+  // Default to /mcp if no callback URL provided
+  const callback = callbackURL || "/mcp";
 
   const hasSocialProviders = providers.github?.enabled || providers.google?.enabled;
   const hasEmailPassword = providers.emailPassword?.enabled;
@@ -35,7 +38,7 @@ export const Login = ({ authProviders, authBaseUrl, isSignUp = false }: LoginPro
               {providers.github?.enabled && (
                 <form action={`${baseUrl}/api/auth/sign-in/social`} method="POST">
                   <input type="hidden" name="provider" value="github" />
-                  <input type="hidden" name="callbackURL" value="/mcp" />
+                  <input type="hidden" name="callbackURL" value={callback} />
                   <button
                     type="submit"
                     className="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-gray-600"
@@ -50,7 +53,7 @@ export const Login = ({ authProviders, authBaseUrl, isSignUp = false }: LoginPro
               {providers.google?.enabled && (
                 <form action={`${baseUrl}/api/auth/sign-in/social`} method="POST">
                   <input type="hidden" name="provider" value="google" />
-                  <input type="hidden" name="callbackURL" value="/mcp" />
+                  <input type="hidden" name="callbackURL" value={callback} />
                   <button
                     type="submit"
                     className="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-gray-600"
@@ -95,8 +98,8 @@ export const Login = ({ authProviders, authBaseUrl, isSignUp = false }: LoginPro
             <form
               action={
                 isSignUp
-                  ? "/api/auth/sign-up/email?callbackURL=/mcp"
-                  : "/api/auth/sign-in/email?callbackURL=/mcp"
+                  ? `/api/auth/sign-up/email?callbackURL=${encodeURIComponent(callback)}`
+                  : `/api/auth/sign-in/email?callbackURL=${encodeURIComponent(callback)}`
               }
               method="POST"
               className={showSocialLogins ? "mt-6 space-y-4" : "space-y-4"}

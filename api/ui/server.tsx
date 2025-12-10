@@ -22,7 +22,9 @@ export const registerUiRoutes = (app: Hono<any>) => {
   const forwardAuthRequest = (request: Request): Promise<Response> => auth.handler(request);
 
   app.get("/login", (c) => {
-    const html = renderUi("/login", { authProviders });
+    const url = new URL(c.req.url);
+    const callbackURL = url.searchParams.get("callback") || undefined;
+    const html = renderUi("/login", { authProviders, callbackURL });
     return c.html("<!DOCTYPE html>" + html);
   });
 

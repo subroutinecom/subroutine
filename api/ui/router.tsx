@@ -21,6 +21,7 @@ type RenderUiProps = {
   authProviders?: any;
   authBaseUrl?: string;
   isSignUp?: boolean;
+  callbackURL?: string;
   // OAuth result props
   oauthSuccess?: boolean;
   oauthError?: string;
