@@ -14,7 +14,6 @@ interface SubroutineResponse {
   source: string;
   inputsSchema?: Record<string, unknown>;
   outputsSchema?: Record<string, unknown>;
-  initialInputs?: Record<string, unknown>;
   createdFrom: {
     request: string;
   };
@@ -42,7 +41,6 @@ export interface ExecuteRequestResult {
   subroutine: SubroutineResponse;
   runUri: string;
   run: RunResponse;
-  initialInputs: Record<string, unknown>;
 }
 
 export interface AuthRequirement {

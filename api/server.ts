@@ -558,7 +558,6 @@ const initialize = async () => {
     source: z.string(),
     inputsSchema: z.record(z.unknown()).optional(),
     outputsSchema: z.record(z.unknown()).optional(),
-    initialInputs: z.record(z.unknown()).optional(),
     createdFrom: z.object({
       request: z.string(),
     }),
@@ -773,7 +772,6 @@ const initialize = async () => {
                 subroutine: SubroutineSchema,
                 runUri: z.string(),
                 run: RunSchema,
-                initialInputs: z.record(z.unknown()),
               }),
             },
           },
@@ -849,7 +847,6 @@ const initialize = async () => {
           subroutineId: generatedSubroutine.id,
           organizationId: auth.organizationId,
           viewerId,
-          inputs: generatedSubroutine.initialInputs,
           timeoutMs,
           wait: true,
         });
@@ -860,7 +857,6 @@ const initialize = async () => {
             subroutine: generatedSubroutine,
             runUri: `resource://run/${run.id}`,
             run,
-            initialInputs: generatedSubroutine.initialInputs,
           },
           201
         );
