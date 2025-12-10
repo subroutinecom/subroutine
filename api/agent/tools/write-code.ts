@@ -197,9 +197,11 @@ export const createWriteCodeTool = (
         const validation = await validateCode(code, validationContext);
 
         if (!validation.valid) {
-          const errorMessages = validation.errors.map((e) =>
-            e.line ? `Line ${e.line}: ${e.message}` : e.message
-          );
+          const errorMessages = validation.errors.map((e) => {
+            const loc = e.line ? `Line ${e.line}` : "Global";
+            const src = e.source ? ` [${e.source}]` : "";
+            return `${loc}: ${e.message}${src}`;
+          });
           logger.warn("Validation failed", { errorMessages, code });
           return {
             success: false,

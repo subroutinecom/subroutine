@@ -4,6 +4,8 @@ export type ValidationError = {
   file?: string;
   line?: number;
   column?: number;
+  /** Source of the error (e.g., 'eslint', 'typescript-compiler', etc.) */
+  source?: string;
 };
 
 export type ValidationResult = {

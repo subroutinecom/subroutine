@@ -80,6 +80,7 @@ export const typeCheckCode = (code: string): TypeCheckResult => {
       line: diagnostic.file
         ? diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start!).line + 1
         : 0,
+      source: "typescript-compiler",
     });
   }
 
