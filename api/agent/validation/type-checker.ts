@@ -1,9 +1,7 @@
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Project, ts } from "ts-morph";
+import ts from "typescript";
 import type { ValidationError } from "./types.ts";
-
-let typeCheckProject: Project | null = null;
 
 const getPaths = () => {
   const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -13,39 +11,8 @@ const getPaths = () => {
   return {
     apiRoot,
     integrationTypesPath: resolve(workspaceRoot, "packages/integration-types/mod.ts"),
-    nodeModulesPath: resolve(apiRoot, "node_modules"),
+    nodeModulesPath: resolve(workspaceRoot, "node_modules"),
   };
-};
-
-const getProject = (): Project => {
-  if (!typeCheckProject) {
-    const { apiRoot, integrationTypesPath, nodeModulesPath } = getPaths();
-
-    typeCheckProject = new Project({
-      skipAddingFilesFromTsConfig: true,
-      compilerOptions: {
-        strict: true,
-        skipLibCheck: true,
-        noEmit: true,
-        target: ts.ScriptTarget.ES2022,
-        module: ts.ModuleKind.NodeNext,
-        moduleResolution: ts.ModuleResolutionKind.NodeNext,
-        baseUrl: apiRoot,
-        paths: {
-          "@subroutine/integration-types": [integrationTypesPath],
-          googleapis: [resolve(nodeModulesPath, "googleapis")],
-          "@modelcontextprotocol/sdk/client": [
-            resolve(nodeModulesPath, "@modelcontextprotocol/sdk/dist/esm/client/index.d.ts"),
-          ],
-          "@modelcontextprotocol/sdk/*": [
-            resolve(nodeModulesPath, "@modelcontextprotocol/sdk/dist/esm/*"),
-          ],
-          "json-schema-to-ts": [resolve(nodeModulesPath, "json-schema-to-ts/index.d.ts")],
-        },
-      },
-    });
-  }
-  return typeCheckProject;
 };
 
 export interface TypeCheckResult {
@@ -59,43 +26,76 @@ export interface TypeCheckResult {
  * Example: import type { Integrations } from "@subroutine/integration-types";
  */
 export const typeCheckCode = (code: string): TypeCheckResult => {
-  const project = getProject();
+  const { apiRoot, integrationTypesPath, nodeModulesPath } = getPaths();
+  // Virtual filename in the same directory to ensure relative imports would resolve similarly if present
+  const filename = resolve(dirname(fileURLToPath(import.meta.url)), `_check_${Date.now()}.ts`);
 
-  const filename = `typecheck-${Date.now()}.ts`;
-  const sourceFile = project.createSourceFile(filename, code, { overwrite: true });
+  const compilerOptions: ts.CompilerOptions = {
+    strict: true,
+    skipLibCheck: true,
+    noEmit: true,
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    baseUrl: apiRoot,
+    paths: {
+      "@subroutine/integration-types": [integrationTypesPath],
+      // Manually map @modelcontextprotocol/sdk to the node_modules location if needed,
+      // but NodeNext resolution should find it if it's in node_modules.
+      // We might need to help it find packages in the root node_modules if we are deeper.
+      "*": ["*", resolve(nodeModulesPath, "*")],
+    },
+  };
 
-  try {
-    const diagnostics = sourceFile.getPreEmitDiagnostics();
+  // Create a compiler host that serves our virtual file from memory
+  const host = ts.createCompilerHost(compilerOptions);
+  const originalGetSourceFile = host.getSourceFile;
 
-    const errors: ValidationError[] = [];
+  host.getSourceFile = (fileName, languageVersion, onError, shouldCreateNewSourceFile) => {
+    if (fileName === filename) {
+      return ts.createSourceFile(fileName, code, languageVersion);
+    }
+    return originalGetSourceFile(fileName, languageVersion, onError, shouldCreateNewSourceFile);
+  };
 
-    for (const diagnostic of diagnostics) {
-      if (diagnostic.getCategory() !== ts.DiagnosticCategory.Error) {
-        continue;
-      }
+  const program = ts.createProgram([filename], compilerOptions, host);
+  const diagnostics = ts.getPreEmitDiagnostics(program);
 
-      const messageText = diagnostic.getMessageText();
-      const message = typeof messageText === "string" ? messageText : messageText.getMessageText();
+  const errors: ValidationError[] = [];
 
-      errors.push({
-        rule: "typescript-typecheck",
-        message,
-        line: diagnostic.getLineNumber(),
-      });
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.category !== ts.DiagnosticCategory.Error) {
+      continue;
     }
 
-    return {
-      valid: errors.length === 0,
-      errors: errors.slice(0, 10), // Limit to 10 errors
-    };
-  } finally {
-    sourceFile.delete();
+    // Filter out errors that are not about the file we are checking
+    // (sometimes global or lib errors might slip through)
+    if (diagnostic.file && diagnostic.file.fileName !== filename) {
+      continue;
+    }
+
+    const messageText = diagnostic.messageText;
+    const message = typeof messageText === "string" ? messageText : messageText.messageText;
+
+    errors.push({
+      rule: "typescript-typecheck",
+      message,
+      line: diagnostic.file
+        ? diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start!).line + 1
+        : 0,
+    });
   }
+
+  return {
+    valid: errors.length === 0,
+    errors: errors.slice(0, 10), // Limit to 10 errors
+  };
 };
 
 /**
  * Reset the cached project (useful for testing).
+ * In this implementation we create a fresh program each time so this is a no-op but kept for API compat.
  */
 export const resetTypeCheckProject = (): void => {
-  typeCheckProject = null;
+  // no-op
 };
