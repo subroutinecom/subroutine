@@ -1,11 +1,18 @@
 import { Hono } from "hono";
 import { auth } from "../auth.ts";
+import { getConfig } from "../config/loader.ts";
 import { renderUi } from "./router.tsx";
 import { getLogger } from "../utils/logger.ts";
 const logger = getLogger("api/ui/server.tsx");
 
+const config = await getConfig();
 
 export const registerUiRoutes = (app: Hono<any>) => {
+  const authProviders = {
+    github: { enabled: config.auth.providers.github.enabled },
+    google: { enabled: config.auth.providers.google.enabled },
+    emailPassword: { enabled: config.auth.providers.emailPassword.enabled },
+  };
   const shouldForwardJsonAuth = (request: Request): boolean => {
     const contentType = request.headers.get("content-type") ?? "";
     const accept = request.headers.get("accept") ?? "";
@@ -15,7 +22,7 @@ export const registerUiRoutes = (app: Hono<any>) => {
   const forwardAuthRequest = (request: Request): Promise<Response> => auth.handler(request);
 
   app.get("/login", (c) => {
-    const html = renderUi("/login");
+    const html = renderUi("/login", { authProviders });
     return c.html("<!DOCTYPE html>" + html);
   });
 

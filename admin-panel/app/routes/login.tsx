@@ -25,8 +25,7 @@ export default function Login() {
     reset,
   } = useForm<LoginFormData>();
 
-  // TODO: use config file for this.
-  const authProviders = {
+  const authProviders = config.authProviders ?? {
     github: { enabled: true },
     google: { enabled: true },
     emailPassword: { enabled: true },

@@ -2,11 +2,18 @@ import type { UIMatch } from "react-router";
 
 const IS_ROOT_HANDLE = "isRootHandle";
 
+export interface AuthProviders {
+  github: { enabled: boolean };
+  google: { enabled: boolean };
+  emailPassword: { enabled: boolean };
+}
+
 export interface AdminClientConfig {
   apiUrl: string;
   graphqlUrl: string;
   authBaseUrl: string;
   redirectBase: string;
+  authProviders?: AuthProviders;
 }
 
 let cachedConfig: AdminClientConfig | null = null;
@@ -30,6 +37,7 @@ const validateConfig = (data: Partial<AdminClientConfig>): AdminClientConfig => 
     graphqlUrl,
     authBaseUrl,
     redirectBase,
+    authProviders: data.authProviders,
   };
 };
 

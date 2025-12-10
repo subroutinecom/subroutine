@@ -117,6 +117,12 @@ const initialize = async () => {
       graphqlUrl,
       authBaseUrl,
       redirectBase,
+      authProviders: {
+        github: { enabled: config.auth.providers.github.enabled },
+        google: { enabled: config.auth.providers.google.enabled },
+        emailPassword: { enabled: config.auth.providers.emailPassword.enabled },
+      },
+      allowedOrigins: config.auth.allowedOrigins,
     });
   });
 
