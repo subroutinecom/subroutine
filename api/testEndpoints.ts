@@ -132,6 +132,56 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
       errors: result.errors,
     });
   });
+
+  // Full validation endpoint - runs ESLint and type checking
+  app.post("/tests/validate-code", async (c) => {
+    let body: {
+      code?: string;
+      mcpIntegrationNames?: string[];
+      graphqlIntegrations?: any[];
+      openapiIntegrations?: any[];
+    };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "Invalid JSON body",
+          },
+        },
+        400
+      );
+    }
+
+    if (!body.code || typeof body.code !== "string") {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "code field is required",
+          },
+        },
+        400
+      );
+    }
+
+    // Build context for validation
+    const context = {
+      mcpIntegrationNames: body.mcpIntegrationNames,
+      graphqlIntegrations: body.graphqlIntegrations,
+      openapiIntegrations: body.openapiIntegrations,
+    };
+
+    const { validateCode } = await import("./agent/validation/validator.ts");
+    const result = await validateCode(body.code, context);
+
+    return c.json({
+      valid: result.valid,
+      errors: result.errors,
+    });
+  });
 };
 
 /**

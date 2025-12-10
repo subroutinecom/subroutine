@@ -1,5 +1,5 @@
-import { checkCustomRules } from "./ast-checker.ts";
 import { validateWithEslint } from "./eslint.ts";
+// import { checkCustomRules } from "./ast-checker.ts";
 import { typeCheckCode } from "./type-checker.ts";
 import type { ValidationContext, ValidationError, ValidationResult } from "./types.ts";
 
@@ -9,13 +9,15 @@ export const validateCode = async (
 ): Promise<ValidationResult> => {
   const errors: ValidationError[] = [];
 
+  /*
   const customRulesResult = checkCustomRules(code, context);
   if (!customRulesResult.valid) {
     errors.push(...customRulesResult.errors);
     return { valid: false, errors };
   }
+  */
 
-  const eslintResult = validateWithEslint(code);
+  const eslintResult = validateWithEslint(code, context);
   if (!eslintResult.valid) {
     errors.push(...eslintResult.errors);
   }
