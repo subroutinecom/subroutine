@@ -255,7 +255,7 @@ Deno.test("Validator - agent/no-nested-imports", async (t) => {
       // Let's use a dynamic import for "nested" check? No, rule checks `ImportDeclaration`.
       // Let's skip negative test if it's a syntax error, but we'll try.
       assertError(result, "agent/no-nested-imports");
-    } catch (e) {
+    } catch (_e) {
       // If API throws or returns valid=false with parse error, we accept that too?
       // But user wants to test the LINTER.
     }

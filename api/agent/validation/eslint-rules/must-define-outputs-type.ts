@@ -12,17 +12,17 @@ export const mustDefineOutputsType: Rule.RuleModule = {
     let outputsDefined = false;
 
     return {
-      TSInterfaceDeclaration(node) {
+      TSInterfaceDeclaration(node: any) {
         if (node.id.name === "Outputs") {
           outputsDefined = true;
         }
       },
-      TSTypeAliasDeclaration(node) {
+      TSTypeAliasDeclaration(node: any) {
         if (node.id.name === "Outputs") {
           outputsDefined = true;
         }
       },
-      ClassDeclaration(node) {
+      ClassDeclaration(node: any) {
         if (node.id?.name === "Outputs") {
           outputsDefined = true;
         }

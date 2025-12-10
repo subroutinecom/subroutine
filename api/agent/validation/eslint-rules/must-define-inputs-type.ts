@@ -12,17 +12,17 @@ export const mustDefineInputsType: Rule.RuleModule = {
     let inputsDefined = false;
 
     return {
-      TSInterfaceDeclaration(node) {
+      TSInterfaceDeclaration(node: any) {
         if (node.id.name === "Inputs") {
           inputsDefined = true;
         }
       },
-      TSTypeAliasDeclaration(node) {
+      TSTypeAliasDeclaration(node: any) {
         if (node.id.name === "Inputs") {
           inputsDefined = true;
         }
       },
-      ClassDeclaration(node) {
+      ClassDeclaration(node: any) {
         if (node.id?.name === "Inputs") {
           inputsDefined = true;
         }

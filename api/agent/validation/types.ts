@@ -1,5 +1,3 @@
-import type { SourceFile } from "ts-morph";
-
 export type ValidationError = {
   rule: string;
   message: string;
@@ -46,9 +44,3 @@ export type ValidationContext = {
   /** OpenAPI integrations with their specs for request validation */
   openapiIntegrations?: OpenAPIIntegrationSchema[];
 };
-
-/** All validation rules receive context - they can choose to use it or not */
-export type ValidationRule = (
-  sourceFile: SourceFile,
-  context?: ValidationContext
-) => ValidationError[];
