@@ -174,7 +174,7 @@ IMPORTANT: The method and path must match one of the operations listed above.`,
             );
             if (result.success && result.tools) {
               usedIntegrationIds.add(mockIntegration.id);
-              logger.debug(`MCP Result for ${mockIntegration.name}:`, result.tools);
+              // logger.debug(`MCP Result for ${mockIntegration.name}:`, result.tools);
               return {
                 success: true,
                 type: "mcp",
@@ -233,10 +233,10 @@ IMPORTANT: Generated GraphQL queries MUST be valid against the schema above.`,
         const result = await handleInspectMcp(integration, mcpContext, capturedAuthRequirements);
         if (result.success && result.tools) {
           usedIntegrationIds.add(integration.id);
-          logger.debug(
-            `[InspectIntegration] MCP Result for ${integration.name}:`,
-            JSON.stringify(result.tools, null, 2)
-          );
+          // logger.debug(
+          //   `[InspectIntegration] MCP Result for ${integration.name}:`,
+          //   JSON.stringify(result.tools, null, 2)
+          // );
           return {
             success: true,
             type: "mcp",

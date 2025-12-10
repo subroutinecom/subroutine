@@ -192,7 +192,6 @@ export const generateCode = async (
         }
 
         // 2. Execute in sandbox
-        // 2. Execute in sandbox
         let sandboxIntegrations: Awaited<ReturnType<typeof buildSandboxIntegrations>> = [];
 
         if (options?.mcpContext) {
