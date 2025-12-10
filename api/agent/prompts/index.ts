@@ -306,7 +306,7 @@ ALWAYS use tools to discover/setup integrations BEFORE generating code that uses
 
 TECHNICAL REQUIREMENTS:
 1. Start your code with: import type { Integrations } from "@subroutine/integration-types";
-2. Define TypeScript interfaces for Inputs and Outputs based on the schemas
+2. Define TypeScript interfaces for Inputs and Outputs
 3. Export an async function called "main" with signature: export async function main(inputs: Inputs, context: { integrations: Integrations }): Promise<Outputs>
 4. Code must be clean, efficient, and production-ready TypeScript
 5. Handle edge cases with proper validation and error messages
@@ -359,15 +359,20 @@ export async function main(inputs: Inputs, { integrations }: { integrations: Int
 };
 
 type PromptOptions = {
-  needsImmediateInputs?: boolean;
+  disableExecution?: boolean;
 };
 
-export const CODE_GENERATION_USER_PROMPT = (request: string, options?: PromptOptions): string => {
-  let prompt = `Generate a TypeScript subroutine for: ${request}`;
+export const CODE_GENERATION_USER_PROMPT = (request: string, _options?: PromptOptions): string => {
+  const prompt = `Generate a TypeScript subroutine for: ${request}
 
-  if (options?.needsImmediateInputs) {
-    prompt += `\n\nAdditionally, produce an "immediateInputs" JSON object that satisfies your Inputs schema and can be used to execute main right away without further clarification. Populate every required field with sensible defaults inferred from the request.`;
-  }
+CRITICAL INSTRUCTION:
+Your goal is to create a REUSABLE, ABSTRACTED function that can be retrieved and used again for similar tasks.
+- ANY INPUT VALUES FOR THIS TASK MUST BE ATTACHED TO THE inputValues portion of the response and must conform to the inputsType.
+- EXTRACT specific values, IDs, search terms, or parameters from the user's request into the "Inputs" type.
+- DO NOT hardcode these specific values in the function body. The function logic should be generic.
+- Example: If asked to "add 5 and 10", generate a function that accepts two numbers as inputs, NOT a function that returns 5 + 10.
+- Example: If asked to "get the contents of repo my_stuff", generate a function that takes \`repoName\` as input.
+`;
 
   return prompt;
 };

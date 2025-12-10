@@ -1,13 +1,13 @@
 import { expect } from "@std/expect";
 import { describe, it } from "@std/testing/bdd";
 import type { CookieJar } from "tough-cookie";
-import { getTestApiKey } from "../fixtures/apikey";
+import { getTestApiKey } from "../fixtures/apikey.ts";
 import {
   createTestAuthClientWithJar,
   generateOrgName,
   generateSlug,
   generateTestEmail,
-} from "../utils/auth-client";
+} from "../utils/auth-client.ts";
 
 const API_BASE = "http://api.subroutine.internal:80";
 const VIEWER_ID = "viewer-123";
@@ -238,7 +238,6 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       expect(response.status).toBe(201);
       expect(response.data.subroutine).toBeDefined();
       expect(response.data.run).toBeDefined();
-      expect(response.data.initialInputs).toBeDefined();
     });
   });
 
@@ -439,7 +438,6 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       expect(response.status).toBe(201);
       expect(response.data.subroutine).toBeDefined();
       expect(response.data.run).toBeDefined();
-      expect(response.data.initialInputs).toBeDefined();
     });
   });
 

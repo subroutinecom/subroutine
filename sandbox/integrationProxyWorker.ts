@@ -5,14 +5,20 @@ import {
   createCalendarClient,
   type CalendarConfig,
   type CalendarTokens,
-} from "./integrations/calendar/mod";
-import type { CalendarAPI } from "./integrations/calendar/types";
-import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod";
-import type { GmailAPI } from "./integrations/gmail/types";
-import { createGraphQLClient, type GraphQLClient } from "./integrations/graphql/mod";
-import { createMcpClient } from "./integrations/mcp/mod";
-import { createOpenAPIClient, type OpenAPIClient } from "./integrations/openapi/mod";
-import { RemoteProxyServer, type CallRequest, type CallResponse } from "./remoteProxy";
+} from "./integrations/calendar/mod.ts";
+import type { CalendarAPI } from "./integrations/calendar/types.ts";
+import { createGmailClient, type GmailConfig, type GmailTokens } from "./integrations/gmail/mod.ts";
+import type { GmailAPI } from "./integrations/gmail/types.ts";
+import { createGraphQLClient, type GraphQLClient } from "./integrations/graphql/mod.ts";
+import { createMcpClient } from "./integrations/mcp/mod.ts";
+import { createOpenAPIClient, type OpenAPIClient } from "./integrations/openapi/mod.ts";
+import {
+  RemoteProxyServer,
+  tagRemote,
+  type CallRequest,
+  type CallResponse,
+  type Path,
+} from "./remoteProxy.ts";
 import type { SandboxIntegrationPayload } from "./types.ts";
 
 interface S3API {
@@ -34,7 +40,25 @@ type WireMessage =
 let messagePort: MessagePort | null = null;
 
 const buildDefaultServer = (): RemoteProxyServer<object> => {
-  const defaultServer = new RemoteProxyServer<object>();
+  const defaultServer = new RemoteProxyServer<object>(undefined, {
+    onCall: (path: Path, args: readonly unknown[], metadata?: Record<string, unknown>) => {
+      let logPrefix = path.join(".");
+      if (metadata && typeof metadata.integration === "string") {
+        const method = path[path.length - 1];
+        if (path[0].startsWith("@@instance")) {
+          logPrefix = `${metadata.integration}.${method}`;
+        } else {
+          logPrefix = `${metadata.integration} (init)`;
+        }
+      }
+
+      console.log(
+        `[IntegrationProxy] Call: ${logPrefix} args=${JSON.stringify(args)}${
+          metadata ? " meta=" + JSON.stringify(metadata) : ""
+        }`
+      );
+    },
+  });
 
   const mockGmail: GmailAPI = {
     users: {
@@ -54,7 +78,10 @@ const buildDefaultServer = (): RemoteProxyServer<object> => {
     },
   } as unknown as GmailAPI;
 
-  defaultServer.registerSingleton("getGmail", () => mockGmail as unknown as object);
+  defaultServer.registerSingleton("getGmail", () => mockGmail as unknown as object, {
+    integration: "gmail",
+    type: "mock",
+  });
 
   const mockCalendar: CalendarAPI = {
     calendarList: {
@@ -69,31 +96,46 @@ const buildDefaultServer = (): RemoteProxyServer<object> => {
     },
   } as unknown as CalendarAPI;
 
-  defaultServer.registerSingleton("getCalendar", () => mockCalendar as unknown as object);
-
-  defaultServer.registerSingleton("getS3", () => {
-    const s3: S3API = {
-      listBuckets: () => ({ buckets: ["photos", "backups"] }),
-    };
-    return s3 as unknown as object;
+  defaultServer.registerSingleton("getCalendar", () => mockCalendar as unknown as object, {
+    integration: "calendar",
+    type: "mock",
   });
 
-  defaultServer.registerSingleton("getGithub", () => {
-    const gh: GithubAPI = {
-      me: () => ({ login: "octocat" }),
-    };
-    return gh as unknown as object;
-  });
+  defaultServer.registerSingleton(
+    "getS3",
+    () => {
+      const s3: S3API = {
+        listBuckets: () => ({ buckets: ["photos", "backups"] }),
+      };
+      return s3 as unknown as object;
+    },
+    { integration: "s3", type: "mock" }
+  );
 
-  defaultServer.registerSingleton("getPing", () => {
-    const ping: PingAPI = {
-      ping: (message: string) => ({
-        echo: message,
-        timestamp: Date.now(),
-      }),
-    };
-    return ping as unknown as object;
-  });
+  defaultServer.registerSingleton(
+    "getGithub",
+    () => {
+      const gh: GithubAPI = {
+        me: () => ({ login: "octocat" }),
+      };
+      return gh as unknown as object;
+    },
+    { integration: "github", type: "mock" }
+  );
+
+  defaultServer.registerSingleton(
+    "getPing",
+    () => {
+      const ping: PingAPI = {
+        ping: (message: string) => ({
+          echo: message,
+          timestamp: Date.now(),
+        }),
+      };
+      return ping as unknown as object;
+    },
+    { integration: "ping", type: "mock" }
+  );
 
   return defaultServer;
 };
@@ -104,7 +146,25 @@ const buildServerForIntegrations = async (
   const buildStart = Date.now();
   console.log(`[IntegrationProxy] Building server for ${integrations.length} integrations`);
 
-  const server = new RemoteProxyServer<object>();
+  const server = new RemoteProxyServer<object>(undefined, {
+    onCall: (path: Path, args: readonly unknown[], metadata?: Record<string, unknown>) => {
+      let logPrefix = path.join(".");
+      if (metadata && typeof metadata.integration === "string") {
+        const method = path[path.length - 1];
+        if (path[0].startsWith("@@instance")) {
+          logPrefix = `${metadata.integration}.${method}`;
+        } else {
+          logPrefix = `${metadata.integration} (init)`;
+        }
+      }
+
+      console.log(
+        `[IntegrationProxy] Call: ${logPrefix} args=${JSON.stringify(args)}${
+          metadata ? " meta=" + JSON.stringify(metadata) : ""
+        }`
+      );
+    },
+  });
 
   // Store MCP clients by integration name for the getMcpClient getter
   const mcpClients = new Map<string, Client>();
@@ -171,7 +231,10 @@ const buildServerForIntegrations = async (
         );
       }
 
-      return client as unknown as object;
+      return tagRemote(client as unknown as object, {
+        integration: integrationName,
+        type: "mcp",
+      });
     });
   }
 
@@ -218,7 +281,10 @@ const buildServerForIntegrations = async (
         );
       }
 
-      return client as unknown as object;
+      return tagRemote(client as unknown as object, {
+        integration: integrationName,
+        type: "graphql",
+      });
     });
   }
 
@@ -260,14 +326,20 @@ const buildServerForIntegrations = async (
         );
       }
 
-      return client as unknown as object;
+      return tagRemote(client as unknown as object, {
+        integration: integrationName,
+        type: "openapi",
+      });
     });
   }
 
   // Handle traditional OAuth-based integrations
   await Promise.all(
     integrations
-      .filter((integration) => !integration.mcpConfig && !integration.graphqlConfig && !integration.openapiConfig)
+      .filter(
+        (integration) =>
+          !integration.mcpConfig && !integration.graphqlConfig && !integration.openapiConfig
+      )
       .map((integration) => {
         switch (integration.provider) {
           case "gmail": {
@@ -299,7 +371,11 @@ const buildServerForIntegrations = async (
 
             const gmail = createGmailClient(tokens, config);
 
-            server.registerSingleton("getGmail", () => gmail as unknown as object);
+            server.registerSingleton("getGmail", () => gmail as unknown as object, {
+              integration: "gmail",
+              type: "oauth",
+              provider: "gmail",
+            });
             break;
           }
           case "google_calendar": {
@@ -331,7 +407,11 @@ const buildServerForIntegrations = async (
 
             const calendar = createCalendarClient(tokens, config);
 
-            server.registerSingleton("getCalendar", () => calendar as unknown as object);
+            server.registerSingleton("getCalendar", () => calendar as unknown as object, {
+              integration: "calendar",
+              type: "oauth",
+              provider: "google_calendar",
+            });
             break;
           }
           case "mock_oauth": {
@@ -347,7 +427,8 @@ const buildServerForIntegrations = async (
                     echo: message,
                     viewerId,
                   }),
-                }) as unknown as object
+                }) as unknown as object,
+              { integration: "mock_oauth", type: "mock", provider: "mock_oauth" }
             );
             break;
           }

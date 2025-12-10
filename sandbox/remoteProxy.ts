@@ -38,39 +38,75 @@ export type Remote<T> = {
       : unknown;
 };
 
+export type TaggedRemote<T> = { value: T; metadata: Record<string, unknown> };
+
+export const tagRemote = <T>(value: T, metadata: Record<string, unknown>): TaggedRemote<T> => ({
+  value,
+  metadata,
+});
+
+const isTaggedRemote = (v: unknown): v is TaggedRemote<unknown> =>
+  typeof v === "object" &&
+  v !== null &&
+  "value" in v &&
+  "metadata" in v &&
+  typeof (v as any).metadata === "object";
+
 const isFunction = (v: unknown): v is (...args: unknown[]) => unknown => typeof v === "function";
 
 const genId = () => crypto.randomUUID();
 
 type ProviderEntry = {
-  readonly factory: (...args: readonly unknown[]) => Promise<object> | object;
+  readonly factory: (
+    ...args: readonly unknown[]
+  ) => Promise<object | TaggedRemote<object>> | object | TaggedRemote<object>;
   readonly singleton: boolean;
+  readonly metadata?: Record<string, unknown>;
   instanceId?: string;
 };
+
+export type CallHook = (
+  path: Path,
+  args: readonly unknown[],
+  metadata?: Record<string, unknown>
+) => void;
+
+export interface RemoteProxyOptions {
+  onCall?: CallHook;
+}
 
 export class RemoteProxyServer<T extends object = object> {
   #target: T;
   #instances: Map<string, object> = new Map();
+  #instanceMetadata: Map<string, Record<string, unknown>> = new Map();
   #providers: Map<string, ProviderEntry> = new Map();
+  #onCall?: CallHook;
   static readonly INSTANCE_PREFIX = "@@instance" as const;
 
-  constructor(target?: T) {
+  constructor(target?: T, options?: RemoteProxyOptions) {
     // When no implementation is provided, use an empty object and rely on providers
     this.#target = target ?? ({} as T);
+    this.#onCall = options?.onCall;
   }
 
   register(
     name: string,
-    provider: (...args: readonly unknown[]) => Promise<object> | object
+    provider: (
+      ...args: readonly unknown[]
+    ) => Promise<object | TaggedRemote<object>> | object | TaggedRemote<object>,
+    metadata?: Record<string, unknown>
   ): void {
-    this.#providers.set(name, { factory: provider, singleton: false });
+    this.#providers.set(name, { factory: provider, singleton: false, metadata });
   }
 
   registerSingleton(
     name: string,
-    provider: (...args: readonly unknown[]) => Promise<object> | object
+    provider: (
+      ...args: readonly unknown[]
+    ) => Promise<object | TaggedRemote<object>> | object | TaggedRemote<object>,
+    metadata?: Record<string, unknown>
   ): void {
-    this.#providers.set(name, { factory: provider, singleton: true });
+    this.#providers.set(name, { factory: provider, singleton: true, metadata });
   }
 
   handle: Handler = async (req) => {
@@ -85,15 +121,25 @@ export class RemoteProxyServer<T extends object = object> {
     try {
       const { path, args } = req;
 
-      // Determine context: root target or an existing instance
+      // Determine context and metadata: root target or an existing instance
       let startIndex = 0;
       let ctx: unknown = this.#target;
+      let metadata: Record<string, unknown> | undefined;
+
       if (path[0] === RemoteProxyServer.INSTANCE_PREFIX) {
         const instanceId = path[1];
         const inst = this.#instances.get(instanceId);
         if (!inst) throw new Error(`Unknown instance: ${instanceId}`);
         ctx = inst;
         startIndex = 2;
+        metadata = this.#instanceMetadata.get(instanceId);
+      } else if (path.length > 0 && this.#providers.has(path[0])) {
+        // If it's a root provider call, check for static metadata
+        metadata = this.#providers.get(path[0])?.metadata;
+      }
+
+      if (this.#onCall) {
+        this.#onCall(path, args, metadata);
       }
 
       for (let i = startIndex; i < path.length - 1; i++) {
@@ -108,6 +154,7 @@ export class RemoteProxyServer<T extends object = object> {
       if (typeof ctx !== "object" || ctx === null) {
         throw new Error(`Invalid call target for ${leafKey}`);
       }
+
       const fnCandidate = (ctx as Record<string, unknown>)[leafKey];
       if (!isFunction(fnCandidate)) {
         // Lazy provider fallback if calling a root-level virtual method
@@ -117,12 +164,25 @@ export class RemoteProxyServer<T extends object = object> {
             return { id: req.id, ok: true, result: { __remote_instance__: entry.instanceId } };
           }
 
-          const awaited = await Promise.resolve(entry.factory(...args));
+          let rawResult = await Promise.resolve(entry.factory(...args));
+          let effectiveMetadata = entry.metadata;
+
+          if (isTaggedRemote(rawResult)) {
+            effectiveMetadata = { ...effectiveMetadata, ...rawResult.metadata };
+            rawResult = rawResult.value as object;
+          }
+
+          const awaited = rawResult;
+
           if (typeof awaited !== "object" || awaited === null) {
             throw new Error(`Provider ${leafKey} did not return an object`);
           }
           const newId = genId();
           this.#instances.set(newId, awaited as object);
+          if (effectiveMetadata) {
+            this.#instanceMetadata.set(newId, effectiveMetadata);
+          }
+
           if (entry.singleton) {
             entry.instanceId = newId;
           }
@@ -141,6 +201,10 @@ export class RemoteProxyServer<T extends object = object> {
       if (hasCallable) {
         const newId = genId();
         this.#instances.set(newId, awaited as object);
+        // Propagate metadata from parent instance
+        if (metadata) {
+          this.#instanceMetadata.set(newId, metadata);
+        }
         return { id: req.id, ok: true, result: { __remote_instance__: newId } };
       }
 

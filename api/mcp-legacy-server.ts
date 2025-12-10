@@ -1,12 +1,11 @@
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { getRun, listRuns, runSubroutine } from "./models/run.ts";
-import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 import type { AuthContext } from "./middlewares/auth.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
+import { getRun, listRuns, runSubroutine } from "./models/run.ts";
+import { generateSubroutine, getSubroutine, listSubroutines } from "./models/subroutine.ts";
 import { getLogger } from "./utils/logger.ts";
 const logger = getLogger("api/mcp-legacy-server.ts");
-
 
 const requireOrganizationId = (auth: AuthContext): string => {
   if (!auth.organizationId) {
@@ -257,7 +256,6 @@ export function createLegacyMcpServer(auth: AuthContext): McpServer {
           integrations,
           organizationId,
           useMock,
-          needsImmediateInputs: true,
         });
 
         if (!subroutine.initialInputs) {

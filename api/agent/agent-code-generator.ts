@@ -3,7 +3,11 @@ import type { LanguageModel, ModelMessage } from "ai";
 import { streamText } from "ai";
 import { IntegrationAuthRequiredError, type AuthRequirement } from "../models/errors.ts";
 import { getLogger } from "../utils/logger.ts";
-import { CODE_GENERATION_USER_PROMPT, IntegrationInfoSchema, SYSTEM_PROMPT } from "./prompts/index.ts";
+import {
+  CODE_GENERATION_USER_PROMPT,
+  IntegrationInfoSchema,
+  SYSTEM_PROMPT,
+} from "./prompts/index.ts";
 import {
   checkAuthRequirements,
   createAgentTools,
@@ -123,7 +127,7 @@ export const ModelMessageSchema = z.union([
 ]);
 
 export const GenerateCodeOptionsSchema = z.object({
-  needsImmediateInputs: z.boolean().optional(),
+  disableExecution: z.boolean().optional(),
   /** First-party integrations with dedicated libraries (Gmail, Calendar, etc.) */
   firstPartyIntegrations: z.array(z.string()).optional(),
   /** Configurable integrations (MCP servers, GraphQL endpoints, or OpenAPI services) */
@@ -171,7 +175,7 @@ export const generateCode = async (
     const tools = createAgentTools(onCapture, capturedAuthRequirements, usedIntegrationIds, {
       mcpContext: options?.mcpContext,
       integrations: options?.integrations,
-      needsImmediateInputs: options?.needsImmediateInputs,
+      disableExecution: options?.disableExecution,
     });
 
     logger.debug(`Available tools: ${Object.keys(tools).join(", ")}`);
@@ -188,14 +192,19 @@ export const generateCode = async (
         ...((options?.initialMessages ?? []) as ModelMessage[]),
         {
           role: "assistant",
-          content: CODE_GENERATION_USER_PROMPT(request, {
-            needsImmediateInputs: options?.needsImmediateInputs ?? false,
-          }),
+          content: CODE_GENERATION_USER_PROMPT(request),
         },
       ],
+      toolChoice: "required",
       tools: tools as Parameters<typeof streamText>[0]["tools"],
       stopWhen: () => {
         iters++;
+        logger.warn(
+          JSON.stringify({
+            iters,
+            shouldStop: capturedResult !== null || iters >= MAX_ITERATIONS,
+          })
+        );
         return capturedResult !== null || iters >= MAX_ITERATIONS;
       },
     };
@@ -228,7 +237,7 @@ export const generateCode = async (
     }
 
     // 6. Return Success
-    const { code, inputsSchema, outputsSchema, immediateInputs } = capturedResult;
+    const { code, inputsSchema, outputsSchema } = capturedResult;
     const finalUsedIds = determineUsedIntegrations(code, usedIntegrationIds, options?.mcpContext);
 
     return {
@@ -236,7 +245,6 @@ export const generateCode = async (
       source: code,
       inputsSchema,
       outputsSchema,
-      immediateInputs,
       iterations: steps.length,
       usedIntegrationIds: finalUsedIds,
     };

@@ -14,7 +14,7 @@ import { createListIntegrations } from "../tools/list-integrations.ts";
 import { createManageMcpIntegration } from "../tools/manage-integration.ts";
 import { createWriteCodeTool } from "../tools/write-code.ts";
 import type { McpContext, SubroutineCapture } from "./types.ts";
-const logger = getLogger("api/agent/utils/generation-helpers.ts", "debug");
+const logger = getLogger("api/agent/utils/generation-helpers.ts", "warn");
 
 const logFilter = (k: string, v: unknown) => (k === "providerMetadata" ? "<truncated>" : v);
 
@@ -22,7 +22,7 @@ export type ToolCreationOptions = {
   mcpContext?: McpContext;
   /** Integrations provided to the agent (MCP or GraphQL) */
   integrations?: IntegrationInfo[];
-  needsImmediateInputs?: boolean;
+  disableExecution?: boolean;
 };
 
 export const createAgentTools = (
@@ -33,7 +33,7 @@ export const createAgentTools = (
 ) => {
   const tools: Record<string, unknown> = {
     writeCode: createWriteCodeTool(onCapture, {
-      needsImmediateInputs: options.needsImmediateInputs,
+      disableExecution: options.disableExecution,
       mcpContext: options.mcpContext,
       integrations: options.integrations,
     }),
@@ -83,7 +83,7 @@ export const logGenerationSteps = (steps: any[]) => {
     logger.debug(`Step ${i + 1}:`);
     if (step.toolCalls && step.toolCalls.length > 0) {
       for (const tc of step.toolCalls) {
-        const args = "args" in tc ? tc.args : {};
+        const args = "input" in tc ? tc.input : {};
         logger.debug(`  - Tool call: ${tc.toolName}`);
         logger.debug(`    Args: ${JSON.stringify(args, logFilter, 2)}`);
       }

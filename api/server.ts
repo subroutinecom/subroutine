@@ -8,6 +8,7 @@ import { createYoga } from "graphql-yoga";
 import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { generateCode, GenerateCodeOptionsSchema } from "./agent/agent-code-generator.ts";
+import { formatInput } from "./agent/agent-input-formatter.ts";
 import { testMockMcpServers } from "./agent/agent-mock-mcp-tester.ts";
 import { coerceToSchema } from "./agent/agent-type-coercer.ts";
 import { createModel } from "./agent/utils/providers.ts";
@@ -477,6 +478,39 @@ const initialize = async () => {
       return c.json(result);
     });
 
+    app.post("/api/dev/input-format", async (c) => {
+      let body: {
+        input: unknown;
+        schema?: string;
+        mode?: "auto" | "json" | "tool";
+      };
+
+      try {
+        body = await c.req.json();
+      } catch {
+        return c.json({ success: false, error: "Invalid JSON body" }, 400);
+      }
+
+      if (!body.schema || typeof body.schema !== "string") {
+        return c.json(
+          { success: false, error: "schema field is required and must be a string" },
+          400
+        );
+      }
+
+      const result = await formatInput<string>({
+        input: body.input,
+        schema: body.schema,
+        mode: body.mode,
+      });
+
+      if (!result.success) {
+        return c.json(result, 400);
+      }
+
+      return c.json(result);
+    });
+
     app.post("/api/dev/test-mock-mcp", async (c) => {
       let body: { prompt?: string } = {};
       try {
@@ -524,7 +558,6 @@ const initialize = async () => {
     source: z.string(),
     inputsSchema: z.record(z.unknown()).optional(),
     outputsSchema: z.record(z.unknown()).optional(),
-    initialInputs: z.record(z.unknown()).optional(),
     createdFrom: z.object({
       request: z.string(),
     }),
@@ -739,7 +772,6 @@ const initialize = async () => {
                 subroutine: SubroutineSchema,
                 runUri: z.string(),
                 run: RunSchema,
-                initialInputs: z.record(z.unknown()),
               }),
             },
           },
@@ -809,18 +841,12 @@ const initialize = async () => {
           integrations,
           organizationId: auth.organizationId,
           useMock,
-          needsImmediateInputs: true,
         });
-
-        if (!generatedSubroutine.initialInputs) {
-          throw new Error("Generated subroutine did not include immediate inputs");
-        }
 
         const run = await runSubroutine({
           subroutineId: generatedSubroutine.id,
           organizationId: auth.organizationId,
           viewerId,
-          inputs: generatedSubroutine.initialInputs,
           timeoutMs,
           wait: true,
         });
@@ -831,7 +857,6 @@ const initialize = async () => {
             subroutine: generatedSubroutine,
             runUri: `resource://run/${run.id}`,
             run,
-            initialInputs: generatedSubroutine.initialInputs,
           },
           201
         );

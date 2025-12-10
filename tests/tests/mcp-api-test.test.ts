@@ -9,7 +9,6 @@ interface Subroutine {
   source: string;
   inputsSchema?: Record<string, unknown>;
   outputsSchema?: Record<string, unknown>;
-  initialInputs?: Record<string, unknown>;
   createdFrom: { request: string };
   createdAt: string;
 }
@@ -209,8 +208,6 @@ it("execute request to create and run a subroutine", async () => {
   expect(typeof run?.id, "Should create a run").toBe("string");
   expect(run.subroutineId, "Run should reference the created subroutine").toBe(subroutine.id);
   expect(typeof data.runUri, "Response should include runUri").toBe("string");
-  expect(subroutine.initialInputs, "Subroutine should include initial inputs").toBeDefined();
-  expect(typeof data.initialInputs, "Response should include initial inputs").toBe("object");
 });
 
 it("get run status and wait for completion", async () => {

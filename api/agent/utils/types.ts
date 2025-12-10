@@ -3,7 +3,6 @@ export type CodeGenerationResult = {
   source: string;
   inputsSchema: Record<string, unknown>;
   outputsSchema: Record<string, unknown>;
-  immediateInputs?: Record<string, unknown>;
   iterations: number;
   error?: string;
 
@@ -14,7 +13,6 @@ export type SubroutineCapture = {
   inputsSchema: Record<string, unknown>;
   outputsSchema: Record<string, unknown>;
   code: string;
-  immediateInputs?: Record<string, unknown>;
 };
 
 /**
@@ -33,6 +31,7 @@ export type { TypeCoercerParams, TypeCoercerResult } from "../agent-type-coercer
 export enum Capability {
   CODING = "coding",
   CODING_FIRSTPASS = "coding.firstpass",
+  CODING_FORMAT_INPUTS = "coding.format_inputs",
   WEB_SEARCH = "web_search",
   PLANNING = "planning",
   GENERAL = "general",
