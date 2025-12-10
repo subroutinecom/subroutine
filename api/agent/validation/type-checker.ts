@@ -1,3 +1,4 @@
+import { logger } from "better-auth";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
@@ -43,6 +44,10 @@ export const typeCheckCode = (code: string): TypeCheckResult => {
       // Manually map @modelcontextprotocol/sdk to the node_modules location if needed,
       // but NodeNext resolution should find it if it's in node_modules.
       // We might need to help it find packages in the root node_modules if we are deeper.
+      "json-schema-to-ts": [resolve(nodeModulesPath, "json-schema-to-ts/lib/types/index.d.ts")],
+      "ts-algebra": [
+        resolve(nodeModulesPath, ".deno/ts-algebra@2.0.0/node_modules/ts-algebra/lib/index.d.ts"),
+      ],
       "*": ["*", resolve(nodeModulesPath, "*")],
     },
   };
@@ -64,15 +69,24 @@ export const typeCheckCode = (code: string): TypeCheckResult => {
   const errors: ValidationError[] = [];
 
   for (const diagnostic of diagnostics) {
-    if (diagnostic.category !== ts.DiagnosticCategory.Error) {
-      continue;
-    }
+    logger.warn("DIAGNOSTIC", {
+      category: diagnostic.category,
+      code: diagnostic.code,
+      message: diagnostic.messageText,
+      file: diagnostic.file?.fileName,
+    });
+    // if (
+    //   diagnostic.category !== ts.DiagnosticCategory.Error &&
+    //   diagnostic.category !== ts.DiagnosticCategory.Warning
+    // ) {
+    //   continue;
+    // }
 
-    // Filter out errors that are not about the file we are checking
-    // (sometimes global or lib errors might slip through)
-    if (diagnostic.file && diagnostic.file.fileName !== filename) {
-      continue;
-    }
+    // // Filter out errors that are not about the file we are checking
+    // // (sometimes global or lib errors might slip through)
+    // if (diagnostic.file && diagnostic.file.fileName !== filename) {
+    //   continue;
+    // }
 
     const messageText = diagnostic.messageText;
     const message = typeof messageText === "string" ? messageText : messageText.messageText;
