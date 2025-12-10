@@ -1,4 +1,3 @@
-import Ajv from "ajv";
 import {
   type CompletedConfig,
   type Config,
@@ -30,7 +29,7 @@ const filterSchema = (k: any, v: any) => (k === "$schema" ? undefined : v);
 
 const DEFAULT_FILE_NAME = "source.ts";
 
-const logger = getLogger("api/agent/tools/write-code.ts", "debug");
+const logger = getLogger("api/agent/tools/write-code.ts", "info");
 
 // 1. Compiler options (minimal example)
 const compilerOptions: ts.CompilerOptions = {
@@ -40,7 +39,7 @@ const compilerOptions: ts.CompilerOptions = {
 };
 
 type GenerateSubroutineOptions = {
-  shouldGenerateInputs?: boolean;
+  disableExecution?: boolean;
   mcpContext?: McpContext;
   /** Specific integrations to use (MCP or GraphQL) - for provided mode, not discovery mode */
   integrations?: IntegrationInfo[];
@@ -181,13 +180,7 @@ export const createWriteCodeTool = (
       .describe("The TypeScript code that exports an async main function with proper types"),
   });
 
-  const toolSchema = options?.shouldGenerateInputs
-    ? baseToolSchema.extend({
-        inputValues: z
-          .record(z.record(z.string(), z.unknown()))
-          .describe("Concrete values conforming to input type for immediate execution"),
-      })
-    : baseToolSchema;
+  const toolSchema = baseToolSchema;
 
   return {
     description: "Submit a generated TypeScript function with input and output schemas",
@@ -196,8 +189,6 @@ export const createWriteCodeTool = (
       try {
         logger.debug(`Code length: ${params.code.length} chars`);
         const { code } = params;
-        const inputValues =
-          "inputValues" in params ? (params.inputValues as Record<string, unknown>) : undefined;
 
         const validationContext = await buildValidationContext(options);
         logger.debug(
@@ -287,24 +278,9 @@ export const createWriteCodeTool = (
         const inputsSchema = generator.createSchema("Inputs");
         const outputsSchema = generator.createSchema("Outputs");
 
-        if (options?.shouldGenerateInputs && inputValues) {
-          logger.debug(`Validating inputs: ${JSON.stringify(params)}`);
-          const ajv = new Ajv();
-          const validate = ajv.compile(inputsSchema);
-          const valid = validate(inputValues);
-          if (!valid) {
-            logger.debug(`Input validation failed: ${JSON.stringify(validate.errors)}`);
-            return {
-              success: false,
-              message: `inputValues are invalid (${JSON.stringify(inputValues)}): ${JSON.stringify(validate.errors)}`,
-            };
-          }
-        }
-
         logger.debug(`Generated code: ${code}`);
         const result: SubroutineCapture = {
           code,
-          generatedInputs: inputValues,
           inputsSchema: JSON.parse(JSON.stringify(inputsSchema, filterSchema)),
           outputsSchema: JSON.parse(JSON.stringify(outputsSchema, filterSchema)),
         };

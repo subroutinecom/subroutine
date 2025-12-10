@@ -359,11 +359,11 @@ export async function main(inputs: Inputs, { integrations }: { integrations: Int
 };
 
 type PromptOptions = {
-  shouldGenerateInputs?: boolean;
+  disableExecution?: boolean;
 };
 
-export const CODE_GENERATION_USER_PROMPT = (request: string, options?: PromptOptions): string => {
-  let prompt = `Generate a TypeScript subroutine for: ${request}
+export const CODE_GENERATION_USER_PROMPT = (request: string, _options?: PromptOptions): string => {
+  const prompt = `Generate a TypeScript subroutine for: ${request}
 
 CRITICAL INSTRUCTION:
 Your goal is to create a REUSABLE, ABSTRACTED function that can be retrieved and used again for similar tasks.
@@ -372,15 +372,7 @@ Your goal is to create a REUSABLE, ABSTRACTED function that can be retrieved and
 - DO NOT hardcode these specific values in the function body. The function logic should be generic.
 - Example: If asked to "add 5 and 10", generate a function that accepts two numbers as inputs, NOT a function that returns 5 + 10.
 - Example: If asked to "get the contents of repo my_stuff", generate a function that takes \`repoName\` as input.
-- YOUR In this case, you should also have inputValues of {x: 5, y: 10} if it generates type Inputs = {x: number; y: number}
 `;
-
-  if (options?.shouldGenerateInputs) {
-    prompt += `\n3. \`generatedInputs\`: You accepted "shouldGenerateInputs=true".
-   - You MUST populate this field with the specific values from the user's request.
-   - Example: { "num1": 5, "num2": 10 } or { "repoName": "my_stuff" }
-   - This object MUST satisfy the Inputs type`;
-  }
 
   return prompt;
 };

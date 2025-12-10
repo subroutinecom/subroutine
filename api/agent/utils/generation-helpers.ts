@@ -14,7 +14,7 @@ import { createListIntegrations } from "../tools/list-integrations.ts";
 import { createManageMcpIntegration } from "../tools/manage-integration.ts";
 import { createWriteCodeTool } from "../tools/write-code.ts";
 import type { McpContext, SubroutineCapture } from "./types.ts";
-const logger = getLogger("api/agent/utils/generation-helpers.ts", "debug");
+const logger = getLogger("api/agent/utils/generation-helpers.ts", "warn");
 
 const logFilter = (k: string, v: unknown) => (k === "providerMetadata" ? "<truncated>" : v);
 
@@ -22,7 +22,7 @@ export type ToolCreationOptions = {
   mcpContext?: McpContext;
   /** Integrations provided to the agent (MCP or GraphQL) */
   integrations?: IntegrationInfo[];
-  shouldGenerateInputs?: boolean;
+  disableExecution?: boolean;
 };
 
 export const createAgentTools = (
@@ -33,7 +33,7 @@ export const createAgentTools = (
 ) => {
   const tools: Record<string, unknown> = {
     writeCode: createWriteCodeTool(onCapture, {
-      shouldGenerateInputs: options.shouldGenerateInputs,
+      disableExecution: options.disableExecution,
       mcpContext: options.mcpContext,
       integrations: options.integrations,
     }),

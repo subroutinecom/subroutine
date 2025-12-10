@@ -3,7 +3,6 @@ export type CodeGenerationResult = {
   source: string;
   inputsSchema: Record<string, unknown>;
   outputsSchema: Record<string, unknown>;
-  generatedInputs?: Record<string, unknown>;
   iterations: number;
   error?: string;
 
@@ -14,7 +13,6 @@ export type SubroutineCapture = {
   inputsSchema: Record<string, unknown>;
   outputsSchema: Record<string, unknown>;
   code: string;
-  generatedInputs?: Record<string, unknown>;
 };
 
 /**
