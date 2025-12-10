@@ -1,11 +1,11 @@
-import { getLogger } from "../../utils/logger.ts";
 import { z } from "zod";
 import type { AuthRequirement } from "../../models/errors.ts";
 import { getIntegrationOrGlobal } from "../../models/integration.ts";
+import { getLogger } from "../../utils/logger.ts";
 import type { McpContext } from "../utils/types.ts";
 import { handleInspectGraphQL, handleInspectMcp, handleInspectOpenAPI } from "./utils.ts";
 
-const logger = getLogger("api/agent/tools/inspect-integration.ts");
+const logger = getLogger("api/agent/tools/inspect-integration.ts", "debug");
 
 /**
  * Result type for inspectIntegration tool.
@@ -174,10 +174,7 @@ IMPORTANT: The method and path must match one of the operations listed above.`,
             );
             if (result.success && result.tools) {
               usedIntegrationIds.add(mockIntegration.id);
-              logger.debug(
-                `[InspectIntegration] MCP Result for ${mockIntegration.name}:`,
-                JSON.stringify(result.tools, null, 2)
-              );
+              logger.debug(`MCP Result for ${mockIntegration.name}:`, result.tools);
               return {
                 success: true,
                 type: "mcp",

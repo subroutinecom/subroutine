@@ -2,6 +2,72 @@ import { expect } from "@std/expect/expect";
 import { FromSchema, JSONSchema } from "json-schema-to-ts";
 import { enableAiTests } from "../fixtures/aitests.ts";
 
+const IntegrationShape = {
+  MCP: {
+    "mock-weather-server": {
+      getForecast: {
+        inputSchema: {
+          type: "object",
+          properties: {
+            location: {
+              type: "string",
+              description: "City name or coordinates",
+            },
+            days: {
+              type: "number",
+              minimum: 1,
+              maximum: 7,
+              description: "Number of days",
+            },
+          },
+          required: ["location"],
+          additionalProperties: false,
+          $schema: "http://json-schema.org/draft-07/schema#",
+        },
+      },
+    },
+
+    "mock-mail-server": {
+      listMessages: {
+        inputSchema: {
+          type: "object",
+          properties: {
+            limit: {
+              type: "number",
+              description: "Number of messages to list",
+            },
+          },
+          additionalProperties: false,
+          $schema: "http://json-schema.org/draft-07/schema#",
+        },
+      },
+      sendMessage: {
+        inputSchema: {
+          type: "object",
+          properties: {
+            to: {
+              type: "string",
+              format: "email",
+              description: "Recipient email address",
+            },
+            subject: {
+              type: "string",
+              description: "Email subject",
+            },
+            body: {
+              type: "string",
+              description: "Email body",
+            },
+          },
+          required: ["to", "subject", "body"],
+          additionalProperties: false,
+          $schema: "http://json-schema.org/draft-07/schema#",
+        },
+      },
+    },
+  },
+} as const;
+
 Deno.test({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent input formatter API`,
   ignore: !enableAiTests,
