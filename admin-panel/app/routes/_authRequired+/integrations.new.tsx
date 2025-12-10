@@ -260,10 +260,12 @@ export default function NewIntegrationPage() {
     return selectedAuthOption.strategy.type === "bearer_oauth";
   }, [selectedProvider, isFirstPartySelected, selectedAuthOption]);
 
-  // Check if selected auth option needs API key
+  // Check if selected auth option needs API key at creation time
+  // Only require API key input if it's NOT viewer-scoped (i.e., org-wide token like Slack Bot Token)
+  // Viewer-scoped API keys (like Linear Personal API Key) are provided by each user at runtime
   const firstPartyNeedsApiKey = useMemo(() => {
     if (!selectedProvider || !isFirstPartySelected || !selectedAuthOption) return false;
-    return selectedAuthOption.strategy.type === "api_key";
+    return selectedAuthOption.strategy.type === "api_key" && !selectedAuthOption.viewerScoped;
   }, [selectedProvider, isFirstPartySelected, selectedAuthOption]);
 
   // MCP discovery hook
@@ -347,6 +349,9 @@ export default function NewIntegrationPage() {
     // Set auth strategy based on selected option
     const strategyType = selectedAuthOption.strategy.type as "none" | "api_key" | "bearer_oauth" | "custom_headers";
     setValue("authStrategy", strategyType);
+
+    // Set viewer-scoped flag
+    setValue("apiKeyIsViewerScoped", selectedAuthOption.viewerScoped ?? false);
 
     // If OAuth, set OAuth-related fields
     if (selectedAuthOption.oauthConfig) {

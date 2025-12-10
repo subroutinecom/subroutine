@@ -67,8 +67,8 @@ export const linearDefinition: IntegrationDefinition = {
         id: "api_key",
         strategy: { type: "api_key", headerName: "Authorization" },
         label: "Personal API Key",
-        description: "Use a Linear Personal API Key. No per-user auth needed.",
-        viewerScoped: false,
+        description: "Each user provides their own Linear API key.",
+        viewerScoped: true,
         apiKeyConfig: {
           headerName: "Authorization",
           instructionsUrl: "https://linear.app/settings/api",
