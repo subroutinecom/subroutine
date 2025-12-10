@@ -57,30 +57,19 @@ export const useIntegrationForm = (options: UseIntegrationFormOptions) => {
   const isOpenAPIProvider = currentProvider?.authType === "openapi";
   const isOAuthProvider = currentProvider?.authType === "oauth2";
 
-  // Handle provider change - reset auth-related fields
+  // Handle provider change - set protocol-specific fields
+  // Auth strategy is handled by the auth options selection in the parent component
   useEffect(() => {
     if (!currentProvider) return;
 
-    // Set defaults based on provider type
+    // Set protocol-specific defaults
     if (isMcpProvider && currentProvider.mcpConfig) {
       setValue("serverUrl", currentProvider.mcpConfig.serverUrl || "");
       setValue("transport", currentProvider.mcpConfig.transport || "sse");
-
-      // Set auth strategy from provider config
-      const authType = currentProvider.mcpConfig.authStrategy?.type ?? "none";
-      setValue("authStrategy", authType as AuthStrategyType);
     } else if (isGraphQLProvider && currentProvider.graphqlConfig) {
       setValue("endpoint", currentProvider.graphqlConfig.endpoint || "");
-
-      // Set auth strategy from provider config
-      const authType = currentProvider.graphqlConfig.authStrategy?.type ?? "none";
-      setValue("authStrategy", authType as AuthStrategyType);
     } else if (isOpenAPIProvider && currentProvider.openapiConfig) {
       setValue("baseUrl", currentProvider.openapiConfig.baseUrl || "");
-
-      // Set auth strategy from provider config
-      const authType = currentProvider.openapiConfig.authStrategy?.type ?? "none";
-      setValue("authStrategy", authType as AuthStrategyType);
     } else if (isOAuthProvider && currentProvider.oauthConfig) {
       setValue("oauthAuthUrl", currentProvider.oauthConfig.authUrl || "");
       setValue("oauthTokenUrl", currentProvider.oauthConfig.tokenUrl || "");

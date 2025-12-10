@@ -28,9 +28,52 @@ export interface OAuthHandlers {
 }
 
 /**
+ * OAuth configuration for providers that support OAuth-based auth
+ */
+export interface ProviderOAuthConfig {
+  authUrl: string;
+  tokenUrl: string;
+  defaultScopes: string[];
+  requiredScopes?: string[];
+  defaultRedirectPath?: string;
+  handlers?: OAuthHandlers;
+}
+
+/**
+ * API key configuration for providers that support API key auth
+ */
+export interface ProviderApiKeyConfig {
+  headerName: string;
+  headerPrefix?: string; // e.g., "Bearer ", "Token "
+  instructionsUrl?: string; // Link to where users can get their API key
+}
+
+/**
+ * An auth option that a provider supports.
+ * Providers can support multiple auth options, letting users choose.
+ */
+export interface AuthOption {
+  id: string; // Unique identifier for this option, e.g., "oauth", "api_key"
+  strategy: AuthStrategy;
+  label: string; // Display name, e.g., "OAuth 2.0", "Personal API Token"
+  description?: string; // Help text, e.g., "Recommended for user-level access"
+  recommended?: boolean; // If true, show as recommended option
+  viewerScoped?: boolean; // Override the provider's viewerScoped setting for this option
+  // Strategy-specific configurations
+  oauthConfig?: ProviderOAuthConfig;
+  apiKeyConfig?: ProviderApiKeyConfig;
+}
+
+/**
  * Provider definition types.
  * These are templates that define how each provider type works.
- * Note: "auth" here is a misnomer - for MCP/GraphQL it contains protocol + auth config.
+ *
+ * Providers are NOT persisted - they're code-defined templates.
+ * Only Integrations (instances) are stored in the database.
+ *
+ * Each provider specifies:
+ * - Protocol details (endpoint, serverUrl, etc.)
+ * - Available auth options (what auth methods users can choose from)
  */
 export type AuthStrategyDefinition =
   | {
@@ -51,53 +94,20 @@ export type AuthStrategyDefinition =
       type: "mcp";
       serverUrl: string;
       transport: McpTransport;
-      authStrategy: AuthStrategy;
-      /**
-       * For bearer_oauth, we need OAuth config to authenticate users.
-       * This is optional - only needed when authStrategy is bearer_oauth.
-       */
-      oauthConfig?: {
-        authUrl: string;
-        tokenUrl: string;
-        defaultScopes: string[];
-        requiredScopes?: string[];
-        defaultRedirectPath?: string;
-        handlers?: OAuthHandlers;
-      };
+      /** Auth options the user can choose from when creating an integration */
+      authOptions: AuthOption[];
     }
   | {
       type: "graphql";
       endpoint: string;
-      authStrategy: AuthStrategy;
-      /**
-       * For bearer_oauth, we need OAuth config to authenticate users.
-       * This is optional - only needed when authStrategy is bearer_oauth.
-       */
-      oauthConfig?: {
-        authUrl: string;
-        tokenUrl: string;
-        defaultScopes: string[];
-        requiredScopes?: string[];
-        defaultRedirectPath?: string;
-        handlers?: OAuthHandlers;
-      };
+      /** Auth options the user can choose from when creating an integration */
+      authOptions: AuthOption[];
     }
   | {
       type: "openapi";
       baseUrl: string;
-      authStrategy: AuthStrategy;
-      /**
-       * For bearer_oauth, we need OAuth config to authenticate users.
-       * This is optional - only needed when authStrategy is bearer_oauth.
-       */
-      oauthConfig?: {
-        authUrl: string;
-        tokenUrl: string;
-        defaultScopes: string[];
-        requiredScopes?: string[];
-        defaultRedirectPath?: string;
-        handlers?: OAuthHandlers;
-      };
+      /** Auth options the user can choose from when creating an integration */
+      authOptions: AuthOption[];
     };
 
 export interface IntegrationDefinition {

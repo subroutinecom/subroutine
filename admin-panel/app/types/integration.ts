@@ -64,6 +64,27 @@ export interface Integration {
 
 export type IntegrationProviderAuthType = "oauth2" | "custom" | "mcp" | "graphql" | "openapi";
 
+// =============================================================================
+// PROVIDER DEFINITIONS (Templates/Classes)
+// =============================================================================
+//
+// Provider definitions are like "classes" or "templates" that describe:
+// - How to connect to a service (endpoint, protocol, etc.)
+// - What authentication methods are supported
+// - Default configuration values
+//
+// When a user creates an Integration, they select a provider and fill in
+// their specific credentials. The Integration is the "instance" created from
+// the provider "template".
+//
+// Example:
+//   Provider "Slack" (template) -> Integration "My Slack Bot" (instance)
+//   Provider "Slack" (template) -> Integration "Team Slack OAuth" (instance)
+//
+// A single provider can support multiple auth options (e.g., Slack supports
+// both OAuth and Bot Token). The user picks one when creating their integration.
+// =============================================================================
+
 export interface OAuthIntegrationProviderConfig {
   authUrl: string;
   tokenUrl: string;
@@ -72,42 +93,76 @@ export interface OAuthIntegrationProviderConfig {
   defaultRedirectPath?: string;
 }
 
-export interface McpProviderConfig {
-  serverUrl: string;
-  transport: McpTransport;
-  authStrategy: {
+/** API key configuration for an auth option */
+export interface AuthOptionApiKeyConfig {
+  headerName: string;
+  headerPrefix?: string;
+  instructionsUrl?: string;
+}
+
+/**
+ * An authentication option that a provider supports.
+ * Providers can offer multiple auth options (e.g., OAuth + API Key).
+ * When creating an integration, the user selects one option.
+ */
+export interface IntegrationAuthOption {
+  /** Unique identifier for this option (e.g., "oauth", "bot_token") */
+  id: string;
+  /** The auth strategy configuration */
+  strategy: {
     type: string;
     headerName?: string;
     headers?: string;
   };
+  /** Display name for the UI (e.g., "OAuth 2.0", "Bot Token") */
+  label: string;
+  /** Help text describing this option */
+  description?: string;
+  /** If true, this option is recommended */
+  recommended?: boolean;
+  /** Whether this option creates viewer-scoped integrations */
+  viewerScoped?: boolean;
+  /** OAuth configuration (for bearer_oauth strategy) */
+  oauthConfig?: OAuthIntegrationProviderConfig | null;
+  /** API key configuration (for api_key strategy) */
+  apiKeyConfig?: AuthOptionApiKeyConfig | null;
+}
+
+export interface McpProviderConfig {
+  serverUrl: string;
+  transport: McpTransport;
+  /** Auth options the user can choose from when creating an integration */
+  authOptions: IntegrationAuthOption[];
 }
 
 export interface GraphQLProviderConfig {
   endpoint: string;
-  authStrategy: {
-    type: string;
-    headerName?: string;
-    headers?: string;
-  };
-  oauthConfig?: OAuthIntegrationProviderConfig | null;
+  /** Auth options the user can choose from when creating an integration */
+  authOptions: IntegrationAuthOption[];
 }
 
 export interface OpenAPIProviderConfig {
   baseUrl: string;
-  authStrategy: {
-    type: string;
-    headerName?: string;
-    headers?: string;
-  };
-  oauthConfig?: OAuthIntegrationProviderConfig | null;
+  /** Auth options the user can choose from when creating an integration */
+  authOptions: IntegrationAuthOption[];
 }
 
+/**
+ * Provider Definition - A template for creating integrations.
+ *
+ * Think of this like a "class" that describes how to connect to a service.
+ * Users create Integration "instances" from these templates by providing
+ * their specific credentials and configuration.
+ */
 export interface IntegrationProviderDefinition {
   id: string;
   name: string;
   description?: string;
+  /** Category for grouping (e.g., "communication", "project-management", "generic") */
   category?: string | null;
+  /** Default viewer-scoped setting (can be overridden by auth option) */
   viewerScoped: boolean;
+  /** The protocol type (mcp, graphql, openapi, oauth2) */
   authType: IntegrationProviderAuthType;
   oauthConfig?: OAuthIntegrationProviderConfig | null;
   mcpConfig?: McpProviderConfig | null;

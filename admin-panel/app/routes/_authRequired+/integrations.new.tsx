@@ -13,10 +13,13 @@ import {
   OpenAPIFormFields,
   McpFormFields,
   OAuthFormFields,
+  FirstPartyOAuthFields,
   IntegrationCombobox,
+  AuthOptionSelector,
   useIntegrationForm,
   useMcpDiscovery,
 } from "~/components/integrations";
+import type { IntegrationAuthOption } from "~/types/integration";
 import { fetchAdminConfig } from "~/lib/admin-config";
 import { useAdminConfig } from "~/hooks/use-admin-config";
 
@@ -26,6 +29,32 @@ export function meta() {
     { name: "description", content: "Create a new integration" },
   ];
 }
+
+// Auth option fragment to avoid repetition
+const AUTH_OPTION_FIELDS = `
+  id
+  label
+  description
+  recommended
+  viewerScoped
+  strategy {
+    type
+    headerName
+    headers
+  }
+  oauthConfig {
+    authUrl
+    tokenUrl
+    defaultScopes
+    requiredScopes
+    defaultRedirectPath
+  }
+  apiKeyConfig {
+    headerName
+    headerPrefix
+    instructionsUrl
+  }
+`;
 
 const INTEGRATION_PROVIDERS_QUERY = gql`
   query GetIntegrationProviders {
@@ -46,40 +75,20 @@ const INTEGRATION_PROVIDERS_QUERY = gql`
       mcpConfig {
         serverUrl
         transport
-        authStrategy {
-          type
-          headerName
-          headers
+        authOptions {
+          ${AUTH_OPTION_FIELDS}
         }
       }
       graphqlConfig {
         endpoint
-        authStrategy {
-          type
-          headerName
-          headers
-        }
-        oauthConfig {
-          authUrl
-          tokenUrl
-          defaultScopes
-          requiredScopes
-          defaultRedirectPath
+        authOptions {
+          ${AUTH_OPTION_FIELDS}
         }
       }
       openapiConfig {
         baseUrl
-        authStrategy {
-          type
-          headerName
-          headers
-        }
-        oauthConfig {
-          authUrl
-          tokenUrl
-          defaultScopes
-          requiredScopes
-          defaultRedirectPath
+        authOptions {
+          ${AUTH_OPTION_FIELDS}
         }
       }
     }
@@ -108,6 +117,30 @@ const CREATE_INTEGRATION_MUTATION = gql`
     }
   }
 `;
+
+// Developer console URLs for first-party providers
+const DEVELOPER_CONSOLE_URLS: Record<string, string> = {
+  linear: "https://linear.app/settings/api",
+  slack: "https://api.slack.com/apps",
+  github: "https://github.com/settings/developers",
+  notion: "https://www.notion.so/my-integrations",
+  jira: "https://developer.atlassian.com/console/myapps/",
+  asana: "https://app.asana.com/0/developer-console",
+};
+
+// Provider-specific setup instructions
+const PROVIDER_SETUP_INSTRUCTIONS: Record<string, string[]> = {
+  slack: [
+    "Create a new Slack App in your workspace",
+    "Under 'OAuth & Permissions', add the redirect URI above",
+    "Copy the Client ID and Client Secret from 'Basic Information'",
+  ],
+  linear: [
+    "Create a new OAuth application in Linear settings",
+    "Add the redirect URI above as a callback URL",
+    "Copy the Client ID and Client Secret",
+  ],
+};
 
 // Protocol styling
 const PROTOCOL_STYLES = {
@@ -164,6 +197,7 @@ export default function NewIntegrationPage() {
   // Unified state
   const [activeTab, setActiveTab] = useState<TabType>("browse");
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+  const [selectedAuthOptionId, setSelectedAuthOptionId] = useState<string | null>(null);
 
   // Filter providers
   const providerDefinitions = useMemo(
@@ -190,6 +224,47 @@ export default function NewIntegrationPage() {
   // Determine if selection is first-party or generic
   const isFirstPartySelected = selectedProvider && selectedProvider.category !== "generic";
   const isGenericSelected = selectedProvider && selectedProvider.category === "generic";
+
+  // Get available auth options for the selected provider
+  const providerAuthOptions = useMemo((): IntegrationAuthOption[] => {
+    if (!selectedProvider) return [];
+    const config = selectedProvider.graphqlConfig || selectedProvider.openapiConfig || selectedProvider.mcpConfig;
+    return (config?.authOptions as IntegrationAuthOption[] | null) ?? [];
+  }, [selectedProvider]);
+
+  // Does this provider have multiple auth options?
+  const hasMultipleAuthOptions = providerAuthOptions.length > 1;
+
+  // Get the currently selected auth option
+  const selectedAuthOption = useMemo((): IntegrationAuthOption | null => {
+    if (!selectedAuthOptionId || providerAuthOptions.length === 0) return null;
+    return providerAuthOptions.find((opt) => opt.id === selectedAuthOptionId) ?? null;
+  }, [selectedAuthOptionId, providerAuthOptions]);
+
+  // Get OAuth config from the selected auth option
+  const firstPartyOAuthConfig = useMemo(() => {
+    if (!selectedProvider || !isFirstPartySelected) return null;
+    return selectedAuthOption?.oauthConfig || null;
+  }, [selectedProvider, isFirstPartySelected, selectedAuthOption]);
+
+  // Compute redirect URI for first-party OAuth
+  const computedRedirectUri = useMemo(() => {
+    if (!config.apiUrl) return "";
+    const defaultPath = firstPartyOAuthConfig?.defaultRedirectPath || "/api/oauth/callback";
+    return `${config.apiUrl}${defaultPath}`;
+  }, [config.apiUrl, firstPartyOAuthConfig]);
+
+  // Check if selected auth option needs OAuth credentials
+  const firstPartyNeedsOAuth = useMemo(() => {
+    if (!selectedProvider || !isFirstPartySelected || !selectedAuthOption) return false;
+    return selectedAuthOption.strategy.type === "bearer_oauth";
+  }, [selectedProvider, isFirstPartySelected, selectedAuthOption]);
+
+  // Check if selected auth option needs API key
+  const firstPartyNeedsApiKey = useMemo(() => {
+    if (!selectedProvider || !isFirstPartySelected || !selectedAuthOption) return false;
+    return selectedAuthOption.strategy.type === "api_key";
+  }, [selectedProvider, isFirstPartySelected, selectedAuthOption]);
 
   // MCP discovery hook
   const { isProbing, discoveryResult, probeServer, clearDiscoveryResult } = useMcpDiscovery();
@@ -220,43 +295,72 @@ export default function NewIntegrationPage() {
     formState: { errors, isSubmitting },
   } = form;
 
-  // When provider changes, update form
+  // When provider changes, update form with protocol-specific fields
   useEffect(() => {
     if (!selectedProvider) return;
 
     setValue("provider", selectedProvider.id);
     setValue("name", selectedProvider.name);
 
-    if (selectedProvider.graphqlConfig?.authStrategy?.type) {
-      setValue("authStrategy", selectedProvider.graphqlConfig.authStrategy.type as "none" | "api_key" | "bearer_oauth" | "custom_headers");
+    // Set protocol-specific fields (auth is handled by auth option selection effect)
+    if (selectedProvider.graphqlConfig) {
       setValue("endpoint", selectedProvider.graphqlConfig.endpoint);
-      if (selectedProvider.graphqlConfig.oauthConfig) {
-        const oauth = selectedProvider.graphqlConfig.oauthConfig;
-        setValue("oauthAuthUrl", oauth.authUrl);
-        setValue("oauthTokenUrl", oauth.tokenUrl);
-        setValue("oauthScopes", oauth.defaultScopes?.join(" ") || "");
-      }
-    } else if (selectedProvider.openapiConfig?.authStrategy?.type) {
-      setValue("authStrategy", selectedProvider.openapiConfig.authStrategy.type as "none" | "api_key" | "bearer_oauth" | "custom_headers");
+    } else if (selectedProvider.openapiConfig) {
       setValue("baseUrl", selectedProvider.openapiConfig.baseUrl);
-      if (selectedProvider.openapiConfig.oauthConfig) {
-        const oauth = selectedProvider.openapiConfig.oauthConfig;
-        setValue("oauthAuthUrl", oauth.authUrl);
-        setValue("oauthTokenUrl", oauth.tokenUrl);
-        setValue("oauthScopes", oauth.defaultScopes?.join(" ") || "");
-      }
     } else if (selectedProvider.mcpConfig) {
       setValue("serverUrl", selectedProvider.mcpConfig.serverUrl);
       setValue("transport", selectedProvider.mcpConfig.transport as "sse" | "streamable-http");
-      const mcpAuthType = selectedProvider.mcpConfig.authStrategy?.type ?? "none";
-      setValue("authStrategy", mcpAuthType as "none" | "api_key" | "bearer_oauth" | "custom_headers");
     }
   }, [selectedProvider, setValue]);
+
+  // Set redirect URI when computed (for first-party OAuth)
+  useEffect(() => {
+    if (computedRedirectUri && firstPartyNeedsOAuth) {
+      setValue("oauthRedirectUri", computedRedirectUri);
+    }
+  }, [computedRedirectUri, firstPartyNeedsOAuth, setValue]);
 
   // Handle provider selection
   const handleSelectProvider = (providerId: string) => {
     setSelectedProviderId(providerId);
+    setSelectedAuthOptionId(null); // Reset auth option when provider changes
   };
+
+  // Handle auth option selection
+  const handleSelectAuthOption = (optionId: string) => {
+    setSelectedAuthOptionId(optionId);
+  };
+
+  // Auto-select auth option when provider changes (if it has auth options)
+  useEffect(() => {
+    if (providerAuthOptions.length > 0 && !selectedAuthOptionId) {
+      // Find recommended option or use first one
+      const recommended = providerAuthOptions.find((opt) => opt.recommended);
+      setSelectedAuthOptionId(recommended?.id ?? providerAuthOptions[0].id);
+    }
+  }, [providerAuthOptions, selectedAuthOptionId]);
+
+  // Update form values when auth option changes
+  useEffect(() => {
+    if (!selectedAuthOption) return;
+
+    // Set auth strategy based on selected option
+    const strategyType = selectedAuthOption.strategy.type as "none" | "api_key" | "bearer_oauth" | "custom_headers";
+    setValue("authStrategy", strategyType);
+
+    // If OAuth, set OAuth-related fields
+    if (selectedAuthOption.oauthConfig) {
+      const oauth = selectedAuthOption.oauthConfig;
+      setValue("oauthAuthUrl", oauth.authUrl);
+      setValue("oauthTokenUrl", oauth.tokenUrl);
+      setValue("oauthScopes", oauth.defaultScopes?.join(" ") || "");
+    }
+
+    // If API key, set header name
+    if (selectedAuthOption.apiKeyConfig) {
+      setValue("apiKeyHeaderName", selectedAuthOption.apiKeyConfig.headerName || "Authorization");
+    }
+  }, [selectedAuthOption, setValue]);
 
   // Handle tab change
   const handleTabChange = (tab: TabType) => {
@@ -587,12 +691,76 @@ export default function NewIntegrationPage() {
                 </div>
               )}
 
-              {/* OAuth info for first-party */}
-              {isFirstPartySelected && (selectedProvider.graphqlConfig?.oauthConfig || selectedProvider.openapiConfig?.oauthConfig) && (
-                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                  <p className="text-sm text-base-content/70">
-                    <span className="font-medium text-primary">OAuth 2.0</span> — Users will authenticate with their {selectedProvider.name} account to grant access.
-                  </p>
+              {/* Auth option selector for first-party providers with multiple options */}
+              {isFirstPartySelected && hasMultipleAuthOptions && (
+                <AuthOptionSelector
+                  options={providerAuthOptions}
+                  selectedOptionId={selectedAuthOptionId}
+                  onSelect={handleSelectAuthOption}
+                />
+              )}
+
+              {/* OAuth credentials for first-party providers */}
+              {isFirstPartySelected && firstPartyNeedsOAuth && (
+                <div className="space-y-4">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-xs font-bold text-base-content/40 uppercase tracking-[0.2em]">
+                      OAuth Configuration
+                    </span>
+                    <div className="flex-1 h-px bg-gradient-to-r from-base-content/10 to-transparent" />
+                  </div>
+
+                  <FirstPartyOAuthFields
+                    register={register as Parameters<typeof FirstPartyOAuthFields>[0]["register"]}
+                    errors={errors}
+                    providerName={selectedProvider.name}
+                    redirectUri={computedRedirectUri}
+                    prefilledScopes={firstPartyOAuthConfig?.defaultScopes?.join(" ")}
+                    developerConsoleUrl={DEVELOPER_CONSOLE_URLS[selectedProvider.id]}
+                    setupInstructions={PROVIDER_SETUP_INSTRUCTIONS[selectedProvider.id]}
+                  />
+                </div>
+              )}
+
+              {/* API key credentials for first-party providers */}
+              {isFirstPartySelected && firstPartyNeedsApiKey && selectedAuthOption?.apiKeyConfig && (
+                <div className="space-y-4">
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-xs font-bold text-base-content/40 uppercase tracking-[0.2em]">
+                      API Key Configuration
+                    </span>
+                    <div className="flex-1 h-px bg-gradient-to-r from-base-content/10 to-transparent" />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="apiKey" className="text-sm font-medium text-base-content/70">
+                        API Key / Token <span className="text-error">*</span>
+                      </label>
+                      <input
+                        id="apiKey"
+                        type="password"
+                        {...register("apiKey", { required: "API Key is required" })}
+                        placeholder={`Your ${selectedProvider.name} API key or token`}
+                        className={inputClasses}
+                      />
+                      {errors.apiKey && (
+                        <p className="text-sm text-error">{String(errors.apiKey.message)}</p>
+                      )}
+                      {selectedAuthOption.apiKeyConfig.instructionsUrl && (
+                        <p className="text-xs text-base-content/50">
+                          <a
+                            href={selectedAuthOption.apiKeyConfig.instructionsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Learn how to get your API key →
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 

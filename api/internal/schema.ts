@@ -196,6 +196,61 @@ McpAuthStrategyType.implement({
   }),
 });
 
+// API Key Config for Auth Options
+import type { AuthOption, ProviderApiKeyConfig } from "../integrations/providers/types";
+
+const AuthOptionApiKeyConfigType = builder.objectRef<ProviderApiKeyConfig>(
+  "IntegrationAuthOptionApiKeyConfig"
+);
+
+AuthOptionApiKeyConfigType.implement({
+  fields: (t) => ({
+    headerName: t.exposeString("headerName"),
+    headerPrefix: t.exposeString("headerPrefix", { nullable: true }),
+    instructionsUrl: t.exposeString("instructionsUrl", { nullable: true }),
+  }),
+});
+
+// Auth Option Type
+const AuthOptionType = builder.objectRef<AuthOption>("IntegrationAuthOption");
+
+AuthOptionType.implement({
+  fields: (t) => ({
+    id: t.exposeString("id"),
+    label: t.exposeString("label"),
+    description: t.exposeString("description", { nullable: true }),
+    recommended: t.exposeBoolean("recommended", { nullable: true }),
+    viewerScoped: t.exposeBoolean("viewerScoped", { nullable: true }),
+    strategy: t.field({
+      type: McpAuthStrategyType,
+      resolve: (parent) => parent.strategy,
+    }),
+    oauthConfig: t.field({
+      type: OAuthIntegrationConfigType,
+      nullable: true,
+      resolve: (parent) => {
+        if (parent.oauthConfig) {
+          return {
+            type: "oauth2" as const,
+            authUrl: parent.oauthConfig.authUrl,
+            tokenUrl: parent.oauthConfig.tokenUrl,
+            defaultScopes: parent.oauthConfig.defaultScopes,
+            requiredScopes: parent.oauthConfig.requiredScopes,
+            defaultRedirectPath: parent.oauthConfig.defaultRedirectPath,
+            supportsCustomConfig: false,
+          };
+        }
+        return null;
+      },
+    }),
+    apiKeyConfig: t.field({
+      type: AuthOptionApiKeyConfigType,
+      nullable: true,
+      resolve: (parent) => parent.apiKeyConfig ?? null,
+    }),
+  }),
+});
+
 const McpIntegrationConfigType = builder.objectRef<
   Extract<IntegrationDefinition["auth"], { type: "mcp" }>
 >("IntegrationProviderMcpConfig");
@@ -204,9 +259,9 @@ McpIntegrationConfigType.implement({
   fields: (t) => ({
     serverUrl: t.exposeString("serverUrl"),
     transport: t.exposeString("transport"),
-    authStrategy: t.field({
-      type: McpAuthStrategyType,
-      resolve: (parent) => parent.authStrategy,
+    authOptions: t.field({
+      type: [AuthOptionType],
+      resolve: (parent) => parent.authOptions,
     }),
   }),
 });
@@ -219,29 +274,9 @@ const GraphQLIntegrationConfigType = builder.objectRef<
 GraphQLIntegrationConfigType.implement({
   fields: (t) => ({
     endpoint: t.exposeString("endpoint"),
-    authStrategy: t.field({
-      type: McpAuthStrategyType,
-      resolve: (parent) => parent.authStrategy,
-    }),
-    oauthConfig: t.field({
-      type: OAuthIntegrationConfigType,
-      nullable: true,
-      resolve: (parent) => {
-        // Expose nested OAuth config for bearer_oauth strategy
-        if (parent.authStrategy.type === "bearer_oauth" && parent.oauthConfig) {
-          // Return as oauth2 type shape for compatibility with OAuthIntegrationConfigType
-          return {
-            type: "oauth2" as const,
-            authUrl: parent.oauthConfig.authUrl,
-            tokenUrl: parent.oauthConfig.tokenUrl,
-            defaultScopes: parent.oauthConfig.defaultScopes,
-            requiredScopes: parent.oauthConfig.requiredScopes,
-            defaultRedirectPath: parent.oauthConfig.defaultRedirectPath,
-            supportsCustomConfig: false,
-          };
-        }
-        return null;
-      },
+    authOptions: t.field({
+      type: [AuthOptionType],
+      resolve: (parent) => parent.authOptions,
     }),
   }),
 });
@@ -254,28 +289,9 @@ const OpenAPIIntegrationConfigType = builder.objectRef<
 OpenAPIIntegrationConfigType.implement({
   fields: (t) => ({
     baseUrl: t.exposeString("baseUrl"),
-    authStrategy: t.field({
-      type: McpAuthStrategyType,
-      resolve: (parent) => parent.authStrategy,
-    }),
-    oauthConfig: t.field({
-      type: OAuthIntegrationConfigType,
-      nullable: true,
-      resolve: (parent) => {
-        // Expose nested OAuth config for bearer_oauth strategy
-        if (parent.authStrategy.type === "bearer_oauth" && parent.oauthConfig) {
-          return {
-            type: "oauth2" as const,
-            authUrl: parent.oauthConfig.authUrl,
-            tokenUrl: parent.oauthConfig.tokenUrl,
-            defaultScopes: parent.oauthConfig.defaultScopes,
-            requiredScopes: parent.oauthConfig.requiredScopes,
-            defaultRedirectPath: parent.oauthConfig.defaultRedirectPath,
-            supportsCustomConfig: false,
-          };
-        }
-        return null;
-      },
+    authOptions: t.field({
+      type: [AuthOptionType],
+      resolve: (parent) => parent.authOptions,
     }),
   }),
 });

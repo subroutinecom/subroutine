@@ -7,23 +7,46 @@ import type { IntegrationDefinition } from "../types";
  * Configuration is flexible - the user provides server URL, transport type,
  * and authentication details.
  *
- * Unlike OAuth integrations, MCP integrations don't have a predefined
- * auth flow - the auth configuration is passed directly to the MCP client.
+ * For generic providers, all auth options are available since the user
+ * specifies everything during integration creation.
  */
 export const mcpDefinition: IntegrationDefinition = {
   id: "mcp",
   name: "MCP Server",
   description: "Connect to any Model Context Protocol (MCP) server",
   category: "generic",
-  // MCP integrations are NOT viewer-scoped by default.
-  // They use org-level API keys. For viewer-scoped MCP with OAuth passthrough,
-  // use a dedicated provider definition (e.g., "mcp_github").
   viewerScoped: false,
   auth: {
     type: "mcp",
-    // These are defaults/placeholders - actual values come from authConfig at creation time
     serverUrl: "",
     transport: "streamable-http",
-    authStrategy: { type: "none" },
+    // Generic providers support all auth options - user chooses during creation
+    authOptions: [
+      {
+        id: "none",
+        strategy: { type: "none" },
+        label: "No Authentication",
+        description: "Server doesn't require authentication",
+      },
+      {
+        id: "api_key",
+        strategy: { type: "api_key", headerName: "X-API-Key" },
+        label: "API Key",
+        description: "Authenticate with a static API key",
+      },
+      {
+        id: "bearer_oauth",
+        strategy: { type: "bearer_oauth" },
+        label: "OAuth 2.0",
+        description: "Users authenticate with their own credentials",
+        viewerScoped: true,
+      },
+      {
+        id: "custom_headers",
+        strategy: { type: "custom_headers", headers: {} },
+        label: "Custom Headers",
+        description: "Custom authentication headers",
+      },
+    ],
   },
 };

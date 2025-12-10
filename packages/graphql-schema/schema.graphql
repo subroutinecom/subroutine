@@ -58,6 +58,23 @@ type Integration {
   visibility: String
 }
 
+type IntegrationAuthOption {
+  apiKeyConfig: IntegrationAuthOptionApiKeyConfig
+  description: String
+  id: String
+  label: String
+  oauthConfig: IntegrationProviderOAuthConfig
+  recommended: Boolean
+  strategy: McpAuthStrategy
+  viewerScoped: Boolean
+}
+
+type IntegrationAuthOptionApiKeyConfig {
+  headerName: String
+  headerPrefix: String
+  instructionsUrl: String
+}
+
 type IntegrationProviderDefinition {
   authType: String
   category: String
@@ -72,13 +89,12 @@ type IntegrationProviderDefinition {
 }
 
 type IntegrationProviderGraphQLConfig {
-  authStrategy: McpAuthStrategy
+  authOptions: [IntegrationAuthOption!]
   endpoint: String
-  oauthConfig: IntegrationProviderOAuthConfig
 }
 
 type IntegrationProviderMcpConfig {
-  authStrategy: McpAuthStrategy
+  authOptions: [IntegrationAuthOption!]
   serverUrl: String
   transport: String
 }
@@ -92,9 +108,8 @@ type IntegrationProviderOAuthConfig {
 }
 
 type IntegrationProviderOpenAPIConfig {
-  authStrategy: McpAuthStrategy
+  authOptions: [IntegrationAuthOption!]
   baseUrl: String
-  oauthConfig: IntegrationProviderOAuthConfig
 }
 
 type IntegrationSchemaResult {
