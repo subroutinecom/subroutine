@@ -249,8 +249,6 @@ Deno.test.only({
     );
 
     const code = data.source;
-    console.log("GENERATED WEATHER CODE:");
-    console.log(code);
 
     // Verify it used the client
     assertEquals(
@@ -258,5 +256,51 @@ Deno.test.only({
       true,
       "Code should use weather integration"
     );
+  },
+});
+
+Deno.test.only({
+  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API - Coercion Test`,
+  ignore: !enableAiTests,
+  fn: async () => {
+    const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
+
+    // We don't strictly need a valid ORG_ID for this test if we Mock the tools,
+    // but the agent generator might fail if it can't load context.
+    // Let's rely on the disabledExecution: false so it actually runs in sandbox.
+    // The sandbox will use our modified integrationProxyWorker which has 'coerce'.
+
+    const requestPayload = {
+      request:
+        "Use the integrations.coerce function to ensure { name: 'Bob', age: '42' } is a valid Person { name: string, age: number }, then return the person.",
+      disableExecution: false,
+      mcpContext: {
+        organizationId: "test-org", // Mock ID
+        viewerId: "test-user",
+        integrationNameToId: {},
+      },
+      initialMessages: [],
+    };
+
+    console.log(`Sending coercion request to ${API_URL}/api/dev/generate-code...`);
+    const response = await fetch(`${API_URL}/api/dev/generate-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestPayload),
+    });
+
+    const data = await response.json();
+
+    // Check for success
+    assertEquals(response.status, 200, `Expected 200, got ${response.status}`);
+    assertExists(data.executionResult, "Should have execution result");
+
+    // The result should have the coerced value
+    // The agent might return it in various ways, but likely as the result of the main function
+    console.log("Coercion Result:", data.executionResult.result);
+
+    const result = data.executionResult.result;
+    assertEquals(result.name, "Bob");
+    assertEquals(result.age, 42); // Should be number, not string
   },
 });

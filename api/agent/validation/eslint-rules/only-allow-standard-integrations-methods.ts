@@ -1,6 +1,11 @@
 import type { Rule } from "eslint";
 
-const VALID_INTEGRATION_METHODS = new Set(["getMcpClient", "getGraphQLClient", "getOpenAPIClient"]);
+const VALID_INTEGRATION_METHODS = new Set([
+  "getMcpClient",
+  "getGraphQLClient",
+  "getOpenAPIClient",
+  "coerce",
+]);
 
 export const onlyAllowStandardIntegrationsMethods: Rule.RuleModule = {
   meta: {

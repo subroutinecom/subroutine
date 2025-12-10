@@ -102,3 +102,18 @@ export interface SandboxOpenAPIConfig {
   /** Timestamp when the spec was last fetched */
   specFetchedAt?: number;
 }
+
+/**
+ * Interface definition for the 'integrations' object available in the sandbox.
+ * This is what the user's code will interact with.
+ */
+export interface Integrations {
+  getMcpClient(name: string): Promise<any>;
+  getGraphQLClient(name: string): Promise<any>;
+  getOpenAPIClient(name: string): Promise<any>;
+  /**
+   * Coerces a value to match a given JSON Schema.
+   * If strict validation fails, uses an agentic fallback to coerce the data.
+   */
+  coerce<S extends object>(schema: S, value: unknown): Promise<any>;
+}

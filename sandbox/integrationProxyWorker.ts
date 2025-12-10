@@ -483,6 +483,50 @@ const buildServerForIntegrations = async (
       })
   );
 
+  // Register coerce helper
+  server.register("coerce", async (schema: unknown, value: unknown) => {
+    // 1. Try strict validation first
+    try {
+      // AJV needs schema to be an object, but we receive it from wire.
+      // We ensure it's cloned/parsed correctly.
+      const schemaObj = typeof schema === "string" ? JSON.parse(schema) : schema;
+
+      const validate = ajv.compile(schemaObj);
+      if (validate(value)) {
+        return value as object;
+      }
+    } catch (err) {
+      console.warn(`[IntegrationProxy] Strict validation failed or schema error: ${err}`);
+      // Fall through to API coercion
+    }
+
+    // 2. Fallback to API coercion
+    console.log("[IntegrationProxy] Strict validation failed, falling back to API coercion");
+
+    const apiResponse = await fetch("http://api.subroutine.internal/api/dev/type-coerce", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input: value,
+        instructions: "Coerce the input to match the schema exactly.",
+        schema: typeof schema === "string" ? schema : JSON.stringify(schema),
+        mode: "json",
+      }),
+    });
+
+    if (!apiResponse.ok) {
+      const errorText = await apiResponse.text();
+      throw new Error(`Coercion API failed (${apiResponse.status}): ${errorText}`);
+    }
+
+    const data = await apiResponse.json();
+    if (!data.success) {
+      throw new Error(`Coercion failed: ${data.error}`);
+    }
+
+    return data.value;
+  });
+
   return server;
 };
 
