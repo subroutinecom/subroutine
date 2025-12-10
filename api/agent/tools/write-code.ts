@@ -200,7 +200,7 @@ export const createWriteCodeTool = (
           const errorMessages = validation.errors.map((e) =>
             e.line ? `Line ${e.line}: ${e.message}` : e.message
           );
-          logger.warn(`Validation failed:`, errorMessages);
+          logger.warn("Validation failed", { errorMessages, code });
           return {
             success: false,
             errors: errorMessages,

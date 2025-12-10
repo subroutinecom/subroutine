@@ -1,7 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { randomUUID } from "node:crypto";
-import { checkCustomRules } from "./agent/validation/ast-checker.ts";
 import { typeCheckCode } from "./agent/validation/type-checker.ts";
+// import { checkCustomRules } from "./agent/validation/ast-checker.ts";
 import type { AuthContext } from "./middlewares/auth.ts";
 import { generatePatLinkUrl } from "./models/pat-link.ts";
 import { completeMockAuthorization } from "./services/mock-oauth.ts";
@@ -92,6 +92,8 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
   });
 
   // Custom rules validation endpoint - runs AST-based rules
+  // DELETED - migrated to ESLint
+  /*
   app.post("/tests/check-custom-rules", async (c) => {
     let body: { code?: string; mcpIntegrationNames?: string[] };
     try {
@@ -126,6 +128,57 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
       : undefined;
 
     const result = checkCustomRules(body.code, context);
+
+    return c.json({
+      valid: result.valid,
+      errors: result.errors,
+    });
+  });
+  */
+
+  // Full validation endpoint - runs ESLint and type checking
+  app.post("/tests/validate-code", async (c) => {
+    let body: {
+      code?: string;
+      mcpIntegrationNames?: string[];
+      graphqlIntegrations?: any[];
+      openapiIntegrations?: any[];
+    };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "Invalid JSON body",
+          },
+        },
+        400
+      );
+    }
+
+    if (!body.code || typeof body.code !== "string") {
+      return c.json(
+        {
+          error: {
+            code: "VALIDATION",
+            message: "code field is required",
+          },
+        },
+        400
+      );
+    }
+
+    // Build context for validation
+    const context = {
+      mcpIntegrationNames: body.mcpIntegrationNames,
+      graphqlIntegrations: body.graphqlIntegrations,
+      openapiIntegrations: body.openapiIntegrations,
+    };
+
+    const { validateCode } = await import("./agent/validation/validator.ts");
+    const result = await validateCode(body.code, context);
 
     return c.json({
       valid: result.valid,

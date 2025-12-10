@@ -41,7 +41,7 @@
     "prettier": "npm:prettier@^3.6.2",
     "redis": "npm:redis@^5.10.0",
     "theme-change": "npm:theme-change@^2.5.0",
-    "typescript-eslint": "npm:typescript-eslint@^8.46.3",
+    "typescript-eslint": "npm:typescript-eslint@^8.49.0",
     "vite": "npm:vite@^7.2.0",
     "ts-morph": "npm:ts-morph@^26.0.0",
     "winston": "npm:winston@^3.13.0"
