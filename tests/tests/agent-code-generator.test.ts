@@ -196,32 +196,26 @@ Deno.test({
 });
 
 Deno.test.only({
-  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API - Simple Weather Request`,
+  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API - Simple Weather Request (Server-Side Discovery)`,
   ignore: !enableAiTests,
   fn: async () => {
     const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
-    const INTERNAL_URL = "http://localhost:80";
-    const weatherUrl = `${INTERNAL_URL}/mockMCP/weather`;
+    const ORG_ID = Deno.env.get("TEST_ORGANIZATION_ID");
+
+    if (!ORG_ID) {
+      console.log("Skipping test: TEST_ORGANIZATION_ID not provided");
+      return;
+    }
 
     const requestPayload = {
       request: "What is the current weather in Seattle, WA?",
       disableExecution: false,
-      integrations: [
-        {
-          id: "mock-weather-server",
-          name: "weather",
-          type: "mcp",
-          connectionUrl: weatherUrl,
-        },
-      ],
+      // Pass the organization ID so the agent can discover integrations via tools (getOrganizationIntegrations, findIntegration)
       mcpContext: {
-        organizationId: "org_mock",
-        viewerId: "user_mock",
-        integrationNameToId: {
-          weather: "mock-weather-server",
-        },
+        organizationId: ORG_ID,
+        viewerId: "test-user",
+        integrationNameToId: {}, // Empty start
       },
-      // Give it a hint to verify we can use the tool
       initialMessages: [],
     };
 
@@ -260,7 +254,7 @@ Deno.test.only({
 
     // Verify it used the client
     assertEquals(
-      code.includes('getMcpClient("weather")') || code.includes("getMcpClient('weather')"),
+      code.includes("getMcpClient") && code.toLowerCase().includes("weather"),
       true,
       "Code should use weather integration"
     );

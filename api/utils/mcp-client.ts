@@ -9,8 +9,8 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { McpIntegrationConfig } from "../models/integration";
 import { buildAuthHeadersFromBlock } from "../integrations/auth-utils.ts";
+import type { McpIntegrationConfig } from "../models/integration.ts";
 
 export interface McpToolInfo {
   name: string;
@@ -39,9 +39,11 @@ const createTransport = (
   };
 
   if (config.transport === "sse") {
-    return new SSEClientTransport(url, { requestInit });
+    // biome-ignore lint/suspicious/noExplicitAny: Deno RequestInit vs SDK RequestInit types incompatible
+    return new SSEClientTransport(url, { requestInit: requestInit as any });
   } else if (config.transport === "streamable-http") {
-    return new StreamableHTTPClientTransport(url, { requestInit });
+    // biome-ignore lint/suspicious/noExplicitAny: Deno RequestInit vs SDK RequestInit types incompatible
+    return new StreamableHTTPClientTransport(url, { requestInit: requestInit as any });
   } else {
     throw new Error(`Unknown transport type: ${config.transport}`);
   }
