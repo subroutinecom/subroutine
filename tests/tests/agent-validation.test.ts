@@ -515,6 +515,35 @@ Deno.test("Validator - agent/no-undefined-references", async (t) => {
 });
 
 Deno.test.only("Validator - json-schema-to-ts usage", async (t) => {
+  await t.step("Negative: Invalid type assignment", async () => {
+    const code = `
+      import type { Integrations } from "@subroutine/integration-types";
+      import { FromSchema } from "json-schema-to-ts";
+
+      const schema = {
+        type: "object",
+        properties: { foo: { type: "string" } },
+        required: ["foo"],
+        additionalProperties: false,
+      } as const;
+
+      type MyType = FromSchema<typeof schema>;
+
+      export type Inputs = {};
+      export type Outputs = {};
+
+      export async function main(inputs: Inputs, integrations: Integrations) {
+        // This should fail because 'foo' expects string, got number
+        const invalid: MyType = { foo: 123 };
+        
+        return {};
+      }
+    `;
+    const result = await validateCodeViaApi(code);
+    console.log(JSON.stringify(result, null, 2));
+    assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
+  });
+
   await t.step("Negative: invalid tool arguments with generic type", async () => {
     const code = `
       import type { Integrations } from "@subroutine/integration-types";
@@ -551,36 +580,6 @@ Deno.test.only("Validator - json-schema-to-ts usage", async (t) => {
       }
     `;
     const result = await validateCodeViaApi(code, { mcpIntegrationNames: ["weather"] });
-    console.log(JSON.stringify(result, null, 2));
-    assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
-  });
-
-  await t.step("Negative: Invalid type assignment", async () => {
-    const code = `
-      import type { Integrations } from "@subroutine/integration-types";
-      import { FromSchema } from "json-schema-to-ts";
-
-      const schema = {
-        type: "object",
-        properties: { foo: { type: "string" } },
-        required: ["foo"],
-        additionalProperties: false,
-      } as const;
-
-      type MyType = FromSchema<typeof schema>;
-
-      export type Inputs = {};
-      export type Outputs = {};
-
-      // Use the generic type!
-      export async function main(inputs: Inputs, integrations: Integrations) {
-        // This should fail because 'foo' expects string, got number
-        const invalid: MyType = { foo: 123 };
-        
-        return {};
-      }
-    `;
-    const result = await validateCodeViaApi(code);
     console.log(JSON.stringify(result, null, 2));
     assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
   });
