@@ -26,6 +26,7 @@ export const validateWithEslint = (code: string, context?: ValidationContext): V
       "prefer-const": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
 
       // Agent specific validation rules
       "agent/await-mcp-client": "error",

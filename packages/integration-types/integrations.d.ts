@@ -5,13 +5,33 @@
  * Usage in subroutine code:
  *   import type { Integrations } from "@subroutine/integration-types";
  */
+import type { FromSchema, JSONSchema } from "json-schema-to-ts";
 
 // ============================================================================
 // Core Integrations Interface
 // ============================================================================
 
-export interface Integrations {
+// Helper types for MCP Integration Shape
+export type McpIntegrationShape = {
+  [serverName: string]: {
+    [toolName: string]: {
+      inputSchema: JSONSchema;
+    };
+  };
+};
+
+export type IntegrationConfig = {
+  mcp?: McpIntegrationShape;
+};
+
+export interface Integrations<Config extends IntegrationConfig = IntegrationConfig> {
   /** Get an MCP client by integration name */
+  getMcpClient<S extends keyof Config["mcp"] & string>(
+    name: S
+  ): Promise<
+    Config["mcp"] extends McpIntegrationShape ? TypedMcpClient<Config["mcp"][S]> : McpClient
+  >;
+
   getMcpClient(name: string): Promise<McpClient>;
 
   /** Get Gmail API client (requires gmail integration) */
@@ -33,6 +53,20 @@ export interface Integrations {
 // ============================================================================
 // MCP Client
 // ============================================================================
+
+export type TypedMcpClient<ServerShape> = Omit<McpClient, "callTool"> & {
+  callTool<T extends keyof ServerShape & string>(
+    args: {
+      name: T;
+      arguments: ServerShape[T] extends { inputSchema: infer IS }
+        ? IS extends JSONSchema
+          ? FromSchema<IS>
+          : never
+        : never;
+    },
+    resultSchema?: any // We don't have output schema in Shape yet widely but keeping for compat
+  ): Promise<any>; // Returning any for result as we focus on input typing first
+} & McpClient;
 
 export interface McpClient {
   /** Call a tool on the MCP server */
@@ -109,7 +143,7 @@ interface McpToolResult {
 export interface GraphQLClient {
   request<TData = unknown, TVariables extends Record<string, unknown> = Record<string, unknown>>(
     query: string,
-    variables?: TVariables,
+    variables?: TVariables
   ): Promise<TData>;
 }
 
@@ -122,10 +156,13 @@ export interface OpenAPIClient {
     method: string,
     path: string,
     params?: Record<string, unknown>,
-    body?: unknown,
+    body?: unknown
   ): Promise<T>;
   getOperations(): Array<{ method: string; path: string; summary?: string }>;
-  getOperation(method: string, path: string): { method: string; path: string; summary?: string } | null;
+  getOperation(
+    method: string,
+    path: string
+  ): { method: string; path: string; summary?: string } | null;
 }
 
 // ============================================================================
@@ -245,6 +282,7 @@ interface GmailMessage {
   historyId?: string;
   internalDate?: string;
   raw?: string;
+  headers?: { name: string; value: string }[];
 }
 
 interface GmailMessagePart {

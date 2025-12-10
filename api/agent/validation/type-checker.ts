@@ -1,7 +1,7 @@
-import { Project, ts } from "ts-morph";
-import { resolve, dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ValidationError } from "./types";
+import { Project, ts } from "ts-morph";
+import type { ValidationError } from "./types.ts";
 
 let typeCheckProject: Project | null = null;
 
@@ -40,6 +40,7 @@ const getProject = (): Project => {
           "@modelcontextprotocol/sdk/*": [
             resolve(nodeModulesPath, "@modelcontextprotocol/sdk/dist/esm/*"),
           ],
+          "json-schema-to-ts": [resolve(nodeModulesPath, "json-schema-to-ts/index.d.ts")],
         },
       },
     });

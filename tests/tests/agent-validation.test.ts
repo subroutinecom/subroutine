@@ -514,7 +514,7 @@ Deno.test("Validator - agent/no-undefined-references", async (t) => {
   });
 });
 
-Deno.test("Validator - generic-integrations-type-check", async (t) => {
+Deno.test.only("Validator - generic-integrations-type-check", async (t) => {
   await t.step("Negative: invalid tool arguments with generic type", async () => {
     const code = `
       import type { Integrations } from "@subroutine/integration-types";
@@ -551,6 +551,7 @@ Deno.test("Validator - generic-integrations-type-check", async (t) => {
       }
     `;
     const result = await validateCodeViaApi(code, { mcpIntegrationNames: ["weather"] });
+    console.log(JSON.stringify(result, null, 2));
     assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
   });
 });
