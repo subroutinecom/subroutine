@@ -199,8 +199,13 @@ export const createWriteCodeTool = (
         if (!validation.valid) {
           const errorMessages = validation.errors.map((e) => {
             const loc = e.line ? `Line ${e.line}` : "Global";
-            const src = e.source ? ` [${e.source}]` : "";
-            return `${loc}: ${e.message}${src}`;
+            let attribution = "";
+            if (e.source === "eslint" && e.rule) {
+              attribution = ` [${e.source}: ${e.rule}]`;
+            } else if (e.source) {
+              attribution = ` [${e.source}]`;
+            }
+            return `${loc}: ${e.message}${attribution}`;
           });
           logger.warn("Validation failed", { errorMessages, code });
           return {
