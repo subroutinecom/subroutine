@@ -256,7 +256,6 @@ export function createLegacyMcpServer(auth: AuthContext): McpServer {
           integrations,
           organizationId,
           useMock,
-          shouldGenerateInputs: true,
         });
 
         if (!subroutine.initialInputs) {
