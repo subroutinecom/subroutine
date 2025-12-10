@@ -24,9 +24,15 @@ export const rateLimitConfigSchema = z.object({
   patLinkSubmit: rateLimitRuleSchema.default({ windowMs: 60000, limit: 5 }),
 });
 
+export const crossSubDomainCookiesSchema = z.object({
+  enabled: z.boolean(),
+  domain: z.string().min(1, "Domain is required when cross-subdomain cookies are enabled"),
+});
+
 export const authConfigSchema = z.object({
   baseUrl: z.string().url("Base URL must be a valid URL").optional(),
   allowedOrigins: z.array(z.string().url()).default(["http://localhost:3001"]),
+  crossSubDomainCookies: crossSubDomainCookiesSchema.optional(),
   providers: z.object({
     github: z.object({
       enabled: z.boolean(),

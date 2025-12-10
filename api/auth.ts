@@ -36,6 +36,14 @@ export const auth = betterAuth({
       },
     }),
   },
+  ...(config.auth.crossSubDomainCookies?.enabled && {
+    advanced: {
+      crossSubDomainCookies: {
+        enabled: true,
+        domain: config.auth.crossSubDomainCookies.domain,
+      },
+    },
+  }),
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       // Validate slug when creating an organization
