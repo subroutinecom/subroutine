@@ -469,3 +469,112 @@ Deno.test("Validator - typescript-compiler-checks", async (t) => {
     assertError(result, "typescript-typecheck", "Type 'string' is not assignable to type 'number'");
   });
 });
+
+Deno.test("Validator - agent/no-undefined-references", async (t) => {
+  await t.step("Negative: reference before declaration", async () => {
+    const code = `
+            export type Inputs = {};
+            export type Outputs = {};
+            export async function main() {
+                const y = x + 1;
+                const x = 1;
+                return { y };
+            }
+        `;
+    const result = await validateCodeViaApi(code);
+    assertError(result, "agent/no-undefined-references", "referenced before its declaration");
+  });
+
+  await t.step("Negative: reference before declaration (function hoisting)", async () => {
+    const code = `
+            export type Inputs = {};
+            export type Outputs = {};
+            export async function main() {
+                helper();
+                return {};
+            }
+            function helper() { return 1; }
+        `;
+    const result = await validateCodeViaApi(code);
+    assertError(result, "agent/no-undefined-references", "referenced before its declaration");
+  });
+
+  await t.step("Positive: declaration before reference", async () => {
+    const code = `
+            export type Inputs = {};
+            export type Outputs = {};
+            export async function main() {
+                const x = 1;
+                const y = x + 1;
+                return { y };
+            }
+        `;
+    const result = await validateCodeViaApi(code);
+    assertValid(result);
+  });
+});
+
+// Deno.test.only("Validator - generic-integrations-type-check", async (t) => {
+//   await t.step("Negative: invalid tool arguments with generic type", async () => {
+//     const code = `
+//       import type { Integrations } from "@subroutine/integration-types";
+
+//       const MyShape = {
+//         mcp: {
+//           "weather": {
+//              getForecast: {
+//                inputSchema: {
+//                  type: "object",
+//                  properties: { city: { type: "string" } },
+//                  required: ["city"],
+//                  additionalProperties: false
+//                } as const
+//              }
+//           }
+//         }
+//       } as const;
+
+//       export type Inputs = {};
+//       export type Outputs = {};
+
+//       // Use the generic type!
+//       export async function main(inputs: Inputs, integrations: Integrations<typeof MyShape>) {
+//           const client = await integrations.getMcpClient("weather");
+
+//           // This should error because 'city' expects string, got number
+//           await client.callTool({
+//             name: "getForecast",
+//             arguments: { city: 123 }
+//           });
+
+//           return {};
+//       }
+//     `;
+//     const result = await validateCodeViaApi(code, { mcpIntegrationNames: ["weather"] });
+//     console.log(JSON.stringify(result, null, 2));
+//     assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
+//   });
+// });
+
+// Deno.test.only("Validator - explicit json-schema-to-ts usage", async (t) => {
+//   await t.step("Negative: Invalid type assignment", async () => {
+//     const code = `
+//       import { FromSchema } from "json-schema-to-ts";
+
+//       const schema = {
+//         type: "object",
+//         properties: { foo: { type: "string" } },
+//         required: ["foo"],
+//         additionalProperties: false,
+//       } as const;
+
+//       type MyType = FromSchema<typeof schema>;
+
+//       // This should fail because 'foo' expects string, got number
+//       const invalid: MyType = { foo: 123 };
+//     `;
+//     const result = await validateCodeViaApi(code);
+//     console.log(JSON.stringify(result, null, 2));
+//     assertError(result, "typescript-typecheck", "Type 'number' is not assignable to type 'string'");
+//   });
+// });

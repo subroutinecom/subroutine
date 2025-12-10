@@ -26,6 +26,7 @@ export const validateWithEslint = (code: string, context?: ValidationContext): V
       "prefer-const": "warn",
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
 
       // Agent specific validation rules
       "agent/await-mcp-client": "error",
@@ -37,6 +38,7 @@ export const validateWithEslint = (code: string, context?: ValidationContext): V
       "agent/no-ctx-param": "error",
       "agent/no-nested-imports": "error",
       "agent/no-network-fetch": "error",
+      "agent/no-undefined-references": "error",
       "agent/only-allow-standard-integrations-methods": "error",
       "agent/validate-graphql-queries": "error",
       "agent/validate-openapi-calls": "error",

@@ -1,6 +1,7 @@
 export type ValidationError = {
   rule: string;
   message: string;
+  file?: string;
   line?: number;
   column?: number;
 };
