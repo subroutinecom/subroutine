@@ -1,5 +1,6 @@
 import loggerNameMatch from "./logger-name-match.ts";
 import loggerArgPattern from "./logger-arg-pattern.ts";
+import noBetterAuthLogger from "./no-better-auth-logger.ts";
 import noConsole from "./no-console.ts";
 import noGraphqlFetch from "./no-graphql-fetch.ts";
 import noRoutesImports from "./no-routes-imports.ts";
@@ -15,5 +16,6 @@ export const localRulesPlugin = {
     "no-console": noConsole,
     "logger-name-match": loggerNameMatch,
     "logger-arg-pattern": loggerArgPattern,
+    "no-better-auth-logger": noBetterAuthLogger,
   },
 };

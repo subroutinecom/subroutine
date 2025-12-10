@@ -1,9 +1,11 @@
-import { logger } from "better-auth";
+import { getLogger } from "../../utils/logger.ts";
 import { z } from "zod";
 import type { AuthRequirement } from "../../models/errors.ts";
 import { getIntegrationOrGlobal } from "../../models/integration.ts";
 import type { McpContext } from "../utils/types.ts";
 import { handleInspectGraphQL, handleInspectMcp, handleInspectOpenAPI } from "./utils.ts";
+
+const logger = getLogger("api/agent/tools/inspect-integration.ts");
 
 /**
  * Result type for inspectIntegration tool.
