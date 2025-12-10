@@ -6034,7 +6034,8 @@
       "packages/integration-types": {
         "dependencies": [
           "npm:@modelcontextprotocol/sdk@^1.21.0",
-          "npm:googleapis@134"
+          "npm:googleapis@134",
+          "npm:json-schema-to-ts@^3.1.1"
         ]
       },
       "sandbox": {
