@@ -292,7 +292,7 @@ export const generateCode = async (
     }
 
     // 6. Return Success
-    const { code, inputsSchema, outputsSchema } = capturedResult;
+    const { code, inputsSchema, outputsSchema, executionResult } = capturedResult;
     const finalUsedIds = determineUsedIntegrations(code, usedIntegrationIds, options?.mcpContext);
 
     return {
@@ -302,7 +302,7 @@ export const generateCode = async (
       outputsSchema,
       iterations: steps.length,
       usedIntegrationIds: finalUsedIds,
-      executionResult: capturedResult.executionResult,
+      executionResult,
     };
   } catch (error) {
     if (streamTextParams) {

@@ -33,7 +33,7 @@ Deno.test({
   },
 });
 
-Deno.test.only({
+Deno.test({
   name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API with disableExecution=false (Explicit Execution)`,
   ignore: !enableAiTests,
   fn: async () => {
@@ -68,7 +68,7 @@ Deno.test.only({
 
     expect(data.executionResult.result).toBeTruthy();
     let foundResult = false;
-    JSON.stringify(data.executionResult.result, (key, value) => {
+    JSON.stringify(data.executionResult.result, (_ey, value) => {
       if (value === 30) foundResult = true;
       return value;
     });
