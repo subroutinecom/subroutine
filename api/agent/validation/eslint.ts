@@ -37,6 +37,7 @@ export const validateWithEslint = (code: string, context?: ValidationContext): V
       "agent/no-ctx-param": "error",
       "agent/no-nested-imports": "error",
       "agent/no-network-fetch": "error",
+      "agent/no-undefined-references": "error",
       "agent/only-allow-standard-integrations-methods": "error",
       "agent/validate-graphql-queries": "error",
       "agent/validate-openapi-calls": "error",

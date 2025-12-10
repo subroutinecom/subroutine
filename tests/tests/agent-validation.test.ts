@@ -469,3 +469,47 @@ Deno.test("Validator - typescript-compiler-checks", async (t) => {
     assertError(result, "typescript-typecheck", "Type 'string' is not assignable to type 'number'");
   });
 });
+
+Deno.test("Validator - agent/no-undefined-references", async (t) => {
+  await t.step("Negative: reference before declaration", async () => {
+    const code = `
+            export type Inputs = {};
+            export type Outputs = {};
+            export async function main() {
+                const y = x + 1;
+                const x = 1;
+                return { y };
+            }
+        `;
+    const result = await validateCodeViaApi(code);
+    assertError(result, "agent/no-undefined-references", "referenced before its declaration");
+  });
+
+  await t.step("Negative: reference before declaration (function hoisting)", async () => {
+    const code = `
+            export type Inputs = {};
+            export type Outputs = {};
+            export async function main() {
+                helper();
+                return {};
+            }
+            function helper() { return 1; }
+        `;
+    const result = await validateCodeViaApi(code);
+    assertError(result, "agent/no-undefined-references", "referenced before its declaration");
+  });
+
+  await t.step("Positive: declaration before reference", async () => {
+    const code = `
+            export type Inputs = {};
+            export type Outputs = {};
+            export async function main() {
+                const x = 1;
+                const y = x + 1;
+                return { y };
+            }
+        `;
+    const result = await validateCodeViaApi(code);
+    assertValid(result);
+  });
+});
