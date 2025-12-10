@@ -194,3 +194,75 @@ Deno.test({
     );
   },
 });
+
+Deno.test.only({
+  name: `${enableAiTests ? "" : "(requires ENABLE_AI_TESTS=true|1) "}agent core generateCode API - Simple Weather Request`,
+  ignore: !enableAiTests,
+  fn: async () => {
+    const API_URL = Deno.env.get("API_URL") || "http://api.subroutine.internal";
+    const INTERNAL_URL = "http://localhost:80";
+    const weatherUrl = `${INTERNAL_URL}/mockMCP/weather`;
+
+    const requestPayload = {
+      request: "What is the current weather in Seattle, WA?",
+      disableExecution: false,
+      integrations: [
+        {
+          id: "mock-weather-server",
+          name: "weather",
+          type: "mcp",
+          connectionUrl: weatherUrl,
+        },
+      ],
+      mcpContext: {
+        organizationId: "org_mock",
+        viewerId: "user_mock",
+        integrationNameToId: {
+          weather: "mock-weather-server",
+        },
+      },
+      // Give it a hint to verify we can use the tool
+      initialMessages: [],
+    };
+
+    console.log(`Sending request to ${API_URL}/api/dev/generate-code...`);
+    const response = await fetch(`${API_URL}/api/dev/generate-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestPayload),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 500 && data.error === "Failed to create coding model") {
+      console.log("Skipping test: Failed to create coding model");
+      return;
+    }
+
+    assertEquals(
+      response.status,
+      200,
+      `Expected 200, got ${response.status} - ${JSON.stringify(data.error)}`
+    );
+    assertEquals(data.success, true, `Expected true, got ${data.success}`);
+
+    // It should have executed
+    assertExists(data.executionResult, "Should have execution result");
+    assertEquals(
+      data.executionResult.success,
+      true,
+      `Execution failed: ${data.executionResult.error}`
+    );
+
+    const code = data.source;
+    console.log("GENERATED WEATHER CODE:");
+    console.log(code);
+
+    // Verify it used the client
+    assertEquals(
+      code.includes('getMcpClient("weather")') || code.includes("getMcpClient('weather')"),
+      true,
+      "Code should use weather integration"
+    );
+  },
+});

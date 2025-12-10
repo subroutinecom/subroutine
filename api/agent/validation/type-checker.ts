@@ -53,8 +53,6 @@ export const typeCheckCode = (code: string): TypeCheckResult => {
     },
   };
 
-  logger.info("Type checking with options:", compilerOptions);
-
   // Create a compiler host that serves our virtual file from memory
   const host = ts.createCompilerHost(compilerOptions);
   const originalGetSourceFile = host.getSourceFile;
