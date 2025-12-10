@@ -1,7 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { randomUUID } from "node:crypto";
-import { checkCustomRules } from "./agent/validation/ast-checker.ts";
 import { typeCheckCode } from "./agent/validation/type-checker.ts";
+// import { checkCustomRules } from "./agent/validation/ast-checker.ts";
 import type { AuthContext } from "./middlewares/auth.ts";
 import { generatePatLinkUrl } from "./models/pat-link.ts";
 import { completeMockAuthorization } from "./services/mock-oauth.ts";
@@ -92,6 +92,8 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
   });
 
   // Custom rules validation endpoint - runs AST-based rules
+  // DELETED - migrated to ESLint
+  /*
   app.post("/tests/check-custom-rules", async (c) => {
     let body: { code?: string; mcpIntegrationNames?: string[] };
     try {
@@ -132,6 +134,7 @@ export const registerTestEndpoints = (app: OpenAPIHono<{ Variables: { auth: Auth
       errors: result.errors,
     });
   });
+  */
 
   // Full validation endpoint - runs ESLint and type checking
   app.post("/tests/validate-code", async (c) => {
