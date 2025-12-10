@@ -260,6 +260,7 @@ const OpenAPIIntegrationConfigType = builder.objectRef<
 OpenAPIIntegrationConfigType.implement({
   fields: (t) => ({
     baseUrl: t.exposeString("baseUrl"),
+    specUrl: t.exposeString("specUrl", { nullable: true }),
     authOptions: t.field({
       type: [AuthOptionType],
       resolve: (parent) => parent.authOptions,

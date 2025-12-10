@@ -14,6 +14,8 @@ interface OpenAPIFormFieldsProps {
   watchedAuthStrategy: AuthStrategyType;
   watchedApiKeyIsViewerScoped?: boolean;
   redirectUri?: string;
+  /** If true, this is the generic openapi provider and specUrl is required */
+  isGenericProvider?: boolean;
 }
 
 const inputClasses = `
@@ -30,6 +32,7 @@ export const OpenAPIFormFields = ({
   watchedAuthStrategy,
   watchedApiKeyIsViewerScoped,
   redirectUri,
+  isGenericProvider = false,
 }: OpenAPIFormFieldsProps) => {
   return (
     <div className="space-y-8">
@@ -63,12 +66,14 @@ export const OpenAPIFormFields = ({
 
         <div className="space-y-2">
           <label htmlFor="specUrl" className="text-sm font-medium text-base-content/70">
-            OpenAPI Spec URL (Optional)
+            OpenAPI Spec URL {isGenericProvider ? "" : "(Optional)"}
           </label>
           <input
             id="specUrl"
             type="url"
-            {...register("specUrl")}
+            {...register("specUrl", {
+              required: isGenericProvider ? "OpenAPI Spec URL is required" : false,
+            })}
             placeholder="https://api.example.com/openapi.json"
             className={inputClasses}
           />
@@ -76,7 +81,9 @@ export const OpenAPIFormFields = ({
             <p className="text-sm text-error">{String(errors.specUrl.message)}</p>
           )}
           <p className="text-xs text-base-content/40 pl-1">
-            URL to the OpenAPI 3.x specification (JSON or YAML). If not provided, you can upload the spec manually.
+            {isGenericProvider
+              ? "URL to the OpenAPI 3.x specification (JSON or YAML). Required to enable code generation."
+              : "URL to the OpenAPI 3.x specification (JSON or YAML). If not provided, you can upload the spec manually."}
           </p>
         </div>
       </div>

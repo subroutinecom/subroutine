@@ -26,6 +26,7 @@ export const githubDefinition: IntegrationDefinition = {
   auth: {
     type: "openapi",
     baseUrl: "https://api.github.com",
+    specUrl: "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions/api.github.com/api.github.com.json",
     authOptions: [
       {
         id: "oauth",
