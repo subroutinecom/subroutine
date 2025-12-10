@@ -1,4 +1,5 @@
 import type { IntegrationTestCase } from "../types";
+import { githubTestCases } from "./github";
 import { linearTestCases } from "./linear";
 import { slackTestCases } from "./slack";
 
@@ -6,6 +7,7 @@ import { slackTestCases } from "./slack";
  * All registered test cases, keyed by provider ID.
  */
 const testCasesByProvider: Record<string, IntegrationTestCase[]> = {
+  github: githubTestCases,
   linear: linearTestCases,
   slack: slackTestCases,
 };

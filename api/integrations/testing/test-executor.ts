@@ -1,11 +1,155 @@
 import { getConfig } from "../../config/loader";
 import { getConnectedAccountByViewer } from "../../models/connected-account";
+import { IntegrationAuthRequiredError } from "../../models/errors";
 import { getIntegrationOrGlobal, type IntegrationWithConfig } from "../../models/integration";
+import { generatePatLinkUrl } from "../../models/pat-link";
+import type { IntegrationProvider } from "../providers";
+import { generateAuthorizationUrl } from "../../services/oauth";
 import { getLogger } from "../../utils/logger";
 import { getTestCaseById, getTestCasesForProvider } from "./test-cases";
 import type { IntegrationTestCase, TestCaseResult, TestRunRequest, TestRunResult } from "./types";
+import type { AuthStrategy, OAuthConfig } from "../providers/types";
 
 const logger = getLogger("api/integrations/testing/test-executor.ts");
+
+// ============================================================================
+// Viewer Credential Resolution (same pattern as run.ts)
+// ============================================================================
+
+type ViewerCredentialRequirement = { type: "none" } | { type: "oauth" } | { type: "pat" };
+
+const getViewerCredentialRequirement = (authStrategy: AuthStrategy): ViewerCredentialRequirement => {
+  switch (authStrategy.type) {
+    case "bearer_oauth":
+      return { type: "oauth" };
+    case "api_key":
+      return authStrategy.viewerScoped ? { type: "pat" } : { type: "none" };
+    case "none":
+    case "custom_headers":
+      return { type: "none" };
+    default: {
+      const _exhaustive: never = authStrategy;
+      throw new Error(`Unknown auth strategy type: ${JSON.stringify(_exhaustive)}`);
+    }
+  }
+};
+
+/**
+ * Extracts auth strategy and oauth config from an integration's auth config.
+ * Handles all protocol types (oauth2, mcp, graphql, openapi).
+ */
+const extractAuthConfig = (
+  integration: IntegrationWithConfig
+): { authStrategy: AuthStrategy; oauthConfig?: OAuthConfig; metadata?: Record<string, unknown> } => {
+  const authConfig = integration.authConfig;
+
+  if (authConfig.type === "oauth2") {
+    // OAuth2 integrations have their own auth strategy
+    return {
+      authStrategy: { type: "bearer_oauth" },
+      oauthConfig: {
+        clientId: authConfig.clientId,
+        clientSecret: authConfig.clientSecret,
+        authUrl: authConfig.authUrl,
+        tokenUrl: authConfig.tokenUrl,
+        redirectUri: authConfig.redirectUri,
+        scopes: authConfig.scopes ?? [],
+      },
+    };
+  }
+
+  if (authConfig.type === "mcp" || authConfig.type === "graphql" || authConfig.type === "openapi") {
+    return {
+      authStrategy: authConfig.auth.strategy,
+      oauthConfig: authConfig.auth.oauthConfig,
+      metadata: authConfig.metadata,
+    };
+  }
+
+  throw new Error(`Unknown integration type: ${(authConfig as { type: string }).type}`);
+};
+
+/**
+ * Resolves viewer credentials for testing. Returns access token if available,
+ * or throws IntegrationAuthRequiredError with the appropriate auth URL.
+ */
+const resolveTestCredentials = async (params: {
+  integration: IntegrationWithConfig;
+  viewerId: string;
+  organizationId: string;
+}): Promise<string> => {
+  const { integration, viewerId, organizationId } = params;
+  const { authStrategy, oauthConfig, metadata } = extractAuthConfig(integration);
+  const requirement = getViewerCredentialRequirement(authStrategy);
+
+  if (requirement.type === "none") {
+    // No credentials needed - return empty string (tests will work without token)
+    return "";
+  }
+
+  // Check for existing connected account
+  const connectedAccount = await getConnectedAccountByViewer(viewerId, integration.id, organizationId);
+
+  if (connectedAccount?.status === "active" && connectedAccount.credentials.accessToken) {
+    return connectedAccount.credentials.accessToken;
+  }
+
+  // No valid credentials - generate appropriate auth URL
+  const provider = integration.provider as IntegrationProvider;
+
+  if (requirement.type === "oauth") {
+    if (!oauthConfig) {
+      throw new Error(
+        `Integration ${integration.name} is configured for OAuth but missing OAuth configuration. ` +
+          `Please configure clientId, clientSecret, and other OAuth settings.`
+      );
+    }
+
+    const auth = await generateAuthorizationUrl({
+      integrationId: integration.id,
+      organizationId,
+      viewerId,
+    });
+
+    throw new IntegrationAuthRequiredError({
+      viewerId,
+      requirements: [
+        {
+          integrationId: integration.id,
+          integrationName: integration.name,
+          provider,
+          authorizationUrl: auth.url,
+          state: auth.state,
+        },
+      ],
+    });
+  }
+
+  if (requirement.type === "pat") {
+    const patLink = await generatePatLinkUrl({
+      integrationId: integration.id,
+      viewerId,
+      organizationId,
+    });
+
+    throw new IntegrationAuthRequiredError({
+      viewerId,
+      requirements: [
+        {
+          integrationId: integration.id,
+          integrationName: integration.name,
+          provider,
+          authorizationUrl: patLink.url,
+          state: "",
+          patLinkUrl: patLink.url,
+          authInstructions: metadata?.authInstructions as string | undefined,
+        },
+      ],
+    });
+  }
+
+  return "";
+};
 
 /**
  * Build a sandbox-compatible integration payload from an integration and connected account.
@@ -175,7 +319,7 @@ const runTestCase = async (
  * Run integration tests for a given integration.
  *
  * This is the main entry point for the testing harness.
- * It requires a connected account with valid OAuth tokens.
+ * It requires valid credentials (OAuth token or API key) for the viewer.
  */
 export const runIntegrationTests = async (request: TestRunRequest): Promise<TestRunResult> => {
   const { integrationId, organizationId, viewerId, testCaseIds } = request;
@@ -186,28 +330,47 @@ export const runIntegrationTests = async (request: TestRunRequest): Promise<Test
     throw new Error(`Integration not found: ${integrationId}`);
   }
 
-  // 2. Get connected account for the viewer
-  const connectedAccount = await getConnectedAccountByViewer(
-    viewerId,
-    integrationId,
-    organizationId
-  );
+  // 2. Resolve credentials for the viewer (handles OAuth and PAT generically)
+  let accessToken: string;
+  try {
+    accessToken = await resolveTestCredentials({
+      integration,
+      viewerId,
+      organizationId,
+    });
+  } catch (error) {
+    // If auth is required, convert the error to TestRunResult format
+    if (error instanceof IntegrationAuthRequiredError) {
+      const requirement = error.requirements[0];
+      logger.info(
+        `Auth required for viewer ${viewerId}, type: ${requirement.patLinkUrl ? "pat" : "oauth"}`
+      );
 
-  if (!connectedAccount) {
-    throw new Error(
-      `No connected account found for this integration. Please complete the OAuth flow first.`
-    );
-  }
-
-  if (connectedAccount.status !== "active") {
-    throw new Error(
-      `Connected account is ${connectedAccount.status}. Please re-authenticate.`
-    );
-  }
-
-  const accessToken = connectedAccount.credentials.accessToken;
-  if (!accessToken) {
-    throw new Error("Connected account has no access token.");
+      return {
+        integrationId,
+        providerId: integration.provider,
+        results: [],
+        summary: {
+          total: 0,
+          passed: 0,
+          failed: 0,
+          totalDurationMs: 0,
+        },
+        executedAt: new Date().toISOString(),
+        authRequired: true,
+        authorizationUrl: requirement.authorizationUrl, // backwards compat
+        authRequirement: {
+          integrationId: requirement.integrationId,
+          integrationName: requirement.integrationName,
+          provider: requirement.provider,
+          authorizationUrl: requirement.authorizationUrl,
+          state: requirement.state,
+          patLinkUrl: requirement.patLinkUrl,
+          authInstructions: requirement.authInstructions,
+        },
+      };
+    }
+    throw error;
   }
 
   // 3. Get test cases

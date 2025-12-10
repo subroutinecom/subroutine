@@ -17,19 +17,6 @@ type ApiKey {
   updatedAt: String
 }
 
-type ConnectedAccount {
-  accountIdentifier: String
-  createdAt: String
-  credentials: String
-  id: String
-  integrationId: String
-  lastUsedAt: String
-  organizationId: String
-  status: String
-  updatedAt: String
-  viewerId: String
-}
-
 type CreatedApiKey {
   createdAt: String
   enabled: Boolean
@@ -154,13 +141,6 @@ type Mutation {
     name: String
     prefix: String
   ): CreatedApiKey
-  createConnectedAccount(
-    accountIdentifier: String
-    """JSON string of ConnectedAccountCredentials"""
-    credentials: String!
-    integrationId: String!
-    viewerId: String!
-  ): ConnectedAccount
   createIntegration(
     """JSON string of IntegrationAuthConfig"""
     authConfig: String!
@@ -173,7 +153,6 @@ type Mutation {
     visibility: String
   ): Integration
   deleteApiKey(id: String!): Boolean
-  deleteConnectedAccount(id: String!): Boolean
   deleteIntegration(id: String!): Boolean
   """
   Fetch an OpenAPI spec and store it for an integration. Only works for OpenAPI integrations with specUrl configured.
@@ -235,9 +214,6 @@ type OpenAPIOperation {
 type Query {
   apiKey(id: String!): ApiKey
   apiKeys: [ApiKey!]
-  connectedAccount(id: String!): ConnectedAccount
-  connectedAccounts: [ConnectedAccount!]
-  connectedAccountsByIntegration(integrationId: String!): [ConnectedAccount!]
   discoverMcpOAuth(serverUrl: String!): McpOAuthDiscoveryResult
   integration(id: String!): Integration
   """Get the stored OpenAPI spec for an OpenAPI integration"""
@@ -295,6 +271,16 @@ type StoredSchema {
   schema: String
 }
 
+type TestAuthRequirement {
+  authInstructions: String
+  authorizationUrl: String
+  integrationId: String
+  integrationName: String
+  patLinkUrl: String
+  provider: String
+  state: String
+}
+
 type TestCaseError {
   message: String
   name: String
@@ -311,6 +297,13 @@ type TestCaseResult {
 }
 
 type TestRunResult {
+  authRequired: Boolean
+  """
+  Full auth requirement details including OAuth URL, PAT link URL, and instructions.
+  """
+  authRequirement: TestAuthRequirement
+  """OAuth authorization URL. Deprecated: use authRequirement instead."""
+  authorizationUrl: String
   executedAt: String
   integrationId: String
   providerId: String

@@ -26,14 +26,6 @@ import {
 } from "../models/integration.ts";
 import { isSuperadminOrg } from "../utils/superadmin.ts";
 import {
-  type ConnectedAccountWithCredentials,
-  createConnectedAccount,
-  deleteConnectedAccount,
-  getConnectedAccount,
-  listConnectedAccountsByOrganization,
-  listConnectedAccountsByIntegration,
-} from "../models/connected-account.ts";
-import {
   getAllProviderDefinitions,
   type IntegrationDefinition,
   type IntegrationProvider,
@@ -130,27 +122,6 @@ IntegrationType.implement({
     }),
     enabled: t.exposeBoolean("enabled"),
     visibility: t.exposeString("visibility"),
-    createdAt: t.exposeString("createdAt"),
-    updatedAt: t.exposeString("updatedAt"),
-  }),
-});
-
-// Connected Account Types
-const ConnectedAccountType = builder.objectRef<ConnectedAccountWithCredentials>("ConnectedAccount");
-
-ConnectedAccountType.implement({
-  fields: (t) => ({
-    id: t.exposeString("id"),
-    integrationId: t.exposeString("integrationId"),
-    viewerId: t.exposeString("viewerId"),
-    organizationId: t.exposeString("organizationId"),
-    credentials: t.field({
-      type: "String",
-      resolve: (parent) => JSON.stringify(parent.credentials),
-    }),
-    accountIdentifier: t.exposeString("accountIdentifier", { nullable: true }),
-    status: t.exposeString("status"),
-    lastUsedAt: t.exposeString("lastUsedAt", { nullable: true }),
     createdAt: t.exposeString("createdAt"),
     updatedAt: t.exposeString("updatedAt"),
   }),
@@ -559,6 +530,35 @@ TestRunSummaryType.implement({
   }),
 });
 
+// Auth requirement type for test results (matches IntegrationAuthRequiredError.requirements)
+const TestAuthRequirementType = builder.objectRef<{
+  integrationId: string;
+  integrationName: string;
+  provider: string;
+  authorizationUrl: string;
+  state: string;
+  patLinkUrl?: string;
+  authInstructions?: string;
+}>("TestAuthRequirement");
+
+TestAuthRequirementType.implement({
+  fields: (t) => ({
+    integrationId: t.exposeString("integrationId"),
+    integrationName: t.exposeString("integrationName"),
+    provider: t.exposeString("provider"),
+    authorizationUrl: t.exposeString("authorizationUrl"),
+    state: t.exposeString("state"),
+    patLinkUrl: t.string({
+      nullable: true,
+      resolve: (parent) => parent.patLinkUrl ?? null,
+    }),
+    authInstructions: t.string({
+      nullable: true,
+      resolve: (parent) => parent.authInstructions ?? null,
+    }),
+  }),
+});
+
 const TestRunResultType = builder.objectRef<TestRunResult>("TestRunResult");
 
 TestRunResultType.implement({
@@ -574,6 +574,21 @@ TestRunResultType.implement({
       resolve: (parent) => parent.summary,
     }),
     executedAt: t.exposeString("executedAt"),
+    authRequired: t.boolean({
+      nullable: true,
+      resolve: (parent) => parent.authRequired ?? null,
+    }),
+    authorizationUrl: t.string({
+      nullable: true,
+      description: "OAuth authorization URL. Deprecated: use authRequirement instead.",
+      resolve: (parent) => parent.authorizationUrl ?? null,
+    }),
+    authRequirement: t.field({
+      type: TestAuthRequirementType,
+      nullable: true,
+      description: "Full auth requirement details including OAuth URL, PAT link URL, and instructions.",
+      resolve: (parent) => parent.authRequirement ?? null,
+    }),
   }),
 });
 
@@ -634,34 +649,6 @@ builder.queryType({
     integrationProviders: t.field({
       type: [IntegrationProviderDefinitionType],
       resolve: () => getAllProviderDefinitions(),
-    }),
-    connectedAccounts: t.field({
-      type: [ConnectedAccountType],
-      resolve: async (_parent, _args, ctx) => {
-        return listConnectedAccountsByOrganization(ctx.session.activeOrganizationId);
-      },
-    }),
-    connectedAccount: t.field({
-      type: ConnectedAccountType,
-      nullable: true,
-      args: {
-        id: t.arg.string({ required: true }),
-      },
-      resolve: async (_parent, args, ctx) => {
-        return getConnectedAccount(args.id, ctx.session.activeOrganizationId);
-      },
-    }),
-    connectedAccountsByIntegration: t.field({
-      type: [ConnectedAccountType],
-      args: {
-        integrationId: t.arg.string({ required: true }),
-      },
-      resolve: async (_parent, args, ctx) => {
-        return listConnectedAccountsByIntegration(
-          args.integrationId,
-          ctx.session.activeOrganizationId
-        );
-      },
     }),
     discoverMcpOAuth: t.field({
       type: McpOAuthDiscoveryResultType,
@@ -981,38 +968,6 @@ builder.mutationType({
           ctx.session.activeOrganizationId,
           args.description ?? null
         );
-      },
-    }),
-    createConnectedAccount: t.field({
-      type: ConnectedAccountType,
-      args: {
-        integrationId: t.arg.string({ required: true }),
-        viewerId: t.arg.string({ required: true }),
-        credentials: t.arg.string({
-          required: true,
-          description: "JSON string of ConnectedAccountCredentials",
-        }),
-        accountIdentifier: t.arg.string({ required: false }),
-      },
-      resolve: async (_parent, args, ctx) => {
-        const credentials = JSON.parse(args.credentials);
-
-        return createConnectedAccount({
-          integrationId: args.integrationId,
-          viewerId: args.viewerId,
-          organizationId: ctx.session.activeOrganizationId,
-          credentials,
-          accountIdentifier: args.accountIdentifier || undefined,
-        });
-      },
-    }),
-    deleteConnectedAccount: t.field({
-      type: "Boolean",
-      args: {
-        id: t.arg.string({ required: true }),
-      },
-      resolve: async (_parent, args, ctx) => {
-        return deleteConnectedAccount(args.id, ctx.session.activeOrganizationId);
       },
     }),
     introspectIntegrationSchema: t.field({

@@ -8,8 +8,6 @@ import {
   Pencil,
   Plus,
   Server,
-  ToggleLeft,
-  ToggleRight,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -18,7 +16,7 @@ import { useAuth } from "~/components/providers/AuthProvider";
 import { PageHeader } from "~/components/ui/PageHeader";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { createGraphqlClient } from "~/lib/graphql-client";
-import type { IntegrationConfig, McpIntegrationConfig, OAuth2IntegrationConfig, GraphQLIntegrationConfig } from "~/types/integration";
+import type { IntegrationConfig, McpIntegrationConfig, OAuth2IntegrationConfig, GraphQLIntegrationConfig, OpenAPIIntegrationConfig } from "~/types/integration";
 import { useAdminConfig } from "~/hooks/use-admin-config";
 import { useMemo } from "react";
 import { fetchAdminConfig } from "~/lib/admin-config";
@@ -119,19 +117,54 @@ export const clientLoader = async () => {
   return { integrations, globalIntegrations, isSuperadmin: data.isSuperadmin };
 };
 
-const getProviderIcon = (provider: string) => {
+// Protocol styling configuration
+const PROTOCOL_CONFIG = {
+  mcp: {
+    icon: Server,
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/20",
+    label: "MCP",
+  },
+  graphql: {
+    icon: Database,
+    color: "text-fuchsia-400",
+    bg: "bg-fuchsia-500/10",
+    border: "border-fuchsia-500/20",
+    label: "GraphQL",
+  },
+  openapi: {
+    icon: Globe,
+    color: "text-sky-400",
+    bg: "bg-sky-500/10",
+    border: "border-sky-500/20",
+    label: "REST",
+  },
+  oauth2: {
+    icon: Globe,
+    color: "text-amber-400",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20",
+    label: "OAuth",
+  },
+} as const;
+
+const getProtocolStyle = (authType: string) => {
+  return PROTOCOL_CONFIG[authType as keyof typeof PROTOCOL_CONFIG] || PROTOCOL_CONFIG.openapi;
+};
+
+const getProviderIcon = (provider: string, authType?: string) => {
+  // First check for specific provider icons
   switch (provider) {
     case "github":
-      return <Github size={20} />;
+      return <Github size={18} strokeWidth={1.5} />;
     case "gmail":
-      return <Mail size={20} />;
-    case "mcp":
-      return <Server size={20} />;
-    case "graphql":
-      return <Database size={20} />;
-    default:
-      return null;
+      return <Mail size={18} strokeWidth={1.5} />;
   }
+  // Fall back to protocol-based icon
+  const style = getProtocolStyle(authType || "openapi");
+  const Icon = style.icon;
+  return <Icon size={18} strokeWidth={1.5} />;
 };
 
 export default function IntegrationsPage() {
@@ -200,143 +233,180 @@ export default function IntegrationsPage() {
 
   const allIntegrations = [...globalIntegrations, ...integrations];
 
+  // Helper to get endpoint/URL from config
+  const getConfigUrl = (config: IntegrationConfig): string => {
+    switch (config.type) {
+      case "mcp":
+        return (config as McpIntegrationConfig).serverUrl;
+      case "graphql":
+        return (config as GraphQLIntegrationConfig).endpoint;
+      case "openapi":
+        return (config as OpenAPIIntegrationConfig).baseUrl;
+      case "oauth2":
+        return (config as OAuth2IntegrationConfig).clientId;
+      default:
+        return "";
+    }
+  };
+
+  // Helper to get auth strategy label
+  const getAuthLabel = (config: IntegrationConfig): string => {
+    if (config.type === "oauth2") return "OAuth 2.0";
+    const auth = (config as McpIntegrationConfig | GraphQLIntegrationConfig | OpenAPIIntegrationConfig).auth;
+    return auth.strategy.type.replace("_", " ");
+  };
+
   const renderIntegrationRow = (integration: ParsedIntegration, index: number) => {
     const isGlobal = integration.isGlobal ?? false;
     const canManage = !isGlobal || isSuperadmin;
+    const protocolStyle = getProtocolStyle(integration.authConfig.type);
+    const configUrl = getConfigUrl(integration.authConfig);
+    const authLabel = getAuthLabel(integration.authConfig);
 
     return (
       <tr
         key={integration.id}
-        className="border-b border-base-300 hover:bg-base-200/50 transition-colors animate-slide-in-right"
-        style={{ animationDelay: `${index * 30}ms` }}
+        className="group border-b border-base-300/50 hover:bg-base-200/30 transition-all duration-200"
+        style={{ animationDelay: `${index * 40}ms` }}
       >
-        <td className="py-4 px-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-base-200 flex items-center justify-center text-primary">
-              {getProviderIcon(integration.provider)}
-            </div>
-            <div className="flex flex-col">
-              <span className="font-medium text-base-content capitalize">
-                {integration.provider}
+        {/* Provider & Name - Combined for better visual hierarchy */}
+        <td className="py-5 px-6">
+          <div className="flex items-start gap-4">
+            {/* Protocol-colored icon container */}
+            <div className={`
+              relative w-11 h-11 rounded-xl flex items-center justify-center
+              ${protocolStyle.bg} ${protocolStyle.border} border
+              transition-transform duration-200 group-hover:scale-105
+            `}>
+              <span className={protocolStyle.color}>
+                {getProviderIcon(integration.provider, integration.authConfig.type)}
               </span>
-              {isGlobal && (
-                <span className="inline-flex items-center gap-1 text-xs text-info">
-                  <Globe size={12} />
-                  Global
-                </span>
-              )}
+              {/* Protocol indicator dot */}
+              <span className={`
+                absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-base-100
+                ${integration.enabled ? "bg-emerald-400" : "bg-base-content/20"}
+              `} />
             </div>
-          </div>
-        </td>
-        <td className="py-4 px-6">
-          <div className="flex flex-col gap-1">
-            <span className="text-base-content font-medium">{integration.name}</span>
-            {integration.description && (
-              <span className="text-xs text-base-content/60 max-w-xs truncate">
-                {integration.description}
-              </span>
-            )}
-          </div>
-        </td>
-        <td className="py-4 px-6">
-          {integration.authConfig.type === "mcp" ? (
-            <div className="space-y-1">
-              <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70 block max-w-xs truncate">
-                {(integration.authConfig as McpIntegrationConfig).serverUrl}
-              </code>
-              <div className="flex gap-1.5 flex-wrap">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300 capitalize">
-                  {(integration.authConfig as McpIntegrationConfig).auth.strategy.type.replace("_", " ")}
+
+            <div className="flex flex-col min-w-0">
+              {/* Provider name with protocol badge */}
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-base-content capitalize tracking-tight">
+                  {integration.provider}
                 </span>
-              </div>
-            </div>
-          ) : integration.authConfig.type === "graphql" ? (
-            <div className="space-y-1">
-              <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70 block max-w-xs truncate">
-                {(integration.authConfig as GraphQLIntegrationConfig).endpoint}
-              </code>
-              <div className="flex gap-1.5 flex-wrap">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300 capitalize">
-                  {(integration.authConfig as GraphQLIntegrationConfig).auth.strategy.type.replace("_", " ")}
+                <span className={`
+                  text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded
+                  ${protocolStyle.bg} ${protocolStyle.color}
+                `}>
+                  {protocolStyle.label}
                 </span>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-1">
-              <code className="text-xs font-mono bg-base-200 px-3 py-1.5 rounded-md text-base-content/70 block max-w-xs truncate">
-                {(integration.authConfig as OAuth2IntegrationConfig).clientId}
-              </code>
-              <div className="flex gap-1.5 flex-wrap max-w-xs">
-                {(integration.authConfig as OAuth2IntegrationConfig).scopes
-                  ?.slice(0, 3)
-                  .map((scope: string) => (
-                    <span
-                      key={scope}
-                      className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/70 border border-base-300"
-                    >
-                      {scope}
-                    </span>
-                  ))}
-                {(integration.authConfig as OAuth2IntegrationConfig).scopes?.length > 3 && (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-base-200 text-base-content/60 border border-base-300">
-                    +{(integration.authConfig as OAuth2IntegrationConfig).scopes.length - 3} more
+                {isGlobal && (
+                  <span className="text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-info/10 text-info">
+                    Global
                   </span>
                 )}
               </div>
+
+              {/* Integration name */}
+              <span className="text-sm text-base-content/70 mt-0.5 truncate max-w-[200px]">
+                {integration.name}
+              </span>
             </div>
-          )}
+          </div>
         </td>
-        <td className="py-4 px-6">
+
+        {/* Configuration - Refined monospace display */}
+        <td className="py-5 px-6">
+          <div className="flex flex-col gap-2">
+            {/* URL in monospace with subtle background */}
+            <div className="flex items-center gap-2 max-w-sm">
+              <code className={`
+                text-[11px] font-mono px-2.5 py-1.5 rounded-md truncate
+                bg-base-200/70 text-base-content/60 border border-base-300/50
+                ${protocolStyle.border}
+              `}>
+                {configUrl}
+              </code>
+            </div>
+
+            {/* Auth strategy badge */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-base-content/40">
+                Auth:
+              </span>
+              <span className="text-[11px] font-medium text-base-content/60 capitalize">
+                {authLabel}
+              </span>
+            </div>
+          </div>
+        </td>
+
+        {/* Status - Cleaner toggle */}
+        <td className="py-5 px-6">
           {canManage ? (
             <button
               type="button"
               onClick={() => handleToggleEnabled(integration.id, integration.enabled, isGlobal)}
               disabled={togglingId === integration.id}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all ${
-                integration.enabled
-                  ? "bg-success/10 hover:bg-success/20"
-                  : "bg-base-200 hover:bg-base-300"
-              }`}
+              className={`
+                inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200
+                ${integration.enabled
+                  ? "bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20"
+                  : "bg-base-200/50 hover:bg-base-200 border border-base-300/50"
+                }
+              `}
             >
               {togglingId === integration.id ? (
                 <span className="loading loading-spinner loading-xs"></span>
               ) : integration.enabled ? (
                 <>
-                  <ToggleRight size={18} className="text-success" />
-                  <span className="text-sm font-medium text-success">Enabled</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">
+                    Active
+                  </span>
                 </>
               ) : (
                 <>
-                  <ToggleLeft size={18} className="text-base-content/60" />
-                  <span className="text-sm font-medium text-base-content/60">Disabled</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-base-content/30" />
+                  <span className="text-xs font-medium text-base-content/40 uppercase tracking-wide">
+                    Inactive
+                  </span>
                 </>
               )}
             </button>
           ) : (
-            <span
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${
-                integration.enabled ? "bg-success/10" : "bg-base-200"
-              }`}
-            >
+            <span className={`
+              inline-flex items-center gap-2 px-3 py-1.5 rounded-lg
+              ${integration.enabled
+                ? "bg-emerald-500/10 border border-emerald-500/20"
+                : "bg-base-200/50 border border-base-300/50"
+              }
+            `}>
               {integration.enabled ? (
                 <>
-                  <ToggleRight size={18} className="text-success" />
-                  <span className="text-sm font-medium text-success">Enabled</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">
+                    Active
+                  </span>
                 </>
               ) : (
                 <>
-                  <ToggleLeft size={18} className="text-base-content/60" />
-                  <span className="text-sm font-medium text-base-content/60">Disabled</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-base-content/30" />
+                  <span className="text-xs font-medium text-base-content/40 uppercase tracking-wide">
+                    Inactive
+                  </span>
                 </>
               )}
             </span>
           )}
         </td>
-        <td className="py-4 px-6">
-          <div className="flex justify-end gap-2">
+
+        {/* Actions - Refined buttons */}
+        <td className="py-5 px-6">
+          <div className="flex justify-end items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
             <Link
               to={`/integrations/${integration.id}`}
-              className="btn btn-sm bg-base-200 hover:bg-base-300 border-0 text-base-content"
+              className="px-3 py-1.5 text-xs font-medium text-base-content/70 hover:text-base-content hover:bg-base-200/70 rounded-lg transition-colors"
             >
               View
             </Link>
@@ -344,20 +414,20 @@ export default function IntegrationsPage() {
               <>
                 <Link
                   to={`/integrations/${integration.id}/edit`}
-                  className="btn btn-sm btn-ghost text-base-content/70 hover:text-base-content"
+                  className="p-2 text-base-content/50 hover:text-base-content hover:bg-base-200/70 rounded-lg transition-colors"
                 >
-                  <Pencil size={16} />
+                  <Pencil size={14} />
                 </Link>
                 <button
                   type="button"
                   onClick={() => handleDelete(integration.id, isGlobal)}
                   disabled={deletingId === integration.id}
-                  className="btn btn-sm btn-ghost text-error hover:bg-error/10"
+                  className="p-2 text-base-content/50 hover:text-error hover:bg-error/10 rounded-lg transition-colors"
                 >
                   {deletingId === integration.id ? (
                     <span className="loading loading-spinner loading-xs"></span>
                   ) : (
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   )}
                 </button>
               </>
@@ -408,24 +478,21 @@ export default function IntegrationsPage() {
           }
         />
       ) : (
-        <div className="card bg-base-100 border border-base-300 overflow-hidden">
+        <div className="card bg-base-100 border border-base-300/70 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
-            <table className="table table-lg w-full">
+            <table className="table w-full">
               <thead>
-                <tr className="border-b-2 border-neutral/20">
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Provider
+                <tr className="border-b border-base-300/70 bg-base-200/30">
+                  <th className="text-[10px] font-bold uppercase tracking-widest text-base-content/40 py-4 px-6">
+                    Integration
                   </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Name
+                  <th className="text-[10px] font-bold uppercase tracking-widest text-base-content/40 py-4 px-6">
+                    Endpoint
                   </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
-                    Configuration
-                  </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6">
+                  <th className="text-[10px] font-bold uppercase tracking-widest text-base-content/40 py-4 px-6">
                     Status
                   </th>
-                  <th className="text-xs font-semibold uppercase tracking-wider text-base-content/60 py-4 px-6 text-right">
+                  <th className="text-[10px] font-bold uppercase tracking-widest text-base-content/40 py-4 px-6 text-right">
                     Actions
                   </th>
                 </tr>

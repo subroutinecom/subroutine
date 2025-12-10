@@ -102,4 +102,28 @@ export interface TestRunResult {
 
   /** When the test run was executed */
   executedAt: string;
+
+  /** If true, user needs to authenticate before running tests */
+  authRequired?: boolean;
+
+  /**
+   * Authorization URL for OAuth flow.
+   * For PAT linking, use authRequirement.patLinkUrl instead.
+   * @deprecated Use authRequirement instead
+   */
+  authorizationUrl?: string;
+
+  /**
+   * Full auth requirement details (reuses the same type as IntegrationAuthRequiredError).
+   * Contains authorizationUrl, patLinkUrl, authInstructions, etc.
+   */
+  authRequirement?: {
+    integrationId: string;
+    integrationName: string;
+    provider: string;
+    authorizationUrl: string;
+    state: string;
+    patLinkUrl?: string;
+    authInstructions?: string;
+  };
 }
