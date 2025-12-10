@@ -167,7 +167,7 @@ export const generateCode = async (
     const capturedAuthRequirements: AuthRequirement[] = [];
     const usedIntegrationIds: Set<string> = new Set();
 
-    const onCapture = (result: SubroutineCapture) => {
+    const onCapture = async (result: SubroutineCapture) => {
       capturedResult = result;
     };
 
