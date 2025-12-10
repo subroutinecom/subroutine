@@ -1,3 +1,5 @@
+import type { SandboxExecutionResult } from "../../services/sandbox.ts";
+
 export type CodeGenerationResult = {
   success: boolean;
   source: string;
@@ -7,12 +9,14 @@ export type CodeGenerationResult = {
   error?: string;
 
   usedIntegrationIds?: string[];
+  executionResult?: SandboxExecutionResult;
 };
 
 export type SubroutineCapture = {
   inputsSchema: Record<string, unknown>;
   outputsSchema: Record<string, unknown>;
   code: string;
+  executionResult?: SandboxExecutionResult;
 };
 
 /**
