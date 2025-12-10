@@ -102,7 +102,7 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const createResult = (await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "mcp",
-      name: "Test PAT Integration",
+      name: "test-pat-integration",
       authConfig: JSON.stringify(authConfig),
     })) as { createIntegration: { id: string; name: string } };
 
@@ -125,7 +125,7 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
     expect(response.status).toBe(200);
     expect(data.id).toBe(patLinkId);
     expect(data.integration).toBeDefined();
-    expect(data.integration.name).toBe("Test PAT Integration");
+    expect(data.integration.name).toBe("test-pat-integration");
     expect(data.integration.authInstructions).toBe(
       "Please enter your API key from Settings > API Keys"
     );
@@ -184,7 +184,7 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const createResult = (await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "mcp",
-      name: "Test PAT Submit Integration",
+      name: "test-pat-submit-integration",
       authConfig: JSON.stringify(authConfig),
     })) as { createIntegration: { id: string; name: string } };
 
@@ -251,7 +251,7 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const createResult = (await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "mcp",
-      name: "Test PAT Used Integration",
+      name: "test-pat-used-integration",
       authConfig: JSON.stringify(authConfig),
     })) as { createIntegration: { id: string; name: string } };
 
@@ -342,7 +342,7 @@ describe("PAT Link API", { sanitizeOps: false, sanitizeResources: false }, () =>
 
     const createResult = (await graphqlClient.request(CREATE_INTEGRATION, {
       provider: "mcp",
-      name: "Test PAT Required Integration",
+      name: "test-pat-required-integration",
       authConfig: JSON.stringify(authConfig),
     })) as { createIntegration: { id: string; name: string } };
 

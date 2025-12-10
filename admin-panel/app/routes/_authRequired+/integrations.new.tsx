@@ -633,8 +633,14 @@ export default function NewIntegrationPage() {
                   <input
                     id="name"
                     type="text"
-                    {...register("name", { required: "Name is required" })}
-                    placeholder="e.g., Production API"
+                    {...register("name", {
+                      required: "Name is required",
+                      pattern: {
+                        value: /^[a-z0-9_-]+$/,
+                        message: "Name can only contain lowercase letters, numbers, hyphens, and underscores",
+                      },
+                    })}
+                    placeholder="e.g., production-api"
                     className={inputClasses}
                   />
                   {errors.name && <p className="text-sm text-error">{errors.name.message}</p>}
