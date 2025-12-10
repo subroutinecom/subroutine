@@ -23,12 +23,13 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ call: (op: string, params?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ request: <T>(method: string, path: string, params?: Record<string, unknown>, body?: unknown) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getOpenAPIClient("__test_integration__");
-    // Slack's auth.test is a POST endpoint
-    const result = await client.call("auth_test", {}) as { ok: boolean; user: string; team: string; error?: string };
+    const result = await client.request<{ ok: boolean; user: string; team: string; error?: string }>(
+      "POST", "/auth.test"
+    );
 
     if (!result.ok) {
       return {
@@ -69,14 +70,13 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ call: (op: string, params?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ request: <T>(method: string, path: string, params?: Record<string, unknown>, body?: unknown) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getOpenAPIClient("__test_integration__");
-    const result = await client.call("conversations_list", {
-      types: "public_channel",
-      limit: 10,
-    }) as { ok: boolean; channels: Array<{ id: string; name: string }>; error?: string };
+    const result = await client.request<{ ok: boolean; channels: Array<{ id: string; name: string }>; error?: string }>(
+      "GET", "/conversations.list", { types: "public_channel", limit: 10 }
+    );
 
     if (!result.ok) {
       return {
@@ -120,11 +120,13 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ call: (op: string, params?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ request: <T>(method: string, path: string, params?: Record<string, unknown>, body?: unknown) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getOpenAPIClient("__test_integration__");
-    const result = await client.call("team_info", {}) as { ok: boolean; team: { id: string; name: string; domain: string }; error?: string };
+    const result = await client.request<{ ok: boolean; team: { id: string; name: string; domain: string }; error?: string }>(
+      "GET", "/team.info"
+    );
 
     if (!result.ok) {
       return {

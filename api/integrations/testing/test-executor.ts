@@ -3,36 +3,15 @@ import { getConnectedAccountByViewer } from "../../models/connected-account";
 import { IntegrationAuthRequiredError } from "../../models/errors";
 import { getIntegrationOrGlobal, type IntegrationWithConfig } from "../../models/integration";
 import { generatePatLinkUrl } from "../../models/pat-link";
+import { getViewerCredentialRequirement } from "../auth-utils";
 import type { IntegrationProvider } from "../providers";
+import type { AuthStrategy, OAuthConfig } from "../providers/types";
 import { generateAuthorizationUrl } from "../../services/oauth";
 import { getLogger } from "../../utils/logger";
 import { getTestCaseById, getTestCasesForProvider } from "./test-cases";
 import type { IntegrationTestCase, TestCaseResult, TestRunRequest, TestRunResult } from "./types";
-import type { AuthStrategy, OAuthConfig } from "../providers/types";
 
 const logger = getLogger("api/integrations/testing/test-executor.ts");
-
-// ============================================================================
-// Viewer Credential Resolution (same pattern as run.ts)
-// ============================================================================
-
-type ViewerCredentialRequirement = { type: "none" } | { type: "oauth" } | { type: "pat" };
-
-const getViewerCredentialRequirement = (authStrategy: AuthStrategy): ViewerCredentialRequirement => {
-  switch (authStrategy.type) {
-    case "bearer_oauth":
-      return { type: "oauth" };
-    case "api_key":
-      return authStrategy.viewerScoped ? { type: "pat" } : { type: "none" };
-    case "none":
-    case "custom_headers":
-      return { type: "none" };
-    default: {
-      const _exhaustive: never = authStrategy;
-      throw new Error(`Unknown auth strategy type: ${JSON.stringify(_exhaustive)}`);
-    }
-  }
-};
 
 /**
  * Extracts auth strategy and oauth config from an integration's auth config.

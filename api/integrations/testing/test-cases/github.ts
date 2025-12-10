@@ -26,15 +26,15 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ call: (op: string, params?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ request: <T>(method: string, path: string, params?: Record<string, unknown>, body?: unknown) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getOpenAPIClient("__test_integration__");
-    const result = await client.call("users_get-authenticated", {}) as {
+    const result = await client.request<{
       login: string;
       name: string | null;
       email: string | null;
-    };
+    }>("GET", "/user");
 
     return {
       success: true,
@@ -71,14 +71,13 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ call: (op: string, params?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ request: <T>(method: string, path: string, params?: Record<string, unknown>, body?: unknown) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getOpenAPIClient("__test_integration__");
-    const result = await client.call("repos_list-for-authenticated-user", {
-      per_page: 5,
-      sort: "updated",
-    }) as Array<{ name: string; full_name: string; private: boolean }>;
+    const result = await client.request<Array<{ name: string; full_name: string; private: boolean }>>(
+      "GET", "/user/repos", { per_page: 5, sort: "updated" }
+    );
 
     return {
       success: true,
@@ -119,17 +118,17 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ call: (op: string, params?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ request: <T>(method: string, path: string, params?: Record<string, unknown>, body?: unknown) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getOpenAPIClient("__test_integration__");
-    const result = await client.call("rate-limit_get", {}) as {
+    const result = await client.request<{
       rate: {
         limit: number;
         remaining: number;
         reset: number;
       };
-    };
+    }>("GET", "/rate_limit");
 
     return {
       success: true,
@@ -166,13 +165,13 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ call: (op: string, params?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getOpenAPIClient: (name: string) => Promise<{ request: <T>(method: string, path: string, params?: Record<string, unknown>, body?: unknown) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getOpenAPIClient("__test_integration__");
-    const result = await client.call("orgs_list-for-authenticated-user", {
-      per_page: 10,
-    }) as Array<{ login: string; description: string | null }>;
+    const result = await client.request<Array<{ login: string; description: string | null }>>(
+      "GET", "/user/orgs", { per_page: 10 }
+    );
 
     return {
       success: true,

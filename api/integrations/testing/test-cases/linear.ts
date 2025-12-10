@@ -26,11 +26,11 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getGraphQLClient: (name: string) => Promise<{ query: (q: string, vars?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getGraphQLClient: (name: string) => Promise<{ request: <T>(query: string, variables?: Record<string, unknown>) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getGraphQLClient("__test_integration__");
-    const result = await client.query(\`
+    const result = await client.request<{ viewer: { id: string; name: string; email: string } }>(\`
       query {
         viewer {
           id
@@ -38,7 +38,7 @@ export default async function main(
           email
         }
       }
-    \`) as { viewer: { id: string; name: string; email: string } };
+    \`);
 
     return {
       success: true,
@@ -71,11 +71,11 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getGraphQLClient: (name: string) => Promise<{ query: (q: string, vars?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getGraphQLClient: (name: string) => Promise<{ request: <T>(query: string, variables?: Record<string, unknown>) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getGraphQLClient("__test_integration__");
-    const result = await client.query(\`
+    const result = await client.request<{ issues: { nodes: Array<{ id: string; title: string; state: { name: string } }> } }>(\`
       query {
         issues(first: 5, orderBy: updatedAt) {
           nodes {
@@ -87,7 +87,7 @@ export default async function main(
           }
         }
       }
-    \`) as { issues: { nodes: Array<{ id: string; title: string; state: { name: string } }> } };
+    \`);
 
     return {
       success: true,
@@ -121,11 +121,11 @@ export type Outputs = {
 
 export default async function main(
   _inputs: Inputs,
-  { integrations }: { integrations: { getGraphQLClient: (name: string) => Promise<{ query: (q: string, vars?: Record<string, unknown>) => Promise<unknown> }> } }
+  { integrations }: { integrations: { getGraphQLClient: (name: string) => Promise<{ request: <T>(query: string, variables?: Record<string, unknown>) => Promise<T> }> } }
 ): Promise<Outputs> {
   try {
     const client = await integrations.getGraphQLClient("__test_integration__");
-    const result = await client.query(\`
+    const result = await client.request<{ teams: { nodes: Array<{ id: string; name: string; key: string }> } }>(\`
       query {
         teams {
           nodes {
@@ -135,7 +135,7 @@ export default async function main(
           }
         }
       }
-    \`) as { teams: { nodes: Array<{ id: string; name: string; key: string }> } };
+    \`);
 
     return {
       success: true,
