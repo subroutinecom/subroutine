@@ -453,3 +453,19 @@ Deno.test("Validator - agent/validate-openapi-calls", async (t) => {
     assertValid(result);
   });
 });
+
+Deno.test("Validator - typescript-compiler-checks", async (t) => {
+  await t.step("Negative: type mismatch", async () => {
+    const code = `
+            import type { Integrations } from "@subroutine/integration-types";
+            export type Inputs = {};
+            export type Outputs = {};
+            export async function main(inputs: Inputs, integrations: Integrations): Promise<Outputs> {
+                const x: number = "string"; // Type error
+                return {}; 
+            }
+        `;
+    const result = await validateCodeViaApi(code);
+    assertError(result, "typescript-typecheck", "Type 'string' is not assignable to type 'number'");
+  });
+});

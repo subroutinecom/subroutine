@@ -17,15 +17,20 @@ export const validateCode = async (
   }
   */
 
-  const eslintResult = validateWithEslint(code, context);
+  const [eslintResult, typeCheckResult] = await Promise.all([
+    Promise.resolve(validateWithEslint(code, context)),
+    Promise.resolve(typeCheckCode(code)),
+  ]);
+
   if (!eslintResult.valid) {
     errors.push(...eslintResult.errors);
   }
 
-  const typeCheckResult = typeCheckCode(code);
   if (!typeCheckResult.valid) {
     errors.push(...typeCheckResult.errors);
   }
+
+  // Let's rewrite strictly to push all.
 
   return {
     valid: errors.length === 0,
