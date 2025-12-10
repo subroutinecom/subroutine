@@ -140,6 +140,12 @@ const PROVIDER_SETUP_INSTRUCTIONS: Record<string, string[]> = {
     "Add the redirect URI above as a callback URL",
     "Copy the Client ID and Client Secret",
   ],
+  github: [
+    "Go to Settings → Developer settings → OAuth Apps",
+    "Click 'New OAuth App' and fill in the details",
+    "Add the redirect URI above as the Authorization callback URL",
+    "Copy the Client ID and generate a Client Secret",
+  ],
 };
 
 // Protocol styling
