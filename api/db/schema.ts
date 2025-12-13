@@ -10,6 +10,7 @@ export interface Database {
   connected_account: ConnectedAccountTable;
   pat_link: PatLinkTable;
   mcp_session: McpSessionTable;
+  userApproval: UserApprovalTable;
   user: User;
   session: Session;
   account: Account;
@@ -163,4 +164,11 @@ export interface OAuthConsentTable {
   createdAt: string;
   updatedAt: string;
   consentGiven: boolean;
+}
+
+export interface UserApprovalTable {
+  userId: string;
+  approved: boolean;
+  approvedBy: string | null;
+  createdAt: string;
 }

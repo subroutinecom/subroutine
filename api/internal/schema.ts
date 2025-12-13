@@ -25,6 +25,7 @@ import {
   getOpenAPIIntegrationSpec,
 } from "../models/integration.ts";
 import { isSuperadminOrg } from "../utils/superadmin.ts";
+import { requireApproval } from "../models/userApproval.ts";
 import {
   getAllProviderDefinitions,
   type IntegrationDefinition,
@@ -849,6 +850,8 @@ builder.mutationType({
         }),
       },
       resolve: async (_parent, args, ctx) => {
+        await requireApproval(ctx.user.id, ctx.session.activeOrganizationId);
+
         const authConfig = JSON.parse(args.authConfig);
         const visibility = (args.visibility ?? "private") as IntegrationVisibility;
 
@@ -883,6 +886,8 @@ builder.mutationType({
         enabled: t.arg.boolean({ required: false }),
       },
       resolve: async (_parent, args, ctx) => {
+        await requireApproval(ctx.user.id, ctx.session.activeOrganizationId);
+
         // Check if integration is global - only superadmins can modify global integrations
         const existing = await getIntegration(args.id, ctx.session.activeOrganizationId);
         if (existing?.visibility === "global") {
@@ -909,6 +914,8 @@ builder.mutationType({
         id: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
+        await requireApproval(ctx.user.id, ctx.session.activeOrganizationId);
+
         // Check if integration is global - only superadmins can delete global integrations
         const existing = await getIntegration(args.id, ctx.session.activeOrganizationId);
         if (existing?.visibility === "global") {
@@ -933,6 +940,8 @@ builder.mutationType({
         }),
       },
       resolve: async (_parent, args, ctx) => {
+        await requireApproval(ctx.user.id, ctx.session.activeOrganizationId);
+
         const visibility = args.visibility as IntegrationVisibility;
 
         // Only superadmins can set visibility to global
@@ -955,6 +964,8 @@ builder.mutationType({
         description: t.arg.string({ required: false }),
       },
       resolve: async (_parent, args, ctx) => {
+        await requireApproval(ctx.user.id, ctx.session.activeOrganizationId);
+
         // Check if integration is global - only superadmins can modify global integrations
         const existing = await getIntegration(args.id, ctx.session.activeOrganizationId);
         if (existing?.visibility === "global") {
@@ -980,6 +991,8 @@ builder.mutationType({
         integrationId: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
+        await requireApproval(ctx.user.id, ctx.session.activeOrganizationId);
+
         const result = await introspectAndStoreSchema(
           args.integrationId,
           ctx.session.activeOrganizationId
@@ -1009,6 +1022,8 @@ builder.mutationType({
         integrationId: t.arg.string({ required: true }),
       },
       resolve: async (_parent, args, ctx) => {
+        await requireApproval(ctx.user.id, ctx.session.activeOrganizationId);
+
         const result = await introspectAndStoreOpenAPISpec(
           args.integrationId,
           ctx.session.activeOrganizationId

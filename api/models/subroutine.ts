@@ -1,12 +1,12 @@
 import { nanoid } from "nanoid";
-import { createModel, generateCode, type McpContext } from "../agent/index.ts";
-import type { IntegrationInfo } from "../agent/prompts/index.ts";
-import { Capability } from "../agent/utils/types.ts";
-import { db } from "../db/index.ts";
-import { generateMockCode } from "../mocks.ts";
-import { getLogger } from "../utils/logger.ts";
-import { getIntegration } from "./integration.ts";
-import { runSubroutine, type Run } from "./run.ts";
+import { createModel, generateCode, type McpContext } from "../agent/index";
+import type { IntegrationInfo } from "../agent/prompts/index";
+import { Capability } from "../agent/utils/types";
+import { db } from "../db/index";
+import { generateMockCode } from "../mocks";
+import { getLogger } from "../utils/logger";
+import { getIntegration } from "./integration";
+import { runSubroutine, type Run } from "./run";
 const logger = getLogger("api/models/subroutine.ts");
 
 export type Subroutine = {

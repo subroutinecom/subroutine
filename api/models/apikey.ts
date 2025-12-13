@@ -1,7 +1,8 @@
 import bcrypt from "bcrypt";
 import { nanoid } from "nanoid";
 import { randomBytes } from "node:crypto";
-import { db } from "../db/index.ts";
+import { db } from "../db/index";
+import { requireApproval } from "./userApproval";
 
 const SALT_ROUNDS = 10;
 
@@ -53,6 +54,8 @@ const generateApiKey = (prefix?: string): string => {
 };
 
 export const createApiKey = async (params: CreateApiKeyRequest): Promise<ApiKey> => {
+  await requireApproval(params.userId, params.organizationId);
+
   const id = nanoid();
   const key = generateApiKey(params.prefix);
   const now = new Date().toISOString();
@@ -192,6 +195,8 @@ export const getApiKey = async (
 };
 
 export const updateApiKey = async (params: UpdateApiKeyRequest): Promise<ApiKey | null> => {
+  await requireApproval(params.userId, params.organizationId);
+
   const existing = await getApiKey(params.id, params.userId, params.organizationId);
 
   if (!existing) {
@@ -224,6 +229,8 @@ export const deleteApiKey = async (
   userId: string,
   organizationId: string
 ): Promise<boolean> => {
+  await requireApproval(userId, organizationId);
+
   const result = await db
     .deleteFrom("apikey")
     .where("id", "=", id)

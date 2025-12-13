@@ -54,6 +54,12 @@ export const superadminConfigSchema = z.object({
   organizationIds: z.array(z.string()).default([]),
 });
 
+export const featuresConfigSchema = z.object({
+  // When true, users must be explicitly approved before they can use write operations
+  // (creating API keys, integrations, subroutines, running subroutines)
+  approvalsRequired: z.boolean().default(false),
+});
+
 export const configSchema = z.object({
   baseUrl: z.string().url("Base URL must be a valid URL").optional(),
   adminPanelUrl: z.string().url("Admin panel URL must be a valid URL").optional(),
@@ -64,6 +70,7 @@ export const configSchema = z.object({
   auth: authConfigSchema,
   rateLimit: rateLimitConfigSchema.optional(),
   superadmin: superadminConfigSchema.optional(),
+  features: featuresConfigSchema.optional(),
 });
 
 export type ModelProvider = z.infer<typeof modelConfigSchema>["provider"];
@@ -72,4 +79,5 @@ export type CapabilitiesConfig = z.infer<typeof capabilitiesConfigSchema>;
 export type AuthConfig = z.infer<typeof authConfigSchema>;
 export type RateLimitConfig = z.infer<typeof rateLimitConfigSchema>;
 export type SuperadminConfig = z.infer<typeof superadminConfigSchema>;
+export type FeaturesConfig = z.infer<typeof featuresConfigSchema>;
 export type Config = z.infer<typeof configSchema>;
