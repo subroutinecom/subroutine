@@ -23,6 +23,7 @@ import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
 import { registerMockMcpServers } from "./mock-mcp-servers.ts";
 import { IntegrationAuthRequiredError } from "./models/errors.ts";
+import { requireApproval, ApprovalRequiredError } from "./models/userApproval.ts";
 import { getOrganizationBySlug, isUserMemberOfOrganization } from "./models/organization.ts";
 import { submitPatLink, validatePatLink } from "./models/pat-link.ts";
 import { getRun, listRuns, runSubroutine } from "./models/run.ts";
@@ -71,6 +72,19 @@ const initialize = async () => {
             state: err.state,
             viewerId: err.viewerId,
             requirements: err.requirements,
+          },
+        },
+        403
+      );
+    }
+
+    // Handle ApprovalRequiredError
+    if (err instanceof ApprovalRequiredError) {
+      return c.json(
+        {
+          error: {
+            code: "APPROVAL_REQUIRED",
+            message: err.message,
           },
         },
         403
@@ -678,6 +692,9 @@ const initialize = async () => {
         );
       }
 
+      // Check if the API key owner is approved
+      await requireApproval(auth.userId, auth.organizationId);
+
       try {
         const { request, viewerId, integrations } = c.req.valid("json");
 
@@ -821,6 +838,9 @@ const initialize = async () => {
           403
         );
       }
+
+      // Check if the API key owner is approved
+      await requireApproval(auth.userId, auth.organizationId);
 
       // Track subroutine separately so we can include it in error responses
       let generatedSubroutine: Awaited<ReturnType<typeof generateSubroutine>> | null = null;
@@ -1103,6 +1123,9 @@ const initialize = async () => {
           403
         );
       }
+
+      // Check if the API key owner is approved
+      await requireApproval(auth.userId, auth.organizationId);
 
       try {
         const { id } = c.req.valid("param");

@@ -1,20 +1,20 @@
 import { nanoid } from "nanoid";
 import { sql } from "kysely";
-import { db } from "../db/index.ts";
-import type { IntegrationTable } from "../db/schema.ts";
+import { db } from "../db/index";
+import type { IntegrationTable } from "../db/schema";
 import { validateIntegrationName } from "../validation/integration-name";
 import type {
   AuthStrategy,
   IntegrationProvider,
   McpTransport,
   AuthBlock,
-} from "../integrations/providers.ts";
+} from "../integrations/providers";
 import type { OAuthConfig } from "../../packages/shared-types/integration";
-import { isValidProvider } from "../integrations/providers.ts";
-import { decrypt, encrypt } from "../utils/encryption.ts";
-import { introspectSchema } from "../integrations/introspection.ts";
-import { buildAuthHeadersFromBlock } from "../integrations/auth-utils.ts";
-import { validateExternalUrl } from "../integrations/url-validation.ts";
+import { isValidProvider } from "../integrations/providers";
+import { decrypt, encrypt } from "../utils/encryption";
+import { introspectSchema } from "../integrations/introspection";
+import { buildAuthHeadersFromBlock } from "../integrations/auth-utils";
+import { validateExternalUrl } from "../integrations/url-validation";
 
 // Re-export for convenience
 export type { AuthStrategy, AuthBlock, OAuthConfig };
@@ -530,7 +530,10 @@ export const updateIntegration = async (
   return getIntegration(params.id, params.organizationId);
 };
 
-export const deleteIntegration = async (id: string, organizationId: string): Promise<boolean> => {
+export const deleteIntegration = async (
+  id: string,
+  organizationId: string
+): Promise<boolean> => {
   const result = await db
     .deleteFrom("integration")
     .where("id", "=", id)

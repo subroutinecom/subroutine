@@ -14,4 +14,5 @@ export const migrations = {
   "20251127_visibility": import("../migrations/20251127_visibility.ts"),
   "20251205_0633_mcp_plugin_oauth": import("../migrations/20251205_0633_mcp_plugin_oauth.ts"),
   "20251210_integration_name_unique": import("../migrations/20251210_integration_name_unique.ts"),
+  "20251213_user_approval_schema": import("../migrations/20251213_user_approval_schema.ts"),
 };
