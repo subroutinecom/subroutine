@@ -314,8 +314,16 @@ const initialize = async () => {
   });
 
   app.all("/graphql", async (c) => {
-    const response = await yoga.fetch(c.req.raw);
-    return response;
+    try {
+      const response = await yoga.fetch(c.req.raw);
+      if (!response) {
+        return c.json({ errors: [{ message: "Internal server error" }] }, 500);
+      }
+      return response;
+    } catch (err) {
+      logger.error("GraphQL error:", err);
+      return c.json({ errors: [{ message: err instanceof Error ? err.message : "Internal server error" }] }, 500);
+    }
   });
 
   app.use(
