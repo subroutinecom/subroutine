@@ -10,7 +10,7 @@
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { Hono } from "@hono/hono";
 import { z } from "zod";
 
@@ -183,7 +183,7 @@ export const startTestMcpServer = (
   const app = new Hono();
 
   // Store transports by session ID
-  const transports: Record<string, StreamableHTTPServerTransport> = {};
+  const transports: Record<string, WebStandardStreamableHTTPServerTransport> = {};
 
   // Auth middleware - validates token but doesn't store it yet (no session ID)
   app.use("/mcp", async (c, next) => {
@@ -204,238 +204,112 @@ export const startTestMcpServer = (
 
   // MCP endpoint - POST for requests
   app.post("/mcp", async (c) => {
-    const sessionId = c.req.header("mcp-session-id");
-    const authHeader = c.req.header("authorization") ?? null;
-    const body = await c.req.json();
+    try {
+      const sessionId = c.req.header("mcp-session-id");
+      const authHeader = c.req.header("authorization") ?? null;
 
-    // Check if this is an initialize request
-    const isInitialize =
-      body && typeof body === "object" && "method" in body && body.method === "initialize";
+      let body: unknown;
+      try {
+        body = await c.req.json();
+      } catch (error) {
+        return c.json(
+          {
+            jsonrpc: "2.0",
+            error: {
+              code: -32700,
+              message: "Parse error",
+              data: error instanceof Error ? error.message : String(error),
+            },
+            id: null,
+          },
+          400
+        );
+      }
 
-    let transport: StreamableHTTPServerTransport;
+      // Check if this is an initialize request
+      const isInitialize =
+        body && typeof body === "object" && "method" in body && body.method === "initialize";
 
-    if (sessionId && transports[sessionId]) {
-      transport = transports[sessionId];
-      // Update auth header for existing session (in case it changed)
-      sessionAuthHeaders.set(sessionId, authHeader);
-    } else if (!sessionId && isInitialize) {
-      // Generate session ID upfront so we can pass it to createMcpServer
-      const newSessionId = crypto.randomUUID();
+      let transport: WebStandardStreamableHTTPServerTransport;
 
-      transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => newSessionId,
-        onsessioninitialized: (sid) => {
+      if (sessionId && transports[sessionId]) {
+        transport = transports[sessionId];
+        // Update auth header for existing session (in case it changed)
+        sessionAuthHeaders.set(sessionId, authHeader);
+      } else if (!sessionId && isInitialize) {
+        // Generate session ID upfront so we can pass it to createMcpServer
+        const newSessionId = crypto.randomUUID();
+
+        transport = new WebStandardStreamableHTTPServerTransport({
+          sessionIdGenerator: () => newSessionId,
+        onsessioninitialized: (sid: string) => {
           transports[sid] = transport;
           // Store auth header for this session
           sessionAuthHeaders.set(sid, authHeader);
-        },
-        // Allow JSON responses without SSE for simpler testing
-        enableJsonResponse: true,
+          },
+          // Allow JSON responses without SSE for simpler testing
+          enableJsonResponse: true,
+        });
+
+        transport.onclose = () => {
+          const sid = transport.sessionId;
+          if (sid) {
+            delete transports[sid];
+            sessionAuthHeaders.delete(sid);
+          }
+        };
+
+        const server = createMcpServer(newSessionId);
+        await server.connect(transport);
+      } else {
+        return c.json(
+          {
+            jsonrpc: "2.0",
+            error: {
+              code: -32000,
+              message: "Bad Request: No valid session ID provided",
+            },
+            id: null,
+          },
+          400
+        );
+      }
+
+      const headers = new Headers(c.req.raw.headers);
+      if (!headers.get("content-type")) {
+        headers.set("content-type", "application/json");
+      }
+      const request = new Request(c.req.url, {
+        method: c.req.method,
+        headers,
+        body: JSON.stringify(body),
       });
-
-      transport.onclose = () => {
-        const sid = transport.sessionId;
-        if (sid) {
-          delete transports[sid];
-          sessionAuthHeaders.delete(sid);
-        }
-      };
-
-      const server = createMcpServer(newSessionId);
-      await server.connect(transport);
-    } else {
+      return await transport.handleRequest(request, { parsedBody: body });
+    } catch (error) {
+      console.error("MCP test server POST handler failed:", error);
       return c.json(
         {
           jsonrpc: "2.0",
           error: {
             code: -32000,
-            message: "Bad Request: No valid session ID provided",
+            message: "Internal MCP test server error",
+            data: error instanceof Error ? error.message : String(error),
           },
           id: null,
         },
-        400
+        500
       );
     }
-
-    // Create a custom response handler with Promise-based completion
-    const responseHeaders: Record<string, string> = {};
-    const responseChunks: Uint8Array[] = [];
-    let responseStatus = 200;
-    let resolveResponse: () => void;
-    const responseComplete = new Promise<void>((resolve) => {
-      resolveResponse = resolve;
-    });
-
-    // Create an event-emitter-like interface for Node.js HTTP response compatibility
-    type EventCallback = (...args: unknown[]) => void;
-    const eventHandlers: Record<string, EventCallback[]> = {};
-
-    const mockRes = {
-      writeHead: (status: number, headers?: Record<string, string>) => {
-        responseStatus = status;
-        if (headers) {
-          Object.assign(responseHeaders, headers);
-        }
-        return mockRes;
-      },
-      setHeader: (name: string, value: string) => {
-        responseHeaders[name] = value;
-        return mockRes;
-      },
-      write: (chunk: string | Uint8Array) => {
-        if (typeof chunk === "string") {
-          responseChunks.push(new TextEncoder().encode(chunk));
-        } else {
-          responseChunks.push(chunk);
-        }
-        return true;
-      },
-      end: (chunk?: string | Uint8Array) => {
-        if (chunk) {
-          mockRes.write(chunk);
-        }
-        // Emit 'close' event
-        const handlers = eventHandlers["close"] ?? [];
-        for (const handler of handlers) {
-          handler();
-        }
-        // Signal that the response is complete
-        resolveResponse();
-      },
-      on: (event: string, handler: EventCallback) => {
-        if (!eventHandlers[event]) {
-          eventHandlers[event] = [];
-        }
-        eventHandlers[event].push(handler);
-        return mockRes;
-      },
-      once: (event: string, handler: EventCallback) => {
-        return mockRes.on(event, handler);
-      },
-      removeListener: (_event: string, _handler: EventCallback) => {
-        return mockRes;
-      },
-      flushHeaders: () => {
-        return mockRes;
-      },
-      get headersSent() {
-        return Object.keys(responseHeaders).length > 0;
-      },
-      get writableEnded() {
-        return false;
-      },
-    };
-
-    // Create a Node.js-like request object with proper headers access
-    const nodeReq = {
-      method: c.req.method,
-      url: c.req.url,
-      headers: Object.fromEntries(c.req.raw.headers.entries()),
-    };
-
-    // @ts-ignore - MCP SDK expects Node.js HTTP types
-    await transport.handleRequest(nodeReq, mockRes, body);
-
-    // Wait for the response to be fully written (SDK calls end() asynchronously)
-    await responseComplete;
-
-    const totalLength = responseChunks.reduce((sum, chunk) => sum + chunk.length, 0);
-    const responseBody = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of responseChunks) {
-      responseBody.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    return new Response(responseBody.length > 0 ? responseBody : null, {
-      status: responseStatus,
-      headers: responseHeaders,
-    });
   });
 
-  // MCP endpoint - GET for SSE
-  app.get("/mcp", async (c) => {
-    const sessionId = c.req.header("mcp-session-id");
-
-    if (!sessionId || !transports[sessionId]) {
-      return c.text("Invalid or missing session ID", 400);
-    }
-
-    const transport = transports[sessionId];
-    const responseHeaders: Record<string, string> = {};
-    const responseChunks: Uint8Array[] = [];
-
-    const mockRes = {
-      writeHead: (_status: number, headers?: Record<string, string>) => {
-        if (headers) {
-          Object.assign(responseHeaders, headers);
-        }
-        return mockRes;
-      },
-      setHeader: (name: string, value: string) => {
-        responseHeaders[name] = value;
-        return mockRes;
-      },
-      write: (chunk: string | Uint8Array) => {
-        if (typeof chunk === "string") {
-          responseChunks.push(new TextEncoder().encode(chunk));
-        } else {
-          responseChunks.push(chunk);
-        }
-        return true;
-      },
-      end: () => {},
-      get headersSent() {
-        return false;
-      },
-      get writableEnded() {
-        return false;
-      },
-    };
-
-    // @ts-ignore - MCP SDK expects Node.js HTTP types
-    await transport.handleRequest(c.req.raw, mockRes);
-
-    const totalLength = responseChunks.reduce((sum, chunk) => sum + chunk.length, 0);
-    const responseBody = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of responseChunks) {
-      responseBody.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    return new Response(responseBody.length > 0 ? responseBody : null, {
-      status: 200,
-      headers: responseHeaders,
-    });
+  // MCP endpoint - GET for SSE (not needed for JSON-response tests)
+  app.get("/mcp", (c) => {
+    return c.text("Method not allowed", 405);
   });
 
-  // MCP endpoint - DELETE for session termination
-  app.delete("/mcp", async (c) => {
-    const sessionId = c.req.header("mcp-session-id");
-
-    if (!sessionId || !transports[sessionId]) {
-      return c.text("Invalid or missing session ID", 400);
-    }
-
-    const transport = transports[sessionId];
-    const mockRes = {
-      writeHead: () => mockRes,
-      setHeader: () => mockRes,
-      write: () => true,
-      end: () => {},
-      get headersSent() {
-        return false;
-      },
-      get writableEnded() {
-        return false;
-      },
-    };
-
-    // @ts-ignore - MCP SDK expects Node.js HTTP types
-    await transport.handleRequest(c.req.raw, mockRes);
-
-    return c.text("Session terminated", 200);
+  // MCP endpoint - DELETE for session termination (unused in tests)
+  app.delete("/mcp", (c) => {
+    return c.text("Method not allowed", 405);
   });
 
   // OAuth Discovery Endpoints (RFC 9728 & RFC 8414)

@@ -6,8 +6,8 @@
   "tasks": {
     "check": "deno check --sloppy-imports",
     "lint": "deno lint --sloppy-imports",
-    "eslint": "deno run -A --sloppy-imports npm:eslint@9",
-    "eslint:fix": "deno run -A --sloppy-imports npm:eslint@9 --fix",
+    "eslint": "deno run -A --sloppy-imports npm:eslint@9 --config ./eslint.config.ts",
+    "eslint:fix": "deno run -A --sloppy-imports npm:eslint@9 --config ./eslint.config.ts --fix",
     "prettier:check": "deno run -A npm:prettier@3 --check .",
     "prettier:format": "deno run -A npm:prettier@3 --write .",
     "test": "./run-tests.sh",

@@ -81,7 +81,6 @@ export const coerceToSchema = async <S extends z.ZodTypeAny | string>(
     const stream = await streamObject<Schema<SchemaType<S>>, "object", SchemaType<S>>({
       model,
       schema: schemaForModel,
-      mode: params.mode,
       output: "object",
       system: TYPE_COERCER_SYSTEM_PROMPT.trim(),
       prompt,

@@ -15,7 +15,7 @@
     "graphql-yoga": "npm:graphql-yoga@^5.10.13",
     "json-schema-to-ts": "npm:json-schema-to-ts@^3.1.1",
     "tough-cookie": "npm:tough-cookie@^6.0.0",
-    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.25.1",
     "@hono/hono": "jsr:@hono/hono@^4.10.5",
     "zod": "npm:zod@^3.25.76",
     "ts-morph": "npm:ts-morph@^26.0.0",

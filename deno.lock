@@ -20,7 +20,7 @@
     "npm:@ai-sdk/anthropic@^2.0.49": "2.0.53_zod@3.25.76",
     "npm:@ai-sdk/google-vertex@^3.0.85": "3.0.85_zod@3.25.76",
     "npm:@ai-sdk/google@^2.0.44": "2.0.44_zod@3.25.76",
-    "npm:@ai-sdk/mcp@^0.0.11": "0.0.11_zod@3.25.76",
+    "npm:@ai-sdk/mcp@^0.0.12": "0.0.12_zod@3.25.76",
     "npm:@ai-sdk/openai@^2.0.64": "2.0.76_zod@3.25.76",
     "npm:@apidevtools/swagger-parser@^10.1.1": "10.1.1_openapi-types@12.1.3_ajv@8.17.1",
     "npm:@apidevtools/swagger-parser@^12.1.0": "12.1.0_openapi-types@12.1.3_ajv@8.17.1",
@@ -35,7 +35,7 @@
     "npm:@graphql-codegen/typescript@^5.0.4": "5.0.6_graphql@16.12.0",
     "npm:@graphql-typed-document-node/core@^3.2.0": "3.2.0_graphql@16.12.0",
     "npm:@hono/zod-openapi@~0.18.4": "0.18.4_hono@4.10.7_zod@3.25.76",
-    "npm:@modelcontextprotocol/sdk@^1.21.0": "1.23.0_zod@3.25.76_ajv@8.17.1_express@5.2.1",
+    "npm:@modelcontextprotocol/sdk@^1.25.1": "1.25.1_zod@3.25.76_hono@4.10.7_ajv@8.17.1_express@5.2.1",
     "npm:@pothos/core@^4.10.0": "4.10.0_graphql@16.12.0",
     "npm:@react-router/dev@^7.9.2": "7.9.6_@react-router+serve@7.9.6__react-router@7.9.6___react@18.3.1___react-dom@18.3.1____react@18.3.1__express@4.22.1__typescript@5.9.3__react@18.3.1__react-dom@18.3.1___react@18.3.1_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_vite@7.2.6__@types+node@24.2.0__yaml@2.8.2__picomatch@4.0.3_@babel+core@7.28.5_react@18.3.1_react-dom@18.3.1__react@18.3.1_@types+node@24.2.0_yaml@2.8.2",
     "npm:@react-router/node@^7.9.2": "7.9.6_react-router@7.9.6__react@18.3.1__react-dom@18.3.1___react@18.3.1_typescript@5.9.3_react@18.3.1_react-dom@18.3.1__react@18.3.1",
@@ -177,7 +177,7 @@
       "integrity": "sha512-ih7NV+OFSNWZCF+tYYD7ovvvM+gv7TRKQblpVohg2ipIwC9Y0TirzocJVREzZa/v9luxUwFbsPji++DUDWWxsg==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@3.0.18_zod@3.25.76",
         "zod@3.25.76"
       ]
     },
@@ -185,7 +185,7 @@
       "integrity": "sha512-sDQcW+6ck2m0pTIHW6BPHD7S125WD3qNkx/B8sEzJp/hurocmJ5Cni0ybExg6sQMGo+fr/GWOwpHF1cmCdg5rQ==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@3.0.18_zod@3.25.76",
         "@vercel/oidc",
         "zod@3.25.76"
       ]
@@ -196,7 +196,7 @@
         "@ai-sdk/anthropic",
         "@ai-sdk/google",
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@3.0.18_zod@3.25.76",
         "google-auth-library@10.5.0",
         "zod@3.25.76"
       ]
@@ -205,15 +205,15 @@
       "integrity": "sha512-c5dck36FjqiVoeeMJQLTEmUheoURcGTU/nBT6iJu8/nZiKFT/y8pD85KMDRB7RerRYaaQOtslR2d6/5PditiRw==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@3.0.18_zod@3.25.76",
         "zod@3.25.76"
       ]
     },
-    "@ai-sdk/mcp@0.0.11_zod@3.25.76": {
-      "integrity": "sha512-n0oZsxhPdMaXhAn6LrpMpxABufmeSatfhR3epbrCjJcLEHPOucKwQciwE8CTgIGgwBxHNy1FFLZmcFI77JmJfg==",
+    "@ai-sdk/mcp@0.0.12_zod@3.25.76": {
+      "integrity": "sha512-hyf31U2CmgGexqOLgLfno525pjbqidJLu9pU+XcEwW/PkMcfTFuRq1iD3wbqtAmURRW0qJITiKV+in1B4I23gA==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@3.0.19_zod@3.25.76",
         "pkce-challenge",
         "zod@3.25.76"
       ]
@@ -222,12 +222,21 @@
       "integrity": "sha512-ryUkhTDVxe3D1GSAGc94vPZsJlSY8ZuBDLkpf4L81Dm7Ik5AgLfhQrZa8+0hD4kp0dxdVaIoxhpa3QOt1CmncA==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@3.0.18_zod@3.25.76",
         "zod@3.25.76"
       ]
     },
     "@ai-sdk/provider-utils@3.0.18_zod@3.25.76": {
       "integrity": "sha512-ypv1xXMsgGcNKUP+hglKqtdDuMg68nWHucPPAhIENrbFAI+xCHiqPVN8Zllxyv1TNZwGWUghPxJXU+Mqps0YRQ==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@standard-schema/spec",
+        "eventsource-parser",
+        "zod@3.25.76"
+      ]
+    },
+    "@ai-sdk/provider-utils@3.0.19_zod@3.25.76": {
+      "integrity": "sha512-W41Wc9/jbUVXVwCN/7bWa4IKe8MtxO3EyA0Hfhx6grnmiYlCvpI8neSYWFE0zScXJkgA/YK3BRybzgyiXuu6JA==",
       "dependencies": [
         "@ai-sdk/provider",
         "@standard-schema/spec",
@@ -1353,6 +1362,12 @@
     "@hexagon/base64@1.1.28": {
       "integrity": "sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw=="
     },
+    "@hono/node-server@1.19.7_hono@4.10.7": {
+      "integrity": "sha512-vUcD0uauS7EU2caukW8z5lJKtoGMokxNbJtBiwHgpqxEXokaHCBkQUmCHhjFB1VUTWdqj25QoMkMKzgjq+uhrw==",
+      "dependencies": [
+        "hono"
+      ]
+    },
     "@hono/zod-openapi@0.18.4_hono@4.10.7_zod@3.25.76": {
       "integrity": "sha512-6NHMHU96Hh32B1yDhb94Z4Z5/POsmEu2AXpWLWcBq9arskRnOMt2752yEoXoADV8WUAc7H1IkNaQHGj1ytXbYw==",
       "dependencies": [
@@ -1625,9 +1640,10 @@
     "@mjackson/node-fetch-server@0.2.0": {
       "integrity": "sha512-EMlH1e30yzmTpGLQjlFmaDAjyOeZhng1/XCd7DExR8PNAnG/G1tyruZxEoUe11ClnwGhGrtsdnyyUx1frSzjng=="
     },
-    "@modelcontextprotocol/sdk@1.23.0_zod@3.25.76_ajv@8.17.1_express@5.2.1": {
-      "integrity": "sha512-MCGd4K9aZKvuSqdoBkdMvZNcYXCkZRYVs/Gh92mdV5IHbctX9H9uIvd4X93+9g8tBbXv08sxc/QHXTzf8y65bA==",
+    "@modelcontextprotocol/sdk@1.25.1_zod@3.25.76_hono@4.10.7_ajv@8.17.1_express@5.2.1": {
+      "integrity": "sha512-yO28oVFFC7EBoiKdAn+VqRm+plcfv4v0xp6osG/VsCB0NlPZWi87ajbCZZ8f/RvOFLEu7//rSRmuZZ7lMoe3gQ==",
       "dependencies": [
+        "@hono/node-server",
         "ajv@8.17.1",
         "ajv-formats",
         "content-type",
@@ -1637,6 +1653,8 @@
         "eventsource-parser",
         "express@5.2.1",
         "express-rate-limit",
+        "jose",
+        "json-schema-typed",
         "pkce-challenge",
         "raw-body@3.0.2",
         "zod@3.25.76",
@@ -2463,7 +2481,7 @@
       "dependencies": [
         "@ai-sdk/gateway",
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@3.0.18_zod@3.25.76",
         "@opentelemetry/api",
         "zod@3.25.76"
       ]
@@ -3359,8 +3377,8 @@
         "qs",
         "range-parser",
         "router",
-        "send@1.2.0",
-        "serve-static@2.2.0",
+        "send@1.2.1",
+        "serve-static@2.2.1",
         "statuses@2.0.2",
         "type-is@2.0.1",
         "vary"
@@ -4089,6 +4107,9 @@
     },
     "json-schema-traverse@1.0.0": {
       "integrity": "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="
+    },
+    "json-schema-typed@8.0.2": {
+      "integrity": "sha512-fQhoXdcvc3V28x7C7BMs4P5+kNlgUURe2jmUT1T//oBRMDrqy1QPelJimwZGo7Hg9VPV3EQV5Bnq4hbFy2vetA=="
     },
     "json-schema@0.4.0": {
       "integrity": "sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA=="
@@ -5180,8 +5201,8 @@
         "statuses@2.0.1"
       ]
     },
-    "send@1.2.0": {
-      "integrity": "sha512-uaW0WwXKpL9blXE2o0bRhoL2EGXIrZxQ2ZQ4mgcfoBxdFmQold+qWsD2jLrfZ0trjKL6vOw0j//eAwcALFjKSw==",
+    "send@1.2.1": {
+      "integrity": "sha512-1gnZf7DFcoIcajTjTwjwuDjzuz4PPcY2StKPlsGAQ1+YH20IRVrBaXSWmdjowTJ6u8Rc01PoYOGHXfP1mYcZNQ==",
       "dependencies": [
         "debug@4.4.3",
         "encodeurl@2.0.0",
@@ -5213,13 +5234,13 @@
         "send@0.19.0"
       ]
     },
-    "serve-static@2.2.0": {
-      "integrity": "sha512-61g9pCh0Vnh7IutZjtLGGpTA355+OPn2TyDv/6ivP2h/AdAVX9azsoxmg2/M6nZeQZNYBEwIcsne1mJd9oQItQ==",
+    "serve-static@2.2.1": {
+      "integrity": "sha512-xRXBn0pPqQTVQiC8wyQrKs2MOlX24zQ0POGaj0kultvoOCstBQM5yvOhAVSUwOMjQtTvsPWoNCHfPGwaaQJhTw==",
       "dependencies": [
         "encodeurl@2.0.0",
         "escape-html",
         "parseurl",
-        "send@1.2.0"
+        "send@1.2.1"
       ]
     },
     "set-cookie-parser@2.7.2": {
@@ -5989,13 +6010,13 @@
           "npm:@ai-sdk/anthropic@^2.0.41",
           "npm:@ai-sdk/google-vertex@^3.0.85",
           "npm:@ai-sdk/google@^2.0.44",
-          "npm:@ai-sdk/mcp@^0.0.11",
+          "npm:@ai-sdk/mcp@^0.0.12",
           "npm:@ai-sdk/openai@^2.0.64",
           "npm:@apidevtools/swagger-parser@^10.1.1",
           "npm:@eslint/js@^9.39.1",
           "npm:@graphql-codegen/schema-ast@5",
           "npm:@hono/zod-openapi@~0.18.4",
-          "npm:@modelcontextprotocol/sdk@^1.21.0",
+          "npm:@modelcontextprotocol/sdk@^1.25.1",
           "npm:@pothos/core@^4.10.0",
           "npm:@types/node@*",
           "npm:@types/react-dom@^18.3.1",
@@ -6034,7 +6055,7 @@
       },
       "packages/integration-types": {
         "dependencies": [
-          "npm:@modelcontextprotocol/sdk@^1.21.0",
+          "npm:@modelcontextprotocol/sdk@^1.25.1",
           "npm:googleapis@134",
           "npm:json-schema-to-ts@^3.1.1"
         ]
@@ -6042,7 +6063,7 @@
       "sandbox": {
         "dependencies": [
           "npm:@graphql-typed-document-node/core@^3.2.0",
-          "npm:@modelcontextprotocol/sdk@^1.21.0",
+          "npm:@modelcontextprotocol/sdk@^1.25.1",
           "npm:@types/node@*",
           "npm:ajv@^8.17.1",
           "npm:googleapis@134",
@@ -6066,7 +6087,7 @@
           "npm:@graphql-codegen/typescript-operations@^5.0.4",
           "npm:@graphql-codegen/typescript@^5.0.4",
           "npm:@graphql-typed-document-node/core@^3.2.0",
-          "npm:@modelcontextprotocol/sdk@^1.21.0",
+          "npm:@modelcontextprotocol/sdk@^1.25.1",
           "npm:better-auth@^1.3.34",
           "npm:fetch-cookie@^3.1.0",
           "npm:graphql-request@^7.3.3",
