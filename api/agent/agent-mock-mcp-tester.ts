@@ -1,5 +1,6 @@
 import { experimental_createMCPClient as createMCPClient } from "@ai-sdk/mcp";
-import { generateText } from "ai";
+import type { ToolSet } from "ai";
+import { generateText, stepCountIs } from "ai";
 import { createModel, Capability } from "./utils/providers.ts";
 import { getLogger } from "../utils/logger.ts";
 
@@ -43,9 +44,8 @@ export const testMockMcpServers = async (port: number, prompt: string): Promise<
     // 4. Run Agent
     const result = await generateText({
       model,
-      tools,
-      // @ts-ignore - maxSteps is supported in AI SDK but types might be out of sync
-      maxSteps: 5, // Allow multi-step reasoning
+      tools: tools as ToolSet,
+      stopWhen: stepCountIs(5), // Allow multi-step reasoning
       prompt,
     });
 

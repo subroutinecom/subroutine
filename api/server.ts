@@ -468,7 +468,6 @@ const initialize = async () => {
         input: unknown;
         schema?: string;
         instructions?: string;
-        mode?: "auto" | "json" | "tool";
       };
 
       try {
@@ -488,7 +487,6 @@ const initialize = async () => {
         input: body.input,
         schema: body.schema,
         instructions: body.instructions,
-        mode: body.mode,
       });
 
       if (!result.success) {
@@ -502,7 +500,6 @@ const initialize = async () => {
       let body: {
         input: unknown;
         schema?: string;
-        mode?: "auto" | "json" | "tool";
       };
 
       try {
@@ -521,7 +518,6 @@ const initialize = async () => {
       const result = await formatInput<string>({
         input: body.input,
         schema: body.schema,
-        mode: body.mode,
       });
 
       if (!result.success) {
