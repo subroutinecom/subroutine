@@ -5,7 +5,6 @@ import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createYoga } from "graphql-yoga";
-import { randomUUID } from "node:crypto";
 import process from "node:process";
 import { generateCode, GenerateCodeOptionsSchema } from "./agent/agent-code-generator.ts";
 import { formatInput } from "./agent/agent-input-formatter.ts";
@@ -17,7 +16,6 @@ import { auth } from "./auth.ts";
 import { getConfig } from "./config/loader.ts";
 import { initializeDatabase } from "./db/index.ts";
 import { buildContext, schema } from "./internal/schema.ts";
-import { createLegacyMcpServer } from "./mcp-legacy-server.ts";
 import { createMcpServer } from "./mcp-server.ts";
 import { type AuthContext, authMiddleware } from "./middlewares/auth.ts";
 import { graphqlAuthMiddleware } from "./middlewares/graphql-auth.ts";
@@ -558,8 +556,6 @@ const initialize = async () => {
   if (ENABLE_MOCK_OAUTH) {
     registerAuthenticatedTestEndpoints(app);
   }
-
-  const transports: Record<string, WebStandardStreamableHTTPServerTransport> = {};
 
   const ErrorSchema = z.object({
     error: z
@@ -1310,131 +1306,6 @@ const initialize = async () => {
     }
   );
 
-  app.post("/mcp-legacy", async (c) => {
-    const auth = c.get("auth");
-    if (!auth?.organizationId) {
-      return c.json(
-        {
-          error: {
-            code: "ORGANIZATION_REQUIRED",
-            message: "Active organization is required to use MCP",
-          },
-        },
-        403
-      );
-    }
-
-    const sessionId = c.req.header("mcp-session-id");
-
-    if (sessionId) {
-      logger.info(`Received MCP request for session: ${sessionId}`);
-    } else {
-      logger.info("New MCP request");
-    }
-
-    try {
-      let transport: WebStandardStreamableHTTPServerTransport;
-      const body = await c.req.json();
-      logger.info("MCP request body:", JSON.stringify(body, null, 2));
-
-      if (sessionId && transports[sessionId]) {
-        transport = transports[sessionId];
-      } else if (!sessionId && isInitializeRequest(body)) {
-        transport = new WebStandardStreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-          onsessioninitialized: (newSessionId: string) => {
-            logger.info(`Session initialized with ID: ${newSessionId}`);
-            transports[newSessionId] = transport;
-          },
-        });
-
-        transport.onclose = () => {
-          const sid = transport.sessionId;
-          if (sid && transports[sid]) {
-            logger.info(`Transport closed for session ${sid}, removing from transports map`);
-            delete transports[sid];
-          }
-        };
-
-        const server = createLegacyMcpServer(auth);
-        await server.connect(transport);
-      } else {
-        return c.json(
-          {
-            jsonrpc: "2.0",
-            error: {
-              code: -32000,
-              message: "Bad Request: No valid session ID provided",
-            },
-            id: null,
-          },
-          400
-        );
-      }
-
-      const headers = new Headers(c.req.raw.headers);
-      const currentAccept = headers.get("accept");
-      if (!currentAccept) {
-        headers.set("accept", "application/json");
-      }
-      if (!headers.get("content-type")) {
-        headers.set("content-type", "application/json");
-      }
-
-      const request = new Request(c.req.url, {
-        method: c.req.method,
-        headers,
-        body: JSON.stringify(body),
-      });
-      const response = await transport.handleRequest(request, { parsedBody: body });
-      logger.info("MCP response status:", response.status);
-      return response;
-    } catch (error) {
-      logger.error("Error handling MCP request:", error);
-      return c.json(
-        {
-          jsonrpc: "2.0",
-          error: {
-            code: -32603,
-            message: "Internal server error",
-          },
-          id: null,
-        },
-        500
-      );
-    }
-  });
-
-  app.get("/mcp-legacy", async (c) => {
-    const sessionId = c.req.header("mcp-session-id");
-
-    if (!sessionId || !transports[sessionId]) {
-      return c.text("Invalid or missing session ID", 400);
-    }
-
-    logger.info(`Establishing SSE stream for session ${sessionId}`);
-    const transport = transports[sessionId];
-    return await transport.handleRequest(c.req.raw);
-  });
-
-  app.delete("/mcp-legacy", async (c) => {
-    const sessionId = c.req.header("mcp-session-id");
-
-    if (!sessionId || !transports[sessionId]) {
-      return c.text("Invalid or missing session ID", 400);
-    }
-
-    logger.info(`Received session termination request for session ${sessionId}`);
-
-    try {
-      const transport = transports[sessionId];
-      return await transport.handleRequest(c.req.raw);
-    } catch (error) {
-      logger.error("Error handling session termination:", error);
-      return c.text("Error processing session termination", 500);
-    }
-  });
-
   const mcpOAuthTransports: Record<string, WebStandardStreamableHTTPServerTransport> = {};
 
   // Helper to extract orgSlug from @-prefixed path param
@@ -1624,7 +1495,6 @@ const initialize = async () => {
   logger.info(`Server running on port ${PORT}`);
   logger.info(`GraphQL endpoint available at http://localhost:${PORT}/graphql`);
   logger.info(`MCP OAuth endpoint available at http://localhost:${PORT}/@{orgSlug}`);
-  logger.info(`MCP legacy endpoint available at http://localhost:${PORT}/mcp-legacy`);
   logger.info(`OpenAPI spec available at http://localhost:${PORT}/openapi.json`);
 };
 
