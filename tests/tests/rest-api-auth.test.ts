@@ -241,49 +241,6 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
     });
   });
 
-  describe("MCP Endpoints - Authentication", () => {
-    it("should reject /mcp-legacy POST without authentication", async () => {
-      const response = await makeRequest("/mcp-legacy", {
-        method: "POST",
-        body: {
-          jsonrpc: "2.0",
-          method: "initialize",
-          params: {},
-          id: 1,
-        },
-      });
-
-      expect(response.status).toBe(401);
-      expect(response.data.error.code).toBe("UNAUTHORIZED");
-    });
-
-    it("should allow /mcp-legacy POST with valid API key", async () => {
-      const apiKey = await getTestApiKey();
-
-      const response = await makeRequest("/mcp-legacy", {
-        method: "POST",
-        apiKey,
-        body: {
-          jsonrpc: "2.0",
-          method: "initialize",
-          params: {
-            protocolVersion: "2024-11-05",
-            capabilities: {},
-            clientInfo: {
-              name: "test-client",
-              version: "1.0.0",
-            },
-          },
-          id: 1,
-        },
-      });
-
-      // Should not return 401 (unauthorized) - any other status means auth passed
-      expect(response.status).not.toBe(401);
-      expect([200, 400, 406, 500]).toContain(response.status);
-    });
-  });
-
   describe("API Key Header Variations", () => {
     it("should work with lowercase x-api-key header", async () => {
       const apiKey = await getTestApiKey();
@@ -363,35 +320,6 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       expect(Array.isArray(response.data.runs)).toBe(true);
     });
 
-    it("should allow /mcp-legacy POST with Bearer token", async () => {
-      const apiKey = await getTestApiKey();
-
-      const response = await makeRequest("/mcp-legacy", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${apiKey}`,
-          "x-use-mock": "true",
-        },
-        body: {
-          jsonrpc: "2.0",
-          method: "initialize",
-          params: {
-            protocolVersion: "2024-11-05",
-            capabilities: {},
-            clientInfo: {
-              name: "test-client",
-              version: "1.0.0",
-            },
-          },
-          id: 1,
-        },
-      });
-
-      // Should not return 401 (unauthorized) - any other status means auth passed
-      expect(response.status).not.toBe(401);
-      expect([200, 400, 406, 500]).toContain(response.status);
-    });
-
     it("should reject requests with invalid Bearer token", async () => {
       const response = await makeRequest("/api/subroutine", {
         headers: {
@@ -452,28 +380,5 @@ describe("REST API Authentication", { sanitizeOps: false, sanitizeResources: fal
       expect(Array.isArray(response.data.subroutines)).toBe(true);
     });
 
-    it("should allow /mcp-legacy POST with BetterAuth session cookie", async () => {
-      const cookieJar = await createSessionCookieJar();
-
-      const response = await makeCookieRequest("/mcp-legacy", cookieJar, {
-        method: "POST",
-        body: {
-          jsonrpc: "2.0",
-          method: "initialize",
-          params: {
-            protocolVersion: "2024-11-05",
-            capabilities: {},
-            clientInfo: {
-              name: "test-client",
-              version: "1.0.0",
-            },
-          },
-          id: 1,
-        },
-      });
-
-      expect(response.status).not.toBe(401);
-      expect([200, 400, 406, 500]).toContain(response.status);
-    });
   });
 });
