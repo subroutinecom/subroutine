@@ -50,8 +50,7 @@
     "npm:@types/react@^19.1.13": "19.2.7",
     "npm:@typescript-eslint/utils@^8.46.3": "8.49.0_eslint@9.39.1_typescript@5.9.3",
     "npm:@uidotdev/usehooks@^2.4.1": "2.4.1_react@18.3.1_react-dom@18.3.1__react@18.3.1",
-    "npm:ai@^5.0.102": "5.0.106_zod@3.25.76",
-    "npm:ai@^5.0.106": "5.0.106_zod@3.25.76",
+    "npm:ai@^5.0.115": "5.0.115_zod@3.25.76",
     "npm:ajv@^8.17.1": "8.17.1",
     "npm:arg@5": "5.0.2",
     "npm:bcrypt@6": "6.0.0",
@@ -83,6 +82,7 @@
     "npm:lru-cache@^11.2.4": "11.2.4",
     "npm:lucide-react@0.554": "0.554.0_react@18.3.1",
     "npm:nanoid@^5.1.6": "5.1.6",
+    "npm:npm@10": "10.9.4",
     "npm:openapi-types@^12.1.3": "12.1.3",
     "npm:pg@^8.16.3": "8.16.3",
     "npm:prettier@^3.6.2": "3.7.3",
@@ -181,11 +181,11 @@
         "zod@3.25.76"
       ]
     },
-    "@ai-sdk/gateway@2.0.18_zod@3.25.76": {
-      "integrity": "sha512-sDQcW+6ck2m0pTIHW6BPHD7S125WD3qNkx/B8sEzJp/hurocmJ5Cni0ybExg6sQMGo+fr/GWOwpHF1cmCdg5rQ==",
+    "@ai-sdk/gateway@2.0.22_zod@3.25.76": {
+      "integrity": "sha512-6fHjDfCbjfj4vyMExuLei7ir2///E5sNwNZaobdJsJIxJjDSsjzSLGO/aUI7p9eOnB8XctDrDSF5ilwDGpi6eg==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils@3.0.18_zod@3.25.76",
+        "@ai-sdk/provider-utils@3.0.19_zod@3.25.76",
         "@vercel/oidc",
         "zod@3.25.76"
       ]
@@ -2476,12 +2476,12 @@
     "agent-base@7.1.4": {
       "integrity": "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="
     },
-    "ai@5.0.106_zod@3.25.76": {
-      "integrity": "sha512-M5obwavxSJJ3tGlAFqI6eltYNJB0D20X6gIBCFx/KVorb/X1fxVVfiZZpZb+Gslu4340droSOjT0aKQFCarNVg==",
+    "ai@5.0.115_zod@3.25.76": {
+      "integrity": "sha512-aVuHx0orGxXvhyL7oXUyW8TnWQE6Al8f3Bl6VZjz0WHMV+WaACHPkSyvQ3wje2QCUGzdl5DBF5d+OaXyghPQyg==",
       "dependencies": [
         "@ai-sdk/gateway",
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils@3.0.18_zod@3.25.76",
+        "@ai-sdk/provider-utils@3.0.19_zod@3.25.76",
         "@opentelemetry/api",
         "zod@3.25.76"
       ]
@@ -4585,6 +4585,10 @@
         "semver@7.7.3"
       ]
     },
+    "npm@10.9.4": {
+      "integrity": "sha512-OnUG836FwboQIbqtefDNlyR0gTHzIfwRfE3DuiNewBvnMnWEpB0VEXwBlFVgqpNzIgYo/MHh3d2Hel/pszapAA==",
+      "bin": true
+    },
     "nullthrows@1.1.1": {
       "integrity": "sha512-2vPPEi+Z7WqML2jZYddDIfy5Dqb0r2fze2zTxNNknZaFpVHU3mFB3R+DWeJWGVx0ecvttSGlJTI+WG+8Z4cDWw=="
     },
@@ -5944,7 +5948,7 @@
       "npm:@graphql-codegen/cli@^6.0.2",
       "npm:@types/node@^24.2.0",
       "npm:@typescript-eslint/utils@^8.46.3",
-      "npm:ai@^5.0.102",
+      "npm:ai@^5.0.115",
       "npm:debug@^4.4.3",
       "npm:eslint@^9.39.1",
       "npm:globals@^16.5.0",
@@ -6022,7 +6026,7 @@
           "npm:@types/react-dom@^18.3.1",
           "npm:@types/react@^18.3.12",
           "npm:@typescript-eslint/utils@^8.46.3",
-          "npm:ai@^5.0.106",
+          "npm:ai@^5.0.115",
           "npm:ajv@^8.17.1",
           "npm:bcrypt@6",
           "npm:better-auth@1.3.34",

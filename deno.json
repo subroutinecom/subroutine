@@ -30,7 +30,7 @@
     "@types/node": "npm:@types/node@^24.2.0",
     "@typescript-eslint/utils": "npm:@typescript-eslint/utils@^8.46.3",
     "@graphql-codegen/cli": "npm:@graphql-codegen/cli@^6.0.2",
-    "ai": "npm:ai@^5.0.102",
+    "ai": "npm:ai@^5.0.115",
     "debug": "npm:debug@^4.4.3",
     "eslint": "npm:eslint@^9.39.1",
     "globals": "npm:globals@^16.5.0",
