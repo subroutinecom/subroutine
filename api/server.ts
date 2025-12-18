@@ -2,7 +2,7 @@ import { rateLimiter } from "@hono-rate-limiter/hono-rate-limiter";
 import type { Context } from "@hono/hono";
 import { cors } from "@hono/hono/cors";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createYoga } from "graphql-yoga";
 import { randomUUID } from "node:crypto";
@@ -31,7 +31,6 @@ import { generateSubroutine, getSubroutine, listSubroutines } from "./models/sub
 import { registerAuthenticatedTestEndpoints, registerTestEndpoints } from "./testEndpoints.ts";
 import { registerUiRoutes } from "./ui/server.tsx";
 import { getLogger } from "./utils/logger.ts";
-import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
 const logger = getLogger("api/server.ts", "warn");
 
 const ENABLE_MOCK_OAUTH = Deno.env.get("ENABLE_MOCK_OAUTH") === "true";
@@ -560,7 +559,7 @@ const initialize = async () => {
     registerAuthenticatedTestEndpoints(app);
   }
 
-  const transports: Record<string, StreamableHTTPServerTransport> = {};
+  const transports: Record<string, WebStandardStreamableHTTPServerTransport> = {};
 
   const ErrorSchema = z.object({
     error: z
@@ -1334,16 +1333,16 @@ const initialize = async () => {
     }
 
     try {
-      let transport: StreamableHTTPServerTransport;
+      let transport: WebStandardStreamableHTTPServerTransport;
       const body = await c.req.json();
       logger.info("MCP request body:", JSON.stringify(body, null, 2));
 
       if (sessionId && transports[sessionId]) {
         transport = transports[sessionId];
       } else if (!sessionId && isInitializeRequest(body)) {
-        transport = new StreamableHTTPServerTransport({
+        transport = new WebStandardStreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
-          onsessioninitialized: (newSessionId) => {
+          onsessioninitialized: (newSessionId: string) => {
             logger.info(`Session initialized with ID: ${newSessionId}`);
             transports[newSessionId] = transport;
           },
@@ -1359,13 +1358,6 @@ const initialize = async () => {
 
         const server = createLegacyMcpServer(auth);
         await server.connect(transport);
-        const req = c.req.raw;
-        const res = new NodeResponseAdapter();
-        // @ts-ignore - MCP SDK expects Node.js HTTP response types
-        await transport.handleRequest(req, res, body);
-        const response = res.toResponse();
-        logger.info("MCP response status:", response.status);
-        return response;
       } else {
         return c.json(
           {
@@ -1380,31 +1372,23 @@ const initialize = async () => {
         );
       }
 
-      // Ensure Accept header includes both when talking to streamable transport
-      const headersObj = Object.fromEntries(c.req.raw.headers.entries());
-      const currentAccept = (headersObj["accept"] ?? headersObj["Accept"] ?? "") as string;
-      const needsEventStream = !currentAccept.includes("text/event-stream");
-      if (needsEventStream) {
-        headersObj["accept"] = "application/json, text/event-stream";
+      const headers = new Headers(c.req.raw.headers);
+      const currentAccept = headers.get("accept");
+      if (!currentAccept) {
+        headers.set("accept", "application/json");
       }
-      if (!("content-type" in headersObj) && !("Content-Type" in headersObj)) {
-        headersObj["content-type"] = "application/json";
+      if (!headers.get("content-type")) {
+        headers.set("content-type", "application/json");
       }
 
-      const nodeReq = {
+      const request = new Request(c.req.url, {
         method: c.req.method,
-        url: c.req.url,
-        headers: headersObj,
-      };
-
-      const res = new NodeResponseAdapter();
-      // Default to JSON responses for POST when JSON fallback is enabled
-      if (!res.getHeader("content-type")) {
-        res.setHeader("content-type", "application/json; charset=utf-8");
-      }
-      // @ts-ignore - MCP SDK expects Node.js HTTP response types
-      await transport.handleRequest(nodeReq, res, body);
-      return res.toResponse();
+        headers,
+        body: JSON.stringify(body),
+      });
+      const response = await transport.handleRequest(request, { parsedBody: body });
+      logger.info("MCP response status:", response.status);
+      return response;
     } catch (error) {
       logger.error("Error handling MCP request:", error);
       return c.json(
@@ -1430,14 +1414,7 @@ const initialize = async () => {
 
     logger.info(`Establishing SSE stream for session ${sessionId}`);
     const transport = transports[sessionId];
-    const req = c.req.raw;
-    const res = new NodeResponseAdapter();
-    if (!res.getHeader("content-type")) {
-      res.setHeader("content-type", "text/event-stream; charset=utf-8");
-    }
-    // @ts-ignore - MCP SDK expects Node.js HTTP response types
-    await transport.handleRequest(req, res);
-    return res.toResponse();
+    return await transport.handleRequest(c.req.raw);
   });
 
   app.delete("/mcp-legacy", async (c) => {
@@ -1451,18 +1428,14 @@ const initialize = async () => {
 
     try {
       const transport = transports[sessionId];
-      const req = c.req.raw;
-      const res = new NodeResponseAdapter();
-      // @ts-ignore - MCP SDK expects Node.js HTTP response types
-      await transport.handleRequest(req, res);
-      return res.toResponse();
+      return await transport.handleRequest(c.req.raw);
     } catch (error) {
       logger.error("Error handling session termination:", error);
       return c.text("Error processing session termination", 500);
     }
   });
 
-  const mcpOAuthTransports: Record<string, StreamableHTTPServerTransport> = {};
+  const mcpOAuthTransports: Record<string, WebStandardStreamableHTTPServerTransport> = {};
 
   // Helper to extract orgSlug from @-prefixed path param
   const extractOrgSlug = (atOrg: string) => atOrg.slice(1); // Remove @ prefix
@@ -1539,7 +1512,7 @@ const initialize = async () => {
     const transportKey = `${org.id}:${session.userId}`;
 
     try {
-      let transport: StreamableHTTPServerTransport;
+      let transport: WebStandardStreamableHTTPServerTransport;
       const body = await c.req.json();
       const initialize = isInitializeRequest(body);
 
@@ -1557,9 +1530,9 @@ const initialize = async () => {
             400
           );
         }
-        transport = new StreamableHTTPServerTransport({
+        transport = new WebStandardStreamableHTTPServerTransport({
           sessionIdGenerator: () => transportKey,
-          onsessioninitialized: (newSessionId) => {
+          onsessioninitialized: (newSessionId: string) => {
             mcpOAuthTransports[newSessionId] = transport;
           },
           enableJsonResponse: true,
@@ -1581,9 +1554,9 @@ const initialize = async () => {
         if (initialize) {
           // Reset the existing session to allow re-initialization
           delete mcpOAuthTransports[transportKey];
-          transport = new StreamableHTTPServerTransport({
+          transport = new WebStandardStreamableHTTPServerTransport({
             sessionIdGenerator: () => transportKey,
-            onsessioninitialized: (newSessionId) => {
+            onsessioninitialized: (newSessionId: string) => {
               mcpOAuthTransports[newSessionId] = transport;
             },
             enableJsonResponse: true,
@@ -1606,45 +1579,24 @@ const initialize = async () => {
         }
       }
 
-      const headersObj = Object.fromEntries(c.req.raw.headers.entries());
-      // Force JSON Accept for non-streaming transport
-      const currentAccept = (headersObj["accept"] ?? headersObj["Accept"] ?? "") as string;
+      const headers = new Headers(c.req.raw.headers);
+      const currentAccept = headers.get("accept");
       if (!currentAccept) {
-        headersObj["accept"] = "application/json";
+        headers.set("accept", "application/json");
       }
-      if (!("content-type" in headersObj) && !("Content-Type" in headersObj)) {
-        headersObj["content-type"] = "application/json";
+      if (!headers.get("content-type")) {
+        headers.set("content-type", "application/json");
       }
-      // Ensure session header is present for the transport
-      headersObj["mcp-session-id"] = transportKey;
+      headers.set("mcp-session-id", transportKey);
 
-      const nodeReq = {
+      const request = new Request(c.req.url, {
         method: c.req.method,
-        url: c.req.url,
-        headers: headersObj,
-      };
-
-      const res = new NodeResponseAdapter();
-      // Explicit JSON content-type (default) before SDK writes
-      if (!res.getHeader("content-type")) {
-        res.setHeader("content-type", "application/json; charset=utf-8");
-      }
-
-      // Wait for SDK to finish writing (it calls end asynchronously)
-      const finished = new Promise<void>((resolve) => {
-        // @ts-ignore - adapter implements once
-        res.once("close", () => resolve());
+        headers,
+        body: JSON.stringify(body),
       });
-      // @ts-ignore - MCP SDK expects Node.js HTTP response types
-      await transport.handleRequest(nodeReq, res, body);
-      await finished;
-      const debugOut = {
-        status: res.statusCode,
-        headers: res.getHeaders(),
-        body: res.getBodyText(),
-      };
-      logger.info("MCP OAuth POST response", JSON.stringify(debugOut));
-      return res.toResponse();
+      const response = await transport.handleRequest(request, { parsedBody: body });
+      logger.info("MCP OAuth POST response", response.status);
+      return response;
     } catch (error) {
       logger.error("Error handling MCP OAuth request:", error);
       return c.json(

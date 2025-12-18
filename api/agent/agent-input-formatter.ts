@@ -94,7 +94,6 @@ export const formatInput = async <S extends z.ZodTypeAny | string>(
     const stream = await streamObject<Schema<SchemaType<S>>, "object", SchemaType<S>>({
       model,
       schema: schemaForModel,
-      mode: params.mode,
       output: "object",
       system: INPUT_FORMATTER_SYSTEM_PROMPT.trim(),
       prompt,

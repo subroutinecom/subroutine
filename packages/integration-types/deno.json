@@ -3,7 +3,7 @@
   "exports": "./mod.ts",
   "imports": {
     "googleapis": "npm:googleapis@^134.0.0",
-    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.21.0",
+    "@modelcontextprotocol/sdk": "npm:@modelcontextprotocol/sdk@^1.25.1",
     "json-schema-to-ts": "npm:json-schema-to-ts@^3.1.1"
   }
 }

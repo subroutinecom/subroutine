@@ -125,6 +125,9 @@ services:
       TEST_NAMES: ${TEST_NAMES:-}
     volumes:
       - ./deno.json:/app/deno.json
+      - ./eslint.config.ts:/app/eslint.config.ts
+      - ./eslint:/app/eslint
+      - ./run-tests.sh:/app/run-tests.sh
       - ./tests:/app/tests
       - ./packages:/app/packages
       - ./api:/app/api

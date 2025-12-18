@@ -1,9 +1,8 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { z } from "zod";
 import { getLogger } from "./utils/logger.ts";
-import { NodeResponseAdapter } from "./utils/mcp-adapter.ts";
 
 const logger = getLogger("api/mock-mcp-servers.ts", "warn");
 
@@ -160,7 +159,7 @@ const mountMcpServer = (app: OpenAPIHono<any>, path: string, createServerFn: () 
   // Since the requirements are "mimic how the /mcp MCP server is set up", let's support JSON-RPC over POST.
 
   // We'll use a simple in-memory store for transports if client uses SSE/Session-ID
-  const transports: Record<string, StreamableHTTPServerTransport> = {};
+  const transports: Record<string, WebStandardStreamableHTTPServerTransport> = {};
 
   app.post(path, async (c) => {
     logger.info(`[MockMCP] Request to ${path}`);
@@ -168,19 +167,14 @@ const mountMcpServer = (app: OpenAPIHono<any>, path: string, createServerFn: () 
     const sessionId = c.req.header("mcp-session-id");
 
     // Basic transport handling compatible with what api/server.ts does
-    let transport: StreamableHTTPServerTransport;
-
-    const res = new NodeResponseAdapter();
-    if (!res.getHeader("content-type")) {
-      res.setHeader("content-type", "application/json; charset=utf-8");
-    }
+    let transport: WebStandardStreamableHTTPServerTransport;
 
     // If session provided, look it up or create it
     if (sessionId) {
       if (!transports[sessionId]) {
-        transport = new StreamableHTTPServerTransport({
+        transport = new WebStandardStreamableHTTPServerTransport({
           sessionIdGenerator: () => sessionId,
-          onsessioninitialized: (sid) => {
+          onsessioninitialized: (sid: string) => {
             transports[sid] = transport;
           },
           enableJsonResponse: true,
@@ -195,49 +189,31 @@ const mountMcpServer = (app: OpenAPIHono<any>, path: string, createServerFn: () 
       // Stateless / One-off request (common for simple tools calls)
       // We still need a transport to handle the request/response cycle
       const newSessionId = crypto.randomUUID();
-      transport = new StreamableHTTPServerTransport({
+      transport = new WebStandardStreamableHTTPServerTransport({
         sessionIdGenerator: () => newSessionId,
-        onsessioninitialized: (sid) => {
+        onsessioninitialized: (sid: string) => {
           transports[sid] = transport;
         },
         enableJsonResponse: true,
       });
       const server = createServerFn();
       await server.connect(transport);
-
-      // Return the new session ID so the client can continue the session
-      // This is crucial for the initialize -> initialized -> call flow
-      res.setHeader("mcp-session-id", newSessionId);
     }
 
-    // Adapt Hono Request/Response to Node.js style for the SDK
-    const headersObj = Object.fromEntries(c.req.raw.headers.entries());
-    // Force JSON Accept for non-streaming transport
-    // This ensures the SDK knows we want JSON, avoiding 406 Not Acceptable
-    headersObj["accept"] = "application/json, text/event-stream";
-
-    if (!headersObj["content-type"]) headersObj["content-type"] = "application/json";
-    if (sessionId) headersObj["mcp-session-id"] = sessionId;
-
-    const nodeReq = {
-      method: c.req.method,
-      url: c.req.url,
-      headers: headersObj,
-    };
-
     const body = await c.req.json();
+    const headers = new Headers(c.req.raw.headers);
+    if (!headers.get("accept")) {
+      headers.set("accept", "application/json");
+    }
+    if (!headers.get("content-type")) headers.set("content-type", "application/json");
+    if (sessionId) headers.set("mcp-session-id", sessionId);
 
-    // Wait for SDK to finish writing
-    const finished = new Promise<void>((resolve) => {
-      // @ts-ignore - NodeResponseAdapter implements once() but Typescript doesn't see it in the interface
-      res.once("close", () => resolve());
+    const request = new Request(c.req.url, {
+      method: c.req.method,
+      headers,
+      body: JSON.stringify(body),
     });
-
-    // @ts-ignore - MCP SDK expects Node.js HTTP types
-    await transport.handleRequest(nodeReq, res, body);
-    await finished;
-
-    return res.toResponse();
+    return await transport.handleRequest(request, { parsedBody: body });
   });
 
   // Add GET endpoint for SSE if needed, but user mainly asked for "methods" which implies tool calls via POST.
